@@ -6,7 +6,12 @@ from basebuilder import BaseBuilder
 
 class BaseBuilderTestCase(unittest.TestCase):
 	def setUp(self):
-		pass
-    
+		self.builder = BaseBuilder(None, None, None, None)
+
+	def test_something(self):
+		self.assert_(self.builder, 'No builder was created...')
+			
+	
+###    
 if __name__ == '__main__':
 	unittest.main()
