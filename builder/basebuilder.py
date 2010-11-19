@@ -47,16 +47,16 @@ class BaseBuilder(object):
 	    return locals()
 	target = property(**target())
 	
-	def uuid():
-	    doc = "The uuid property."
+	def image_id():
+	    doc = "The image_id property."
 	    def fget(self):
-	        return self._uuid
+	        return self._image_id
 	    def fset(self, value):
-	        self._uuid = value
+	        self._image_id = value
 	    def fdel(self):
-	        del self._uuid
+	        del self._image_id
 	    return locals()
-	uuid = property(**uuid())
+	image_id = property(**image_id())
 	
 	def credentials():
 	    doc = "The credentials property."
@@ -104,11 +104,11 @@ class BaseBuilder(object):
 	
 	
 # Initializer
-	def __init__(self, template=None, target=None, uuid=None, credentials=None):
+	def __init__(self, template=None, target=None, image_id=None, credentials=None):
 		super(BaseBuilder, self).__init__()
 		self.template = template
 		self.target = target
-		self.uuid = uuid
+		self.image_id = image_id
 		self.credentials = credentials
 	
 # Image actions

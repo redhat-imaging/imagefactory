@@ -28,7 +28,7 @@ class RHELBuilder(BaseBuilder):
 	
 # Initializer
 	def __init__(self, template=None, target=None, uuid=None, credentials=None):
-		super(RHELBuilder, self).__init__()
+		super(RHELBuilder, self).__init__(template, target, image_id, credentials)
 	
 # Image actions
 	def build(self):

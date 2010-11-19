@@ -29,7 +29,12 @@ class TestmMockBuilder(unittest.TestCase):
 		pass
 	
 	def testImplementsImageBuilderInterface(self):
-		self.assert_(ImageBuilderInterface.implementedBy(MockBuilder), 'MockBuilder does not implement the ImageBuilder interface.')
+		self.assert_(ImageBuilderInterface.implementedBy(MockBuilder), 'MockBuilder does not implement the ImageBuilder interface...')
+	
+	def testInit(self):
+		mock_builder = MockBuilder("IDL")
+		self.assertEqual("IDL", mock_builder.template)
+		self.assert_(mock_builder.image_id, 'Initilizer failed to set \'image_id\'...')
     
 if __name__ == '__main__':
 	unittest.main()

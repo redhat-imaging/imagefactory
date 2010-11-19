@@ -19,6 +19,7 @@
 import zope
 from imagebuilderinterface import ImageBuilderInterface
 from basebuilder import BaseBuilder
+import uuid
 
 
 class MockBuilder(BaseBuilder):
@@ -27,8 +28,8 @@ class MockBuilder(BaseBuilder):
 	zope.interface.implements(ImageBuilderInterface)
 	
 # Initializer
-	def __init__(self, template=None, target=None, uuid=None, credentials=None):
-		super(MockBuilder, self).__init__()
+	def __init__(self, template=None, target=None, image_id=uuid.uuid4(), credentials=None):
+		super(MockBuilder, self).__init__(template, target, image_id, credentials)
 	
 # Image actions
 	def build(self):

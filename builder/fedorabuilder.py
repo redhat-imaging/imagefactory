@@ -28,7 +28,7 @@ class FedoraBuilder(BaseBuilder):
 	
 # Initializer
 	def __init__(self, template=None, target=None, uuid=None, credentials=None):
-		super(FedoraBuilder, self).__init__()
+		super(FedoraBuilder, self).__init__(template, target, image_id, credentials)
 	
 # Image actions
 	def build(self):
