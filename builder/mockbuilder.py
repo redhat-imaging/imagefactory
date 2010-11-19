@@ -1,21 +1,39 @@
-#!/usr/bin/env python
-# encoding: utf-8
+#
+# Copyright (C) 2010 Red Hat, Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA  02110-1301, USA.  A copy of the GNU General Public License is
+# also available at http://www.gnu.org/copyleft/gpl.html.
 
 
-class BaseBuilder(object):
-	"""docstring for BaseBuilder"""
 
-# Properties	
-	def idl():
-	    doc = "The idl property."
+class MockBuilder(object):
+	"""docstring for MockBuilder"""
+	zope.interface.implements(ImageBuilderInterface)
+	
+
+# Properties
+	def template():
+	    doc = "The template property."
 	    def fget(self):
-	        return self._idl
+	        return self._template
 	    def fset(self, value):
-	        self._idl = value
+	        self._template = value
 	    def fdel(self):
-	        del self._idl
+	        del self._template
 	    return locals()
-	idl = property(**idl())
+	template = property(**template())
 	
 	def target():
 	    doc = "The target property."
@@ -61,16 +79,16 @@ class BaseBuilder(object):
 	    return locals()
 	status = property(**status())
 	
-	def percenty_complete():
-	    doc = "The percenty_complete property."
+	def percent_complete():
+	    doc = "The percent_complete property."
 	    def fget(self):
-	        return self._percenty_complete
+	        return self._percent_complete
 	    def fset(self, value):
-	        self._percenty_complete = value
+	        self._percent_complete = value
 	    def fdel(self):
-	        del self._percenty_complete
+	        del self._percent_complete
 	    return locals()
-	percenty_complete = property(**percenty_complete())
+	percent_complete = property(**percent_complete())
 	
 	def image():
 	    doc = "The image property."
@@ -94,7 +112,7 @@ class BaseBuilder(object):
 		
 
 # Image actions
-	def generate_image(self):
+	def build(self):
 		pass
 		
 	def abort(self):
