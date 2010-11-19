@@ -19,6 +19,7 @@
 from zope.interface import Interface
 from zope.interface import Attribute
 
+
 class ImageBuilderInterface(Interface):
 	# TODO: sloranz@redhat.com - make the comments more useful as external documentation.
 	"""This documentation needs to be written.  Should describe the 

@@ -16,6 +16,8 @@
 # MA  02110-1301, USA.  A copy of the GNU General Public License is
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
+import zope
+from imagebuilderinterface import ImageBuilderInterface
 
 
 class MockBuilder(object):
@@ -103,9 +105,9 @@ class MockBuilder(object):
 	
 
 # Initializer
-	def __init__(self, idl, target, uuid, credentials):
-		super(BaseBuilder, self).__init__()
-		self.idl = idl
+	def __init__(self, template=None, target=None, uuid=None, credentials=None):
+		super(MockBuilder, self).__init__()
+		self.template = template
 		self.target = target
 		self.uuid = uuid
 		self.credentials = credentials
