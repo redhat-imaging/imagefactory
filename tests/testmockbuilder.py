@@ -37,6 +37,9 @@ class TestmMockBuilder(unittest.TestCase):
 		self.assert_(self.mock_builder.image_id, 'Initilizer failed to set \'image_id\'...')
 	
 	def testBuild(self):
+		# TODO: sloranz@redhat.com - test more here... make sure we're getting the file we think.
+		known_uuid = uuid.uuid4()
+		self.mock_builder.image_id = known_uuid
 		self.mock_builder.build()
 	
 
