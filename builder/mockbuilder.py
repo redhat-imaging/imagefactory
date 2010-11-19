@@ -20,6 +20,7 @@ import zope
 from imagebuilderinterface import ImageBuilderInterface
 from basebuilder import BaseBuilder
 import uuid
+import time
 
 
 class MockBuilder(BaseBuilder):
@@ -33,7 +34,31 @@ class MockBuilder(BaseBuilder):
 	
 # Image actions
 	def build(self):
-		pass
+		image_path = "/tmp/image_factory-{!s}".format(str(self.image_id))
+		self.status = "INITIALIZING"
+		self.percent_complete = 0
+		
+		with open(image_path, 'w') as image_file:
+			self.status = "BUILDING"
+			image_file.write(':description: This is a mock build image for testing the image factory.\n')
+			self.percent_complete = 5
+			image_file.write(':name: Mock Image\n')
+			self.percent_complete = 10
+			image_file.write(':owner_id: fedoraproject\n')
+			self.percent_complete = 15
+			image_file.write(':architecture: x86_64\n')
+			self.percent_complete = 20
+		
+		time.sleep(10)
+		self.percent_complete = 50
+		time.sleep(10)
+		self.percent_complete = 75
+		time.sleep(10)
+		self.percent_complete = 95
+		self.status = "FINISHING"
+		time.sleep(5)
+		self.percent_complete = 100
+		self.status = "COMPLETED"
 	
 	def abort(self):
 		pass
