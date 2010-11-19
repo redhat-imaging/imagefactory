@@ -21,14 +21,14 @@ from imagebuilderinterface import ImageBuilderInterface
 from basebuilder import BaseBuilder
 
 
-class MockBuilder(BaseBuilder):
+class FedoraBuilder(BaseBuilder):
 	# TODO: sloranz@redhat.com - Flesh out this docstring more to document this module.
-	"""docstring for MockBuilder"""
+	"""docstring for FedoraBuilder"""
 	zope.interface.implements(ImageBuilderInterface)
 	
 # Initializer
 	def __init__(self, template=None, target=None, uuid=None, credentials=None):
-		super(MockBuilder, self).__init__()
+		super(FedoraBuilder, self).__init__()
 	
 # Image actions
 	def build(self):

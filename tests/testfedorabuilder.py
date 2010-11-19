@@ -16,24 +16,20 @@
 # MA  02110-1301, USA.  A copy of the GNU General Public License is
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
-import zope
-from imagebuilderinterface import ImageBuilderInterface
-from basebuilder import BaseBuilder
+import unittest
+from builder.imagebuilderinterface import ImageBuilderInterface
+from builder.fedorabuilder import FedoraBuilder
 
 
-class MockBuilder(BaseBuilder):
-	# TODO: sloranz@redhat.com - Flesh out this docstring more to document this module.
-	"""docstring for MockBuilder"""
-	zope.interface.implements(ImageBuilderInterface)
-	
-# Initializer
-	def __init__(self, template=None, target=None, uuid=None, credentials=None):
-		super(MockBuilder, self).__init__()
-	
-# Image actions
-	def build(self):
+class TestmFedoraBuilder(unittest.TestCase):
+	def setUp(self):
 		pass
 	
-	def abort(self):
+	def tearDown(self):
 		pass
 	
+	def testImplementsImageBuilderInterface(self):
+		self.assert_(ImageBuilderInterface.implementedBy(FedoraBuilder), 'FedoraBuilder does not implement the ImageBuilder interface.')
+    
+if __name__ == '__main__':
+	unittest.main()
