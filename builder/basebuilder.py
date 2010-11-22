@@ -19,7 +19,7 @@
 import zope
 from imagebuilderinterface import ImageBuilderInterface
 
-
+# TODO: sloranz@redhat.com - add build_states() analagous to instance_states() in core - http://deltacloud.org/framework.html
 class BaseBuilder(object):
 	"""docstring for BaseBuilder"""
 	zope.interface.implements(ImageBuilderInterface)
@@ -73,10 +73,29 @@ class BaseBuilder(object):
 	    doc = "The status property."
 	    def fget(self):
 	        return self._status
+		
 	    def fset(self, value):
-	        self._status = value
-	    def fdel(self):
-	        del self._status
+			if(self.delegate):
+				try: #check with the delegate if we should update the status
+					_shouldSet = getattr(self.delegate, "builder_should_update_status")(self, self._status, value)
+				except AttributeError, e: #if the delegate doesn't respond to this method, we'll just go ahead with it
+					_shouldSet = True
+				try: #give the delegate a chance to intervene on the status update
+					value = getattr(self.delegate, "builder_will_update_status")(self, self._status, value)
+				except AttributeError, e:
+					pass
+				if(_shouldSet):
+					_original_status = self._status
+					self._status = value
+					try: #tell the delegate that the update occurred
+						getattr(self.delegate, "builder_did_update_status")(self, _original_status, self._status)
+					except AttributeError, e:
+						pass
+			else:
+				self._status = value
+		
+	    # def fdel(self):
+	    #     del self._status
 	    return locals()
 	status = property(**status())
 	
@@ -102,10 +121,23 @@ class BaseBuilder(object):
 	    return locals()
 	image = property(**image())
 	
+	def delegate():
+	    doc = "The delegate property."
+	    def fget(self):
+	        return self._delegate
+	    def fset(self, value):
+	        self._delegate = value
+	    def fdel(self):
+	        del self._delegate
+	    return locals()
+	delegate = property(**delegate())
 	
+
 # Initializer
 	def __init__(self, template=None, target=None, image_id=None, credentials=None):
 		super(BaseBuilder, self).__init__()
+		self._status = "NOT_SET"
+		self.delegate = None
 		self.template = template
 		self.target = target
 		self.image_id = image_id

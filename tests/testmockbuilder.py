@@ -19,12 +19,17 @@
 import unittest
 from builder.imagebuilderinterface import ImageBuilderInterface
 from builder.mockbuilder import MockBuilder
-import uuid
+from builder.imagebuilderdelegate import ImageBuilderDelegate
+import zope
+# import uuid
 
 
-class TestmMockBuilder(unittest.TestCase):
+class TestMockBuilder(unittest.TestCase):
 	def setUp(self):
 		self.mock_builder = MockBuilder("IDL")
+		self.delegate = MockBuilderDelegate()
+		self.mock_builder.delegate = self.delegate
+		self.new_builder_status = "NEW_STATUS"
 	
 	def tearDown(self):
 		self.mock_builder = None
@@ -38,9 +43,47 @@ class TestmMockBuilder(unittest.TestCase):
 	
 	def testBuild(self):
 		# TODO: sloranz@redhat.com - test more here... make sure we're getting the file we think.
-		known_uuid = uuid.uuid4()
-		self.mock_builder.image_id = known_uuid
+		# known_uuid = uuid.uuid4()
+		# self.mock_builder.image_id = known_uuid
 		self.mock_builder.build()
+	
+	def testDelegateAssignment(self):
+		self.assertIs(self.mock_builder.delegate, self.delegate)
+	
+	def testShouldUpdateStatus(self):
+		self.mock_builder.status = "UPDATE_ME"
+		self.mock_builder.status = self.new_builder_status
+		self.assertEqual(self.new_builder_status, self.mock_builder.status)
+	
+	def testShouldNotUpdateStatus(self):
+		self.mock_builder.status = "NO_UPDATE"
+		self.mock_builder.status = self.new_builder_status
+		self.assertEqual("NO_UPDATE", self.mock_builder.status)
+	
+	def testModifyStatusUpdate(self):
+		self.mock_builder.status = "INSERT_CHANGE"
+		self.mock_builder.status = self.new_builder_status
+		self.assertEqual("MODIFIED_STATUS_UPDATE", self.mock_builder.status)
+	
+
+
+class MockBuilderDelegate(object):
+	zope.interface.implements(ImageBuilderDelegate)
+	
+	def builder_should_update_status(self, builder, original_status, new_status):
+		if(original_status == "NO_UPDATE"):
+			return False
+		else:
+			return True
+	
+	def builder_will_update_status(self, builder, original_status, new_status):
+		if(original_status == "INSERT_CHANGE"):
+			return "MODIFIED_STATUS_UPDATE"
+		else:
+			return new_status
+	
+	def builder_did_update_status(self, builder, original_status, new_status):
+		self.status = new_status
 	
 
 
