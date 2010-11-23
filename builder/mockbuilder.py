@@ -34,7 +34,7 @@ class MockBuilder(BaseBuilder):
 	
 # Image actions
 	def build(self):
-		image_path = "/tmp/image_factory-{!s}".format(str(self.image_id))
+		image_path = "/tmp/image_factory-{0!s}".format(self.image_id)
 		self.status = "INITIALIZING"
 		self.percent_complete = 0
 		
