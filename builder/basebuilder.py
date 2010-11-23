@@ -76,11 +76,11 @@ class BaseBuilder(object):
 		
 	    def fset(self, value):
 			if(self.delegate):
-				try: #check with the delegate if we should update the status
+				try: #check with the delegate if we should update
 					_shouldSet = getattr(self.delegate, "builder_should_update_status")(self, self._status, value)
 				except AttributeError, e: #if the delegate doesn't respond to this method, we'll just go ahead with it
 					_shouldSet = True
-				try: #give the delegate a chance to intervene on the status update
+				try: #give the delegate a chance to intervene on the update
 					value = getattr(self.delegate, "builder_will_update_status")(self, self._status, value)
 				except AttributeError, e:
 					pass
@@ -96,6 +96,7 @@ class BaseBuilder(object):
 		
 	    # def fdel(self):
 	    #     del self._status
+		
 	    return locals()
 	status = property(**status())
 	
@@ -103,10 +104,30 @@ class BaseBuilder(object):
 	    doc = "The percent_complete property."
 	    def fget(self):
 	        return self._percent_complete
+		
 	    def fset(self, value):
-	        self._percent_complete = value
-	    def fdel(self):
-	        del self._percent_complete
+			if(self.delegate):
+				try: #check with the delegate if we should update
+					_shouldSet = getattr(self.delegate, "builder_should_update_percentage")(self, self._percent_complete, value)
+				except AttributeError, e: #if the delegate doesn't respond to this method, we'll just go ahead with it
+					_shouldSet = True
+				try: #give the delegate a chance to intervene on the update
+					value = getattr(self.delegate, "builder_will_update_percentage")(self, self._percent_complete, value)
+				except AttributeError, e:
+					pass
+				if(_shouldSet):
+					_original_percentage = self._percent_complete
+					self._percent_complete = value
+					try: #tell the delegate that the update occurred
+						getattr(self.delegate, "builder_did_update_percentage")(self, _original_percentage, self._percent_complete)
+					except AttributeError, e:
+						pass
+			else:
+				self._percent_complete = value
+		
+	    # def fdel(self):
+	    #     del self._percent_complete
+		
 	    return locals()
 	percent_complete = property(**percent_complete())
 	
@@ -136,8 +157,9 @@ class BaseBuilder(object):
 # Initializer
 	def __init__(self, template=None, target=None, image_id=None, credentials=None):
 		super(BaseBuilder, self).__init__()
-		self._status = "NOT_SET"
 		self.delegate = None
+		self._status = None
+		self._percent_complete = None
 		self.template = template
 		self.target = target
 		self.image_id = image_id

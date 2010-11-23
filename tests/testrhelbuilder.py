@@ -21,7 +21,7 @@ from builder.imagebuilderinterface import ImageBuilderInterface
 from builder.rhelbuilder import RHELBuilder
 
 
-class TestmRHELBuilder(unittest.TestCase):
+class TestRHELBuilder(unittest.TestCase):
 	def setUp(self):
 		pass
 	

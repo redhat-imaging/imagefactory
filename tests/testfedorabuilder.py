@@ -21,7 +21,7 @@ from builder.imagebuilderinterface import ImageBuilderInterface
 from builder.fedorabuilder import FedoraBuilder
 
 
-class TestmFedoraBuilder(unittest.TestCase):
+class TestFedoraBuilder(unittest.TestCase):
 	def setUp(self):
 		pass
 	

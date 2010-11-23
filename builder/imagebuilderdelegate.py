@@ -35,3 +35,12 @@ class ImageBuilderDelegate(Interface):
 	def builder_should_update_status(self, builder, original_status, new_status):
 		"""Returns whether the builder should update the status from original_status to new_status."""
 	
+	def builder_will_update_percentage(self, builder, original_percentage, new_percentage):
+		"""The builder will update from original_percentage to new_percentage."""
+	
+	def builder_did_update_percentage(self, builder, original_percentage, new_percentage):
+		"""The builder updated from original_percentage to new_percentage."""
+	
+	def builder_should_update_percentage(self, builder, original_percentage, new_percentage):
+		"""Returns whether the builder should update from original_percentage to new_percentage."""
+	

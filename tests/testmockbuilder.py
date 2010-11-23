@@ -82,8 +82,8 @@ class MockBuilderDelegate(object):
 		else:
 			return new_status
 	
-	def builder_did_update_status(self, builder, original_status, new_status):
-		self.status = new_status
+	# def builder_did_update_status(self, builder, original_status, new_status):
+	# 	self.status = new_status
 	
 
 
