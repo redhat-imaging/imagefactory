@@ -41,6 +41,9 @@ class TestMockBuilder(unittest.TestCase):
 		self.assertEqual("IDL", self.mock_builder.template)
 		self.assert_(self.mock_builder.image_id, 'Initilizer failed to set \'image_id\'...')
 	
+	def testIsCallable(self):
+		self.assert_(callable(self))
+	
 	def testBuild(self):
 		# TODO: sloranz@redhat.com - test more here... make sure we're getting the file we think.
 		# known_uuid = uuid.uuid4()

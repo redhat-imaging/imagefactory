@@ -165,6 +165,10 @@ class BaseBuilder(object):
 		self.image_id = image_id
 		self.credentials = credentials
 	
+# Make instances callable for passing to thread objects
+	def __call__(self):
+		self.build()
+	
 # Image actions
 	def build(self):
 		pass
