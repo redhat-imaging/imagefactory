@@ -49,14 +49,14 @@ class MockBuilder(BaseBuilder):
 			image_file.write(':architecture: x86_64\n')
 			self.percent_complete = 20
 		
-		time.sleep(10)
+		time.sleep(2)
 		self.percent_complete = 50
-		time.sleep(10)
+		time.sleep(2)
 		self.percent_complete = 75
-		time.sleep(10)
+		time.sleep(2)
 		self.percent_complete = 95
 		self.status = "FINISHING"
-		time.sleep(5)
+		time.sleep(2)
 		self.percent_complete = 100
 		self.status = "COMPLETED"
 	

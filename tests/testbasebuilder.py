@@ -21,7 +21,7 @@ from builder.imagebuilderinterface import ImageBuilderInterface
 from builder.basebuilder import BaseBuilder
 
 
-class TestmBaseBuilder(unittest.TestCase):
+class TestBaseBuilder(unittest.TestCase):
 	def setUp(self):
 		pass
 	

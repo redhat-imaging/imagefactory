@@ -81,7 +81,7 @@ class BaseBuilder(object):
 				except AttributeError, e: #if the delegate doesn't respond to this method, we'll just go ahead with it
 					_shouldSet = True
 				try: #give the delegate a chance to intervene on the update
-					value = getattr(self.delegate, "builder_will_update_status")(self, self._status, value)
+					if _shouldSet : value = getattr(self.delegate, "builder_will_update_status")(self, self._status, value)
 				except AttributeError, e:
 					pass
 				if(_shouldSet):
@@ -112,7 +112,7 @@ class BaseBuilder(object):
 				except AttributeError, e: #if the delegate doesn't respond to this method, we'll just go ahead with it
 					_shouldSet = True
 				try: #give the delegate a chance to intervene on the update
-					value = getattr(self.delegate, "builder_will_update_percentage")(self, self._percent_complete, value)
+					if _shouldSet : value = getattr(self.delegate, "builder_will_update_percentage")(self, self._percent_complete, value)
 				except AttributeError, e:
 					pass
 				if(_shouldSet):

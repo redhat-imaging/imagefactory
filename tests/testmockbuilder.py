@@ -28,7 +28,7 @@ class TestMockBuilder(unittest.TestCase):
 	def setUp(self):
 		self.mock_builder = MockBuilder("IDL")
 		self.delegate = MockBuilderDelegate()
-		self.mock_builder.delegate = self.delegate
+		# self.mock_builder.delegate = self.delegate
 		self.new_builder_status = "NEW_STATUS"
 	
 	def tearDown(self):
@@ -48,22 +48,50 @@ class TestMockBuilder(unittest.TestCase):
 		self.mock_builder.build()
 	
 	def testDelegateAssignment(self):
+		self.mock_builder.delegate = self.delegate
 		self.assertIs(self.mock_builder.delegate, self.delegate)
 	
 	def testShouldUpdateStatus(self):
 		self.mock_builder.status = "UPDATE_ME"
+		self.mock_builder.delegate = self.delegate
 		self.mock_builder.status = self.new_builder_status
 		self.assertEqual(self.new_builder_status, self.mock_builder.status)
+		self.mock_builder.delegate = None
 	
 	def testShouldNotUpdateStatus(self):
 		self.mock_builder.status = "NO_UPDATE"
+		self.mock_builder.delegate = self.delegate
 		self.mock_builder.status = self.new_builder_status
 		self.assertEqual("NO_UPDATE", self.mock_builder.status)
+		self.mock_builder.delegate = None
 	
 	def testModifyStatusUpdate(self):
 		self.mock_builder.status = "INSERT_CHANGE"
+		self.mock_builder.delegate = self.delegate
 		self.mock_builder.status = self.new_builder_status
 		self.assertEqual("MODIFIED_STATUS_UPDATE", self.mock_builder.status)
+		self.mock_builder.delegate = None
+	
+	def testModifyPercentageUpdate(self):
+		self.mock_builder.percent_complete = None
+		self.mock_builder.delegate = self.delegate
+		self.mock_builder.percent_complete = 50
+		self.assertEqual(0, self.mock_builder.percent_complete)
+		self.mock_builder.delegate = None
+	
+	def testShouldUpdatePercentage(self):
+		self.mock_builder.percent_complete = 50
+		self.mock_builder.delegate = self.delegate
+		self.mock_builder.percent_complete = 95
+		self.assertEqual(95, self.mock_builder.percent_complete)
+		self.mock_builder.delegate = None
+	
+	def testShouldNotUpdatePercentage(self):
+		self.mock_builder.percent_complete = 100
+		self.mock_builder.delegate = self.delegate
+		self.mock_builder.percent_complete = 52
+		self.assertEqual(100, self.mock_builder.percent_complete)
+		self.mock_builder.delegate = None
 	
 
 
@@ -82,8 +110,18 @@ class MockBuilderDelegate(object):
 		else:
 			return new_status
 	
-	# def builder_did_update_status(self, builder, original_status, new_status):
-	# 	self.status = new_status
+	def builder_will_update_percentage(self, builder, original_percentage, new_percentage):
+		if(original_percentage >= 0):
+			return new_percentage
+		else:
+			return 0
+	
+	def builder_should_update_percentage(self, builder, original_percentage, new_percentage):
+		if(original_percentage == 100):
+			return False
+		else:
+			return True
+	
 	
 
 
