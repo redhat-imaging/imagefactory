@@ -159,7 +159,7 @@ class BaseBuilder(object):
 		super(BaseBuilder, self).__init__()
 		self.delegate = None
 		self._status = None
-		self._percent_complete = None
+		self._percent_complete = 0
 		self.template = template
 		self.target = target
 		self.image_id = image_id
