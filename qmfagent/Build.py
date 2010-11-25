@@ -24,8 +24,7 @@
 
 import qmf
 from threading import Thread, Lock
-from basebuilder import *
-from mockbuilder import *
+from builder.mockbuilder import MockBuilder
 
 class BuildAdaptor(object):
 
