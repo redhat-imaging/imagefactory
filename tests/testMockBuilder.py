@@ -17,9 +17,9 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import unittest
-from builder.imagebuilderinterface import ImageBuilderInterface
-from builder.mockbuilder import MockBuilder
-from builder.imagebuilderdelegate import ImageBuilderDelegate
+from builder.ImageBuilderDelegate import ImageBuilderDelegate
+from builder.ImageBuilderInterface import ImageBuilderInterface
+from builder.MockBuilder import MockBuilder
 import zope
 # import uuid
 

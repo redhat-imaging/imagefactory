@@ -16,4 +16,24 @@
 # MA  02110-1301, USA.  A copy of the GNU General Public License is
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
-__all__ = ["ImageBuilderInterface", "ImageBuilderDelegate", "MockBuilder", "RHELBuilder", "FedoraBuilder"]
+import zope
+from ImageBuilderInterface import ImageBuilderInterface
+from BaseBuilder import BaseBuilder
+
+
+class FedoraBuilder(BaseBuilder):
+	# TODO: sloranz@redhat.com - Flesh out this docstring more to document this module.
+	"""docstring for FedoraBuilder"""
+	zope.interface.implements(ImageBuilderInterface)
+	
+# Initializer
+	def __init__(self, template=None, target=None, uuid=None, credentials=None):
+		super(FedoraBuilder, self).__init__(template, target, image_id, credentials)
+	
+# Image actions
+	def build(self):
+		pass
+	
+	def abort(self):
+		pass
+	

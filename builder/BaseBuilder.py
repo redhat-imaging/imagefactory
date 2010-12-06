@@ -17,7 +17,7 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import zope
-from imagebuilderinterface import ImageBuilderInterface
+from ImageBuilderInterface import ImageBuilderInterface
 
 # TODO: sloranz@redhat.com - add build_states() analagous to instance_states() in core - http://deltacloud.org/framework.html
 class BaseBuilder(object):

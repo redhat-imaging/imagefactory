@@ -16,24 +16,20 @@
 # MA  02110-1301, USA.  A copy of the GNU General Public License is
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
-import zope
-from imagebuilderinterface import ImageBuilderInterface
-from basebuilder import BaseBuilder
+import unittest
+from builder.ImageBuilderInterface import ImageBuilderInterface
+from builder.RHELBuilder import RHELBuilder
 
 
-class RHELBuilder(BaseBuilder):
-	# TODO: sloranz@redhat.com - Flesh out this docstring more to document this module.
-	"""docstring for RHELBuilder"""
-	zope.interface.implements(ImageBuilderInterface)
-	
-# Initializer
-	def __init__(self, template=None, target=None, uuid=None, credentials=None):
-		super(RHELBuilder, self).__init__(template, target, image_id, credentials)
-	
-# Image actions
-	def build(self):
+class TestRHELBuilder(unittest.TestCase):
+	def setUp(self):
 		pass
 	
-	def abort(self):
+	def tearDown(self):
 		pass
 	
+	def testImplementsImageBuilderInterface(self):
+		self.assert_(ImageBuilderInterface.implementedBy(RHELBuilder), 'RHELBuilder does not implement the ImageBuilder interface.')
+    
+if __name__ == '__main__':
+	unittest.main()

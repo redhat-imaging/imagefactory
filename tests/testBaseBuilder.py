@@ -17,11 +17,11 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import unittest
-from builder.imagebuilderinterface import ImageBuilderInterface
-from builder.rhelbuilder import RHELBuilder
+from builder.ImageBuilderInterface import ImageBuilderInterface
+from builder.BaseBuilder import BaseBuilder
 
 
-class TestRHELBuilder(unittest.TestCase):
+class TestBaseBuilder(unittest.TestCase):
 	def setUp(self):
 		pass
 	
@@ -29,7 +29,7 @@ class TestRHELBuilder(unittest.TestCase):
 		pass
 	
 	def testImplementsImageBuilderInterface(self):
-		self.assert_(ImageBuilderInterface.implementedBy(RHELBuilder), 'RHELBuilder does not implement the ImageBuilder interface.')
+		self.assert_(ImageBuilderInterface.implementedBy(BaseBuilder), 'BaseBuilder does not implement the ImageBuilder interface.')
     
 if __name__ == '__main__':
 	unittest.main()

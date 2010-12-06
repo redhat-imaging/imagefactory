@@ -17,8 +17,8 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import zope
-from imagebuilderinterface import ImageBuilderInterface
-from basebuilder import BaseBuilder
+from ImageBuilderInterface import ImageBuilderInterface
+from BaseBuilder import BaseBuilder
 import uuid
 import time
 
