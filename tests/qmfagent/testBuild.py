@@ -39,10 +39,10 @@ class testBuild(unittest.TestCase):
 		"""
 		# dom_tdl = minidom.parseString(tdl_string)
 	
-	def testInstantiateBuilder(self):
-		build_adaptor = BuildAdaptor(self.tdl_string, None, None, None)
-		self.assert_(build_adaptor._builder.__class__ == FedoraBuilder.FedoraBuilder)
-
+	# def testInstantiateBuilder(self):
+	# 	build_adaptor = BuildAdaptor(self.tdl_string, None, None, None)
+	# 	self.assert_(build_adaptor._builder.__class__ == FedoraBuilder.FedoraBuilder)
+	# 
     
 if __name__ == '__main__':
 	unittest.main()

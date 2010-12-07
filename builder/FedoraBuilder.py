@@ -19,6 +19,8 @@
 import zope
 from ImageBuilderInterface import ImageBuilderInterface
 from BaseBuilder import BaseBuilder
+import oz.Fedora
+import oz.TDL
 
 
 class FedoraBuilder(BaseBuilder):
@@ -27,12 +29,30 @@ class FedoraBuilder(BaseBuilder):
 	zope.interface.implements(ImageBuilderInterface)
 	
 # Initializer
-	def __init__(self, template=None, target=None, uuid=None, credentials=None):
+	def __init__(self, template, target, uuid=None, credentials=None):
 		super(FedoraBuilder, self).__init__(template, target, image_id, credentials)
+		self._tdl = oz.TDL(tdl_doc=template)
+		self.guest = oz.Fedora.get_class(tdl, None)
 	
 # Image actions
 	def build(self):
-		pass
+		self.guest.cleanup_old_guest()
+		self.guest.generate_install_media(force_download)
+		try:
+		    self.guest.generate_diskimage()
+		    try:
+		        libvirt_xml = self.guest.install()
+		        # if customize:
+		        #     guest.customize(libvirt_xml)
+		        # if generate_cdl:
+		        #     print guest.generate_cdl(libvirt_xml)
+		        # else:
+		        #     print libvirt_xml
+		    except:
+		        self.guest.cleanup_old_guest()
+		        raise
+		finally:
+		    self.guest.cleanup_install()
 	
 	def abort(self):
 		pass
