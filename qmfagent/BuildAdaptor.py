@@ -17,8 +17,7 @@
 
 import cqpid
 from qmf2 import *
-# TODO: switch to libxml2 which has easier path traversal - sloranz@redhat.com
-from xml.dom import minidom
+import libxml2
 from builder import *
 import logging
 
@@ -108,18 +107,53 @@ class BuildAdaptor(object):
         
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         
-        self._descriptor = descriptor
-        self._target = target
-        self._status = "created"
-        self._percent_complete = 0
-        self._finished_image = ""
-        self._image_uuid = image_uuid
-        self._sec_credentials = sec_credentials
-        self._builder = None
+        self.descriptor = descriptor
+        self.target = target
+        self.status = "created"
+        self.percent_complete = 0
+        self.finished_image = ""
+        self.image_uuid = image_uuid
+        self.sec_credentials = sec_credentials
+        self.builder = None
         
-        self.qmf_object = Data(BuildAdaptor.qmf_schema)
+        if (qmf_agent):
+            self.qmf_object = Data(BuildAdaptor.qmf_schema)
+            self.qmf_object.descriptor = self.descriptor
+            self.qmf_object.target = self.target
+            self.qmf_object.status = self.status
+            self.qmf_object.percent_complete = self.percent_complete
+            self.qmf_object.finished_image = self.finished_image
+            # TODO: make sure the agent handler has a session property - sloranz@redhat.com
+            self.qmf_object_addr = qmf_agent.session.addData(self.qmf_object, "build")
+        
+        builder_class = None
+        if self.target == "mock": # If target is mock always run mock builder regardless of descriptor
+            builder_class = MockBuilder.MockBuilder
+        else: # otherwise, use the node value found in <os><name>ExampleOS</name></os> of the tdl
+            parsed_doc = libxml2.parseDoc(descriptor)
+            os_name_node = parsed_doc.xpathEval('/template/os/name')
+            os_name = os_name_node[0].getContent()
+			class_name = os_name + "Builder"
+			try:
+				builder_class = getattr(os_name, os_name)
+			except Exception, e:
+				self.log.exception("Could not find builder class for %s, returning MockBuilder...", os_name)
+				builder_class = MockBuilder.MockBuilder
+		
+        self.builder = self._builder_class(descriptor, target, image_uuid, sec_credentials)
+        # Register as a delegate to the builder
+        self.builder.delegate = self
+        
+        # Create instance lock to protect during status updates
+        self._builder_thread_lock = Lock()
+        # Run build() in a new thread
+        self._builder_thread = Thread(target = self.builder)
+        self._builder_thread.start()
+        
+        # Add to list of instances
+        BuildAdaptor.instances.append(self)
     
-    
+    # Builder delegat methods
     def builder_did_update_status(self, builder, old_status, new_status):
         # Currently the lone delegate function
         # This indicates that the underlying builder has had a status change
