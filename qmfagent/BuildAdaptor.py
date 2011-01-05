@@ -25,7 +25,7 @@ class BuildAdaptor(object):
     instances = []
     
     # QMF schema for BuildAdaptor
-    qmf_schema = Schema(SCHEMA_TYPE_DATA, "com.redhat.imagefactory", "Build")
+    qmf_schema = Schema(SCHEMA_TYPE_DATA, "com.redhat.imagefactory", "BuildAdaptor")
     qmf_schema.addProperty(SchemaProperty("descriptor", SCHEMA_DATA_STRING))
     qmf_schema.addProperty(SchemaProperty("target", SCHEMA_DATA_STRING))
     qmf_schema.addProperty(SchemaProperty("status", SCHEMA_DATA_STRING))
@@ -125,7 +125,7 @@ class BuildAdaptor(object):
 			try:
 				builder_class = getattr(os_name, os_name)
 			except Exception, e:
-				self.log.exception("Could not find builder class for %s, returning MockBuilder...", os_name)
+				self.log.exception("CAUGHT EXCEPTION: %s \n Could not find builder class for %s, returning MockBuilder!", e.message, os_name)
 				builder_class = MockBuilder.MockBuilder
 		
         self.builder = self._builder_class(descriptor, target, image_uuid, sec_credentials)

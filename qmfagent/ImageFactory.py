@@ -34,6 +34,19 @@ class ImageFactory(object):
 	_method.addArgument(SchemaProperty("sec_credentials", SCHEMA_DATA_STRING, direction=DIR_IN))
 	_method.addArgument(SchemaProperty("build", SCHEMA_DATA_MAP, direction=DIR_OUT))
 	qmf_schema.addMethod(_method)
+    
+    ## Properties
+	def qmf_object():
+	    doc = "The qmf_object property."
+	    def fget(self):
+	        return self._qmf_object
+	    def fset(self, value):
+	        self._qmf_object = value
+	    def fdel(self):
+	        del self._qmf_object
+	    return locals()
+	qmf_object = property(**qmf_object())
+	
 	
 	def __new__(cls):
 		if cls.instance is None:
@@ -42,9 +55,6 @@ class ImageFactory(object):
     
 	def __init__(self):
 		self.qmf_object = Data(ImageFactory.qmf_schema)
-		# Move this to ImageFactoryAgent?
-        # _oid = self.qmf_agent.alloc_object_id()
-        # self.qmf_object.set_object_id(_oid)
 	
 	def build_image(self,descriptor,target,image_uuid,sec_credentials):
 		return BuildAdaptor(descriptor,target,image_uuid,sec_credentials)

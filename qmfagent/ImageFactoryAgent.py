@@ -15,18 +15,24 @@
 # MA  02110-1301, USA.  A copy of the GNU General Public License is
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
+import logging
 import cqpid
 from qmf2 import *
 import ImageFactory
 import BuildAdaptor
 
 class ImageFactoryAgent(AgentHandler):
-    
-    # Declare a schema for a structured exception that can be used in failed method invocations.
-    qmf_exception_schema = Schema(SCHEMA_TYPE_DATA, "com.redhat.imagefactory", "exception")
-    qmf_exception_schema.addProperty(SchemaProperty("exception", SCHEMA_DATA_STRING))
-    qmf_exception_schema.addProperty(SchemaProperty("severity", SCHEMA_DATA_INT))
-    qmf_exception_schema.addProperty(SchemaProperty("details", SCHEMA_DATA_MAP))
+    ## Properties
+    def qmf_object():
+        doc = "The qmf_object property."
+        def fget(self):
+            return self._qmf_object
+        def fset(self, value):
+            self._qmf_object = value
+        def fdel(self):
+            del self._qmf_object
+        return locals()
+    qmf_object = property(**qmf_object())
     
     def managedObjects():
         doc = "The managedObjects property."
@@ -39,7 +45,10 @@ class ImageFactoryAgent(AgentHandler):
         return locals()
     managedObjects = property(**managedObjects())
     
+    
     def __init__(self, url):
+        self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        self.image_factory = ImageFactory.ImageFactory()
         self._managedObjects = {}
         self.session = None
         # Create and open a messaging connection to a broker.
@@ -54,9 +63,31 @@ class ImageFactoryAgent(AgentHandler):
         # Initialize the parent class with the session.
         AgentHandler.__init__(self, self.session)
         # Register our schemata with the agent session.
-        self.session.registerSchema(ImageFactoryAgent.qmf_exception_schema)
         self.session.registerSchema(ImageFactory.qmf_schema)
         self.session.registerSchema(BuildAdaptor.qmf_schema)
+        # Now add the image factory object
+        self.image_factory_addr = self.session.addData(self.image_factory.qmf_object, "image_factory")
+    
+    ## AgentHandler override
+    def method(self, handle, methodName, args, subtypes, addr, userId):
+        """
+        Handle incoming method calls.
+        """
+        self.log.info("METHOD CALL: name = %s \n args = %s \n handle = %s \n addr = %s \n subtypes = %s \n userId = %s", methodName, args, handle, addr, subtypes, userId)
+        if (methodName == "build_image"):
+            try:
+                build_adaptor = self.image_factory.build_image(args["descriptor"],args["target"],args["image_uuid"],args["sec_credentials"])
+                qmf_object_addr = self.session.addData(build_adaptor.qmf_object, "build_adaptor")
+                self.managedObjects[qmf_object_addr] = build_adaptor
+                handle.addReturnArguments("build", qmf_object_addr)
+                self.agent.methodSuccess(handle)
+            except Exception, e:
+                self.log.exception(e.message)
+                self.agent.raiseException(handle, e.message)
+        else:
+            errorMsg = "Method (%s) not implemented!!!" % (methodName, )
+            self.log.warning(errorMsg)
+            self.agent.raiseException(handle, errorMsg)
     
     def shutdown(self):
         """
@@ -66,17 +97,8 @@ class ImageFactoryAgent(AgentHandler):
             self.session.close()
         self.connection.close()
     
-    def method(self, handle, methodName, args, subtypes, addr, userId):
-        """
-        Handle incoming method calls.
-        """
-        if (methodName == "build_image"):
-            #build_adaptor = 
-            # when you have your build_adaptor, get the addr with this and use it as the key in the
-            # managedObjects dictionary
-            qmf_object_addr = self.session.addData(build_adaptor.qmf_object, "build")
-            pass
     
+
 
 # if __name__ == '__main__':
 #     unittest.main()
