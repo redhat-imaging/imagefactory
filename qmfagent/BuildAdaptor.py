@@ -24,17 +24,8 @@ import logging
 class BuildAdaptor(object):
     instances = []
     
-    package_name = "com.redhat.imagefactory"
-    
-    # TODO: Move the exception schema to the agent - sloranz@redhat.com
-    # Declare a schema for a structured exception that can be used in failed method invocations.
-    qmf_exception_schema = Schema(SCHEMA_TYPE_DATA, package_name, "exception")
-    qmf_exception_schema.addProperty(SchemaProperty("exception", SCHEMA_DATA_STRING))
-    qmf_exception_schema.addProperty(SchemaProperty("severity", SCHEMA_DATA_INT))
-    qmf_exception_schema.addProperty(SchemaProperty("details", SCHEMA_DATA_MAP))
-    
     # QMF schema for BuildAdaptor
-    qmf_schema = Schema(SCHEMA_TYPE_DATA, package_name, "Build")
+    qmf_schema = Schema(SCHEMA_TYPE_DATA, "com.redhat.imagefactory", "Build")
     qmf_schema.addProperty(SchemaProperty("descriptor", SCHEMA_DATA_STRING))
     qmf_schema.addProperty(SchemaProperty("target", SCHEMA_DATA_STRING))
     qmf_schema.addProperty(SchemaProperty("status", SCHEMA_DATA_STRING))
@@ -123,7 +114,7 @@ class BuildAdaptor(object):
             self.qmf_object.status = self.status
             self.qmf_object.percent_complete = self.percent_complete
             self.qmf_object.finished_image = self.finished_image
-            # TODO: make sure the agent handler has a session property - sloranz@redhat.com
+            # TODO: sloranz@redhat.com - make sure the agent handler has a session property
             self.qmf_object_addr = qmf_agent.session.addData(self.qmf_object, "build")
         
         builder_class = None

@@ -16,35 +16,35 @@
 # MA  02110-1301, USA.  A copy of the GNU General Public License is
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
-import qmf
-import Build
+import cqpid
+from qmf2 import *
+from BuildAdaptor import BuildAdaptor
 
 # Singleton representing the Factory itself
 
-class ImageFactory():
-	_instance = None
+class ImageFactory(object):
+	instance = None
     
-    # ******* ImageFactory
-	qmf_schema = qmf.SchemaObjectClass("com.redhat.imagefactory", "ImageFactory")
-	_method = qmf.SchemaMethod("build_image", {"desc":"Build a new image"})
-	_method.add_argument(qmf.SchemaArgument("descriptor", qmf.TYPE_LSTR, {"dir":qmf.DIR_IN}))
-	_method.add_argument(qmf.SchemaArgument("target", qmf.TYPE_SSTR, {"dir":qmf.DIR_IN}))
-	_method.add_argument(qmf.SchemaArgument("image_uuid", qmf.TYPE_SSTR, {"dir":qmf.DIR_IN}))
-	_method.add_argument(qmf.SchemaArgument("sec_credentials", qmf.TYPE_LSTR, {"dir":qmf.DIR_IN}))
-	_method.add_argument(qmf.SchemaArgument("build", qmf.TYPE_REF, {"dir":qmf.DIR_OUT}))
-	qmf_schema.add_method(_method)
-	qmf_agent = None
+    # QMF schema for ImageFactory
+    qmf_schema = Schema(SCHEMA_TYPE_DATA, "com.redhat.imagefactory", "ImageFactory")
+	_method = SchemaMethod("build_image", {"desc":"Build a new image"})
+	_method.addArgument(SchemaProperty("descriptor", SCHEMA_DATA_STRING, direction=DIR_IN))
+	_method.addArgument(SchemaProperty("target", SCHEMA_DATA_STRING, direction=DIR_IN))
+	_method.addArgument(SchemaProperty("image_uuid", SCHEMA_DATA_STRING, direction=DIR_IN))
+	_method.addArgument(SchemaProperty("sec_credentials", SCHEMA_DATA_STRING, direction=DIR_IN))
+	_method.addArgument(SchemaProperty("build", SCHEMA_DATA_MAP, direction=DIR_OUT))
+	qmf_schema.addMethod(_method)
 	
 	def __new__(cls):
-		if cls._instance is None:
-			cls._instance = cls.__new__(cls)
-		return cls._instance
-	
-	def __init__(self):
-		self.qmf_object = qmf.AgentObject(self.qmf_schema)
+		if cls.instance is None:
+			cls.instance = cls.__new__(cls)
+		return cls.instance
+    
+	def __init__(self): # TODO: sloranz@redhat.com - make sure this is compatible with qmfv2 api
+		self.qmf_object = Data(ImageFactory.qmf_schema)
 		_oid = self.qmf_agent.alloc_object_id()
 		self.qmf_object.set_object_id(_oid)
 	
-	def build_image(self,descriptor,target,image_uuid,sec_credentials):
-		return Build.BuildAdaptor(descriptor,target,image_uuid,sec_credentials)
+	def build_image(self,descriptor,target,image_uuid,sec_credentials,qmf_agent):
+		return BuildAdaptor(descriptor,target,image_uuid,sec_credentials,qmf_agent)
 	
