@@ -55,6 +55,7 @@ class ImageFactoryAgent(AgentHandler):
         AgentHandler.__init__(self, self.session)
         # Register our schemata with the agent session.
         self.session.registerSchema(ImageFactoryAgent.qmf_exception_schema)
+        self.session.registerSchema(ImageFactory.qmf_schema)
         self.session.registerSchema(BuildAdaptor.qmf_schema)
     
     def shutdown(self):
@@ -71,6 +72,9 @@ class ImageFactoryAgent(AgentHandler):
         """
         if (methodName == "build_image"):
             #build_adaptor = 
+            # when you have your build_adaptor, get the addr with this and use it as the key in the
+            # managedObjects dictionary
+            qmf_object_addr = self.session.addData(build_adaptor.qmf_object, "build")
             pass
     
 

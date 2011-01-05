@@ -40,11 +40,12 @@ class ImageFactory(object):
 			cls.instance = cls.__new__(cls)
 		return cls.instance
     
-	def __init__(self): # TODO: sloranz@redhat.com - make sure this is compatible with qmfv2 api
+	def __init__(self):
 		self.qmf_object = Data(ImageFactory.qmf_schema)
-		_oid = self.qmf_agent.alloc_object_id()
-		self.qmf_object.set_object_id(_oid)
+		# Move this to ImageFactoryAgent?
+        # _oid = self.qmf_agent.alloc_object_id()
+        # self.qmf_object.set_object_id(_oid)
 	
-	def build_image(self,descriptor,target,image_uuid,sec_credentials,qmf_agent):
-		return BuildAdaptor(descriptor,target,image_uuid,sec_credentials,qmf_agent)
+	def build_image(self,descriptor,target,image_uuid,sec_credentials):
+		return BuildAdaptor(descriptor,target,image_uuid,sec_credentials)
 	

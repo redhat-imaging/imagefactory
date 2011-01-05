@@ -93,7 +93,7 @@ class BuildAdaptor(object):
     finished_image = property(**finished_image())
     
     
-    def __init__(self, descriptor, target, image_uuid, sec_credentials, qmf_agent=None):
+    def __init__(self, descriptor, target, image_uuid, sec_credentials):
         super(BuildAdaptor, self).__init__()
         
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
@@ -107,15 +107,12 @@ class BuildAdaptor(object):
         self.sec_credentials = sec_credentials
         self.builder = None
         
-        if (qmf_agent):
-            self.qmf_object = Data(BuildAdaptor.qmf_schema)
-            self.qmf_object.descriptor = self.descriptor
-            self.qmf_object.target = self.target
-            self.qmf_object.status = self.status
-            self.qmf_object.percent_complete = self.percent_complete
-            self.qmf_object.finished_image = self.finished_image
-            # TODO: sloranz@redhat.com - make sure the agent handler has a session property
-            self.qmf_object_addr = qmf_agent.session.addData(self.qmf_object, "build")
+        self.qmf_object = Data(BuildAdaptor.qmf_schema)
+        self.qmf_object.descriptor = self.descriptor
+        self.qmf_object.target = self.target
+        self.qmf_object.status = self.status
+        self.qmf_object.percent_complete = self.percent_complete
+        self.qmf_object.finished_image = self.finished_image
         
         builder_class = None
         if self.target == "mock": # If target is mock always run mock builder regardless of descriptor
