@@ -22,7 +22,6 @@ from builder import *
 import logging
 
 class BuildAdaptor(object):
-    instances = []
     
     # QMF schema for BuildAdaptor
     qmf_schema = Schema(SCHEMA_TYPE_DATA, "com.redhat.imagefactory", "BuildAdaptor")
@@ -137,9 +136,6 @@ class BuildAdaptor(object):
         # Run build() in a new thread
         self._builder_thread = Thread(target = self.builder)
         self._builder_thread.start()
-        
-        # Add to list of instances
-        BuildAdaptor.instances.append(self)
     
     # Builder delegat methods
     def builder_did_update_status(self, builder, old_status, new_status):
