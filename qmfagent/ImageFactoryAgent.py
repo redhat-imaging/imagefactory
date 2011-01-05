@@ -67,6 +67,7 @@ class ImageFactoryAgent(AgentHandler):
         self.session.registerSchema(BuildAdaptor.qmf_schema)
         # Now add the image factory object
         self.image_factory_addr = self.session.addData(self.image_factory.qmf_object, "image_factory")
+        self.log.info("image_factory has qmf/qpid address: %s", self.image_factory_addr)
     
     ## AgentHandler override
     def method(self, handle, methodName, args, subtypes, addr, userId):
@@ -82,7 +83,7 @@ class ImageFactoryAgent(AgentHandler):
                 handle.addReturnArguments("build", qmf_object_addr)
                 self.agent.methodSuccess(handle)
             except Exception, e:
-                self.log.exception(e.message)
+                self.log.exception(e)
                 self.agent.raiseException(handle, e.message)
         else:
             errorMsg = "Method (%s) not implemented!!!" % (methodName, )

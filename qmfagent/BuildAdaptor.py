@@ -125,7 +125,7 @@ class BuildAdaptor(object):
 			try:
 				builder_class = getattr(os_name, os_name)
 			except Exception, e:
-				self.log.exception("CAUGHT EXCEPTION: %s \n Could not find builder class for %s, returning MockBuilder!", e.message, os_name)
+				self.log.exception("CAUGHT EXCEPTION: %s \n Could not find builder class for %s, returning MockBuilder!", e, os_name)
 				builder_class = MockBuilder.MockBuilder
 		
         self.builder = self._builder_class(descriptor, target, image_uuid, sec_credentials)
