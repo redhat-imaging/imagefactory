@@ -120,14 +120,14 @@ class BuildAdaptor(object):
             parsed_doc = libxml2.parseDoc(descriptor)
             os_name_node = parsed_doc.xpathEval('/template/os/name')
             os_name = os_name_node[0].getContent()
-			class_name = os_name + "Builder"
-			try:
-				builder_class = getattr(os_name, os_name)
-			except Exception, e:
-				self.log.exception("CAUGHT EXCEPTION: %s \n Could not find builder class for %s, returning MockBuilder!", e, os_name)
-				builder_class = MockBuilder.MockBuilder
+            class_name = os_name + "Builder"
+            try:
+                builder_class = getattr(os_name, os_name)
+            except Exception, e:
+                self.log.exception("CAUGHT EXCEPTION: %s \n Could not find builder class for %s, returning MockBuilder!", e, os_name)
+                builder_class = MockBuilder.MockBuilder
 		
-        self.builder = self._builder_class(descriptor, target, image_uuid, sec_credentials)
+        self.builder = builder_class(descriptor, target, image_uuid, sec_credentials)
         # Register as a delegate to the builder
         self.builder.delegate = self
         

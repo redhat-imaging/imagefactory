@@ -18,8 +18,8 @@
 import logging
 import cqpid
 from qmf2 import *
-import ImageFactory
-import BuildAdaptor
+from ImageFactory import *
+from BuildAdaptor import *
 
 class ImageFactoryAgent(AgentHandler):
     ## Properties
@@ -48,7 +48,6 @@ class ImageFactoryAgent(AgentHandler):
     
     def __init__(self, url):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        self.image_factory = ImageFactory.ImageFactory()
         self._managedObjects = {}
         self.session = None
         # Create and open a messaging connection to a broker.
@@ -56,9 +55,9 @@ class ImageFactoryAgent(AgentHandler):
         self.connection.open()
         # Create, configure, and open a QMFv2 agent session using the connection.
         self.session = AgentSession(self.connection)
-        self.session.setDomain("com.redhat.imagefactory")
-        self.session.setVendor("Red Hat, Inc.")
-        self.session.setProduct("Image Factory")
+        # self.session.setDomain("com.redhat.imagefactory")
+        # self.session.setVendor("RedHat")
+        # self.session.setProduct("ImageFactory")
         self.session.open()
         # Initialize the parent class with the session.
         AgentHandler.__init__(self, self.session)
@@ -66,6 +65,7 @@ class ImageFactoryAgent(AgentHandler):
         self.session.registerSchema(ImageFactory.qmf_schema)
         self.session.registerSchema(BuildAdaptor.qmf_schema)
         # Now add the image factory object
+        self.image_factory = ImageFactory()
         self.image_factory_addr = self.session.addData(self.image_factory.qmf_object, "image_factory")
         self.log.info("image_factory has qmf/qpid address: %s", self.image_factory_addr)
     

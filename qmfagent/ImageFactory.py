@@ -23,39 +23,39 @@ from BuildAdaptor import BuildAdaptor
 # Singleton representing the Factory itself
 
 class ImageFactory(object):
-	instance = None
+    instance = None
     
     # QMF schema for ImageFactory
     qmf_schema = Schema(SCHEMA_TYPE_DATA, "com.redhat.imagefactory", "ImageFactory")
-	_method = SchemaMethod("build_image", {"desc":"Build a new image"})
-	_method.addArgument(SchemaProperty("descriptor", SCHEMA_DATA_STRING, direction=DIR_IN))
-	_method.addArgument(SchemaProperty("target", SCHEMA_DATA_STRING, direction=DIR_IN))
-	_method.addArgument(SchemaProperty("image_uuid", SCHEMA_DATA_STRING, direction=DIR_IN))
-	_method.addArgument(SchemaProperty("sec_credentials", SCHEMA_DATA_STRING, direction=DIR_IN))
-	_method.addArgument(SchemaProperty("build", SCHEMA_DATA_MAP, direction=DIR_OUT))
-	qmf_schema.addMethod(_method)
+    _method = SchemaMethod("build_image", desc="Build a new image")
+    _method.addArgument(SchemaProperty("descriptor", SCHEMA_DATA_STRING, direction=DIR_IN))
+    _method.addArgument(SchemaProperty("target", SCHEMA_DATA_STRING, direction=DIR_IN))
+    _method.addArgument(SchemaProperty("image_uuid", SCHEMA_DATA_STRING, direction=DIR_IN))
+    _method.addArgument(SchemaProperty("sec_credentials", SCHEMA_DATA_STRING, direction=DIR_IN))
+    _method.addArgument(SchemaProperty("build", SCHEMA_DATA_MAP, direction=DIR_OUT))
+    qmf_schema.addMethod(_method)
     
     ## Properties
-	def qmf_object():
-	    doc = "The qmf_object property."
-	    def fget(self):
-	        return self._qmf_object
-	    def fset(self, value):
-	        self._qmf_object = value
-	    def fdel(self):
-	        del self._qmf_object
-	    return locals()
-	qmf_object = property(**qmf_object())
-	
-	
-	def __new__(cls):
-		if cls.instance is None:
-			cls.instance = cls.__new__(cls)
-		return cls.instance
+    def qmf_object():
+        doc = "The qmf_object property."
+        def fget(self):
+            return self._qmf_object
+        def fset(self, value):
+            self._qmf_object = value
+        def fdel(self):
+            del self._qmf_object
+        return locals()
+    qmf_object = property(**qmf_object())
     
-	def __init__(self):
-		self.qmf_object = Data(ImageFactory.qmf_schema)
-	
-	def build_image(self,descriptor,target,image_uuid,sec_credentials):
-		return BuildAdaptor(descriptor,target,image_uuid,sec_credentials)
-	
+    
+    def __new__(cls, *p, **k):
+    	if cls.instance is None:
+    		cls.instance = object.__new__(cls)
+    	return cls.instance
+    
+    def __init__(self):
+    	self.qmf_object = Data(ImageFactory.qmf_schema)
+    
+    def build_image(self,descriptor,target,image_uuid,sec_credentials):
+    	return BuildAdaptor(descriptor,target,image_uuid,sec_credentials)
+    
