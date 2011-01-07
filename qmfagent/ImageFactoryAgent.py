@@ -55,9 +55,8 @@ class ImageFactoryAgent(AgentHandler):
         self.connection.open()
         # Create, configure, and open a QMFv2 agent session using the connection.
         self.session = AgentSession(self.connection)
-        # self.session.setDomain("com.redhat.imagefactory")
-        # self.session.setVendor("RedHat")
-        # self.session.setProduct("ImageFactory")
+        self.session.setVendor("redhat.com")
+        self.session.setProduct("imagefactory")
         self.session.open()
         # Initialize the parent class with the session.
         AgentHandler.__init__(self, self.session)
@@ -75,6 +74,7 @@ class ImageFactoryAgent(AgentHandler):
         Handle incoming method calls.
         """
         self.log.info("METHOD CALL: name = %s \n args = %s \n handle = %s \n addr = %s \n subtypes = %s \n userId = %s", methodName, args, handle, addr, subtypes, userId)
+        print "METHOD CALL: name = %s \n args = %s \n handle = %s \n addr = %s \n subtypes = %s \n userId = %s" % (methodName, args, handle, addr, subtypes, userId)
         if (methodName == "build_image"):
             try:
                 build_adaptor = self.image_factory.build_image(args["descriptor"],args["target"],args["image_uuid"],args["sec_credentials"])
