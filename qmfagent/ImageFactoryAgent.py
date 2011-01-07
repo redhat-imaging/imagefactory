@@ -80,15 +80,15 @@ class ImageFactoryAgent(AgentHandler):
                 build_adaptor = self.image_factory.build_image(args["descriptor"],args["target"],args["image_uuid"],args["sec_credentials"])
                 qmf_object_addr = self.session.addData(build_adaptor.qmf_object, "build_adaptor")
                 self.managedObjects[qmf_object_addr] = build_adaptor
-                handle.addReturnArguments("build", qmf_object_addr)
-                self.agent.methodSuccess(handle)
+                handle.addReturnArgument("build", "qmf_object_addr")
+                self.session.methodSuccess(handle)
             except Exception, e:
                 self.log.exception(e)
-                self.agent.raiseException(handle, e.message)
+                self.session.raiseException(handle, e.message)
         else:
             errorMsg = "Method (%s) not implemented!!!" % (methodName, )
             self.log.warning(errorMsg)
-            self.agent.raiseException(handle, errorMsg)
+            self.session.raiseException(handle, errorMsg)
     
     def shutdown(self):
         """

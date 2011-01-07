@@ -71,6 +71,7 @@ def main(argv=None):
     
     if (qmfagent):
         img_fac_agent = ImageFactoryAgent(url)
+        img_fac_agent.run()
         # TODO: sloranz@redhat.com - replace this with proper daemon code
         while True:
             time.sleep(1000)

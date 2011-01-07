@@ -20,6 +20,7 @@ from qmf2 import *
 import libxml2
 from builder import *
 import logging
+from threading import Thread, Lock
 
 class BuildAdaptor(object):
     
