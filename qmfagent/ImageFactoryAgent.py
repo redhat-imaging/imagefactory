@@ -74,14 +74,13 @@ class ImageFactoryAgent(AgentHandler):
         """
         Handle incoming method calls.
         """
-        self.log.info("METHOD CALL: name = %s \n args = %s \n handle = %s \n addr = %s \n subtypes = %s \n userId = %s", methodName, args, handle, addr, subtypes, userId)
-        print "METHOD CALL: name = %s \n args = %s \n handle = %s \n addr = %s \n subtypes = %s \n userId = %s" % (methodName, args, handle, addr, subtypes, userId)
+        self.log.debug("Method called: name = %s \n args = %s \n handle = %s \n addr = %s \n subtypes = %s \n userId = %s", methodName, args, handle, addr, subtypes, userId)
         if (methodName == "build_image"):
             try:
                 build_adaptor = self.image_factory.build_image(args["descriptor"],args["target"],args["image_uuid"],args["sec_credentials"])
                 build_adaptor_instance_name = "build_adaptor-%s" %  (uuid.uuid4(), )
                 qmf_object_addr = self.session.addData(build_adaptor.qmf_object, build_adaptor_instance_name)
-                self.managedObjects[qmf_object_addr] = build_adaptor
+                self.managedObjects[repr(qmf_object_addr)] = build_adaptor
                 handle.addReturnArgument("build_adaptor", repr(qmf_object_addr))
                 self.session.methodSuccess(handle)
             except Exception, e:
