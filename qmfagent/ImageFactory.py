@@ -32,7 +32,7 @@ class ImageFactory(object):
     _method.addArgument(SchemaProperty("target", SCHEMA_DATA_STRING, direction=DIR_IN))
     _method.addArgument(SchemaProperty("image_uuid", SCHEMA_DATA_STRING, direction=DIR_IN))
     _method.addArgument(SchemaProperty("sec_credentials", SCHEMA_DATA_STRING, direction=DIR_IN))
-    _method.addArgument(SchemaProperty("build", SCHEMA_DATA_MAP, direction=DIR_OUT))
+    _method.addArgument(SchemaProperty("build_adaptor", SCHEMA_DATA_MAP, direction=DIR_OUT))
     qmf_schema.addMethod(_method)
     
     ## Properties

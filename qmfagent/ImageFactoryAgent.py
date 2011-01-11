@@ -81,7 +81,7 @@ class ImageFactoryAgent(AgentHandler):
                 build_adaptor_instance_name = "build_adaptor-%s" %  (uuid.uuid4(), )
                 qmf_object_addr = self.session.addData(build_adaptor.qmf_object, build_adaptor_instance_name)
                 self.managedObjects[repr(qmf_object_addr)] = build_adaptor
-                handle.addReturnArgument("build_adaptor", repr(qmf_object_addr))
+                handle.addReturnArgument("build_adaptor", qmf_object_addr.asMap())
                 self.session.methodSuccess(handle)
             except Exception, e:
                 self.log.exception(e)
