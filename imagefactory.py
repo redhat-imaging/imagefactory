@@ -87,10 +87,12 @@ def main(args):
     if (args.qmf):
         daemonize()
     
-    logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(message)s', filename='/var/log/imagefactory.log')
+    logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/var/log/imagefactory.log')
     logging.info("Starting imagefactory...")
-    if (args.verbose):
+    if (args.debug):
         logging.getLogger('').setLevel(logging.DEBUG)
+    elif (args.verbose):
+        logging.getLogger('').setLevel(logging.INFO)
     else:
         logging.getLogger('').setLevel(logging.WARNING)
     
@@ -106,8 +108,9 @@ def main(args):
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description='System image creation tool...')
-    argparser.add_argument('-v', '--verbose', action='store_true', default=False, help='Set verbose logging for debugging.')
-    argparser.add_argument('--qmf', action='store_true', default=True, help='Provide QMFv2 agent interface.')
+    argparser.add_argument('-v', '--verbose', action='store_true', default=False, help='Set verbose logging.')
+    argparser.add_argument('--debug', action='store_true', default=False, help='Set really verbose logging for debugging.')
+    argparser.add_argument('--qmf', action='store_true', default=True, help='Provide QMFv2 agent interface. The default.')
     argparser.add_argument('--url', default='localhost', help='URL of qpidd to connect to.')
     argparser.add_argument('--build-template', help='NOT YET IMPLEMENTED: Build system specified in given template and exit.')
     argparser.add_argument('--build-output', help='NOT YET IMPLEMENTED: Store built system location specified.')
