@@ -18,75 +18,101 @@
 # MA  02110-1301, USA.  A copy of the GNU General Public License is
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
+import os
 import sys
-import getopt
-from qmfagent.ImageFactoryAgent import *
+import signal
+import argparse
 import time
 import logging
 import math
+from qmfagent.ImageFactoryAgent import *
 
 
-help_message = '''
-The help message goes here.
-'''
-
-class Usage(Exception):
-	def __init__(self, msg):
-		self.msg = msg
+img_fac_agent = None
 
 
-def main(argv=None):
-    verbose = False
-    qmfagent = False
-    url = "localhost"
-    template = None
-    output = None
-    loglevel = logging.WARNING
-    log = logging.getLogger('imagefactory')
+class Arguments(object):
+    pass
+
+def signal_handler(signum, stack):
+    """docstring for sigterm_handler"""
+    if (signum == signal.SIGTERM):
+        logging.info('caught signal SIGTERM, stopping...')
+        if (img_fac_agent):
+            img_fac_agent.cancel()
+        sys.exit(0)
+
+
+# TODO: sloranz@redhat.com - add code here to set the user:group we're running as and drop privileges
+def daemonize(): #based on Python recipe 278731
+    UMASK = 0
+    WORKING_DIRECTORY = '/'
+    IO_REDIRECT = os.devnull
     
-    logging.info("Starting imagefactory...")
-    
-    if argv is None:
-        argv = sys.argv
     try:
+        pid = os.fork()
+    except OSError, e:
+        raise Exception, "%s [%d]" % (e.strerror, e.errno)
+        
+    if (pid == 0):
+        os.setsid()
+        signal.signal(signal.SIGHUP, signal.SIG_IGN)
         try:
-            opts, args = getopt.getopt(argv[1:], "ho:v", ["verbose", "help", "qmf", "url=", "template=", "output=", "loglevel="])
-        except getopt.error, msg:
-            raise Usage(msg)
-        # option processing
-        for option, value in opts:
-            if option in ("-v", "--verbose"):
-                verbose = True
-            if option in ("-h", "--help"):
-                raise Usage(help_message)
-            if option in ("--qmf"):
-                qmfagent = True
-            if option in ("--url"):
-                url = value
-            if option in ("--template"):
-                # template = value
-                print "Not implemented yet... use oz directly."
-            if option in ("-o", "--output"):
-                # output = value
-                print "Not implemented yet... use oz directly."
-            if option in ("--loglevel"):
-                loglevel = int(math.fabs((int(value) * 10) - 60))
-    except Usage, err:
-        print >> sys.stderr, sys.argv[0].split("/")[-1] + ": " + str(err.msg)
-        print >> sys.stderr, "\t for help use --help"
-        return 2
+            pid = os.fork()
+        except OSError, e:
+            raise Exception, "%s [%d]" % (e.strerror, e.errno)
+            
+        if (pid == 0):
+            os.chdir(WORKING_DIRECTORY)
+            os.umask(UMASK)
+        else:
+            os._exit(0)
+    else:
+        os._exit(0)
+    
+    for file_descriptor in range(0, 2): # close stdin, stdout, stderr
+        try:
+            os.close(file_descriptor)
+        except OSError:
+            pass # The file descriptor wasn't open to begin with, just ignore
+    
+    os.open(IO_REDIRECT, os.O_RDWR)
+    os.dup2(0, 1)
+    os.dup2(0, 2)
+    
+    return(True)
+
+
+def main(args):
+    if (args.qmf):
+        daemonize()
+    
+    logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(message)s', filename='/var/log/imagefactory.log')
+    logging.info("Starting imagefactory...")
+    if (args.verbose):
+        logging.getLogger('').setLevel(logging.DEBUG)
+    else:
+        logging.getLogger('').setLevel(logging.WARNING)
+    
+    signal.signal(signal.SIGTERM, signal_handler)        
         
-    logging.getLogger('').setLevel(loglevel)
-        
-    if (qmfagent):
-        img_fac_agent = ImageFactoryAgent(url)
+    if (args.qmf):
+        img_fac_agent = ImageFactoryAgent(args.url)
         img_fac_agent.run()
-        logging.info("connecting to qmf agent on %s" % url)
-        # TODO: sloranz@redhat.com - replace this with proper daemon code
+        log.info("connected to qmf agent on %s" % args.url)
         while True:
-            time.sleep(1000)
+            time.sleep(60)
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(message)s', filename='/var/log/imagefactory.log')
-    sys.exit(main())
+    argparser = argparse.ArgumentParser(description='System image creation tool...')
+    argparser.add_argument('-v', '--verbose', action='store_true', default=False, help='Set verbose logging for debugging.')
+    argparser.add_argument('--qmf', action='store_true', default=True, help='Provide QMFv2 agent interface.')
+    argparser.add_argument('--url', default='localhost', help='URL of qpidd to connect to.')
+    argparser.add_argument('--build-template', help='NOT YET IMPLEMENTED: Build system specified in given template and exit.')
+    argparser.add_argument('--build-output', help='NOT YET IMPLEMENTED: Store built system location specified.')
+    argparser.add_argument('--version', action='version', version='%(prog)s 0.1', help='Version info')
+    args = Arguments()
+    argparser.parse_args(namespace=args)
+    
+    sys.exit(main(args))
