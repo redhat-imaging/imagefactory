@@ -43,6 +43,7 @@ class BuildAdaptor(object):
             return self._descriptor
         def fset(self, value):
             self._descriptor = value
+            self.qmf_object.descriptor = value
         def fdel(self):
             del self._descriptor
         return locals()
@@ -54,6 +55,7 @@ class BuildAdaptor(object):
             return self._target
         def fset(self, value):
             self._target = value
+            self.qmf_object.target = value
         def fdel(self):
             del self._target
         return locals()
@@ -65,6 +67,7 @@ class BuildAdaptor(object):
             return self._status
         def fset(self, value):
             self._status = value
+            self.qmf_object.status = value
         def fdel(self):
             del self._status
         return locals()
@@ -76,6 +79,7 @@ class BuildAdaptor(object):
             return self._percent_complete
         def fset(self, value):
             self._percent_complete = value
+            self.qmf_object.percent_complete = value
         def fdel(self):
             del self._percent_complete
         return locals()
@@ -87,16 +91,28 @@ class BuildAdaptor(object):
             return self._finished_image
         def fset(self, value):
             self._finished_image = value
+            self.qmf_object.finished_image = value
         def fdel(self):
             del self._finished_image
         return locals()
     finished_image = property(**finished_image())
     
+    def qmf_object():
+        doc = "The qmf_object property."
+        def fget(self):
+            return self._qmf_object
+        def fset(self, value):
+            self._qmf_object = value
+        def fdel(self):
+            del self._qmf_object
+        return locals()
+    qmf_object = property(**qmf_object())
     
     def __init__(self, descriptor, target, image_uuid, sec_credentials):
         super(BuildAdaptor, self).__init__()
         
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        self.qmf_object = Data(BuildAdaptor.qmf_schema)
         
         self.descriptor = descriptor
         self.target = target
@@ -106,13 +122,6 @@ class BuildAdaptor(object):
         self.image_uuid = image_uuid
         self.sec_credentials = sec_credentials
         self.builder = None
-        
-        self.qmf_object = Data(BuildAdaptor.qmf_schema)
-        self.qmf_object.descriptor = self.descriptor
-        self.qmf_object.target = self.target
-        self.qmf_object.status = self.status
-        self.qmf_object.percent_complete = self.percent_complete
-        self.qmf_object.finished_image = self.finished_image
         
         builder_class = None
         if self.target == "mock": # If target is mock always run mock builder regardless of descriptor
@@ -143,9 +152,10 @@ class BuildAdaptor(object):
         # Currently the lone delegate function
         # This indicates that the underlying builder has had a status change
         # For now we just copy back the status
-        self.status = self._builder.status
-        self.percent_complete = self._builder.percent_complete
-        self.completed_image = self._builder.image
+        self.status = new_status
+        self.percent_complete = builder.percent_complete
+        # TODO: sloranz@redhat.com - check for 100% or COMPLETED status before setting this
+        # self.completed_image = builder.image
         # TODO: Fire events if the status change is significant
     
 

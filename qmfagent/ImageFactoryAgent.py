@@ -80,6 +80,7 @@ class ImageFactoryAgent(AgentHandler):
                 build_adaptor = self.image_factory.build_image(args["descriptor"],args["target"],args["image_uuid"],args["sec_credentials"])
                 build_adaptor_instance_name = "build_adaptor-%s" %  (uuid.uuid4(), )
                 qmf_object_addr = self.session.addData(build_adaptor.qmf_object, build_adaptor_instance_name)
+                # TODO: sloranz@redhat.com - This dictionary could get large over time, think about when to prune it...
                 self.managedObjects[repr(qmf_object_addr)] = build_adaptor
                 handle.addReturnArgument("build_adaptor", qmf_object_addr.asMap())
                 self.session.methodSuccess(handle)
@@ -93,11 +94,17 @@ class ImageFactoryAgent(AgentHandler):
     
     def shutdown(self):
         """
-        Clean up the session and connection.
+        Clean up the session and connection. Cancel the running thread.
         """
-        if self.session:
+        # FIXME: sloranz@redhat.com - this doesn't seem to be cleaning up like it should, leaving a stale agent
+        try:
             self.session.close()
-        self.connection.close()
+            self.connection.close()
+            self.cancel()
+            return True
+        except Exception, e:
+            self.log.exception(e)
+            return False
     
     
 

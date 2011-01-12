@@ -39,7 +39,7 @@ def signal_handler(signum, stack):
     if (signum == signal.SIGTERM):
         logging.info('caught signal SIGTERM, stopping...')
         if (img_fac_agent):
-            img_fac_agent.cancel()
+            img_fac_agent.shutdown()
         sys.exit(0)
 
 
