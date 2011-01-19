@@ -24,18 +24,18 @@ class testBuildAdaptor(unittest.TestCase):
     def setUp(self):
         self.schema = BuildAdaptor.qmf_schema
         self.tdl_string = """\
-        <image>
-		  <name>f14jeos</name>
-		  <os>
-		    <name>Fedora</name>
-		    <version>14</version>
-		    <arch>x86_64</arch>
-		    <install type='url'>
-		      <url>http://download.fedoraproject.org/pub/fedora/linux/releases/14/Fedora/x86_64/os/</url>
-		    </install>
-		  </os>
-		  <description>Fedora 14</description>
-		</image>
+        <template>
+          <name>f14jeos</name>
+          <os>
+            <name>Fedora</name>
+            <version>14</version>
+            <arch>x86_64</arch>
+            <install type='url'>
+              <url>http://download.fedoraproject.org/pub/fedora/linux/releases/14/Fedora/x86_64/os/</url>
+            </install>
+          </os>
+          <description>Fedora 14</description>
+        </template>
 		"""
 	
     def testQMFSchemaDefinition(self):

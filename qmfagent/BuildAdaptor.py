@@ -127,8 +127,7 @@ class BuildAdaptor(object):
         builder_class = builder.MockBuilder.MockBuilder
         if (self.target != "mock"): # If target is mock always run mock builder regardless of descriptor
             parsed_doc = libxml2.parseDoc(descriptor)
-            xpath_context = parsed_doc.xpathNewContext()
-            node = xpath_context.xpathEval('//os/name')
+            node = parsed_doc.xpathEval('/template/os/name')
             os_name = node[0].content
             class_name = "%sBuilder" % (os_name, )
             try:

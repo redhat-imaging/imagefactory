@@ -31,13 +31,12 @@ class FedoraBuilder(BaseBuilder):
 # Initializer
 	def __init__(self, template, target, image_id=None, credentials=None):
 		super(FedoraBuilder, self).__init__(template, target, image_id, credentials)
-		self._tdl = oz.TDL.TDL(template_xml=template)
-		self.guest = oz.Fedora.get_class(tdl, None)
+		self.guest = oz.Fedora.get_class(oz.TDL.TDL(xmlstring=template), None)
 	
 # Image actions
 	def build(self):
 		self.guest.cleanup_old_guest()
-		self.guest.generate_install_media(force_download)
+		self.guest.generate_install_media(force_download=False)
 		try:
 		    self.guest.generate_diskimage()
 		    try:
