@@ -96,7 +96,6 @@ class ImageFactoryAgent(AgentHandler):
         """
         Clean up the session and connection. Cancel the running thread.
         """
-        # FIXME: sloranz@redhat.com - this doesn't seem to be cleaning up like it should, leaving a stale agent
         try:
             self.session.close()
             self.connection.close()

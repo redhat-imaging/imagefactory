@@ -27,7 +27,7 @@ class RHELBuilder(BaseBuilder):
 	zope.interface.implements(ImageBuilderInterface)
 	
 # Initializer
-	def __init__(self, template=None, target=None, uuid=None, credentials=None):
+	def __init__(self, template=None, target=None, image_id=None, credentials=None):
 		super(RHELBuilder, self).__init__(template, target, image_id, credentials)
 	
 # Image actions

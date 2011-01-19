@@ -29,9 +29,9 @@ class FedoraBuilder(BaseBuilder):
 	zope.interface.implements(ImageBuilderInterface)
 	
 # Initializer
-	def __init__(self, template, target, uuid=None, credentials=None):
+	def __init__(self, template, target, image_id=None, credentials=None):
 		super(FedoraBuilder, self).__init__(template, target, image_id, credentials)
-		self._tdl = oz.TDL(tdl_doc=template)
+		self._tdl = oz.TDL.TDL(template_xml=template)
 		self.guest = oz.Fedora.get_class(tdl, None)
 	
 # Image actions

@@ -18,7 +18,7 @@
 import cqpid
 from qmf2 import *
 import libxml2
-from builder import *
+import builder
 import logging
 from threading import Thread, Lock
 
@@ -31,6 +31,7 @@ class BuildAdaptor(object):
     qmf_schema.addProperty(SchemaProperty("status", SCHEMA_DATA_STRING))
     qmf_schema.addProperty(SchemaProperty("percent_complete", SCHEMA_DATA_INT))
     qmf_schema.addProperty(SchemaProperty("finished_image", SCHEMA_DATA_STRING))
+    # TODO: sloranz@redhat.com - these need to be implemented or removed!!!
     qmf_schema.addMethod(SchemaMethod("abort_build", desc = "If possible, abort running build."))
     _states_method = SchemaMethod("build_states", desc = "Returns a representation of the build state transitions.")
     _states_method.addArgument(SchemaProperty("states", SCHEMA_DATA_MAP, direction=DIR_IN_OUT))
@@ -123,19 +124,19 @@ class BuildAdaptor(object):
         self.sec_credentials = sec_credentials
         self.builder = None
         
-        builder_class = None
-        if self.target == "mock": # If target is mock always run mock builder regardless of descriptor
-            builder_class = MockBuilder.MockBuilder
-        else: # otherwise, use the node value found in <os><name>ExampleOS</name></os> of the tdl
+        builder_class = builder.MockBuilder.MockBuilder
+        if (self.target != "mock"): # If target is mock always run mock builder regardless of descriptor
             parsed_doc = libxml2.parseDoc(descriptor)
-            os_name_node = parsed_doc.xpathEval('/template/os/name')
-            os_name = os_name_node[0].getContent()
-            class_name = os_name + "Builder"
+            xpath_context = parsed_doc.xpathNewContext()
+            node = xpath_context.xpathEval('//os/name')
+            os_name = node[0].content
+            class_name = "%sBuilder" % (os_name, )
             try:
-                builder_class = getattr(os_name, os_name)
-            except Exception, e:
+                builder_module = getattr(builder, class_name)
+                builder_class = getattr(builder_module, class_name)
+            except AttributeError, e:
                 self.log.exception("CAUGHT EXCEPTION: %s \n Could not find builder class for %s, returning MockBuilder!", e, os_name)
-                builder_class = MockBuilder.MockBuilder
+                print("CAUGHT EXCEPTION: %s \n Could not find builder class for %s, returning MockBuilder!", e, os_name)
 		
         self.builder = builder_class(descriptor, target, image_uuid, sec_credentials)
         # Register as a delegate to the builder
