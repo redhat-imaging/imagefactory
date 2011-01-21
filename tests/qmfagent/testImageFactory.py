@@ -20,23 +20,19 @@ import unittest
 from qmfagent.ImageFactory import ImageFactory
 from builder import *
 
-class testImageFactory(unittest.TestCase):
+class TestImageFactory(unittest.TestCase):
     def setUp(self):
         self.expected_schema_methods = {"build_image" : ("descriptor", "target", "image_uuid", "sec_credentials", "build_adaptor")}
+
+    def tearDown(self):
+        self.expected_schema_methods = None
     
     def testQMFSchemaDefinition(self):
-        method_iterator = ImageFactory.qmf_schema.getMethods().__iter__()
-        try:
-            next_method = method_iterator.next()
-            arguments = self.expected_schema_methods[next_method.getName()]
-            property_iterator = next_method.getArguments().__iter__()
-            try:
-                next_property = property_iterator.next()
-                self.assert_(next_property.getName() in arguments)
-            except StopIteration:
-                pass
-        except StopIteration:
-            pass
+        for schema_method in ImageFactory.qmf_schema.getMethods():
+            self.assert_(schema_method.getName() in self.expected_schema_methods)
+            arguments = self.expected_schema_methods[schema_method.getName()]
+            for schema_property in schema_method.getArguments():
+                self.assert_(schema_property.getName() in arguments)
     
     def testSingleton(self):
         image_factory_one = ImageFactory()

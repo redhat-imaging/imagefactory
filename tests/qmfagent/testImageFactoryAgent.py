@@ -16,12 +16,47 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import unittest
+import cqpid
+from qmf2 import *
+from qmfagent.ImageFactoryAgent import *
+import time
 
 
-class testImageFactoryAgent(unittest.TestCase):
+class TestImageFactoryAgent(unittest.TestCase):
     def setUp(self):
-        pass
-
+        # self.factory_agent = ImageFactoryAgent("localhost")
+        # self.factory_agent.run()
+        self.connection = cqpid.Connection("localhost")
+        self.session = ConsoleSession(self.connection)
+        self.connection.open()
+        self.session.open()
+        self.agents = self.session.getAgents()
     
+    def tearDown(self):
+        self.agents = None
+        self.session.close()
+        self.connection.close()
+        self.session = None
+        self.connection = None
+        # self.factory_agent.shutdown()
+        # self.factory_agent = None
+    
+    def testQueries(self):
+        for agent in self.agents:
+            if agent.getName().startswith("redhat.com:imagefactory:"):
+                # test to see that we can get an ImageFactory
+                factories = agent.query("{class:ImageFactory, package:'com.redhat.imagefactory'}")
+                factory_count = len(factories)
+                self.assertEqual(1, factory_count, "Expected to get one(1) factory from the agent, recieved %d..." % (factory_count, ))
+                # test to see that we can get a BuildAdaptor for the mock target
+                response = factories[0].build_image("<template></template>", "mock", "foo", "bar")
+                build_adaptor_addr = DataAddr(response["build_adaptor"])
+                self.assertIsNotNone(build_adaptor_addr)
+                query = Query(build_adaptor_addr)
+                builds = agent.query(query)
+                self.assertEqual(1, len(builds))
+                self.assertIsNotNone(builds[0].status)
+    
+
 if __name__ == '__main__':
     unittest.main()

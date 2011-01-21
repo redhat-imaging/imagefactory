@@ -33,6 +33,8 @@ class TestMockBuilder(unittest.TestCase):
 	
 	def tearDown(self):
 		self.mock_builder = None
+		self.delegate = None
+		self.new_builder_status = None
 	
 	def testImplementsImageBuilderInterface(self):
 		self.assert_(ImageBuilderInterface.implementedBy(MockBuilder), 'MockBuilder does not implement the ImageBuilder interface...')

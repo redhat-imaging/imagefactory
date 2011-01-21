@@ -20,7 +20,7 @@ import unittest
 from qmfagent.BuildAdaptor import BuildAdaptor
 from builder import *
 
-class testBuildAdaptor(unittest.TestCase):
+class TestBuildAdaptor(unittest.TestCase):
     def setUp(self):
         self.schema = BuildAdaptor.qmf_schema
         self.tdl_string = """\
@@ -38,14 +38,14 @@ class testBuildAdaptor(unittest.TestCase):
         </template>
 		"""
 	
+    def tearDown(self):
+        self.schema = None
+        self.tdl_string = None
+    
     def testQMFSchemaDefinition(self):
         expected_schema_properties = ("descriptor", "target", "status", "percent_complete", "finished_image")
-        property_iterator = self.schema.getProperties().__iter__()
-        try:
-            next_property = property_iterator.next()
-            self.assert_(next_property.getName() in expected_schema_properties)
-        except StopIteration:
-            pass
+        for schema_property in self.schema.getProperties():
+            self.assert_(schema_property.getName() in expected_schema_properties)
 	
     def testInstantiateMockBuilder(self):
         build_adaptor = BuildAdaptor(self.tdl_string, "mock", "foo", "bar")
@@ -53,9 +53,9 @@ class testBuildAdaptor(unittest.TestCase):
         self.assert_(build_adaptor.descriptor == self.tdl_string)
         self.assert_(build_adaptor.target == "mock")
     
-    def testInstantiateFedoraBuilder(self):
-        build_adaptor = BuildAdaptor(self.tdl_string, "foo", "bar", "baz")
-        self.assertIsInstance(build_adaptor.builder, FedoraBuilder.FedoraBuilder)
+    # def testInstantiateFedoraBuilder(self):
+    #     build_adaptor = BuildAdaptor(self.tdl_string, "foo", "bar", "baz")
+    #     self.assertIsInstance(build_adaptor.builder, FedoraBuilder.FedoraBuilder)
     
 
 if __name__ == '__main__':
