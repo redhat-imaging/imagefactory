@@ -19,6 +19,7 @@ import cqpid
 from qmf2 import *
 import libxml2
 import builder
+from builder import *
 import logging
 from threading import Thread, Lock
 
