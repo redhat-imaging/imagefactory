@@ -5,7 +5,8 @@ Date: January 12, 2011
 Revision: 1.0
 Keywords: aeolus,image_factory,cloud
 
-
+## Usage ##
+---
 	usage: imagefactory.py [-h] [-v] [--qmf] [--url URL]
                        [--build-template BUILD_TEMPLATE]
                        [--build-output BUILD_OUTPUT] [--version]
@@ -26,8 +27,8 @@ Keywords: aeolus,image_factory,cloud
   		--version             Version info
 
 
-**Dependencies**
-----------------
+## Dependencies ##
+---
 QMFv2 Python bindings
 : [QMF-Homepage][]  
 *Note:* QMFv2 is currently only available by checking out the C++ source from [QPID-Repo][].
