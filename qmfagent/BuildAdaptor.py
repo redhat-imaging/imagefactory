@@ -136,7 +136,6 @@ class BuildAdaptor(object):
                 builder_class = getattr(builder_module, class_name)
             except AttributeError, e:
                 self.log.exception("CAUGHT EXCEPTION: %s \n Could not find builder class for %s, returning MockBuilder!", e, os_name)
-                print("CAUGHT EXCEPTION: %s \n Could not find builder class for %s, returning MockBuilder!", e, os_name)
 		
         self.builder = builder_class(descriptor, target, image_uuid, sec_credentials)
         # Register as a delegate to the builder
