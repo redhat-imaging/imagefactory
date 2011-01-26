@@ -6,29 +6,26 @@ Revision: 1.0
 Keywords: aeolus,image_factory,cloud
 
 ## Usage ##
----
-	usage: imagefactory.py [-h] [-v] [--qmf] [--url URL]
-                       [--build-template BUILD_TEMPLATE]
-                       [--build-output BUILD_OUTPUT] [--version]
-					
+
+	usage: imagefactory.py [-h] [-v] [--debug] [--output OUTPUT] [--version]
+	                       {build,qmf} ...
+	
 	System image creation tool...
 	
 	optional arguments:
-  		-h, --help            show this help message and exit
-  		-v, --verbose         Set verbose logging for debugging.
-  		--qmf                 Provide QMFv2 agent interface.
-  		--url URL             URL of qpidd to connect to.
-  		--build-template BUILD_TEMPLATE
-                        	  NOT YET IMPLEMENTED: 
-								Build specified system and exit.
-  		--build-output BUILD_OUTPUT
-                        	  NOT YET IMPLEMENTED: 
-							  	Store built image in location specified.
-  		--version             Version info
-
+	  -h, --help       show this help message and exit
+	  -v, --verbose    Set verbose logging.
+	  --debug          Set really verbose logging for debugging.
+	  --output OUTPUT  Store built images in location specified. Defaults to /tmp
+	  --version        Version info
+	
+	commands:
+	  {build,qmf}
+	    qmf            Provide a QMFv2 agent interface.
+	    build          NOT YET IMPLEMENTED: Build specified system and exit.
 
 ## Dependencies ##
----
+
 QMFv2 Python bindings
 : [QMF-Homepage][]  
 *Note:* QMFv2 is currently only available by checking out the C++ source from [QPID-Repo][].

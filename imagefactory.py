@@ -84,7 +84,7 @@ def daemonize(): #based on Python recipe 278731
 
 
 def main(args):
-    if (args.qmf):
+    if (args.command == 'qmf'):
         daemonize()
     
     logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/var/log/imagefactory.log')
@@ -98,10 +98,10 @@ def main(args):
     
     signal.signal(signal.SIGTERM, signal_handler)        
         
-    if (args.qmf):
-        img_fac_agent = ImageFactoryAgent(args.url)
+    if (args.command == 'qmf'):
+        img_fac_agent = ImageFactoryAgent(args.broker)
         img_fac_agent.run()
-        log.info("connected to qmf agent on %s" % args.url)
+        log.info("connected to qmf agent on %s" % args.broker)
         while True:
             time.sleep(60)
 
@@ -110,11 +110,13 @@ if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description='System image creation tool...')
     argparser.add_argument('-v', '--verbose', action='store_true', default=False, help='Set verbose logging.')
     argparser.add_argument('--debug', action='store_true', default=False, help='Set really verbose logging for debugging.')
-    argparser.add_argument('--qmf', action='store_true', default=True, help='Provide QMFv2 agent interface. The default.')
-    argparser.add_argument('--url', default='localhost', help='URL of qpidd to connect to.')
-    argparser.add_argument('--build-template', help='NOT YET IMPLEMENTED: Build specified system and exit.')
-    argparser.add_argument('--build-output', help='NOT YET IMPLEMENTED: Store built image in location specified.')
+    argparser.add_argument('--output', default='/tmp', help='Store built images in location specified. Defaults to /tmp')
     argparser.add_argument('--version', action='version', version='%(prog)s 0.1', help='Version info')
+    subparsers = argparser.add_subparsers(dest='command', title='commands')
+    command_qmf = subparsers.add_parser('qmf', help='Provide a QMFv2 agent interface.')
+    command_qmf.add_argument('--broker', default='localhost', help='URL of qpidd to connect to.  Defaults to localhost')
+    command_build = subparsers.add_parser('build', help='NOT YET IMPLEMENTED: Build specified system and exit.')
+    command_build.add_argument('--template', help='Template file to build from.')
     args = Arguments()
     argparser.parse_args(namespace=args)
     
