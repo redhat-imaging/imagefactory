@@ -69,23 +69,24 @@ class Application(object):
     		cls.instance = object.__new__(cls, *p, **k)
     	return cls.instance
     
-    def __init__(self, arguments=None):
-        super(Application, self).__init__()
-                
+    def __init__(self):
+        super(Application, self).__init__()        
+        logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/var/log/imagefactory.log')
+                        
         self.configuration = {}
         self.arguments = self.parse_arguments()
                 
-        logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/var/log/imagefactory.log')
-                
-        if (arguments):
-            if (os.path.isfile(arguments.config)):
+        if (self.arguments):
+            config_file_path = self.arguments.config
+            if (os.path.isfile(config_file_path)):
                 try:
-                    config_file = open(arguments.config)
+                    config_file = open(config_file_path)
                     self.configuration = json.load(config_file)
                 except IOError, e:
                     logging.exception(e)
-            for key in arguments.__dict__.keys():
-                self.configuration[key] = arguments.__dict__[key]
+            argdict = self.arguments.__dict__
+            for key in argdict.keys():
+                self.configuration[key] = argdict[key]
                         
         signal.signal(signal.SIGTERM, self.signal_handler)
     
@@ -170,5 +171,5 @@ class Application(object):
 
 
 if __name__ == "__main__":
-    application = Application(argument_parser().parse_args())
+    application = Application()
     sys.exit(application.main())
