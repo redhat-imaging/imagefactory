@@ -7,7 +7,11 @@ Keywords: aeolus,image_factory,cloud,qmf,qmf2,api
 
 ## Introduction ##
 
-Running imagefactory.py without any options will start a QMF agent that tries to connect to a QPID broker on localhost by default.  Image Factory can connect to a qpidd you specify using the '--url URL' option.
+Running imagefactory.py without any options will start a QMF agent that tries to connect to a QPID broker on localhost by default.  Image Factory can connect to a qpidd you specify using the '--broker host' option to the qmf command.
+
+	Example usage:
+	
+		./imagefactory.py --verbose qmf --broker localhost
 
 Once the agent has opened a session with the broker, QMF consoles can send messages to the agent start image builds, get status on builds, etc.
 

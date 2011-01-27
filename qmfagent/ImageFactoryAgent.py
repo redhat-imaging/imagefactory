@@ -52,6 +52,7 @@ class ImageFactoryAgent(AgentHandler):
         self._managedObjects = {}
         self.session = None
         # Create and open a messaging connection to a broker.
+        # FIXME: sloranz@redhat.com - Make this use actual amqp:// urls... currently, only host works
         self.connection = cqpid.Connection(url)
         self.connection.open()
         # Create, configure, and open a QMFv2 agent session using the connection.
