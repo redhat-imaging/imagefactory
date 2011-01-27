@@ -27,21 +27,6 @@ import logging
 from qmfagent.ImageFactoryAgent import *
 
 
-def argument_parser():
-    argparser = argparse.ArgumentParser(description='System image creation tool...', prog='imagefactory')
-    argparser.add_argument('--version', action='version', version='%(prog)s 0.1', help='Version info')
-    argparser.add_argument('-v', '--verbose', action='store_true', default=False, help='Set verbose logging.')
-    argparser.add_argument('--debug', action='store_true', default=False, help='Set really verbose logging for debugging.')
-    argparser.add_argument('--config', default='/etc/imagefactory.conf', help='Configuration file to use. (default: %(default)s)')
-    argparser.add_argument('--output', default='/tmp', help='Store built images in location specified. (default: %(default)s)')
-    subparsers = argparser.add_subparsers(dest='command', title='commands')
-    command_qmf = subparsers.add_parser('qmf', help='Provide a QMFv2 agent interface.')
-    command_qmf.add_argument('--broker', default='localhost', help='URL of qpidd to connect to. (default: %(default)s)')
-    command_build = subparsers.add_parser('build', help='NOT YET IMPLEMENTED: Build specified system and exit.')
-    command_build.add_argument('--template', help='Template file to build from.')
-    return argparser
-
-
 class Application(object):
     instance = None
     
@@ -88,7 +73,7 @@ class Application(object):
         super(Application, self).__init__()
                 
         self.configuration = {}
-        self.arguments = arguments
+        self.arguments = self.parse_arguments()
                 
         logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/var/log/imagefactory.log')
                 
@@ -103,6 +88,20 @@ class Application(object):
                 self.configuration[key] = arguments.__dict__[key]
                         
         signal.signal(signal.SIGTERM, self.signal_handler)
+    
+    def parse_arguments(self):
+        argparser = argparse.ArgumentParser(description='System image creation tool...', prog='imagefactory')
+        argparser.add_argument('--version', action='version', version='%(prog)s 0.1', help='Version info')
+        argparser.add_argument('-v', '--verbose', action='store_true', default=False, help='Set verbose logging.')
+        argparser.add_argument('--debug', action='store_true', default=False, help='Set really verbose logging for debugging.')
+        argparser.add_argument('--config', default='/etc/imagefactory.conf', help='Configuration file to use. (default: %(default)s)')
+        argparser.add_argument('--output', default='/tmp', help='Store built images in location specified. (default: %(default)s)')
+        subparsers = argparser.add_subparsers(dest='command', title='commands')
+        command_qmf = subparsers.add_parser('qmf', help='Provide a QMFv2 agent interface.')
+        command_qmf.add_argument('--broker', default='localhost', help='URL of qpidd to connect to. (default: %(default)s)')
+        command_build = subparsers.add_parser('build', help='NOT YET IMPLEMENTED: Build specified system and exit.')
+        command_build.add_argument('--template', help='Template file to build from.')
+        return argparser.parse_args()
     
     def setup_logging(self):
         logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/var/log/imagefactory.log')
