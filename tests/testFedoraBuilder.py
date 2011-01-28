@@ -17,8 +17,8 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import unittest
-from builder.ImageBuilderInterface import ImageBuilderInterface
-from builder.FedoraBuilder import FedoraBuilder
+from builders.ImageBuilderInterface import ImageBuilderInterface
+from builders.FedoraBuilder import FedoraBuilder
 
 
 class TestFedoraBuilder(unittest.TestCase):

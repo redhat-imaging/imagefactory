@@ -16,4 +16,4 @@
 # MA  02110-1301, USA.  A copy of the GNU General Public License is
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
-__all__ = ["ImageBuilderInterface", "ImageBuilderDelegate", "MockBuilder", "RHELBuilder", "FedoraBuilder"]
+__all__ = ["ImageBuilderInterface", "ImageBuilderDelegate", "BaseBuilder", "MockBuilder", "RHELBuilder", "FedoraBuilder"]

@@ -18,7 +18,7 @@
 
 import cqpid
 from qmf2 import *
-from BuildAdaptor import BuildAdaptor
+import BuildAdaptor
 
 # Singleton representing the Factory itself
 
@@ -28,10 +28,8 @@ class ImageFactory(object):
     # QMF schema for ImageFactory
     qmf_schema = Schema(SCHEMA_TYPE_DATA, "com.redhat.imagefactory", "ImageFactory")
     _method = SchemaMethod("build_image", desc="Build a new image")
-    _method.addArgument(SchemaProperty("descriptor", SCHEMA_DATA_STRING, direction=DIR_IN))
+    _method.addArgument(SchemaProperty("template", SCHEMA_DATA_STRING, direction=DIR_IN))
     _method.addArgument(SchemaProperty("target", SCHEMA_DATA_STRING, direction=DIR_IN))
-    _method.addArgument(SchemaProperty("image_uuid", SCHEMA_DATA_STRING, direction=DIR_IN))
-    _method.addArgument(SchemaProperty("sec_credentials", SCHEMA_DATA_STRING, direction=DIR_IN))
     _method.addArgument(SchemaProperty("build_adaptor", SCHEMA_DATA_MAP, direction=DIR_OUT))
     qmf_schema.addMethod(_method)
     
@@ -50,12 +48,12 @@ class ImageFactory(object):
     
     def __new__(cls, *p, **k):
     	if cls.instance is None:
-    		cls.instance = object.__new__(cls)
+    		cls.instance = object.__new__(cls, *p, **k)
     	return cls.instance
     
     def __init__(self):
     	self.qmf_object = Data(ImageFactory.qmf_schema)
     
-    def build_image(self,descriptor,target,image_uuid,sec_credentials):
-    	return BuildAdaptor(descriptor,target,image_uuid,sec_credentials)
+    def build_image(self,template,target):
+    	return BuildAdaptor.BuildAdaptor(template,target)
     

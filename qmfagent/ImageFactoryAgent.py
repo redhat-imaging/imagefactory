@@ -16,11 +16,11 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import logging
+import uuid
 import cqpid
 from qmf2 import *
-from ImageFactory import *
-from BuildAdaptor import *
-import uuid
+from ImageFactory import ImageFactory
+from BuildAdaptor import BuildAdaptor
 
 class ImageFactoryAgent(AgentHandler):
     ## Properties
@@ -78,8 +78,8 @@ class ImageFactoryAgent(AgentHandler):
         self.log.debug("Method called: name = %s \n args = %s \n handle = %s \n addr = %s \n subtypes = %s \n userId = %s", methodName, args, handle, addr, subtypes, userId)
         if (methodName == "build_image"):
             try:
-                build_adaptor = self.image_factory.build_image(args["descriptor"],args["target"],args["image_uuid"],args["sec_credentials"])
-                build_adaptor_instance_name = "build_adaptor-%s" %  (uuid.uuid4(), )
+                build_adaptor = self.image_factory.build_image(args["template"],args["target"])
+                build_adaptor_instance_name = "build_adaptor-%s" %  (build_adaptor.builder.image_id, )
                 qmf_object_addr = self.session.addData(build_adaptor.qmf_object, build_adaptor_instance_name)
                 # TODO: sloranz@redhat.com - This dictionary could get large over time, think about when to prune it...
                 self.managedObjects[repr(qmf_object_addr)] = build_adaptor
@@ -106,8 +106,3 @@ class ImageFactoryAgent(AgentHandler):
             self.log.exception(e)
             return False
     
-    
-
-
-# if __name__ == '__main__':
-#     unittest.main()

@@ -17,8 +17,8 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import unittest
-from builder.ImageBuilderInterface import ImageBuilderInterface
-from builder.RHELBuilder import RHELBuilder
+from builders.ImageBuilderInterface import ImageBuilderInterface
+from builders.RHELBuilder import RHELBuilder
 
 
 class TestRHELBuilder(unittest.TestCase):

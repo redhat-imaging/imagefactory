@@ -17,11 +17,10 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import unittest
-from builder.ImageBuilderDelegate import ImageBuilderDelegate
-from builder.ImageBuilderInterface import ImageBuilderInterface
-from builder.MockBuilder import MockBuilder
 import zope
-# import uuid
+from builders.ImageBuilderDelegate import ImageBuilderDelegate
+from builders.ImageBuilderInterface import ImageBuilderInterface
+from builders.MockBuilder import MockBuilder
 
 
 class TestMockBuilder(unittest.TestCase):

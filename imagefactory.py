@@ -21,9 +21,8 @@
 import os
 import sys
 import signal
-import argparse
-import json
 import logging
+from ApplicationConfiguration import ApplicationConfiguration
 from qmfagent.ImageFactoryAgent import *
 
 
@@ -41,29 +40,7 @@ class Application(object):
         return locals()
     qmf_agent = property(**qmf_agent())
     
-    def configuration():
-        doc = "The configuration property."
-        def fget(self):
-            return self._configuration
-        def fset(self, value):
-            self._configuration = value
-        def fdel(self):
-            del self._configuration
-        return locals()
-    configuration = property(**configuration())
     
-    def arguments():
-        doc = "The arguments property."
-        def fget(self):
-            return self._arguments
-        def fset(self, value):
-            self._arguments = value
-        def fdel(self):
-            del self._arguments
-        return locals()
-    arguments = property(**arguments())
-    
-   
     def __new__(cls, *p, **k):
     	if cls.instance is None:
     		cls.instance = object.__new__(cls, *p, **k)
@@ -72,43 +49,14 @@ class Application(object):
     def __init__(self):
         super(Application, self).__init__()        
         logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/var/log/imagefactory.log')
-                        
-        self.configuration = {}
-        self.arguments = self.parse_arguments()
-                
-        if (self.arguments):
-            config_file_path = self.arguments.config
-            if (os.path.isfile(config_file_path)):
-                try:
-                    config_file = open(config_file_path)
-                    self.configuration = json.load(config_file)
-                except IOError, e:
-                    logging.exception(e)
-            argdict = self.arguments.__dict__
-            for key in argdict.keys():
-                self.configuration[key] = argdict[key]
-                        
         signal.signal(signal.SIGTERM, self.signal_handler)
-    
-    def parse_arguments(self):
-        argparser = argparse.ArgumentParser(description='System image creation tool...', prog='imagefactory')
-        argparser.add_argument('--version', action='version', version='%(prog)s 0.1', help='Version info')
-        argparser.add_argument('-v', '--verbose', action='store_true', default=False, help='Set verbose logging.')
-        argparser.add_argument('--debug', action='store_true', default=False, help='Set really verbose logging for debugging.')
-        argparser.add_argument('--config', default='/etc/imagefactory.conf', help='Configuration file to use. (default: %(default)s)')
-        argparser.add_argument('--output', default='/tmp', help='Store built images in location specified. (default: %(default)s)')
-        subparsers = argparser.add_subparsers(dest='command', title='commands')
-        command_qmf = subparsers.add_parser('qmf', help='Provide a QMFv2 agent interface.')
-        command_qmf.add_argument('--broker', default='localhost', help='URL of qpidd to connect to. (default: %(default)s)')
-        command_build = subparsers.add_parser('build', help='NOT YET IMPLEMENTED: Build specified system and exit.')
-        command_build.add_argument('--template', help='Template file to build from.')
-        return argparser.parse_args()
+        self.app_config = ApplicationConfiguration().configuration
     
     def setup_logging(self):
         logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/var/log/imagefactory.log')
-        if (self.arguments and self.arguments.debug):
+        if (self.app_config['debug']):
             logging.getLogger('').setLevel(logging.DEBUG)
-        elif (self.arguments and self.arguments.verbose):
+        elif (self.app_config['verbose']):
             logging.getLogger('').setLevel(logging.INFO)
     
     def signal_handler(self, signum, stack):
@@ -161,11 +109,11 @@ class Application(object):
     
     
     def main(self):
-        if (self.configuration['command'] == 'qmf'):
+        if (self.app_config['command'] == 'qmf'):
             if (self.daemonize()):
                 self.setup_logging()
                 logging.info("Launching daemon...")
-                self.qmf_agent = ImageFactoryAgent(self.configuration['broker'])
+                self.qmf_agent = ImageFactoryAgent(self.app_config['broker'])
                 self.qmf_agent.run()
     
 

@@ -16,10 +16,10 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import unittest
+import time
 import cqpid
 from qmf2 import *
-from qmfagent.ImageFactoryAgent import *
-import time
+from qmfagent.ImageFactoryAgent import ImageFactoryAgent
 
 
 class TestImageFactoryAgent(unittest.TestCase):

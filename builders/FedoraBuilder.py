@@ -17,48 +17,41 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import zope
+import oz.Fedora
+import oz.TDL
 from ImageBuilderInterface import ImageBuilderInterface
 from BaseBuilder import BaseBuilder
-import uuid
-import time
 
 
-class MockBuilder(BaseBuilder):
+class FedoraBuilder(BaseBuilder):
 	# TODO: sloranz@redhat.com - Flesh out this docstring more to document this module.
-	"""docstring for MockBuilder"""
+	"""docstring for FedoraBuilder"""
 	zope.interface.implements(ImageBuilderInterface)
 	
 # Initializer
-	def __init__(self, template=None, target=None, image_id=uuid.uuid4(), credentials=None):
-		super(MockBuilder, self).__init__(template, target, image_id, credentials)
+	def __init__(self, template, target):
+		super(FedoraBuilder, self).__init__(template, target)
+		self.guest = oz.Fedora.get_class(oz.TDL.TDL(xmlstring=template), None)
 	
 # Image actions
 	def build(self):
-		image_path = "/tmp/image_factory-{0!s}".format(self.image_id)
-		self.status = "INITIALIZING"
-		self.percent_complete = 0
-		
-		with open(image_path, 'w') as image_file:
-			self.status = "BUILDING"
-			image_file.write(':description: This is a mock build image for testing the image factory.\n')
-			self.percent_complete = 5
-			image_file.write(':name: Mock Image\n')
-			self.percent_complete = 10
-			image_file.write(':owner_id: fedoraproject\n')
-			self.percent_complete = 15
-			image_file.write(':architecture: x86_64\n')
-			self.percent_complete = 20
-		
-		time.sleep(2)
-		self.percent_complete = 50
-		time.sleep(2)
-		self.percent_complete = 75
-		time.sleep(2)
-		self.percent_complete = 95
-		self.status = "FINISHING"
-		time.sleep(2)
-		self.percent_complete = 100
-		self.status = "COMPLETED"
+		self.guest.cleanup_old_guest()
+		self.guest.generate_install_media(force_download=False)
+		try:
+		    self.guest.generate_diskimage()
+		    try:
+		        libvirt_xml = self.guest.install()
+		        # if customize:
+		        #     guest.customize(libvirt_xml)
+		        # if generate_cdl:
+		        #     print guest.generate_cdl(libvirt_xml)
+		        # else:
+		        #     print libvirt_xml
+		    except:
+		        self.guest.cleanup_old_guest()
+		        raise
+		finally:
+		    self.guest.cleanup_install()
 	
 	def abort(self):
 		pass

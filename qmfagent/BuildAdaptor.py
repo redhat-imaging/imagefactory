@@ -15,41 +15,41 @@
 # MA  02110-1301, USA.  A copy of the GNU General Public License is
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
+import libxml2
+import logging
 import cqpid
 from qmf2 import *
-import libxml2
-import builder
-from builder import *
-import logging
 from threading import Thread, Lock
+import builders
+from builders import *
 
 class BuildAdaptor(object):
     
     # QMF schema for BuildAdaptor
     qmf_schema = Schema(SCHEMA_TYPE_DATA, "com.redhat.imagefactory", "BuildAdaptor")
-    qmf_schema.addProperty(SchemaProperty("descriptor", SCHEMA_DATA_STRING))
+    qmf_schema.addProperty(SchemaProperty("template", SCHEMA_DATA_STRING))
     qmf_schema.addProperty(SchemaProperty("target", SCHEMA_DATA_STRING))
     qmf_schema.addProperty(SchemaProperty("status", SCHEMA_DATA_STRING))
     qmf_schema.addProperty(SchemaProperty("percent_complete", SCHEMA_DATA_INT))
     qmf_schema.addProperty(SchemaProperty("finished_image", SCHEMA_DATA_STRING))
-    # TODO: sloranz@redhat.com - these need to be implemented or removed!!!
-    qmf_schema.addMethod(SchemaMethod("abort_build", desc = "If possible, abort running build."))
-    _states_method = SchemaMethod("build_states", desc = "Returns a representation of the build state transitions.")
-    _states_method.addArgument(SchemaProperty("states", SCHEMA_DATA_MAP, direction=DIR_IN_OUT))
-    qmf_schema.addMethod(_states_method)
+    # TODO: sloranz@redhat.com - these need to be implemented or removed...
+    # qmf_schema.addMethod(SchemaMethod("abort_build", desc = "If possible, abort running build."))
+    # _states_method = SchemaMethod("build_states", desc = "Returns a representation of the build state transitions.")
+    # _states_method.addArgument(SchemaProperty("states", SCHEMA_DATA_MAP, direction=DIR_IN_OUT))
+    # qmf_schema.addMethod(_states_method)
     
     ### Properties
-    def descriptor():
-        doc = "The descriptor property."
+    def template():
+        doc = "The template property."
         def fget(self):
-            return self._descriptor
+            return self._template
         def fset(self, value):
-            self._descriptor = value
-            self.qmf_object.descriptor = value
+            self._template = value
+            self.qmf_object.template = value
         def fdel(self):
-            del self._descriptor
+            del self._template
         return locals()
-    descriptor = property(**descriptor())
+    template = property(**template())
     
     def target():
         doc = "The target property."
@@ -110,34 +110,32 @@ class BuildAdaptor(object):
         return locals()
     qmf_object = property(**qmf_object())
     
-    def __init__(self, descriptor, target, image_uuid, sec_credentials):
+    def __init__(self, template, target):
         super(BuildAdaptor, self).__init__()
         
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.qmf_object = Data(BuildAdaptor.qmf_schema)
         
-        self.descriptor = descriptor
+        self.template = template
         self.target = target
         self.status = "created"
         self.percent_complete = 0
         self.finished_image = ""
-        self.image_uuid = image_uuid
-        self.sec_credentials = sec_credentials
         self.builder = None
         
-        builder_class = builder.MockBuilder.MockBuilder
-        if (self.target != "mock"): # If target is mock always run mock builder regardless of descriptor
-            parsed_doc = libxml2.parseDoc(descriptor)
+        builder_class = builders.MockBuilder.MockBuilder
+        if (self.target != "mock"): # If target is mock always run mock builder regardless of template
+            parsed_doc = libxml2.parseDoc(template)
             node = parsed_doc.xpathEval('/template/os/name')
             os_name = node[0].content
             class_name = "%sBuilder" % (os_name, )
             try:
-                builder_module = getattr(builder, class_name)
+                builder_module = getattr(builders, class_name)
                 builder_class = getattr(builder_module, class_name)
             except AttributeError, e:
                 self.log.exception("CAUGHT EXCEPTION: %s \n Could not find builder class for %s, returning MockBuilder!", e, os_name)
 		
-        self.builder = builder_class(descriptor, target, image_uuid, sec_credentials)
+        self.builder = builder_class(template, target)
         # Register as a delegate to the builder
         self.builder.delegate = self
         

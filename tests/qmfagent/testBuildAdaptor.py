@@ -17,8 +17,8 @@
 
 
 import unittest
+from builders import *
 from qmfagent.BuildAdaptor import BuildAdaptor
-from builder import *
 
 class TestBuildAdaptor(unittest.TestCase):
     def setUp(self):

@@ -17,8 +17,8 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import unittest
-from builder.ImageBuilderInterface import ImageBuilderInterface
-from builder.BaseBuilder import BaseBuilder
+from builders.ImageBuilderInterface import ImageBuilderInterface
+from builders.BaseBuilder import BaseBuilder
 
 
 class TestBaseBuilder(unittest.TestCase):

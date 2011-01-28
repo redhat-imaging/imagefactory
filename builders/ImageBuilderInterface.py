@@ -28,8 +28,7 @@ class ImageBuilderInterface(Interface):
 	
 	template = Attribute("""The IDL input template definition of the image.""")
 	target = Attribute("""The target backend the image is being built for.""")
-	uuid = Attribute("""A Universal Unique Identifier for the image.""")
-	credentials = Attribute("""Account credentials for the target backend.""")
+	image_id = Attribute("""A Universal Unique Identifier for the image.""")
 
 	def status():
 		"""Status of the image build process."""

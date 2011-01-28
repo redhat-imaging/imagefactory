@@ -17,8 +17,8 @@
 
 
 import unittest
+from builders import *
 from qmfagent.ImageFactory import ImageFactory
-from builder import *
 
 class TestImageFactory(unittest.TestCase):
     def setUp(self):
