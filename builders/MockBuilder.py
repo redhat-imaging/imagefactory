@@ -26,7 +26,7 @@ from ApplicationConfiguration import ApplicationConfiguration
 
 
 class MockBuilder(BaseBuilder):
-    # TODO: sloranz@redhat.com - Flesh out this docstring more to document this module.
+    # TODO: (redmine 278) - Flesh out this docstring more to document this module.
     """docstring for MockBuilder"""
     zope.interface.implements(ImageBuilderInterface)
     

@@ -24,7 +24,7 @@ import pycurl
 import httplib2
 from ImageBuilderInterface import ImageBuilderInterface
 
-# TODO: sloranz@redhat.com - add build_states() analagous to instance_states() in core - http://deltacloud.org/framework.html
+# TODO: (redmine 256) - add build_states() analagous to instance_states() in core - http://deltacloud.org/framework.html
 class BaseBuilder(object):
     """docstring for BaseBuilder"""
     zope.interface.implements(ImageBuilderInterface)
@@ -176,7 +176,7 @@ class BaseBuilder(object):
         raise NotImplementedError
     
     def store_image(self, location, target_args=None):
-        # TODO: sloranz@redhat.com - Check to make sure the bucket exists. If not do a PUT on it first.
+        # FIXME: (redmine 274) - Check to make sure the bucket exists. If not do a PUT on it first.
         if (not location.endswith('/')):
             location = "%s/" % (location, )
         image_url = "%simage.%s" % (location, self.image_id)

@@ -52,7 +52,7 @@ class ImageFactoryAgent(AgentHandler):
         self._managedObjects = {}
         self.session = None
         # Create and open a messaging connection to a broker.
-        # FIXME: sloranz@redhat.com - Make this use actual amqp:// urls... currently, only host works
+        # TODO: (redmine 277) - Make this use actual amqp:// urls... currently, only host works
         self.connection = cqpid.Connection(url)
         self.connection.open()
         # Create, configure, and open a QMFv2 agent session using the connection.
@@ -81,7 +81,7 @@ class ImageFactoryAgent(AgentHandler):
                 build_adaptor = self.image_factory.build_image(args["template"],args["target"])
                 build_adaptor_instance_name = "build_adaptor-%s" %  (build_adaptor.builder.image_id, )
                 qmf_object_addr = self.session.addData(build_adaptor.qmf_object, build_adaptor_instance_name)
-                # TODO: sloranz@redhat.com - This dictionary could get large over time, think about when to prune it...
+                # TODO: (redmine 276) - This dictionary could get large over time, think about when to prune it...
                 self.managedObjects[repr(qmf_object_addr)] = build_adaptor
                 handle.addReturnArgument("build_adaptor", qmf_object_addr.asMap())
                 self.session.methodSuccess(handle)

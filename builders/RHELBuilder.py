@@ -22,7 +22,7 @@ from BaseBuilder import BaseBuilder
 
 
 class RHELBuilder(BaseBuilder):
-	# TODO: sloranz@redhat.com - Flesh out this docstring more to document this module.
+	# TODO: (redmine 278) - Flesh out this docstring more to document this module.
 	"""docstring for RHELBuilder"""
 	zope.interface.implements(ImageBuilderInterface)
 	

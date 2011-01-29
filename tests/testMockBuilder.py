@@ -46,7 +46,7 @@ class TestMockBuilder(unittest.TestCase):
 		self.assert_(callable(self))
 	
 	def testBuild(self):
-		# TODO: sloranz@redhat.com - test more here... make sure we're getting the file we think.
+		# TODO: (redmine 279) - test more here... make sure we're getting the file we think.
 		# known_uuid = uuid.uuid4()
 		# self.mock_builder.image_id = known_uuid
 		self.mock_builder.build()

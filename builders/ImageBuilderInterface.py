@@ -21,7 +21,7 @@ from zope.interface import Attribute
 
 
 class ImageBuilderInterface(Interface):
-	# TODO: sloranz@redhat.com - make the comments more useful as external documentation.
+	# TODO: (redmine 249) - make the comments more useful as external documentation.
 	"""This documentation needs to be written.  Should describe the 
 	interface that classes must implement to provide image building
 	service to the image factory."""

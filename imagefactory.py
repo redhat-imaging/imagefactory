@@ -68,7 +68,7 @@ class Application(object):
             sys.exit(0)
     
     
-    # TODO: sloranz@redhat.com - add code here to set the user:group we're running as and drop privileges
+    # TODO: (redmine 273) - add code here to set the user:group we're running as and drop privileges
     def daemonize(self): #based on Python recipe 278731
         UMASK = 0
         WORKING_DIRECTORY = '/'

@@ -32,8 +32,9 @@ class BuildAdaptor(object):
     qmf_schema.addProperty(SchemaProperty("status", SCHEMA_DATA_STRING))
     qmf_schema.addProperty(SchemaProperty("percent_complete", SCHEMA_DATA_INT))
     qmf_schema.addProperty(SchemaProperty("finished_image", SCHEMA_DATA_STRING))
-    # TODO: sloranz@redhat.com - these need to be implemented or removed...
+    # TODO: (redmine 275) - abort_build needs to be implemented...
     # qmf_schema.addMethod(SchemaMethod("abort_build", desc = "If possible, abort running build."))
+    # TODO: (redmine 256) - build_states needs to be implemented...
     # _states_method = SchemaMethod("build_states", desc = "Returns a representation of the build state transitions.")
     # _states_method.addArgument(SchemaProperty("states", SCHEMA_DATA_MAP, direction=DIR_IN_OUT))
     # qmf_schema.addMethod(_states_method)
@@ -145,16 +146,14 @@ class BuildAdaptor(object):
         self._builder_thread = Thread(target = self.builder)
         self._builder_thread.start()
     
-    # Builder delegat methods
+    # Builder delegate methods
     def builder_did_update_status(self, builder, old_status, new_status):
         # Currently the lone delegate function
         # This indicates that the underlying builder has had a status change
         # For now we just copy back the status
         self.status = new_status
         self.percent_complete = builder.percent_complete
-        # TODO: sloranz@redhat.com - check for 100% or COMPLETED status before setting this
-        # self.completed_image = builder.image
-        # TODO: Fire events if the status change is significant
+        self.completed_image = builder.image
     
 
 
