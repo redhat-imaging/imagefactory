@@ -7,23 +7,37 @@ Keywords: aeolus,image_factory,cloud
 
 ## Usage ##
 
-	usage: imagefactory.py [-h] [-v] [--debug] [--output OUTPUT] [--version]
-	                       {build,qmf} ...
+	usage: imagefactory [-h] [--version] [-v] [--debug] [--config CONFIG]
+	                    [--output OUTPUT] [--warehouse WAREHOUSE] [--qmf]
+	                    [--broker BROKER] [-b] [-t TEMPLATE]
 	
 	System image creation tool...
 	
 	optional arguments:
-	  -h, --help       show this help message and exit
-	  -v, --verbose    Set verbose logging.
-	  --debug          Set really verbose logging for debugging.
-	  --output OUTPUT  Store built images in location specified. Defaults to /tmp
-	  --version        Version info
+	  -h, --help            show this help message and exit
+	  --version             Version info
+	  -v, --verbose         Set verbose logging.
+	  --debug               Set really verbose logging for debugging.
+	  --config CONFIG       Configuration file to use. (default:
+	                        /etc/imagefactory.conf)
+	  --output OUTPUT       Build image files in location specified. (default:
+	                        /tmp)
+	  --warehouse WAREHOUSE
+	                        URL of the warehouse location to store images.
 	
-	commands:
-	  {build,qmf}
-	    qmf            Provide a QMFv2 agent interface.
-	    build          NOT YET IMPLEMENTED: Build specified system and exit.
-
+	QMF options:
+	  Provide a QMFv2 agent interface.
+	
+	  --qmf                 Turn on QMF agent interface. (default: False)
+	  --broker BROKER       URL of qpidd to connect to. (default: localhost)
+	
+	One time build options:
+	  NOT YET IMPLEMENTED: Build specified system and exit.
+	
+	  -b, --build           Build image specified by template.
+	  -t TEMPLATE, --template TEMPLATE
+	                        Template XML file to build from.
+	
 ## Dependencies ##
 
 QMFv2 Python bindings
