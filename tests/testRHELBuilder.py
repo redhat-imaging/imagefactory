@@ -17,7 +17,7 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import unittest
-from builders.ImageBuilderInterface import ImageBuilderInterface
+from builders.IBuilder import IBuilder
 from builders.RHELBuilder import RHELBuilder
 
 
@@ -28,8 +28,8 @@ class TestRHELBuilder(unittest.TestCase):
 	def tearDown(self):
 		pass
 	
-	def testImplementsImageBuilderInterface(self):
-		self.assert_(ImageBuilderInterface.implementedBy(RHELBuilder), 'RHELBuilder does not implement the ImageBuilder interface.')
+	def testImplementsIBuilder(self):
+		self.assert_(IBuilder.implementedBy(RHELBuilder), 'RHELBuilder does not implement the ImageBuilder interface.')
     
 if __name__ == '__main__':
 	unittest.main()

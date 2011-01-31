@@ -18,6 +18,7 @@
 # MA  02110-1301, USA.  A copy of the GNU General Public License is
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
+import sys
 import os
 import argparse
 import json
@@ -78,10 +79,14 @@ class ApplicationConfiguration(object):
         argparser.add_argument('--config', default='/etc/imagefactory.conf', help='Configuration file to use. (default: %(default)s)')
         argparser.add_argument('--output', default='/tmp', help='Build image files in location specified. (default: %(default)s)')
         argparser.add_argument('--warehouse', help='URL of the warehouse location to store images.')
-        subparsers = argparser.add_subparsers(dest='command', title='commands')
-        command_qmf = subparsers.add_parser('qmf', help='Provide a QMFv2 agent interface.')
-        command_qmf.add_argument('--broker', default='localhost', help='URL of qpidd to connect to. (default: %(default)s)')
-        command_build = subparsers.add_parser('build', help='NOT YET IMPLEMENTED: Build specified system and exit.')
-        command_build.add_argument('--template', help='Template file to build from.')
-        return argparser.parse_args()
+        group_qmf = argparser.add_argument_group(title='QMF options', description='Provide a QMFv2 agent interface.')
+        group_qmf.add_argument('--qmf', action='store_true', default=False, help='Turn on QMF agent interface. (default: %(default)s)')
+        group_qmf.add_argument('--broker', default='localhost', help='URL of qpidd to connect to. (default: %(default)s)')
+        group_build = argparser.add_argument_group(title='One time build options', description='NOT YET IMPLEMENTED: Build specified system and exit.')
+        group_build.add_argument('-b', '--build', dest='qmf', action='store_false', help='Build image specified by template.')
+        group_build.add_argument('-t', '--template', help='Template XML file to build from.')
+        if (sys.argv[0].endswith("imagefactory.py")):
+            return argparser.parse_args()
+        else:
+            return argparser.parse_args([])
     

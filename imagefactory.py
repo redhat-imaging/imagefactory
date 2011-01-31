@@ -109,7 +109,7 @@ class Application(object):
     
     
     def main(self):
-        if (self.app_config['command'] == 'qmf'):
+        if (self.app_config['qmf']):
             if (self.daemonize()):
                 self.setup_logging()
                 logging.info("Launching daemon...")

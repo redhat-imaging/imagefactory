@@ -19,14 +19,14 @@
 import zope
 import oz.Fedora
 import oz.TDL
-from ImageBuilderInterface import ImageBuilderInterface
+from IBuilder import IBuilder
 from BaseBuilder import BaseBuilder
 
 
 class FedoraBuilder(BaseBuilder):
-	# TODO: (redmine 278) - Flesh out this docstring more to document this module.
+	# TODO: sloranz@redhat.com - Flesh out this docstring more to document this module.
 	"""docstring for FedoraBuilder"""
-	zope.interface.implements(ImageBuilderInterface)
+	zope.interface.implements(IBuilder)
 	
 # Initializer
 	def __init__(self, template, target):

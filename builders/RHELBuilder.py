@@ -17,14 +17,14 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import zope
-from ImageBuilderInterface import ImageBuilderInterface
+from IBuilder import IBuilder
 from BaseBuilder import BaseBuilder
 
 
 class RHELBuilder(BaseBuilder):
-	# TODO: (redmine 278) - Flesh out this docstring more to document this module.
+	# TODO: sloranz@redhat.com - Flesh out this docstring more to document this module.
 	"""docstring for RHELBuilder"""
-	zope.interface.implements(ImageBuilderInterface)
+	zope.interface.implements(IBuilder)
 	
 # Initializer
 	def __init__(self, template=None, target=None):

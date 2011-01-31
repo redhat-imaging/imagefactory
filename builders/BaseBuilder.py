@@ -22,12 +22,13 @@ import uuid
 import os
 import pycurl
 import httplib2
-from ImageBuilderInterface import ImageBuilderInterface
+from IBuilder import IBuilder
 
 # TODO: (redmine 256) - add build_states() analagous to instance_states() in core - http://deltacloud.org/framework.html
 class BaseBuilder(object):
-    """docstring for BaseBuilder"""
-    zope.interface.implements(ImageBuilderInterface)
+    """BaseBuilder provides a starting point for builder classes conforming to the IBuilder interface.  Subclasses of BaseBuilder 
+    can focus on the OS/Provider specific activity for creating and deploying images."""
+    zope.interface.implements(IBuilder)
     
     # Properties
     def template():
@@ -156,6 +157,7 @@ class BaseBuilder(object):
     def __init__(self, template=None, target=None):
         super(BaseBuilder, self).__init__()
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        self.image = None
         self.delegate = None
         self._status = None
         self._percent_complete = 0
@@ -170,12 +172,16 @@ class BaseBuilder(object):
     
     # Image actions
     def build(self):
+        """Build the image file.  This method is implemented by subclasses of BaseBuilder to handle OS specific build mechanics."""
         raise NotImplementedError
     
     def abort(self):
+        """Stop building the image file.  This method is implemented by subclasses of BaseBuilder to handle OS specific build mechanics."""
         raise NotImplementedError
     
     def store_image(self, location, target_args=None):
+        """Store the image in an instance of Image Warehouse specified by 'location'.  Any provider specific 
+        parameters needed for later deploying images are passed as an XML block in 'target_args'."""
         # FIXME: (redmine 274) - Check to make sure the bucket exists. If not do a PUT on it first.
         if (not location.endswith('/')):
             location = "%s/" % (location, )
@@ -204,5 +210,6 @@ class BaseBuilder(object):
             http.request("%s/icicle" % (image_url, ), "PUT", body=self.output_descriptor, headers=http_headers)
     
     def push_image(self, image, provider, target_id, credentials):
+        """Prep the image for the provider and deploy.  This method is implemented by subclasses of the BaseBuilder to handle OS/Provider specific mechanics."""
         raise NotImplementedError
     

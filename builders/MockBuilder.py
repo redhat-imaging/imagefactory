@@ -20,15 +20,15 @@ import zope
 import time
 # import imagefactory
 import logging
-from ImageBuilderInterface import ImageBuilderInterface
+from IBuilder import IBuilder
 from BaseBuilder import BaseBuilder
 from ApplicationConfiguration import ApplicationConfiguration
 
 
 class MockBuilder(BaseBuilder):
-    # TODO: (redmine 278) - Flesh out this docstring more to document this module.
+    # TODO: sloranz@redhat.com - Flesh out this docstring more to document this module.
     """docstring for MockBuilder"""
-    zope.interface.implements(ImageBuilderInterface)
+    zope.interface.implements(IBuilder)
     
     # Initializer
     def __init__(self, template='<template><name>Mock</name></template>', target='mock'):

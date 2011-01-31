@@ -43,15 +43,15 @@ class TestBuildAdaptor(unittest.TestCase):
         self.tdl_string = None
     
     def testQMFSchemaDefinition(self):
-        expected_schema_properties = ("descriptor", "target", "status", "percent_complete", "finished_image")
+        expected_schema_properties = ("template", "target", "status", "percent_complete", "finished_image")
         for schema_property in self.schema.getProperties():
-            self.assert_(schema_property.getName() in expected_schema_properties)
+            self.assertIn(schema_property.getName(), expected_schema_properties)
 	
     def testInstantiateMockBuilder(self):
-        build_adaptor = BuildAdaptor(self.tdl_string, "mock", "foo", "bar")
+        build_adaptor = BuildAdaptor(self.tdl_string, "mock")
         self.assertIsInstance(build_adaptor.builder, MockBuilder.MockBuilder)
-        self.assert_(build_adaptor.descriptor == self.tdl_string)
-        self.assert_(build_adaptor.target == "mock")
+        self.assertEqual(build_adaptor.template, self.tdl_string)
+        self.assertEqual(build_adaptor.target, "mock")
     
     # def testInstantiateFedoraBuilder(self):
     #     build_adaptor = BuildAdaptor(self.tdl_string, "foo", "bar", "baz")

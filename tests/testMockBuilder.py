@@ -18,8 +18,8 @@
 
 import unittest
 import zope
-from builders.ImageBuilderDelegate import ImageBuilderDelegate
-from builders.ImageBuilderInterface import ImageBuilderInterface
+from builders.IBuilderDelegate import IBuilderDelegate
+from builders.IBuilder import IBuilder
 from builders.MockBuilder import MockBuilder
 
 
@@ -35,8 +35,8 @@ class TestMockBuilder(unittest.TestCase):
 		self.delegate = None
 		self.new_builder_status = None
 	
-	def testImplementsImageBuilderInterface(self):
-		self.assert_(ImageBuilderInterface.implementedBy(MockBuilder), 'MockBuilder does not implement the ImageBuilder interface...')
+	def testImplementsIBuilder(self):
+		self.assert_(IBuilder.implementedBy(MockBuilder), 'MockBuilder does not implement the ImageBuilder interface...')
 	
 	def testInit(self):
 		self.assertEqual("IDL", self.mock_builder.template)
@@ -100,7 +100,7 @@ class TestMockBuilder(unittest.TestCase):
 
 
 class MockBuilderDelegate(object):
-	zope.interface.implements(ImageBuilderDelegate)
+	zope.interface.implements(IBuilderDelegate)
 	
 	def builder_should_update_status(self, builder, original_status, new_status):
 		if(original_status == "NO_UPDATE"):

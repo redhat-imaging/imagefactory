@@ -20,10 +20,10 @@ from zope.interface import Interface
 from zope.interface import Attribute
 
 
-class ImageBuilderDelegate(Interface):
+class IBuilderDelegate(Interface):
 	"""Builders should call these methods on their delegate if assigned.
 	Subclasses of the BaseBuilder class will get this for free.  Classes
-	that conform to the ImageBuilderDelegate interface can selectively
+	that conform to the IBuilderDelegate interface can selectively
 	implement methods from this interface."""
 	
 	def builder_will_update_status(self, builder, original_status, new_status):

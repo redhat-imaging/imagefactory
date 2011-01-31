@@ -17,7 +17,7 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import unittest
-from builders.ImageBuilderInterface import ImageBuilderInterface
+from builders.IBuilder import IBuilder
 from builders.FedoraBuilder import FedoraBuilder
 
 
@@ -28,8 +28,8 @@ class TestFedoraBuilder(unittest.TestCase):
 	def tearDown(self):
 		pass
 	
-	def testImplementsImageBuilderInterface(self):
-		self.assert_(ImageBuilderInterface.implementedBy(FedoraBuilder), 'FedoraBuilder does not implement the ImageBuilder interface.')
+	def testImplementsIBuilder(self):
+		self.assert_(IBuilder.implementedBy(FedoraBuilder), 'FedoraBuilder does not implement the ImageBuilder interface.')
     
 if __name__ == '__main__':
 	unittest.main()

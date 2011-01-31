@@ -20,11 +20,11 @@ import logging
 import cqpid
 from qmf2 import *
 from threading import Thread, Lock
+import zope
 import builders
 from builders import *
 
 class BuildAdaptor(object):
-    
     # QMF schema for BuildAdaptor
     qmf_schema = Schema(SCHEMA_TYPE_DATA, "com.redhat.imagefactory", "BuildAdaptor")
     qmf_schema.addProperty(SchemaProperty("template", SCHEMA_DATA_STRING))

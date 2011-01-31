@@ -17,8 +17,9 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import unittest
-from builders.ImageBuilderInterface import ImageBuilderInterface
+from builders.IBuilder import IBuilder
 from builders.BaseBuilder import BaseBuilder
+from zope.interface import Invalid
 
 
 class TestBaseBuilder(unittest.TestCase):
@@ -28,8 +29,12 @@ class TestBaseBuilder(unittest.TestCase):
 	def tearDown(self):
 		pass
 	
-	def testImplementsImageBuilderInterface(self):
-		self.assert_(ImageBuilderInterface.implementedBy(BaseBuilder), 'BaseBuilder does not implement the ImageBuilder interface.')
+	def testImplementsIBuilder(self):
+		self.assert_(IBuilder.implementedBy(BaseBuilder), 'BaseBuilder does not implement the ImageBuilder interface.')
+		try:
+		    IBuilder.validateInvariants(BaseBuilder())
+		except Invalid, e:
+		    self.fail(e)
     
 if __name__ == '__main__':
 	unittest.main()
