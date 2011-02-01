@@ -76,7 +76,7 @@ class ImageFactoryAgent(AgentHandler):
         Handle incoming method calls.
         """
         self.log.debug("Method called: name = %s \n args = %s \n handle = %s \n addr = %s \n subtypes = %s \n userId = %s", methodName, args, handle, addr, subtypes, userId)
-        if (methodName == "build_image"):
+        if ((addr == self.image_factory_addr) and (methodName == "build_image")):
             try:
                 build_adaptor = self.image_factory.build_image(args["template"],args["target"])
                 build_adaptor_instance_name = "build_adaptor-%s" %  (build_adaptor.builder.image_id, )
@@ -87,9 +87,22 @@ class ImageFactoryAgent(AgentHandler):
                 self.session.methodSuccess(handle)
             except Exception, e:
                 self.log.exception(e)
-                self.session.raiseException(handle, e.message)
+                self.session.raiseException(handle, "Exception: %s %s" % (repr(e), str(e)))
+        elif (repr(addr) in self.managedObjects):
+            try:
+                result = getattr(self.managedObjects[repr(addr)].builder, methodName)(**args)
+                if (result):
+                    if (isinstance(result, dict)):
+                        for key in result:
+                            handle.addReturnArgument(key, str(result[key]))
+                    else:
+                        handle.addReturnArgument("result", str(result))
+                self.session.methodSuccess(handle)
+            except Exception, e:
+                self.log.exception(e)
+                self.session.raiseException(handle, "Exception: %s %s" % (repr(e), str(e)))
         else:
-            errorMsg = "Method (%s) not implemented!!!" % (methodName, )
+            errorMsg = "Method (%s()) not implemented..." % (methodName, )
             self.log.warning(errorMsg)
             self.session.raiseException(handle, errorMsg)
     

@@ -31,9 +31,9 @@ class BuildAdaptor(object):
     qmf_schema.addProperty(SchemaProperty("target", SCHEMA_DATA_STRING))
     qmf_schema.addProperty(SchemaProperty("status", SCHEMA_DATA_STRING))
     qmf_schema.addProperty(SchemaProperty("percent_complete", SCHEMA_DATA_INT))
-    qmf_schema.addProperty(SchemaProperty("finished_image", SCHEMA_DATA_STRING))
+    qmf_schema.addProperty(SchemaProperty("image", SCHEMA_DATA_STRING))
     # TODO: (redmine 275) - abort_build needs to be implemented...
-    # qmf_schema.addMethod(SchemaMethod("abort_build", desc = "If possible, abort running build."))
+    qmf_schema.addMethod(SchemaMethod("abort", desc = "If possible, abort running build."))
     # TODO: (redmine 256) - build_states needs to be implemented...
     # _states_method = SchemaMethod("build_states", desc = "Returns a representation of the build state transitions.")
     # _states_method.addArgument(SchemaProperty("states", SCHEMA_DATA_MAP, direction=DIR_IN_OUT))
@@ -88,17 +88,17 @@ class BuildAdaptor(object):
         return locals()
     percent_complete = property(**percent_complete())
     
-    def finished_image():
-        doc = "The finished_image property."
+    def image():
+        doc = "The image property."
         def fget(self):
-            return self._finished_image
+            return self._image
         def fset(self, value):
-            self._finished_image = value
-            self.qmf_object.finished_image = value
+            self._image = value
+            self.qmf_object.image = value
         def fdel(self):
-            del self._finished_image
+            del self._image
         return locals()
-    finished_image = property(**finished_image())
+    image = property(**image())
     
     def qmf_object():
         doc = "The qmf_object property."
@@ -121,7 +121,7 @@ class BuildAdaptor(object):
         self.target = target
         self.status = "created"
         self.percent_complete = 0
-        self.finished_image = ""
+        self.image = ""
         self.builder = None
         
         builder_class = builders.MockBuilder.MockBuilder
@@ -153,7 +153,7 @@ class BuildAdaptor(object):
         # For now we just copy back the status
         self.status = new_status
         self.percent_complete = builder.percent_complete
-        self.completed_image = builder.image
+        self.image = builder.image
     
 
 

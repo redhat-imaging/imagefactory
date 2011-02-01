@@ -110,7 +110,7 @@ class Application(object):
     
     def main(self):
         if (self.app_config['qmf']):
-            if (not self.app_config['no-daemon']):
+            if (not self.app_config['foreground']):
                 self.daemonize()
                 self.setup_logging()
                 logging.info("Launching daemon...")
