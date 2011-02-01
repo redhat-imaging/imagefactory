@@ -76,6 +76,7 @@ class ApplicationConfiguration(object):
         argparser.add_argument('--version', action='version', version='%(prog)s 0.1', help='Version info')
         argparser.add_argument('-v', '--verbose', action='store_true', default=False, help='Set verbose logging.')
         argparser.add_argument('--debug', action='store_true', default=False, help='Set really verbose logging for debugging.')
+        argparser.add_argument('--no-daemon', action='store_true', default=False, help='Stay in the foreground and avoid launching a daemon. (default: %(default)s)')
         argparser.add_argument('--config', default='/etc/imagefactory.conf', help='Configuration file to use. (default: %(default)s)')
         argparser.add_argument('--output', default='/tmp', help='Build image files in location specified. (default: %(default)s)')
         argparser.add_argument('--warehouse', help='URL of the warehouse location to store images.')

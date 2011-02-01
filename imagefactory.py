@@ -110,11 +110,13 @@ class Application(object):
     
     def main(self):
         if (self.app_config['qmf']):
-            if (self.daemonize()):
+            if (not self.app_config['no-daemon']):
+                self.daemonize()
                 self.setup_logging()
                 logging.info("Launching daemon...")
-                self.qmf_agent = ImageFactoryAgent(self.app_config['broker'])
-                self.qmf_agent.run()
+            
+            self.qmf_agent = ImageFactoryAgent(self.app_config['broker'])
+            self.qmf_agent.run()
     
 
 
