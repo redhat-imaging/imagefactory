@@ -182,12 +182,19 @@ class BaseBuilder(object):
     def store_image(self, location, target_args=None):
         """Store the image in an instance of Image Warehouse specified by 'location'.  Any provider specific 
         parameters needed for later deploying images are passed as an XML block in 'target_args'."""
-        # FIXME: (redmine 274) - Check to make sure the bucket exists. If not do a PUT on it first.
+        http = httplib2.Http()
+        http_headers = {'content-type':'text/plain'}
+        
+        # since there is no way to know if the bucket exists or not, do the put on the base URL first since it seems to be non-destructive
+        http.request(location, "PUT", headers=http_headers)
+        
         if (not location.endswith('/')):
             location = "%s/" % (location, )
+        
         image_url = "%simage.%s" % (location, self.image_id)
         self.log.debug("File (%s) to be stored at %s" % (self.image, image_url))
         image_file = open(self.image)
+        
         # Upload the image itself
         image_size = os.path.getsize(self.image)
         curl = pycurl.Curl()
@@ -199,9 +206,8 @@ class BaseBuilder(object):
         curl.perform()
         curl.close()
         image_file.close()
+        
         # Set metadata on the image
-        http = httplib2.Http()
-        http_headers = {'content-type':'text/plain'}
         http.request("%s/template" % (image_url, ), "PUT", body=self.template, headers=http_headers)
         http.request("%s/target" % (image_url, ), "PUT", body=self.target, headers=http_headers)
         if (target_args):
