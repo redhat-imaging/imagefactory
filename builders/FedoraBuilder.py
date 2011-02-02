@@ -34,7 +34,7 @@ class FedoraBuilder(BaseBuilder):
 		self.guest = oz.Fedora.get_class(oz.TDL.TDL(xmlstring=template), None)
 	
 # Image actions
-	def build(self):
+	def build_image(self):
 		self.guest.cleanup_old_guest()
 		self.guest.generate_install_media(force_download=False)
 		try:

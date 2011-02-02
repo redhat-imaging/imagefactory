@@ -32,7 +32,6 @@ class BuildAdaptor(object):
     qmf_schema.addProperty(SchemaProperty("status", SCHEMA_DATA_STRING))
     qmf_schema.addProperty(SchemaProperty("percent_complete", SCHEMA_DATA_INT))
     qmf_schema.addProperty(SchemaProperty("image", SCHEMA_DATA_STRING))
-    # TODO: (redmine 275) - abort_build needs to be implemented...
     qmf_schema.addMethod(SchemaMethod("abort", desc = "If possible, abort running build."))
     # TODO: (redmine 256) - build_states needs to be implemented...
     # _states_method = SchemaMethod("build_states", desc = "Returns a representation of the build state transitions.")
@@ -115,6 +114,7 @@ class BuildAdaptor(object):
         super(BuildAdaptor, self).__init__()
         
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        self._builder_thread_lock = Lock()
         self.qmf_object = Data(BuildAdaptor.qmf_schema)
         
         self.template = template
@@ -139,12 +139,26 @@ class BuildAdaptor(object):
         self.builder = builder_class(template, target)
         # Register as a delegate to the builder
         self.builder.delegate = self
-        
-        # Create instance lock to protect during status updates
-        self._builder_thread_lock = Lock()
-        # Run build() in a new thread
-        self._builder_thread = Thread(target = self.builder)
+    
+    def build_image(self):
+        thread_name = "%s.build_image()" % (self.builder.image_id, )
+        self._builder_thread = Thread(target = self.builder, name=thread_name, args=('build_image'))
+        # self._builder_thread_lock.acquire()
         self._builder_thread.start()
+        # self._builder_thread_lock.release()
+        return self
+        
+    def push_image(self, image_id, provider, credentials):
+        thread_name = "%s.push_image()" % (image_id, )
+        kwargs = dict(image_id=image_id, provider=provider, credentials=credentials)
+        self._builder_thread = Thread(target = self.builder, name=thread_name, args=('push_image'), kwargs=kwargs)
+        # self._builder_thread_lock.acquire()
+        self._builder_thread.start()
+        # self._builder_thread_lock.release()
+        return dict(uuid=self.builder.image_id)
+    
+    def abort(self):
+        self.builder.abort()
     
     # Builder delegate methods
     def builder_did_update_status(self, builder, old_status, new_status):

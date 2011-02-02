@@ -53,6 +53,28 @@ class BaseBuilder(object):
         return locals()
     target = property(**target())
     
+    def target_id():
+        doc = "The target_id property."
+        def fget(self):
+            return self._target_id
+        def fset(self, value):
+            self._target_id = value
+        def fdel(self):
+            del self._target_id
+        return locals()
+    target_id = property(**target_id())
+    
+    def provider():
+        doc = "The provider property."
+        def fget(self):
+            return self._provider
+        def fset(self, value):
+            self._provider = value
+        def fdel(self):
+            del self._provider
+        return locals()
+    provider = property(**provider())
+    
     def image_id():
         doc = "The image_id property."
         def fget(self):
@@ -167,11 +189,11 @@ class BaseBuilder(object):
         self.output_descriptor = "<icicle></icicle>"
     
     # Make instances callable for passing to thread objects
-    def __call__(self):
-        self.build()
+    def __call__(self, *args, **kwargs):
+        getattr(self, str().join(args))(**kwargs)
     
     # Image actions
-    def build(self):
+    def build_image(self):
         """Build the image file.  This method is implemented by subclasses of BaseBuilder to handle OS specific build mechanics."""
         raise NotImplementedError
     
@@ -191,14 +213,14 @@ class BaseBuilder(object):
         if (not location.endswith('/')):
             location = "%s/" % (location, )
         
-        image_url = "%simage.%s" % (location, self.image_id)
-        self.log.debug("File (%s) to be stored at %s" % (self.image, image_url))
+        base_url = "%s%s" % (location, self.image_id)
+        self.log.debug("File (%s) to be stored at %s" % (self.image, base_url))
         image_file = open(self.image)
         
         # Upload the image itself
         image_size = os.path.getsize(self.image)
         curl = pycurl.Curl()
-        curl.setopt(pycurl.URL, image_url)
+        curl.setopt(pycurl.URL, base_url)
         curl.setopt(pycurl.HTTPHEADER, ["User-Agent: Load Tool (PyCURL Load Tool)"])
         curl.setopt(pycurl.PUT, 1)
         curl.setopt(pycurl.INFILE, image_file)
@@ -208,14 +230,16 @@ class BaseBuilder(object):
         image_file.close()
         
         # Set metadata on the image
-        http.request("%s/template" % (image_url, ), "PUT", body=self.template, headers=http_headers)
-        http.request("%s/target" % (image_url, ), "PUT", body=self.target, headers=http_headers)
+        http.request("%s/uuid" % (base_url, ), "PUT", body=str(self.image_id), headers=http_headers)
+        http.request("%s/type" % (base_url, ), "PUT", body="image", headers=http_headers)
+        http.request("%s/template" % (base_url, ), "PUT", body=self.template, headers=http_headers)
+        http.request("%s/target" % (base_url, ), "PUT", body=self.target, headers=http_headers)
         if (target_args):
-            http.request("%s/target-parameters" % (image_url, ), "PUT", body=self.target, headers=http_headers)
+            http.request("%s/target-parameters" % (base_url, ), "PUT", body=target_args, headers=http_headers)
         if (self.output_descriptor):
-            http.request("%s/icicle" % (image_url, ), "PUT", body=self.output_descriptor, headers=http_headers)
+            http.request("%s/icicle" % (base_url, ), "PUT", body=self.output_descriptor, headers=http_headers)
     
-    def push_image(self, image, provider, target_id, credentials):
+    def push_image(self, image_id, provider, credentials):
         """Prep the image for the provider and deploy.  This method is implemented by subclasses of the BaseBuilder to handle OS/Provider specific mechanics."""
         raise NotImplementedError
     

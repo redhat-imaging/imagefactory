@@ -36,7 +36,7 @@ class MockBuilder(BaseBuilder):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
     
     # Image actions
-    def build(self):
+    def build_image(self):
         self.log.debug("build() called on MockBuilder...")
         app_config = ApplicationConfiguration().configuration
         self.log.debug("Getting application configuration: %s" % (app_config, ))

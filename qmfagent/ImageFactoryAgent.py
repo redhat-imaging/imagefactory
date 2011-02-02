@@ -76,35 +76,33 @@ class ImageFactoryAgent(AgentHandler):
         Handle incoming method calls.
         """
         self.log.debug("Method called: name = %s \n args = %s \n handle = %s \n addr = %s \n subtypes = %s \n userId = %s", methodName, args, handle, addr, subtypes, userId)
-        if ((addr == self.image_factory_addr) and (methodName == "build_image")):
-            try:
-                build_adaptor = self.image_factory.build_image(args["template"],args["target"])
-                build_adaptor_instance_name = "build_adaptor-%s" %  (build_adaptor.builder.image_id, )
-                qmf_object_addr = self.session.addData(build_adaptor.qmf_object, build_adaptor_instance_name)
-                # TODO: (redmine 276) - This dictionary could get large over time, think about when to prune it...
-                self.managedObjects[repr(qmf_object_addr)] = build_adaptor
-                handle.addReturnArgument("build_adaptor", qmf_object_addr.asMap())
-                self.session.methodSuccess(handle)
-            except Exception, e:
-                self.log.exception(e)
-                self.session.raiseException(handle, "Exception: %s %s" % (repr(e), str(e)))
+        
+        if (addr == self.image_factory_addr):
+            target_obj = self.image_factory
         elif (repr(addr) in self.managedObjects):
-            try:
-                result = getattr(self.managedObjects[repr(addr)].builder, methodName)(**args)
-                if (result):
-                    if (isinstance(result, dict)):
-                        for key in result:
-                            handle.addReturnArgument(key, str(result[key]))
-                    else:
-                        handle.addReturnArgument("result", str(result))
-                self.session.methodSuccess(handle)
-            except Exception, e:
-                self.log.exception(e)
-                self.session.raiseException(handle, "Exception: %s %s" % (repr(e), str(e)))
+            target_obj = self.managedObjects[repr(addr)]
+            
+        try:
+            result = getattr(target_obj, methodName)(**args)
+        except Exception, e:
+            self.log.exception(e)
+            self.session.raiseException(handle, "Exception: %s %s" % (repr(e), str(e)))
+        
+        if (methodName == "build_image"):
+            build_adaptor_instance_name = "build_adaptor-%s" %  (result.builder.image_id, )
+            qmf_object_addr = self.session.addData(result.qmf_object, build_adaptor_instance_name)
+            # TODO: (redmine 276) - This dictionary could get large over time, think about when to prune it...
+            self.managedObjects[repr(qmf_object_addr)] = result
+            handle.addReturnArgument("build_adaptor", qmf_object_addr.asMap())
+            self.session.methodSuccess(handle)
         else:
-            errorMsg = "Method (%s()) not implemented..." % (methodName, )
-            self.log.warning(errorMsg)
-            self.session.raiseException(handle, errorMsg)
+            if (result):
+                if (isinstance(result, dict)):
+                    for key in result:
+                        handle.addReturnArgument(key, str(result[key]))
+                else:
+                    handle.addReturnArgument("result", repr(result))
+            self.session.methodSuccess(handle)
     
     def shutdown(self):
         """

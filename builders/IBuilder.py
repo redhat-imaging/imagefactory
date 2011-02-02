@@ -28,6 +28,8 @@ def conforms_to_interface_invariant(obj):
     try:
         getattr(obj, "template")
         getattr(obj, "target")
+        getattr(obj, "target_id")
+        getattr(obj, "provider")
         getattr(obj, "image_id")
         getattr(obj, "image")
         getattr(obj, "status")
@@ -50,6 +52,8 @@ class IBuilder(Interface):
     # attributes
     template = Attribute("""The IDL input template definition of the image.""")
     target = Attribute("""The target backend the image is being built for.""")
+    target_id = Attribute("""The unique handle or representation of the Replicated Image in the provider instance. For Amazon this will be an AMI. It's unclear what this might be on other providers.""")
+    provider = Attribute("""Where the image is to be deployed / launched. (eg. ec2-us-west)""")
     image_id = Attribute("""A Universal Unique Identifier for the image.""")
     image = Attribute("""Reference to the image file being built.""")
     status = Attribute("""Status of the image build process.""")
@@ -57,7 +61,7 @@ class IBuilder(Interface):
     output_descriptor = Attribute("""ICICLE document describing what was actually installed in the image.""")
     delegate = Attribute("""Object conforming to the BuilderDelegate interface.""")
     # methods
-    def build():
+    def build_image():
         """Tell the builder to start building the image."""
 	
     def abort():
@@ -66,6 +70,6 @@ class IBuilder(Interface):
     def store_image(location, target_args):
         """Upload the completed image to an image warehouse."""
 	
-    def push_image(image, provider, target_id, credentials):
+    def push_image(image_id, provider, credentials):
         """Deploy an image to the cloud provider."""
     
