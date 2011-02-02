@@ -142,6 +142,7 @@ class BuildAdaptor(object):
     
     def build_image(self):
         thread_name = "%s.build_image()" % (self.builder.image_id, )
+        # using args to pass the method we want to call on the target object.
         self._builder_thread = Thread(target = self.builder, name=thread_name, args=('build_image'))
         # self._builder_thread_lock.acquire()
         self._builder_thread.start()
@@ -150,6 +151,7 @@ class BuildAdaptor(object):
         
     def push_image(self, image_id, provider, credentials):
         thread_name = "%s.push_image()" % (image_id, )
+        # using args to pass the method we want to call on the target object.
         kwargs = dict(image_id=image_id, provider=provider, credentials=credentials)
         self._builder_thread = Thread(target = self.builder, name=thread_name, args=('push_image'), kwargs=kwargs)
         # self._builder_thread_lock.acquire()

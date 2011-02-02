@@ -190,6 +190,7 @@ class BaseBuilder(object):
     
     # Make instances callable for passing to thread objects
     def __call__(self, *args, **kwargs):
+        # the method that we want to call on self is in args... kwargs is the method parameters, if there are any.
         getattr(self, str().join(args))(**kwargs)
     
     # Image actions
