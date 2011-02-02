@@ -18,8 +18,8 @@
 
 import zope
 import time
-# import imagefactory
 import logging
+import httplib2
 from IBuilder import IBuilder
 from BaseBuilder import BaseBuilder
 from ApplicationConfiguration import ApplicationConfiguration
@@ -34,13 +34,13 @@ class MockBuilder(BaseBuilder):
     def __init__(self, template='<template><name>Mock</name></template>', target='mock'):
         super(MockBuilder, self).__init__(template, target)
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        self.app_config = ApplicationConfiguration().configuration
+        self.warehouse_url = self.app_config['warehouse']
     
     # Image actions
     def build_image(self):
-        self.log.debug("build() called on MockBuilder...")
-        app_config = ApplicationConfiguration().configuration
-        self.log.debug("Getting application configuration: %s" % (app_config, ))
-        self.image = "%s/%s.miso" % (app_config['output'], self.image_id)
+        self.log.debug("build_image() called on MockBuilder...")
+        self.image = "%s/%s.miso" % (self.app_config['output'], self.image_id)
         self.log.debug("Setting image build path: %s" % (self.image, ))
         self.status = "INITIALIZING"
         self.log.debug("Initializing mock image...")
@@ -53,9 +53,9 @@ class MockBuilder(BaseBuilder):
             self.percent_complete = 5
             image_file.write(':name: Mock Image\n')
             self.percent_complete = 10
-            image_file.write(':owner_id: fedoraproject\n')
+            image_file.write(':owner_id: Mock Owner\n')
             self.percent_complete = 15
-            image_file.write(':architecture: x86_64\n')
+            image_file.write(':architecture: mock_architecture\n')
             self.percent_complete = 20
             image_file.close()
         
@@ -72,9 +72,18 @@ class MockBuilder(BaseBuilder):
         self.status = "COMPLETED"
         self.log.debug("Completed mock image build...")
         
-        if (app_config['warehouse']):
-            self.log.debug("Storing mock image at %s..." % (app_config['warehouse'], ))
-            self.store_image(app_config['warehouse'])
+        self.log.debug("Storing mock image at %s..." % (self.warehouse_url, ))
+        self.store_image(self.warehouse_url)
+    
+    def push_image(self, image_id, provider, credentials):
+        original_image_url = "%s/%s" % (self.warehouse_url, image_id)
+        this_image_url = "%s/%s" % (self.warehouse_url, self.image_id)
+        http_headers = {'content-type':'text/plain'}
+        http = httplib2.Http()
+        headers_response_image, image = http.request(original_image_url, "GET")
+        http.request(this_image_url, "PUT", body=image, headers=http_headers)
+        metadata = dict(uuid=self.image_id, type="provider_image", template=self.template, target=self.target, icicle=self.output_descriptor, image=original_image_url, provider=provider, target_identifier=this_image_url)
+        self.set_storage_metadata(this_image_url, metadata)
     
     def abort(self):
         pass

@@ -67,7 +67,7 @@ class IBuilder(Interface):
     def abort():
         """Tell the builder to stop building the image."""
 	
-    def store_image(location, target_args):
+    def store_image(location, target_parameters):
         """Upload the completed image to an image warehouse."""
 	
     def push_image(image_id, provider, credentials):

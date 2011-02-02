@@ -201,9 +201,9 @@ class BaseBuilder(object):
         """Stop building the image file.  This method is implemented by subclasses of BaseBuilder to handle OS specific build mechanics."""
         raise NotImplementedError
     
-    def store_image(self, location, target_args=None):
+    def store_image(self, location, target_parameters=None):
         """Store the image in an instance of Image Warehouse specified by 'location'.  Any provider specific 
-        parameters needed for later deploying images are passed as an XML block in 'target_args'."""
+        parameters needed for later deploying images are passed as an XML block in 'target_parameters'."""
         http = httplib2.Http()
         http_headers = {'content-type':'text/plain'}
         
@@ -229,15 +229,13 @@ class BaseBuilder(object):
         curl.close()
         image_file.close()
         
-        # Set metadata on the image
-        http.request("%s/uuid" % (base_url, ), "PUT", body=str(self.image_id), headers=http_headers)
-        http.request("%s/type" % (base_url, ), "PUT", body="image", headers=http_headers)
-        http.request("%s/template" % (base_url, ), "PUT", body=self.template, headers=http_headers)
-        http.request("%s/target" % (base_url, ), "PUT", body=self.target, headers=http_headers)
-        if (target_args):
-            http.request("%s/target-parameters" % (base_url, ), "PUT", body=target_args, headers=http_headers)
-        if (self.output_descriptor):
-            http.request("%s/icicle" % (base_url, ), "PUT", body=self.output_descriptor, headers=http_headers)
+        metadata = dict(uuid=self.image_id, type="image", template=self.template, target=self.target, target_parameters=target_parameters, icicle=self.output_descriptor)
+        self.set_storage_metadata(base_url, metadata)
+        
+    def set_storage_metadata(self, url, metadata):
+        http = httplib2.Http()
+        for item in metadata:
+            http.request("%s/%s" % (url, item), "PUT", body=str(metadata[item]), headers={'content-type':'text/plain'})
     
     def push_image(self, image_id, provider, credentials):
         """Prep the image for the provider and deploy.  This method is implemented by subclasses of the BaseBuilder to handle OS/Provider specific mechanics."""
