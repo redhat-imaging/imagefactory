@@ -88,7 +88,7 @@ class ImageFactoryAgent(AgentHandler):
             self.log.exception(e)
             self.session.raiseException(handle, "Exception: %s %s" % (repr(e), str(e)))
         
-        if (methodName == "build_image"):
+        if (addr == self.image_factory_addr):
             build_adaptor_instance_name = "build_adaptor-%s" %  (result.builder.image_id, )
             qmf_object_addr = self.session.addData(result.qmf_object, build_adaptor_instance_name)
             # TODO: (redmine 276) - This dictionary could get large over time, think about when to prune it...

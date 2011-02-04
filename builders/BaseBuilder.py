@@ -209,29 +209,32 @@ class BaseBuilder(object):
         http_headers = {'content-type':'text/plain'}
         
         # since there is no way to know if the bucket exists or not, do the put on the base URL first since it seems to be non-destructive
-        http.request(location, "PUT", headers=http_headers)
-        
-        if (not location.endswith('/')):
-            location = "%s/" % (location, )
-        
-        base_url = "%s%s" % (location, self.image_id)
-        self.log.debug("File (%s) to be stored at %s" % (self.image, base_url))
-        image_file = open(self.image)
-        
-        # Upload the image itself
-        image_size = os.path.getsize(self.image)
-        curl = pycurl.Curl()
-        curl.setopt(pycurl.URL, base_url)
-        curl.setopt(pycurl.HTTPHEADER, ["User-Agent: Load Tool (PyCURL Load Tool)"])
-        curl.setopt(pycurl.PUT, 1)
-        curl.setopt(pycurl.INFILE, image_file)
-        curl.setopt(pycurl.INFILESIZE, image_size)
-        curl.perform()
-        curl.close()
-        image_file.close()
-        
-        metadata = dict(uuid=self.image_id, type="image", template=self.template, target=self.target, target_parameters=target_parameters, icicle=self.output_descriptor)
-        self.set_storage_metadata(base_url, metadata)
+        try:
+            http.request(location, "PUT", headers=http_headers)
+            
+            if (not location.endswith('/')):
+                location = "%s/" % (location, )
+            
+            base_url = "%s%s" % (location, self.image_id)
+            self.log.debug("File (%s) to be stored at %s" % (self.image, base_url))
+            image_file = open(self.image)
+            
+            # Upload the image itself
+            image_size = os.path.getsize(self.image)
+            curl = pycurl.Curl()
+            curl.setopt(pycurl.URL, base_url)
+            curl.setopt(pycurl.HTTPHEADER, ["User-Agent: Load Tool (PyCURL Load Tool)"])
+            curl.setopt(pycurl.PUT, 1)
+            curl.setopt(pycurl.INFILE, image_file)
+            curl.setopt(pycurl.INFILESIZE, image_size)
+            curl.perform()
+            curl.close()
+            image_file.close()
+            
+            metadata = dict(uuid=self.image_id, type="image", template=self.template, target=self.target, target_parameters=target_parameters, icicle=self.output_descriptor)
+            self.set_storage_metadata(base_url, metadata)
+        except Exception, e:
+            self.log.exception("Image could not be stored...  Check status of image warehouse!  \nCaught exception while trying to store image(%s):\n%s" % (self.image_id, e))
         
     def set_storage_metadata(self, url, metadata):
         http = httplib2.Http()

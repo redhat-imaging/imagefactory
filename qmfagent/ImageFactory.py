@@ -38,7 +38,7 @@ class ImageFactory(object):
     _push_image_method.addArgument(SchemaProperty("image_id", SCHEMA_DATA_STRING, direction=DIR_IN))
     _push_image_method.addArgument(SchemaProperty("provider", SCHEMA_DATA_STRING, direction=DIR_IN))
     _push_image_method.addArgument(SchemaProperty("credentials", SCHEMA_DATA_STRING, direction=DIR_IN))
-    _push_image_method.addArgument(SchemaProperty("uuid", SCHEMA_DATA_STRING, direction=DIR_OUT))
+    _push_image_method.addArgument(SchemaProperty("build_adaptor", SCHEMA_DATA_MAP, direction=DIR_OUT))
     qmf_schema.addMethod(_push_image_method)
     
     ## Properties
@@ -64,7 +64,8 @@ class ImageFactory(object):
     
     def build_image(self,template,target):
         build_adaptor = BuildAdaptor.BuildAdaptor(template,target)
-        return build_adaptor.build_image()
+        build_adaptor.build_image()
+        return build_adaptor
     
     def push_image(self,image_id, provider, credentials):
         base_url = ApplicationConfiguration().configuration['warehouse']
@@ -74,7 +75,8 @@ class ImageFactory(object):
             headers_response_target, target = http.request("%s/%s/target" % (base_url, image_id), "GET")
             if (template and target):
                 build_adaptor = BuildAdaptor.BuildAdaptor(template,target)
-                return build_adaptor.push_image(image_id, provider, credentials)
+                build_adaptor.push_image(image_id, provider, credentials)
+                return build_adaptor
             else:
                 raise RuntimeError("Could not retrieve template (%s) or target (%s) from %s/%s" % (template, target, base_url, image_id))
         else:

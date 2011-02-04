@@ -17,6 +17,7 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import zope
+import sys
 import time
 import logging
 import httplib2
@@ -57,6 +58,10 @@ class MockBuilder(BaseBuilder):
             self.percent_complete = 15
             image_file.write(':architecture: mock_architecture\n')
             self.percent_complete = 20
+            image_file.write(":object_id: %s\n" % (id(self), ))
+            image_file.write(":uuid: %s\n" % (self.image_id, ))
+            image_file.write(":created_by: %s\n" % (sys.argv[0].rpartition('/')[2], ))
+            image_file.write(":created_on: %s\n" % (time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()), ))
             image_file.close()
         
         time.sleep(2)
@@ -72,7 +77,7 @@ class MockBuilder(BaseBuilder):
         self.status = "COMPLETED"
         self.log.debug("Completed mock image build...")
         
-        self.log.debug("Storing mock image at %s..." % (self.warehouse_url, ))
+        self.log.debug("Storing mock image at %s%s..." % (self.warehouse_url, self.image_id))
         self.store_image(self.warehouse_url)
     
     def push_image(self, image_id, provider, credentials):
@@ -86,5 +91,5 @@ class MockBuilder(BaseBuilder):
         self.set_storage_metadata(this_image_url, metadata)
     
     def abort(self):
-        pass
+        self.log.debug("Method abort() called on MockBuilder instance %s" % (id(self), ))
     
