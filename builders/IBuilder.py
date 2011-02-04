@@ -36,7 +36,7 @@ def conforms_to_interface_invariant(obj):
         getattr(obj, "percent_complete")
         getattr(obj, "output_descriptor")
         getattr(obj, "delegate")
-        getattr(obj, "build")
+        getattr(obj, "build_image")
         getattr(obj, "abort")
         getattr(obj, "store_image")
         getattr(obj, "push_image")

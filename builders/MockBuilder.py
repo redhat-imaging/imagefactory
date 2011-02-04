@@ -77,8 +77,11 @@ class MockBuilder(BaseBuilder):
         self.status = "COMPLETED"
         self.log.debug("Completed mock image build...")
         
-        self.log.debug("Storing mock image at %s%s..." % (self.warehouse_url, self.image_id))
-        self.store_image(self.warehouse_url)
+        if(self.warehouse_url):
+            self.log.debug("Storing mock image at %s%s..." % (self.warehouse_url, self.image_id))
+            self.store_image(self.warehouse_url)
+        else:
+            self.log.debug("No storage location specified, skipping this step...")
     
     def push_image(self, image_id, provider, credentials):
         original_image_url = "%s/%s" % (self.warehouse_url, image_id)

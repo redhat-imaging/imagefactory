@@ -16,6 +16,7 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import unittest
+import logging
 import time
 import cqpid
 from qmf2 import *
@@ -24,8 +25,7 @@ from qmfagent.ImageFactoryAgent import ImageFactoryAgent
 
 class TestImageFactoryAgent(unittest.TestCase):
     def setUp(self):
-        # self.factory_agent = ImageFactoryAgent("localhost")
-        # self.factory_agent.run()
+        logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
         self.connection = cqpid.Connection("localhost")
         self.session = ConsoleSession(self.connection)
         self.connection.open()
@@ -33,13 +33,11 @@ class TestImageFactoryAgent(unittest.TestCase):
         self.agents = self.session.getAgents()
     
     def tearDown(self):
-        self.agents = None
+        del self.agents
         self.session.close()
         self.connection.close()
-        self.session = None
-        self.connection = None
-        # self.factory_agent.shutdown()
-        # self.factory_agent = None
+        del self.session
+        del self.connection
     
     def testQueries(self):
         for agent in self.agents:

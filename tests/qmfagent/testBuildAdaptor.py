@@ -17,11 +17,13 @@
 
 
 import unittest
+import logging
 from builders import *
 from qmfagent.BuildAdaptor import BuildAdaptor
 
 class TestBuildAdaptor(unittest.TestCase):
     def setUp(self):
+        logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
         self.schema = BuildAdaptor.qmf_schema
         self.tdl_string = """\
         <template>
@@ -39,11 +41,11 @@ class TestBuildAdaptor(unittest.TestCase):
 		"""
 	
     def tearDown(self):
-        self.schema = None
-        self.tdl_string = None
+        del self.schema
+        del self.tdl_string
     
     def testQMFSchemaDefinition(self):
-        expected_schema_properties = ("template", "target", "status", "percent_complete", "finished_image")
+        expected_schema_properties = ("template", "target", "status", "percent_complete", "image")
         for schema_property in self.schema.getProperties():
             self.assertIn(schema_property.getName(), expected_schema_properties)
 	

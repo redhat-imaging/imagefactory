@@ -17,117 +17,38 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import unittest
+import logging
 import zope
-from builders.IBuilderDelegate import IBuilderDelegate
+import os.path
 from builders.IBuilder import IBuilder
 from builders.MockBuilder import MockBuilder
 
 
 class TestMockBuilder(unittest.TestCase):
-	def setUp(self):
-		self.mock_builder = MockBuilder("IDL")
-		self.delegate = MockBuilderDelegate()
-		# self.mock_builder.delegate = self.delegate
-		self.new_builder_status = "NEW_STATUS"
-	
-	def tearDown(self):
-		self.mock_builder = None
-		self.delegate = None
-		self.new_builder_status = None
-	
-	def testImplementsIBuilder(self):
-		self.assert_(IBuilder.implementedBy(MockBuilder), 'MockBuilder does not implement the ImageBuilder interface...')
-	
-	def testInit(self):
-		self.assertEqual("IDL", self.mock_builder.template)
-		self.assert_(self.mock_builder.image_id, 'Initilizer failed to set \'image_id\'...')
-	
-	def testIsCallable(self):
-		self.assert_(callable(self))
-	
-	def testBuild(self):
-		# TODO: (redmine 279) - test more here... make sure we're getting the file we think.
-		# known_uuid = uuid.uuid4()
-		# self.mock_builder.image_id = known_uuid
-		self.mock_builder.build()
-	
-	def testDelegateAssignment(self):
-		self.mock_builder.delegate = self.delegate
-		self.assertIs(self.mock_builder.delegate, self.delegate)
-	
-	def testShouldUpdateStatus(self):
-		self.mock_builder.status = "UPDATE_ME"
-		self.mock_builder.delegate = self.delegate
-		self.mock_builder.status = self.new_builder_status
-		self.assertEqual(self.new_builder_status, self.mock_builder.status)
-		self.mock_builder.delegate = None
-	
-	def testShouldNotUpdateStatus(self):
-		self.mock_builder.status = "NO_UPDATE"
-		self.mock_builder.delegate = self.delegate
-		self.mock_builder.status = self.new_builder_status
-		self.assertEqual("NO_UPDATE", self.mock_builder.status)
-		self.mock_builder.delegate = None
-	
-	def testModifyStatusUpdate(self):
-		self.mock_builder.status = "INSERT_CHANGE"
-		self.mock_builder.delegate = self.delegate
-		self.mock_builder.status = self.new_builder_status
-		self.assertEqual("MODIFIED_STATUS_UPDATE", self.mock_builder.status)
-		self.mock_builder.delegate = None
-	
-	def testModifyPercentageUpdate(self):
-		self.mock_builder.percent_complete = None
-		self.mock_builder.delegate = self.delegate
-		self.mock_builder.percent_complete = 50
-		self.assertEqual(0, self.mock_builder.percent_complete)
-		self.mock_builder.delegate = None
-	
-	def testShouldUpdatePercentage(self):
-		self.mock_builder.percent_complete = 50
-		self.mock_builder.delegate = self.delegate
-		self.mock_builder.percent_complete = 95
-		self.assertEqual(95, self.mock_builder.percent_complete)
-		self.mock_builder.delegate = None
-	
-	def testShouldNotUpdatePercentage(self):
-		self.mock_builder.percent_complete = 100
-		self.mock_builder.delegate = self.delegate
-		self.mock_builder.percent_complete = 52
-		self.assertEqual(100, self.mock_builder.percent_complete)
-		self.mock_builder.delegate = None
-	
-
-
-class MockBuilderDelegate(object):
-	zope.interface.implements(IBuilderDelegate)
-	
-	def builder_should_update_status(self, builder, original_status, new_status):
-		if(original_status == "NO_UPDATE"):
-			return False
-		else:
-			return True
-	
-	def builder_will_update_status(self, builder, original_status, new_status):
-		if(original_status == "INSERT_CHANGE"):
-			return "MODIFIED_STATUS_UPDATE"
-		else:
-			return new_status
-	
-	def builder_will_update_percentage(self, builder, original_percentage, new_percentage):
-		if(original_percentage >= 0):
-			return new_percentage
-		else:
-			return 0
-	
-	def builder_should_update_percentage(self, builder, original_percentage, new_percentage):
-		if(original_percentage == 100):
-			return False
-		else:
-			return True
-	
-	
+    def setUp(self):
+        logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
+        self.template = "<template></template>"
+        self.target = "mock"
+        self.builder = MockBuilder(self.template, self.target)
+    
+    def tearDown(self):
+        del self.builder
+        del self.template
+        del self.target
+    
+    def testImplementsIBuilder(self):
+        self.assert_(IBuilder.implementedBy(MockBuilder), 'MockBuilder does not implement the ImageBuilder interface...')
+    
+    def testInit(self):
+        self.assertEqual(self.builder.template, self.template)
+        self.assertEqual(self.builder.target, self.target)
+    
+    def testBuildImage(self):
+        self.builder.build_image()
+        self.assertEqual(self.builder.status, "COMPLETED")
+        self.assert_(os.path.exists(self.builder.image))
+    
 
 
 if __name__ == '__main__':
-	unittest.main()
+    unittest.main()

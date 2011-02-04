@@ -17,15 +17,17 @@
 
 
 import unittest
+import logging
 from builders import *
 from qmfagent.ImageFactory import ImageFactory
 
 class TestImageFactory(unittest.TestCase):
     def setUp(self):
-        self.expected_schema_methods = {"build_image" : ("template", "target", "build_adaptor")}
+        logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
+        self.expected_schema_methods = {"build_image" : ("template", "target", "build_adaptor"), "push_image" : ("image_id", "provider", "credentials", "build_adaptor")}
 
     def tearDown(self):
-        self.expected_schema_methods = None
+        del self.expected_schema_methods
     
     def testQMFSchemaDefinition(self):
         for schema_method in ImageFactory.qmf_schema.getMethods():

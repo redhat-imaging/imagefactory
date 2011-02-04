@@ -86,6 +86,17 @@ class BaseBuilder(object):
         return locals()
     image_id = property(**image_id())
     
+    def image():
+        doc = "The image property."
+        def fget(self):
+            return self._image
+        def fset(self, value):
+            self._image = value
+        def fdel(self):
+            del self._image
+        return locals()
+    image = property(**image())
+    
     def status():
         doc = "The status property."
         def fget(self):
@@ -141,16 +152,16 @@ class BaseBuilder(object):
         return locals()
     percent_complete = property(**percent_complete())
     
-    def image():
-        doc = "The image property."
+    def output_descriptor():
+        doc = "The output_descriptor property."
         def fget(self):
-            return self._image
+            return self._output_descriptor
         def fset(self, value):
-            self._image = value
+            self._output_descriptor = value
         def fdel(self):
-            del self._image
+            del self._output_descriptor
         return locals()
-    image = property(**image())
+    output_descriptor = property(**output_descriptor())
     
     def delegate():
         doc = "The delegate property."
@@ -163,30 +174,21 @@ class BaseBuilder(object):
         return locals()
     delegate = property(**delegate())
     
-    def output_descriptor():
-        doc = "The output_descriptor property."
-        def fget(self):
-            return self._output_descriptor
-        def fset(self, value):
-            self._output_descriptor = value
-        def fdel(self):
-            del self._output_descriptor
-        return locals()
-    output_descriptor = property(**output_descriptor())
-    
     
     # Initializer
     def __init__(self, template=None, target=None):
         super(BaseBuilder, self).__init__()
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        self.image = None
-        self.delegate = None
-        self._status = None
-        self._percent_complete = 0
         self.template = template
         self.target = target
+        self.target_id = None
+        self.provider = None
         self.image_id = uuid.uuid4()
+        self.image = None
+        self._status = None
+        self._percent_complete = None
         self.output_descriptor = "<icicle></icicle>"
+        self.delegate = None
     
     # Make instances callable for passing to thread objects
     def __call__(self, *args, **kwargs):

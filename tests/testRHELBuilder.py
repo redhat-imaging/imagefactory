@@ -17,13 +17,14 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import unittest
+import logging
 from builders.IBuilder import IBuilder
 from builders.RHELBuilder import RHELBuilder
 
 
 class TestRHELBuilder(unittest.TestCase):
 	def setUp(self):
-		pass
+		logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
 	
 	def tearDown(self):
 		pass

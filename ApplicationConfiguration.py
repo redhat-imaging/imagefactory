@@ -88,6 +88,8 @@ class ApplicationConfiguration(object):
         group_build.add_argument('-t', '--template', help='Template XML file to build from.')
         if (sys.argv[0].endswith("imagefactory.py")):
             return argparser.parse_args()
+        elif ('unittest' in sys.argv):
+            return argparser.parse_args(['--debug'])
         else:
             return argparser.parse_args([])
     
