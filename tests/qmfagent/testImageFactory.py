@@ -25,7 +25,7 @@ class TestImageFactory(unittest.TestCase):
     def setUp(self):
         # logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
         self.expected_schema_methods = {"build_image" : ("template", "target", "build_adaptor"), "push_image" : ("image_id", "provider", "credentials", "build_adaptor")}
-
+    
     def tearDown(self):
         del self.expected_schema_methods
     
@@ -39,11 +39,12 @@ class TestImageFactory(unittest.TestCase):
     def testSingleton(self):
         image_factory_one = ImageFactory()
         image_factory_two = ImageFactory()
-        self.assertEqual(id(image_factory_one), id(image_factory_two))
+        self.assertIs(image_factory_one, image_factory_two)
     
-    def testClassDefinition(self):
-        pass
-    
+    # def testClassDefinition(self):
+    #     pass
+    # 
+
 
 if __name__ == '__main__':
 	unittest.main()
