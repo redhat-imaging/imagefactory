@@ -24,7 +24,6 @@ from qmfagent.BuildAdaptor import BuildAdaptor
 class TestBuildAdaptor(unittest.TestCase):
     def setUp(self):
         # logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
-        self.schema = BuildAdaptor.qmf_schema
         self.tdl_string = """\
         <template>
           <name>f14jeos</name>
@@ -41,23 +40,24 @@ class TestBuildAdaptor(unittest.TestCase):
 		"""
 	
     def tearDown(self):
-        del self.schema
         del self.tdl_string
     
     def testQMFSchemaDefinition(self):
         expected_schema_properties = ("template", "target", "status", "percent_complete", "image")
-        for schema_property in self.schema.getProperties():
+        expected_schema_methods = dict(abort=())
+        for schema_property in BuildAdaptor.qmf_schema.getProperties():
             self.assertIn(schema_property.getName(), expected_schema_properties)
+        for schema_method in BuildAdaptor.qmf_schema.getMethods():
+            self.assertIn(schema_method.getName(), expected_schema_methods)
+            arguments = expected_schema_methods[schema_method.getName()]
+            for schema_property in schema_method.getArguments():
+                self.assertIn(schema_property.getName(), arguments)
 	
     def testInstantiateMockBuilder(self):
         build_adaptor = BuildAdaptor(self.tdl_string, "mock")
         self.assertIsInstance(build_adaptor.builder, MockBuilder.MockBuilder)
         self.assertEqual(build_adaptor.template, self.tdl_string)
         self.assertEqual(build_adaptor.target, "mock")
-    
-    # def testInstantiateFedoraBuilder(self):
-    #     build_adaptor = BuildAdaptor(self.tdl_string, "foo", "bar", "baz")
-    #     self.assertIsInstance(build_adaptor.builder, FedoraBuilder.FedoraBuilder)
     
 
 if __name__ == '__main__':

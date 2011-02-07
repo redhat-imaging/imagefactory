@@ -24,15 +24,16 @@ from qmfagent.ImageFactory import ImageFactory
 class TestImageFactory(unittest.TestCase):
     def setUp(self):
         # logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
-        self.expected_schema_methods = {"build_image" : ("template", "target", "build_adaptor"), "push_image" : ("image_id", "provider", "credentials", "build_adaptor")}
+        pass
     
     def tearDown(self):
-        del self.expected_schema_methods
+        pass
     
     def testQMFSchemaDefinition(self):
+        expected_schema_methods = dict(build_image=("template", "target", "build_adaptor"), push_image=("image_id", "provider", "credentials", "build_adaptor"))
         for schema_method in ImageFactory.qmf_schema.getMethods():
-            self.assertIn(schema_method.getName(), self.expected_schema_methods)
-            arguments = self.expected_schema_methods[schema_method.getName()]
+            self.assertIn(schema_method.getName(), expected_schema_methods)
+            arguments = expected_schema_methods[schema_method.getName()]
             for schema_property in schema_method.getArguments():
                 self.assertIn(schema_property.getName(), arguments)
     

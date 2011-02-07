@@ -44,7 +44,7 @@ class TestImageFactoryAgent(unittest.TestCase):
         self.if_agent.shutdown()
         del self.if_agent
     
-    def testQueries(self):
+    def testBuildImage(self):
         agent_found = False
         
         for agent in self.agents:
