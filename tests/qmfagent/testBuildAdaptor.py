@@ -43,7 +43,7 @@ class TestBuildAdaptor(unittest.TestCase):
         del self.tdl_string
     
     def testQMFSchemaDefinition(self):
-        expected_schema_properties = ("template", "target", "status", "percent_complete", "image")
+        expected_schema_properties = ("status", "percent_complete", "image")
         expected_schema_methods = dict(abort=())
         for schema_property in BuildAdaptor.qmf_schema.getProperties():
             self.assertIn(schema_property.getName(), expected_schema_properties)

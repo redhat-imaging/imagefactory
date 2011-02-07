@@ -27,8 +27,6 @@ from builders import *
 class BuildAdaptor(object):
     # QMF schema for BuildAdaptor
     qmf_schema = Schema(SCHEMA_TYPE_DATA, "com.redhat.imagefactory", "BuildAdaptor")
-    qmf_schema.addProperty(SchemaProperty("template", SCHEMA_DATA_STRING))
-    qmf_schema.addProperty(SchemaProperty("target", SCHEMA_DATA_STRING))
     qmf_schema.addProperty(SchemaProperty("status", SCHEMA_DATA_STRING))
     qmf_schema.addProperty(SchemaProperty("percent_complete", SCHEMA_DATA_INT))
     qmf_schema.addProperty(SchemaProperty("image", SCHEMA_DATA_STRING))
@@ -45,7 +43,6 @@ class BuildAdaptor(object):
             return self._template
         def fset(self, value):
             self._template = value
-            self.qmf_object.template = value
         def fdel(self):
             del self._template
         return locals()
@@ -57,7 +54,6 @@ class BuildAdaptor(object):
             return self._target
         def fset(self, value):
             self._target = value
-            self.qmf_object.target = value
         def fdel(self):
             del self._target
         return locals()
@@ -118,7 +114,7 @@ class BuildAdaptor(object):
         
         self.template = template
         self.target = target
-        self.status = "created"
+        self.status = "CREATED"
         self.percent_complete = 0
         self.image = ""
         self.builder = None
@@ -157,12 +153,10 @@ class BuildAdaptor(object):
     
     # Builder delegate methods
     def builder_did_update_status(self, builder, old_status, new_status):
-        # Currently the lone delegate function
-        # This indicates that the underlying builder has had a status change
-        # For now we just copy back the status
         self.status = new_status
-        self.percent_complete = builder.percent_complete
-        self.image = builder.image
+        if(new_status == "COMPLETED"):
+            self.percent_complete = builder.percent_complete
+            self.image = builder.image_id
     
 
 
