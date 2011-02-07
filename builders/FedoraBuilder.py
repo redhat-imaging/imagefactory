@@ -24,7 +24,6 @@ from BaseBuilder import BaseBuilder
 
 
 class FedoraBuilder(BaseBuilder):
-	# TODO: sloranz@redhat.com - Flesh out this docstring more to document this module.
 	"""docstring for FedoraBuilder"""
 	zope.interface.implements(IBuilder)
 	
