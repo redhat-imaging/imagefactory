@@ -25,11 +25,14 @@ from qmfagent.ImageFactoryAgent import ImageFactoryAgent
 
 class TestImageFactoryAgent(unittest.TestCase):
     def setUp(self):
-        logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
+        # logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
+        self.if_agent = ImageFactoryAgent("localhost")
+        self.if_agent.start()
         self.connection = cqpid.Connection("localhost")
         self.session = ConsoleSession(self.connection)
         self.connection.open()
         self.session.open()
+        time.sleep(1) # Give the agent some time to show up. raise this value testQueries fails to find the agent.
         self.agents = self.session.getAgents()
     
     def tearDown(self):
@@ -38,22 +41,30 @@ class TestImageFactoryAgent(unittest.TestCase):
         self.connection.close()
         del self.session
         del self.connection
+        self.if_agent.shutdown()
+        del self.if_agent
     
     def testQueries(self):
+        agent_found = False
+        
         for agent in self.agents:
             if agent.getName().startswith("redhat.com:imagefactory:"):
+                agent_found = True
                 # test to see that we can get an ImageFactory
                 factories = agent.query("{class:ImageFactory, package:'com.redhat.imagefactory'}")
                 factory_count = len(factories)
                 self.assertEqual(1, factory_count, "Expected to get one(1) factory from the agent, recieved %d..." % (factory_count, ))
                 # test to see that we can get a BuildAdaptor for the mock target
-                response = factories[0].build_image("<template></template>", "mock", "foo", "bar")
+                response = factories[0].build_image("<template></template>", "mock")
                 build_adaptor_addr = DataAddr(response["build_adaptor"])
                 self.assertIsNotNone(build_adaptor_addr)
                 query = Query(build_adaptor_addr)
                 builds = agent.query(query)
                 self.assertEqual(1, len(builds))
                 self.assertIsNotNone(builds[0].status)
+        
+        if(not agent_found):
+            self.fail("No imagefactory agent found...")
     
 
 if __name__ == '__main__':

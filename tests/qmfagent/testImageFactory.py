@@ -23,7 +23,7 @@ from qmfagent.ImageFactory import ImageFactory
 
 class TestImageFactory(unittest.TestCase):
     def setUp(self):
-        logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
+        # logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
         self.expected_schema_methods = {"build_image" : ("template", "target", "build_adaptor"), "push_image" : ("image_id", "provider", "credentials", "build_adaptor")}
 
     def tearDown(self):

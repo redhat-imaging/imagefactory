@@ -26,7 +26,7 @@ from builders.MockBuilder import MockBuilder
 
 class TestMockBuilder(unittest.TestCase):
     def setUp(self):
-        logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
+        # logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
         self.template = "<template></template>"
         self.target = "mock"
         self.builder = MockBuilder(self.template, self.target)

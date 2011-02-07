@@ -16,21 +16,21 @@
 # MA  02110-1301, USA.  A copy of the GNU General Public License is
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
-import unittest
-import logging
-from builders.IBuilder import IBuilder
-from builders.RHELBuilder import RHELBuilder
-
-
-class TestRHELBuilder(unittest.TestCase):
-	def setUp(self):
-		logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
-	
-	def tearDown(self):
-		pass
-	
-	def testImplementsIBuilder(self):
-		self.assert_(IBuilder.implementedBy(RHELBuilder), 'RHELBuilder does not implement the ImageBuilder interface.')
-    
-if __name__ == '__main__':
-	unittest.main()
+# import unittest
+# import logging
+# from builders.IBuilder import IBuilder
+# from builders.RHELBuilder import RHELBuilder
+# 
+# 
+# class TestRHELBuilder(unittest.TestCase):
+#     def setUp(self):
+#         pass
+#     
+#     def tearDown(self):
+#         pass
+#     
+#     def testImplementsIBuilder(self):
+#         self.assert_(IBuilder.implementedBy(RHELBuilder), 'RHELBuilder does not implement the ImageBuilder interface.')
+#     
+# if __name__ == '__main__':
+#   unittest.main()

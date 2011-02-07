@@ -27,7 +27,7 @@ from builders.BaseBuilder import BaseBuilder
 
 class TestBaseBuilder(unittest.TestCase):
     def setUp(self):
-        logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
+        # logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
         self.builder = BaseBuilder()
         self.delegate = BuilderDelegate()
         self.new_builder_status = "NEW_STATUS"

@@ -23,7 +23,7 @@ from qmfagent.BuildAdaptor import BuildAdaptor
 
 class TestBuildAdaptor(unittest.TestCase):
     def setUp(self):
-        logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
+        # logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
         self.schema = BuildAdaptor.qmf_schema
         self.tdl_string = """\
         <template>
