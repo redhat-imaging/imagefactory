@@ -29,8 +29,8 @@ class TestImageFactoryAgent(unittest.TestCase):
         self.if_agent = ImageFactoryAgent("localhost")
         self.if_agent.start()
         self.connection = cqpid.Connection("localhost")
-        self.session = ConsoleSession(self.connection)
         self.connection.open()
+        self.session = ConsoleSession(self.connection)
         self.session.open()
         time.sleep(1) # Give the agent some time to show up. raise this value testQueries fails to find the agent.
         self.agents = self.session.getAgents()

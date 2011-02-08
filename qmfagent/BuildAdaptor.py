@@ -156,7 +156,7 @@ class BuildAdaptor(object):
         self.status = new_status
         if(new_status == "COMPLETED"):
             self.percent_complete = builder.percent_complete
-            self.image = builder.image_id
+            self.image = str(builder.image_id)
     
 
 

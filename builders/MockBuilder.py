@@ -63,15 +63,11 @@ class MockBuilder(BaseBuilder):
             image_file.write(":created_on: %s\n" % (time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()), ))
             image_file.close()
         
-        time.sleep(2)
         self.percent_complete = 50
-        time.sleep(2)
         self.percent_complete = 75
-        time.sleep(2)
         self.percent_complete = 95
         self.status = "FINISHING"
         self.log.debug("Finishing mock image...")
-        time.sleep(2)
         self.percent_complete = 100
         self.status = "COMPLETED"
         self.log.debug("Completed mock image build...")
