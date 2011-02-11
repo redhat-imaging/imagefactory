@@ -36,6 +36,20 @@ class BuildAdaptor(object):
     # _states_method.addArgument(SchemaProperty("states", SCHEMA_DATA_MAP, direction=DIR_IN_OUT))
     # qmf_schema.addMethod(_states_method)
     
+    #QMF schema for status change event
+    qmf_event_schema_status = Schema(SCHEMA_TYPE_EVENT, "com.redhat.imagefactory", "BuildAdaptorStatusEvent")
+    qmf_event_schema_status.addProperty(SchemaProperty("addr", SCHEMA_DATA_MAP))
+    qmf_event_schema_status.addProperty(SchemaProperty("new_status", SCHEMA_DATA_STRING))
+    qmf_event_schema_status.addProperty(SchemaProperty("old_status", SCHEMA_DATA_STRING))
+    #QMF schema for change to percent_complete event
+    qmf_event_schema_percentage = Schema(SCHEMA_TYPE_EVENT, "com.redhat.imagefactory", "BuildAdaptorPercentCompleteEvent")
+    qmf_event_schema_percentage.addProperty(SchemaProperty("addr", SCHEMA_DATA_MAP))
+    qmf_event_schema_percentage.addProperty(SchemaProperty("percent_complete", SCHEMA_DATA_INT))
+    #QMF schema for image change event
+    qmf_event_schema_image = Schema(SCHEMA_TYPE_EVENT, "com.redhat.imagefactory", "BuildAdaptorImageEvent")
+    qmf_event_schema_image.addProperty(SchemaProperty("addr", SCHEMA_DATA_MAP))
+    qmf_event_schema_image.addProperty(SchemaProperty("image", SCHEMA_DATA_STRING))
+    
     ### Properties
     def template():
         doc = "The template property."
@@ -111,6 +125,8 @@ class BuildAdaptor(object):
         
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.qmf_object = Data(BuildAdaptor.qmf_schema)
+        # FIXME: sloranz - I should be able to get the agent from the qmf_object this is a workaround...
+        self.agent = None 
         
         self.template = template
         self.target = target
@@ -140,7 +156,7 @@ class BuildAdaptor(object):
         # using args to pass the method we want to call on the target object.
         self._builder_thread = Thread(target = self.builder, name=thread_name, args=('build_image'))
         self._builder_thread.start()
-        
+    
     def push_image(self, image_id, provider, credentials):
         thread_name = "%s.push_image()" % (image_id, )
         # using args to pass the method we want to call on the target object.
@@ -154,6 +170,16 @@ class BuildAdaptor(object):
     # Builder delegate methods
     def builder_did_update_status(self, builder, old_status, new_status):
         self.status = new_status
+        # FIXME: sloranz - I should be able to get the agent from the qmf_object this is a workaround...
+        agent = self.agent
+        # agent = self.qmf_object.getAgent()
+        self.log.debug("Raising event with agent (%s), changed status from %s to %s" % (agent, old_status, new_status))
+        event = Data(BuildAdaptor.qmf_event_schema_status)
+        event.addr = self.qmf_object.getAddr().asMap()
+        event.new_status = str(new_status)
+        event.old_status = str(old_status)
+        agent.session.raiseEvent(data=event, severity=4)
+        
         if(new_status == "COMPLETED"):
             self.percent_complete = builder.percent_complete
             self.image = str(builder.image_id)

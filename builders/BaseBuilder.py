@@ -185,7 +185,7 @@ class BaseBuilder(object):
         self.provider = None
         self.image_id = uuid.uuid4()
         self.image = None
-        self._status = None
+        self._status = "NEW"
         self._percent_complete = 0
         self.output_descriptor = "<icicle></icicle>"
         self.delegate = None

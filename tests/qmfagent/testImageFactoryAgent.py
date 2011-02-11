@@ -26,46 +26,77 @@ from qmfagent.ImageFactoryAgent import ImageFactoryAgent
 class TestImageFactoryAgent(unittest.TestCase):
     def setUp(self):
         # logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
+        # FIXME: sloranz - only state changes from building on will raise events until qmf_object.getAgent() works as expected
+        # self.expected_state_transitions = (("NEW","INITIALIZING"),("INITIALIZING","BUILDING"),("BUILDING","FINISHING"),("FINISHING","COMPLETED"))
+        self.expected_state_transitions = (("INITIALIZING","BUILDING"),("BUILDING","FINISHING"),("FINISHING","COMPLETED"))
         self.if_agent = ImageFactoryAgent("localhost")
         self.if_agent.start()
         self.connection = cqpid.Connection("localhost")
         self.connection.open()
-        self.session = ConsoleSession(self.connection)
-        self.session.open()
-        time.sleep(1) # Give the agent some time to show up. raise this value testQueries fails to find the agent.
-        self.agents = self.session.getAgents()
+        self.console_session = ConsoleSession(self.connection)
+        self.console_session.setAgentFilter("[and, [eq, _vendor, [quote, 'redhat.com']], [eq, _product, [quote, 'imagefactory']]]")
+        self.console_session.open()
+        self.console = MockConsole(self.console_session)
+        self.console.start()
+        time.sleep(5) # Give the agent some time to show up. raise this value testQueries fails to find the agent.
     
     def tearDown(self):
-        del self.agents
-        self.session.close()
+        del self.expected_state_transitions
+        self.console.cancel()
+        del self.console
+        self.console_session.close()
         self.connection.close()
-        del self.session
+        del self.console_session
         del self.connection
         self.if_agent.shutdown()
         del self.if_agent
     
-    def testBuildImage(self):
-        agent_found = False
-        
-        for agent in self.agents:
-            if agent.getName().startswith("redhat.com:imagefactory:"):
-                agent_found = True
-                # test to see that we can get an ImageFactory
-                factories = agent.query("{class:ImageFactory, package:'com.redhat.imagefactory'}")
-                factory_count = len(factories)
-                self.assertEqual(1, factory_count, "Expected to get one(1) factory from the agent, recieved %d..." % (factory_count, ))
-                # test to see that we can get a BuildAdaptor for the mock target
-                response = factories[0].build_image("<template></template>", "mock")
-                build_adaptor_addr = DataAddr(response["build_adaptor"])
-                self.assertIsNotNone(build_adaptor_addr)
-                query = Query(build_adaptor_addr)
-                builds = agent.query(query)
-                self.assertEqual(1, len(builds))
-                self.assertIsNotNone(builds[0].status)
-        
-        if(not agent_found):
+    def testImageFactoryAgent(self):
+        """Test agent registration, method calls, and events"""
+        # test that the agent registered and consoles can see it.
+        try:
+            self.assertIsNotNone(self.console.agent)
+        except AttributeError:
             self.fail("No imagefactory agent found...")
+        
+        # test that build_image returns what we expect
+        try:
+            self.assertIsNotNone(self.console.build_adaptor_addr_str)
+        except AttributeError:
+            self.fail("build_image did not return a DataAddr for build_adaptor...")
+        
+        # test that status changes in build adaptor create QMF events the consoles see.
+        agent_name = self.console.agent.getName()
+        self.assertEqual(len(self.expected_state_transitions), len(self.console.events))
+        for event in self.console.events:
+            index = self.console.events.index(event)
+            self.assertEqual(agent_name, event["agent"].getName())
+            properties = event["data"].getProperties()
+            self.assertIsNotNone(properties)
+            self.assertEqual(self.console.build_adaptor_addr_str, properties["addr"])
+            self.assertEqual(self.expected_state_transitions[index][0],properties["old_status"])
+            self.assertEqual(self.expected_state_transitions[index][1],properties["new_status"])
     
+
+class MockConsole(ConsoleHandler):
+    def __init__(self, consoleSession):
+        super(MockConsole, self).__init__(consoleSession)
+        self.events = []
+    
+    def agentAdded(self, agent):
+        self.agent = agent
+        factories = agent.query("{class:ImageFactory, package:'com.redhat.imagefactory'}")
+        response = factories[0].build_image("<template></template>", "mock")
+        self.build_adaptor_addr_str = response["build_adaptor"]
+    
+    def agentDeleted(self, agent, reason):
+        self.agent = None
+        self.reason_for_missing_agent = reason
+    
+    def eventRaised(self, agent, data, timestamp, severity):
+        self.events.append(dict(agent=agent, data=data, timestamp=timestamp, severity=severity))
+    
+
 
 if __name__ == '__main__':
     unittest.main()
