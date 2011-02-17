@@ -21,6 +21,8 @@ import sys
 import time
 import logging
 import httplib2
+import os
+import os.path
 from IBuilder import IBuilder
 from BaseBuilder import BaseBuilder
 from ApplicationConfiguration import ApplicationConfiguration
@@ -40,11 +42,15 @@ class MockBuilder(BaseBuilder):
     # Image actions
     def build_image(self):
         self.log.debug("build_image() called on MockBuilder...")
-        self.image = "%s/%s.miso" % (self.app_config['output'], self.image_id)
+        self.image = "%s/deltacloud-%s/images/%s.yml" % (self.app_config['output'], os.getlogin(), self.image_id)
         self.log.debug("Setting image build path: %s" % (self.image, ))
         self.status = "INITIALIZING"
         self.log.debug("Initializing mock image...")
         self.percent_complete = 0
+        
+        directory = os.path.dirname(self.image)
+        if (not os.path.exists(directory)):
+            os.makedirs(directory)
         
         with open(self.image, 'w') as image_file:
             self.status = "BUILDING"
@@ -79,11 +85,22 @@ class MockBuilder(BaseBuilder):
             self.log.debug("No storage location specified, skipping this step...")
     
     def push_image(self, image_id, provider, credentials):
+        image_path = "%s/deltacloud-%s/%s/images/%s.yml" % (self.app_config['output'], os.getlogin(), provider, self.image_id)
         original_image_url = "%s/%s" % (self.warehouse_url, image_id)
         this_image_url = "%s/%s" % (self.warehouse_url, self.image_id)
         http_headers = {'content-type':'text/plain'}
         http = httplib2.Http()
+        
         headers_response_image, image = http.request(original_image_url, "GET")
+        
+        self.log.debug("Storing mock image for %s at path: %s" % (provider, image_path))
+        directory = os.path.dirname(image_path)
+        if (not os.path.exists(directory)):
+            os.makedirs(directory)
+        with open(image_path, 'w') as image_file:
+            image_file.write(image)
+            image_file.close()
+        
         http.request(this_image_url, "PUT", body=image, headers=http_headers)
         metadata = dict(uuid=self.image_id, type="provider_image", template=self.template, target=self.target, icicle=self.output_descriptor, image=original_image_url, provider=provider, target_identifier=this_image_url)
         self.set_storage_metadata(this_image_url, metadata)
