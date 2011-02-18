@@ -24,7 +24,7 @@ from qmfagent.BuildAdaptor import BuildAdaptor
 class TestBuildAdaptor(unittest.TestCase):
     def setUp(self):
         # logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
-        self.tdl_string = """\
+        self.tdl_string = """
         <template>
           <name>f14jeos</name>
           <os>
@@ -37,7 +37,7 @@ class TestBuildAdaptor(unittest.TestCase):
           </os>
           <description>Fedora 14</description>
         </template>
-		"""
+        """
 	
     def tearDown(self):
         del self.tdl_string

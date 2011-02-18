@@ -23,6 +23,7 @@ import os
 import pycurl
 import httplib2
 from IBuilder import IBuilder
+from ApplicationConfiguration import ApplicationConfiguration
 
 # TODO: (redmine 256) - add build_states() analagous to instance_states() in core - http://deltacloud.org/framework.html
 class BaseBuilder(object):
@@ -179,7 +180,7 @@ class BaseBuilder(object):
     def __init__(self, template=None, target=None):
         super(BaseBuilder, self).__init__()
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        self.template = template
+        self.template = self.__fetch_template(template)
         self.target = target
         self.target_id = None
         self.provider = None
@@ -249,3 +250,27 @@ class BaseBuilder(object):
         """Prep the image for the provider and deploy.  This method is implemented by subclasses of the BaseBuilder to handle OS/Provider specific mechanics."""
         raise NotImplementedError
     
+    def __fetch_template(self, template_string):
+        if((not template_string) or (("<template" in template_string.lower()) and ("</template>" in template_string.lower()))):
+            return template_string
+        
+        template_url = None
+        
+        try:
+            template_id = uuid.UUID(template_string)
+            template_url = "%s/%s/template" % (ApplicationConfiguration().configuration['warehouse'], template_id)
+        except ValueError:
+            if(template_string.startswith("http")):
+                if(template_string.endswith("template")):
+                    template_url = template_string
+                else:
+                    template_url = "%s/template" % (template_string, )
+            else:
+                self.log.warning("Template (%s) is not XML, URL, or UUID!  Returning 'None'..." % (template_string, ))
+                return None
+        
+        http = httplib2.Http()
+        headers, template = http.request(template_url, "GET")
+        return template
+        
+        
