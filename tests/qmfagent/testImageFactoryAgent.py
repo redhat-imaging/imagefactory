@@ -67,7 +67,7 @@ class TestImageFactoryAgent(unittest.TestCase):
         
         # test that status changes in build adaptor create QMF events the consoles see.
         agent_name = self.console.agent.getName()
-        self.assertGreater(self.console.event_count, 0)
+        self.assertGreater(self.console.event_count, len(self.expected_state_transitions))
         self.assertEqual(len(self.expected_state_transitions), len(self.console.status_events))
         for event in self.console.status_events:
             index = self.console.status_events.index(event)
