@@ -67,9 +67,10 @@ class TestImageFactoryAgent(unittest.TestCase):
         
         # test that status changes in build adaptor create QMF events the consoles see.
         agent_name = self.console.agent.getName()
-        self.assertEqual(len(self.expected_state_transitions), len(self.console.events))
-        for event in self.console.events:
-            index = self.console.events.index(event)
+        self.assertGreater(self.console.event_count, 0)
+        self.assertEqual(len(self.expected_state_transitions), len(self.console.status_events))
+        for event in self.console.status_events:
+            index = self.console.status_events.index(event)
             self.assertEqual(agent_name, event["agent"].getName())
             properties = event["data"].getProperties()
             self.assertIsNotNone(properties)
@@ -81,7 +82,8 @@ class TestImageFactoryAgent(unittest.TestCase):
 class MockConsole(ConsoleHandler):
     def __init__(self, consoleSession):
         super(MockConsole, self).__init__(consoleSession)
-        self.events = []
+        self.status_events = []
+        self.event_count = 0
     
     def agentAdded(self, agent):
         self.agent = agent
@@ -94,7 +96,9 @@ class MockConsole(ConsoleHandler):
         self.reason_for_missing_agent = reason
     
     def eventRaised(self, agent, data, timestamp, severity):
-        self.events.append(dict(agent=agent, data=data, timestamp=timestamp, severity=severity))
+        if(data.getProperties()["event"] == "STATUS"):
+            self.status_events.append(dict(agent=agent, data=data, timestamp=timestamp, severity=severity))
+        self.event_count = self.event_count + 1
     
 
 

@@ -207,6 +207,7 @@ class BaseBuilder(object):
     def store_image(self, location, target_parameters=None):
         """Store the image in an instance of Image Warehouse specified by 'location'.  Any provider specific 
         parameters needed for later deploying images are passed as an XML block in 'target_parameters'."""
+        
         http = httplib2.Http()
         http_headers = {'content-type':'text/plain'}
         
@@ -238,6 +239,7 @@ class BaseBuilder(object):
         except Exception, e:
             self.log.exception("Image could not be stored...  Check status of image warehouse!  \nCaught exception while trying to store image(%s):\n%s" % (self.image_id, e))
         
+    
     def set_storage_metadata(self, url, metadata):
         http = httplib2.Http()
         for item in metadata:

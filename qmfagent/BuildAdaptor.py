@@ -39,15 +39,18 @@ class BuildAdaptor(object):
     #QMF schema for status change event
     qmf_event_schema_status = Schema(SCHEMA_TYPE_EVENT, "com.redhat.imagefactory", "BuildAdaptorStatusEvent")
     qmf_event_schema_status.addProperty(SchemaProperty("addr", SCHEMA_DATA_MAP))
+    qmf_event_schema_status.addProperty(SchemaProperty("event", SCHEMA_DATA_STRING))
     qmf_event_schema_status.addProperty(SchemaProperty("new_status", SCHEMA_DATA_STRING))
     qmf_event_schema_status.addProperty(SchemaProperty("old_status", SCHEMA_DATA_STRING))
     #QMF schema for change to percent_complete event
     qmf_event_schema_percentage = Schema(SCHEMA_TYPE_EVENT, "com.redhat.imagefactory", "BuildAdaptorPercentCompleteEvent")
     qmf_event_schema_percentage.addProperty(SchemaProperty("addr", SCHEMA_DATA_MAP))
+    qmf_event_schema_percentage.addProperty(SchemaProperty("event", SCHEMA_DATA_STRING))
     qmf_event_schema_percentage.addProperty(SchemaProperty("percent_complete", SCHEMA_DATA_INT))
     #QMF schema for image change event
     qmf_event_schema_image = Schema(SCHEMA_TYPE_EVENT, "com.redhat.imagefactory", "BuildAdaptorImageEvent")
     qmf_event_schema_image.addProperty(SchemaProperty("addr", SCHEMA_DATA_MAP))
+    qmf_event_schema_image.addProperty(SchemaProperty("event", SCHEMA_DATA_STRING))
     qmf_event_schema_image.addProperty(SchemaProperty("image", SCHEMA_DATA_STRING))
     
     ### Properties
@@ -176,15 +179,26 @@ class BuildAdaptor(object):
         self.log.debug("Raising event with agent (%s), changed status from %s to %s" % (agent, old_status, new_status))
         event = Data(BuildAdaptor.qmf_event_schema_status)
         event.addr = self.qmf_object.getAddr().asMap()
+        event.event = "STATUS"
         event.new_status = str(new_status)
         event.old_status = str(old_status)
         agent.session.raiseEvent(data=event, severity=4)
         
         if(new_status == "COMPLETED"):
-            self.percent_complete = builder.percent_complete
             self.image = str(builder.image_id)
     
-
+    def builder_did_update_percentage(self, builder, original_percentage, new_percentage):
+        self.percent_complete = new_percentage
+        # FIXME: sloranz - I should be able to get the agent from the qmf_object this is a workaround...
+        agent = self.agent
+        # agent = self.qmf_object.getAgent()
+        self.log.debug("Raising event with agent (%s), changed percent complete from %s to %s" % (agent, original_percentage, new_percentage))
+        event = Data(BuildAdaptor.qmf_event_schema_percentage)
+        event.addr = self.qmf_object.getAddr().asMap()
+        event.event = "PERCENTAGE"
+        event.percent_complete = new_percentage
+        agent.session.raiseEvent(data=event, severity=4)
+    
 
 # if __name__ == '__main__':
 # 	unittest.main()
