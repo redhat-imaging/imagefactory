@@ -47,11 +47,6 @@ class BuildAdaptor(object):
     qmf_event_schema_percentage.addProperty(SchemaProperty("addr", SCHEMA_DATA_MAP))
     qmf_event_schema_percentage.addProperty(SchemaProperty("event", SCHEMA_DATA_STRING))
     qmf_event_schema_percentage.addProperty(SchemaProperty("percent_complete", SCHEMA_DATA_INT))
-    #QMF schema for image change event
-    qmf_event_schema_image = Schema(SCHEMA_TYPE_EVENT, "com.redhat.imagefactory", "BuildAdaptorImageEvent")
-    qmf_event_schema_image.addProperty(SchemaProperty("addr", SCHEMA_DATA_MAP))
-    qmf_event_schema_image.addProperty(SchemaProperty("event", SCHEMA_DATA_STRING))
-    qmf_event_schema_image.addProperty(SchemaProperty("image", SCHEMA_DATA_STRING))
     
     ### Properties
     def template():
@@ -133,9 +128,9 @@ class BuildAdaptor(object):
         
         self.template = template
         self.target = target
-        self.status = "CREATED"
+        self.status = "None"
         self.percent_complete = 0
-        self.image = ""
+        self.image = "None"
         self.builder = None
         
         builder_class = builders.MockBuilder.MockBuilder
@@ -153,6 +148,7 @@ class BuildAdaptor(object):
         self.builder = builder_class(template, target)
         # Register as a delegate to the builder
         self.builder.delegate = self
+        self.image = str(self.builder.image_id)
     
     def build_image(self):
         thread_name = "%s.build_image()" % (self.builder.image_id, )
@@ -185,7 +181,8 @@ class BuildAdaptor(object):
         agent.session.raiseEvent(data=event, severity=4)
         
         if(new_status == "COMPLETED"):
-            self.image = str(builder.image_id)
+            agent.deregister(self.qmf_object)
+        
     
     def builder_did_update_percentage(self, builder, original_percentage, new_percentage):
         self.percent_complete = new_percentage

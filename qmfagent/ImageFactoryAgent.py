@@ -67,7 +67,6 @@ class ImageFactoryAgent(AgentHandler):
         self.session.registerSchema(BuildAdaptor.qmf_schema)
         self.session.registerSchema(BuildAdaptor.qmf_event_schema_status)
         self.session.registerSchema(BuildAdaptor.qmf_event_schema_percentage)
-        self.session.registerSchema(BuildAdaptor.qmf_event_schema_image)
         # Now add the image factory object
         self.image_factory = ImageFactory()
         self.image_factory_addr = self.session.addData(self.image_factory.qmf_object, "image_factory")
@@ -121,4 +120,21 @@ class ImageFactoryAgent(AgentHandler):
         except Exception, e:
             self.log.exception(e)
             return False
+    
+    def deregister(self, managed_object):
+        """
+        Remove an item from the agents collection of managed objects.
+        """
+        managed_object_key = None
+        if(managed_object.__class__ == Data):
+            managed_object_key = repr(managed_object.getAddr())
+        elif(managed_object.__class__ == DataAddr):
+            managed_object_key = repr(managed_object)
+        elif(managed_object.__class__ == str):
+            managed_object_key = managed_object
+        
+        try:
+            del self.managedObjects[managed_object_key]
+        except KeyError:
+            self.log.error("Trying to remove object (%s) from managedObjects that does not exist..." % (managed_object_key, ))
     
