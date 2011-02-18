@@ -103,7 +103,7 @@ class MockBuilder(BaseBuilder):
         
         http.request(this_image_url, "PUT", body=image, headers=http_headers)
         metadata = dict(uuid=self.image_id, type="provider_image", template=self.template, target=self.target, icicle=self.output_descriptor, image=original_image_url, provider=provider, target_identifier=this_image_url)
-        self.set_storage_metadata(this_image_url, metadata)
+        self.__set_storage_metadata(this_image_url, metadata)
         self.log.debug("MockBuilder instance %s pushed image with uuid %s to warehouse location (%s) and set metadata: %s" % (id(self), image_id, this_image_url, metadata))
     
     def abort(self):

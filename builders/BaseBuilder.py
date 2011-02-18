@@ -235,12 +235,12 @@ class BaseBuilder(object):
             image_file.close()
             
             metadata = dict(uuid=self.image_id, type="image", template=self.template, target=self.target, target_parameters=target_parameters, icicle=self.output_descriptor)
-            self.set_storage_metadata(base_url, metadata)
+            self.__set_storage_metadata(base_url, metadata)
         except Exception, e:
             self.log.exception("Image could not be stored...  Check status of image warehouse!  \nCaught exception while trying to store image(%s):\n%s" % (self.image_id, e))
         
     
-    def set_storage_metadata(self, url, metadata):
+    def __set_storage_metadata(self, url, metadata):
         http = httplib2.Http()
         for item in metadata:
             http.request("%s/%s" % (url, item), "PUT", body=str(metadata[item]), headers={'content-type':'text/plain'})
