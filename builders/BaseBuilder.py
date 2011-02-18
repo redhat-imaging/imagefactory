@@ -251,7 +251,7 @@ class BaseBuilder(object):
         raise NotImplementedError
     
     def __fetch_template(self, template_string):
-        if((not template_string) or (("<template" in template_string.lower()) and ("</template>" in template_string.lower()))):
+        if((not template_string) or (("<template>" in template_string.lower()) and ("</template>" in template_string.lower()))):
             return template_string
         
         template_url = None
