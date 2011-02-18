@@ -58,7 +58,8 @@ class TestImageFactoryAgent(unittest.TestCase):
             self.assertIsNotNone(self.console.agent)
         except AttributeError:
             self.fail("No imagefactory agent found...")
-        
+        # test for the correct version of the qmf2 bindings
+        self.assertTrue(hasattr(AgentSession(self.connection), "raiseEvent"))
         # test that build_image returns what we expect
         try:
             self.assertIsNotNone(self.console.build_adaptor_addr_str)

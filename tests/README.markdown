@@ -7,4 +7,6 @@ Keywords: aeolus,image_factory,cloud
 
 ## Usage ##
 
+From the top level of the image_factory source tree:
+
 	python -m unittest discover -v
