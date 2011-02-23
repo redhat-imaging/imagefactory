@@ -72,7 +72,7 @@ class ApplicationConfiguration(object):
                 self.configuration[key] = argdict[key]
     
     def parse_arguments(self):
-        argparser = argparse.ArgumentParser(description='System image creation tool...', prog='imagefactory')
+        argparser = argparse.ArgumentParser(description='System image creation tool...', prog='imgfac')
         argparser.add_argument('--version', action='version', version='%(prog)s 0.1', help='Version info')
         argparser.add_argument('-v', '--verbose', action='store_true', default=False, help='Set verbose logging.')
         argparser.add_argument('--debug', action='store_true', default=False, help='Set really verbose logging for debugging.')
@@ -86,7 +86,7 @@ class ApplicationConfiguration(object):
         group_build = argparser.add_argument_group(title='One time build options', description='NOT YET IMPLEMENTED: Build specified system and exit.')
         group_build.add_argument('-b', '--build', dest='qmf', action='store_false', help='Build image specified by template.')
         group_build.add_argument('-t', '--template', help='Template XML file to build from.')
-        if (sys.argv[0].endswith("imagefactory.py")):
+        if (sys.argv[0].endswith("imgfac.py")):
             return argparser.parse_args()
         # elif ('unittest' in sys.argv):
         #     return argparser.parse_args(['--debug'])
