@@ -13,6 +13,6 @@ setup(name='imagefactory',
       license='GPLv2',
       url='http://www.aeolusproject.org/imagefactory.html',
       packages=['imagefactory', 'imagefactory.builders', 'imagefactory.qmfagent'],
-      scripts=['imagefactory.py'],
+      scripts=['imgfac.py'],
       data_files = datafiles,
       )
