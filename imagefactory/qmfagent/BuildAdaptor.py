@@ -22,8 +22,8 @@ from qmf2 import *
 from threading import Thread, Lock
 import zope
 # TODO : One or the other but not both
-import image_factory.builders
-from image_factory.builders import *
+import imagefactory.builders
+from imagefactory.builders import *
 
 class BuildAdaptor(object):
     # QMF schema for BuildAdaptor
@@ -134,14 +134,14 @@ class BuildAdaptor(object):
         self.image = "None"
         self.builder = None
         
-        builder_class = builders.MockBuilder.MockBuilder
+        builder_class = imagefactory.builders.MockBuilder.MockBuilder
         if (self.target != "mock"): # If target is mock always run mock builder regardless of template
             parsed_doc = libxml2.parseDoc(template)
             node = parsed_doc.xpathEval('/template/os/name')
             os_name = node[0].content
             class_name = "%sBuilder" % (os_name, )
             try:
-                builder_module = getattr(builders, class_name)
+                builder_module = getattr(imagefactory.builders, class_name)
                 builder_class = getattr(builder_module, class_name)
             except AttributeError, e:
                 self.log.exception("CAUGHT EXCEPTION: %s \n Could not find builder class for %s, returning MockBuilder!", e, os_name)

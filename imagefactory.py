@@ -19,16 +19,11 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import sys
-if not '/usr/bin' in sys.path:
-    # assume this means we are running from the source tree
-    # our source structure requires that we go up one level
-    # for imports
-    sys.path.append("../")
 import os
 import signal
 import logging
-from image_factory.ApplicationConfiguration import ApplicationConfiguration
-from image_factory.qmfagent.ImageFactoryAgent import *
+from imagefactory.ApplicationConfiguration import ApplicationConfiguration
+from imagefactory.qmfagent.ImageFactoryAgent import *
 
 class Application(object):
     instance = None

@@ -31,7 +31,7 @@ import httplib2
 import traceback
 import ConfigParser
 from tempfile import *
-from image_factory.ApplicationConfiguration import ApplicationConfiguration
+from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 from IBuilder import IBuilder
 from BaseBuilder import BaseBuilder
 from boto.s3.connection import S3Connection

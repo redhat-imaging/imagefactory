@@ -25,7 +25,7 @@ import os
 import os.path
 from IBuilder import IBuilder
 from BaseBuilder import BaseBuilder
-from image_factory.ApplicationConfiguration import ApplicationConfiguration
+from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 
 
 class MockBuilder(BaseBuilder):
