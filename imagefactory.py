@@ -18,13 +18,17 @@
 # MA  02110-1301, USA.  A copy of the GNU General Public License is
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
-import os
 import sys
+if not '/usr/bin' in sys.path:
+    # assume this means we are running from the source tree
+    # our source structure requires that we go up one level
+    # for imports
+    sys.path.append("../")
+import os
 import signal
 import logging
-from ApplicationConfiguration import ApplicationConfiguration
-from qmfagent.ImageFactoryAgent import *
-
+from image_factory.ApplicationConfiguration import ApplicationConfiguration
+from image_factory.qmfagent.ImageFactoryAgent import *
 
 class Application(object):
     instance = None

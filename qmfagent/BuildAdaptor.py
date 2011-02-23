@@ -21,8 +21,9 @@ import cqpid
 from qmf2 import *
 from threading import Thread, Lock
 import zope
-import builders
-from builders import *
+# TODO : One or the other but not both
+import image_factory.builders
+from image_factory.builders import *
 
 class BuildAdaptor(object):
     # QMF schema for BuildAdaptor
