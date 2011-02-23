@@ -13,10 +13,6 @@ setup(name='imagefactory',
       license='GPLv2',
       url='http://www.aeolusproject.org/imagefactory.html',
       packages=['imagefactory', 'imagefactory.builders', 'imagefactory.qmfagent'],
-<<<<<<< HEAD
-      scripts=['imagefactory.py'],
-=======
       scripts=['imgfac.py'],
->>>>>>> sloranz
       data_files = datafiles,
       )
