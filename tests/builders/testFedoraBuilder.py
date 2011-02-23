@@ -18,8 +18,8 @@
 
 # import unittest
 # import logging
-# from builders.IBuilder import IBuilder
-# from builders.FedoraBuilder import FedoraBuilder
+# from imagefactory.builders.IBuilder import IBuilder
+# from imagefactory.builders.FedoraBuilder import FedoraBuilder
 # 
 # 
 # class TestFedoraBuilder(unittest.TestCase):

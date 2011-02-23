@@ -20,7 +20,7 @@ import logging
 import time
 import cqpid
 from qmf2 import *
-from qmfagent.ImageFactoryAgent import ImageFactoryAgent
+from imagefactory.qmfagent.ImageFactoryAgent import ImageFactoryAgent
 
 
 class TestImageFactoryAgent(unittest.TestCase):

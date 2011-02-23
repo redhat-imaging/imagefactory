@@ -23,7 +23,7 @@ import os
 import pycurl
 import httplib2
 from IBuilder import IBuilder
-from image_factory.ApplicationConfiguration import ApplicationConfiguration
+from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 
 # TODO: (redmine 256) - add build_states() analagous to instance_states() in core - http://deltacloud.org/framework.html
 class BaseBuilder(object):

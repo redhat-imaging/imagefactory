@@ -19,7 +19,7 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import unittest
-from ApplicationConfiguration import ApplicationConfiguration
+from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 
 
 class TestApplicationConfiguration(unittest.TestCase):

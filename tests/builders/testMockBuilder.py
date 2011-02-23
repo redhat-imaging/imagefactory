@@ -20,8 +20,8 @@ import unittest
 import logging
 import zope
 import os.path
-from builders.IBuilder import IBuilder
-from builders.MockBuilder import MockBuilder
+from imagefactory.builders.IBuilder import IBuilder
+from imagefactory.builders.MockBuilder import MockBuilder
 
 
 class TestMockBuilder(unittest.TestCase):

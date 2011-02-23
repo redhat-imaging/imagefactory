@@ -20,7 +20,7 @@ import cqpid
 from qmf2 import *
 import BuildAdaptor
 import httplib2
-from image_factory.ApplicationConfiguration import ApplicationConfiguration
+from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 
 # Singleton representing the Factory itself
 
