@@ -48,6 +48,13 @@ class BuildAdaptor(object):
     qmf_event_schema_percentage.addProperty(SchemaProperty("addr", SCHEMA_DATA_MAP))
     qmf_event_schema_percentage.addProperty(SchemaProperty("event", SCHEMA_DATA_STRING))
     qmf_event_schema_percentage.addProperty(SchemaProperty("percent_complete", SCHEMA_DATA_INT))
+    #QMF schema for build failure events
+    qmf_event_schema_build_failed = Schema(SCHEMA_TYPE_EVENT, "com.redhat.imagefactory", "BuildFailedEvent")
+    qmf_event_schema_build_failed.addProperty(SchemaProperty("addr", SCHEMA_DATA_MAP))
+    qmf_event_schema_build_failed.addProperty(SchemaProperty("event", SCHEMA_DATA_STRING))
+    qmf_event_schema_build_failed.addProperty(SchemaProperty("type", SCHEMA_DATA_STRING))    
+    qmf_event_schema_build_failed.addProperty(SchemaProperty("info", SCHEMA_DATA_STRING))    
+    
     
     ### Properties
     def template():
@@ -195,6 +202,19 @@ class BuildAdaptor(object):
         event.addr = self.qmf_object.getAddr().asMap()
         event.event = "PERCENTAGE"
         event.percent_complete = new_percentage
+        agent.session.raiseEvent(data=event, severity=4)
+    
+    def builder_did_fail(self, builder, failure_type, failure_info):
+        # FIXME: sloranz - I should be able to get the agent from the qmf_object this is a workaround...
+        agent = self.agent
+        # agent = self.qmf_object.getAgent()
+        self.log.debug("Raising event with agent (%s), BUILD FAILED: %s - %s" % (agent, failure_type, failure_info))
+        event = Data(BuildAdaptor.qmf_event_schema_build_failed)
+        event.addr = self.qmf_object.getAddr().asMap()
+        event.event = "FAILURE"
+        event.type = failure_type
+        event.info = failure_info
+        # TODO: Find out more about the severity value and set it to the most severe.  is that 0 or 7?
         agent.session.raiseEvent(data=event, severity=4)
     
 

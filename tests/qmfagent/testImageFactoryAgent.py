@@ -62,7 +62,7 @@ class TestImageFactoryAgent(unittest.TestCase):
         self.assertTrue(hasattr(AgentSession(self.connection), "raiseEvent"))
         # test that build_image returns what we expect
         try:
-            self.assertIsNotNone(self.console.build_adaptor_addr_str)
+            self.assertIsNotNone(self.console.build_adaptor_addr_success)
         except AttributeError:
             self.fail("build_image did not return a DataAddr for build_adaptor...")
         
@@ -75,22 +75,29 @@ class TestImageFactoryAgent(unittest.TestCase):
             self.assertEqual(agent_name, event["agent"].getName())
             properties = event["data"].getProperties()
             self.assertIsNotNone(properties)
-            self.assertEqual(self.console.build_adaptor_addr_str, properties["addr"])
+            self.assertEqual(self.console.build_adaptor_addr_success, properties["addr"])
             self.assertEqual(self.expected_state_transitions[index][0],properties["old_status"])
             self.assertEqual(self.expected_state_transitions[index][1],properties["new_status"])
+        # test the build failure qmf event raised by BuildAdaptor
+        self.assertEqual(len(self.console.failure_events), 1)
+        self.assertEqual(self.console.build_adaptor_addr_fail, self.console.failure_events[0]["data"].getProperties()["addr"])
+        
     
 
 class MockConsole(ConsoleHandler):
     def __init__(self, consoleSession):
         super(MockConsole, self).__init__(consoleSession)
         self.status_events = []
+        self.failure_events = []
         self.event_count = 0
     
     def agentAdded(self, agent):
         self.agent = agent
         factories = agent.query("{class:ImageFactory, package:'com.redhat.imagefactory'}")
         response = factories[0].build_image("<template></template>", "mock")
-        self.build_adaptor_addr_str = response["build_adaptor"]
+        self.build_adaptor_addr_success = response["build_adaptor"]
+        response = factories[0].build_image("<template>FAIL</template>", "mock")
+        self.build_adaptor_addr_fail = response["build_adaptor"]
     
     def agentDeleted(self, agent, reason):
         self.agent = None
@@ -99,6 +106,8 @@ class MockConsole(ConsoleHandler):
     def eventRaised(self, agent, data, timestamp, severity):
         if(data.getProperties()["event"] == "STATUS"):
             self.status_events.append(dict(agent=agent, data=data, timestamp=timestamp, severity=severity))
+        if(data.getProperties()["event"] == "FAILURE"):
+            self.failure_events.append(dict(agent=agent, data=data, timestamp=timestamp, severity=severity))
         self.event_count = self.event_count + 1
     
 

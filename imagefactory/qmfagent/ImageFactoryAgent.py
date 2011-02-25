@@ -67,6 +67,7 @@ class ImageFactoryAgent(AgentHandler):
         self.session.registerSchema(BuildAdaptor.qmf_schema)
         self.session.registerSchema(BuildAdaptor.qmf_event_schema_status)
         self.session.registerSchema(BuildAdaptor.qmf_event_schema_percentage)
+        self.session.registerSchema(BuildAdaptor.qmf_event_schema_build_failed)
         # Now add the image factory object
         self.image_factory = ImageFactory()
         self.image_factory_addr = self.session.addData(self.image_factory.qmf_object, "image_factory")
