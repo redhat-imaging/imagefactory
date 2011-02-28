@@ -92,7 +92,7 @@ class ImageFactoryAgent(AgentHandler):
             self.session.raiseException(handle, "Exception: %s %s" % (repr(e), str(e)))
         
         if (addr == self.image_factory_addr):
-            build_adaptor_instance_name = "build_adaptor-%s" %  (result.builder.image_id, )
+            build_adaptor_instance_name = "build_adaptor:%s" %  (result.builder.image_id, )
             qmf_object_addr = self.session.addData(result.qmf_object, build_adaptor_instance_name, persistent=True)
             # FIXME: sloranz - I shouldn't have to set this... I should be able to use qmf_object.getAgent() when needed...
             result.agent = self
