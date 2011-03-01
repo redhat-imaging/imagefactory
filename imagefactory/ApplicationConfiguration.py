@@ -59,19 +59,18 @@ class ApplicationConfiguration(object):
         self.configuration = {}
         self.arguments = self.parse_arguments()
         
-        if (self.arguments):
-            config_file_path = self.arguments.config
-            if (os.path.isfile(config_file_path)):
-                try:
-                    config_file = open(config_file_path)
-                    self.configuration = json.load(config_file)
-                except IOError, e:
-                    logging.exception(e)
-            argdict = self.arguments.__dict__
-            for key in argdict.keys():
-                self.configuration[key] = argdict[key]
+        config_file_path = self.arguments.config
+        if (os.path.isfile(config_file_path)):
+            try:
+                config_file = open(config_file_path)
+                config = json.load(config_file)
+                self.configuration = self.parse_arguments(defaults=config).__dict__
+            except IOError, e:
+                logging.exception(e)
+                self.configuration = self.arguments
+            
     
-    def parse_arguments(self):
+    def parse_arguments(self, defaults=None):
         argparser = argparse.ArgumentParser(description='System image creation tool...', prog='imgfac')
         argparser.add_argument('--version', action='version', version='%(prog)s 0.1', help='Version info')
         argparser.add_argument('-v', '--verbose', action='store_true', default=False, help='Set verbose logging.')
@@ -86,6 +85,8 @@ class ApplicationConfiguration(object):
         group_build = argparser.add_argument_group(title='One time build options', description='NOT YET IMPLEMENTED: Build specified system and exit.')
         group_build.add_argument('-b', '--build', dest='qmf', action='store_false', help='Build image specified by template.')
         group_build.add_argument('-t', '--template', help='Template XML file to build from.')
+        if(defaults):
+            argparser.set_defaults(**defaults)
         if (sys.argv[0].endswith("imgfac.py")):
             return argparser.parse_args()
         # elif ('unittest' in sys.argv):

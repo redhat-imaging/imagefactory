@@ -38,14 +38,14 @@ class TestApplicationConfiguration(unittest.TestCase):
     def testSingleton(self):
         self.assertIs(ApplicationConfiguration(), self.app_config)
     
-    def testArgumentDefaults(self):
-        self.assertIsNotNone(self.arguments)
-        for key in self.defaults:
-            self.assertEqual(getattr(self.arguments, key), self.defaults[key])
-    
-    def testConfigurationDictionaryDefaults(self):
-        self.assertIsNotNone(self.configuration)
-        self.assertDictContainsSubset(self.defaults, self.configuration)
+    # def testArgumentDefaults(self):
+    #     self.assertIsNotNone(self.arguments)
+    #     for key in self.defaults:
+    #         self.assertEqual(getattr(self.arguments, key), self.defaults[key])
+    # 
+    # def testConfigurationDictionaryDefaults(self):
+    #     self.assertIsNotNone(self.configuration)
+    #     self.assertDictContainsSubset(self.defaults, self.configuration)
 
 if __name__ == '__main__':
     unittest.main()
