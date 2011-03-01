@@ -47,12 +47,15 @@ class Application(object):
     
     def __init__(self):
         super(Application, self).__init__()        
-        logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/var/log/imagefactory.log')
+        logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
         signal.signal(signal.SIGTERM, self.signal_handler)
         self.app_config = ApplicationConfiguration().configuration
     
     def setup_logging(self):
-        logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/var/log/imagefactory.log')
+        if (self.app_config['foreground']):
+            logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
+        else:
+            logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/var/log/imagefactory.log')
         if (self.app_config['debug']):
             logging.getLogger('').setLevel(logging.DEBUG)
         elif (self.app_config['verbose']):

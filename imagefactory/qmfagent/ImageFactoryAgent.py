@@ -92,11 +92,10 @@ class ImageFactoryAgent(AgentHandler):
             self.session.raiseException(handle, "Exception: %s %s" % (repr(e), str(e)))
         
         if (addr == self.image_factory_addr):
-            build_adaptor_instance_name = "build_adaptor:%s" %  (result.builder.image_id, )
+            build_adaptor_instance_name = "build_adaptor:%s:%s" %  (methodName, result.builder.image_id)
             qmf_object_addr = self.session.addData(result.qmf_object, build_adaptor_instance_name, persistent=True)
             # FIXME: sloranz - I shouldn't have to set this... I should be able to use qmf_object.getAgent() when needed...
             result.agent = self
-            # TODO: (redmine 276) - This dictionary could get large over time, think about when to prune it...
             self.managedObjects[repr(qmf_object_addr)] = result
             handle.addReturnArgument("build_adaptor", qmf_object_addr.asMap())
             self.session.methodSuccess(handle)

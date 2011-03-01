@@ -30,7 +30,7 @@ class TestImageFactory(unittest.TestCase):
         pass
     
     def testQMFSchemaDefinition(self):
-        expected_schema_methods = dict(build_image=("template", "target", "build_adaptor"), push_image=("image_id", "provider", "credentials", "build_adaptor"))
+        expected_schema_methods = dict(image=("template", "target", "build_adaptor"), provider_image=("image_id", "provider", "credentials", "build_adaptor"))
         for schema_method in ImageFactory.qmf_schema.getMethods():
             self.assertIn(schema_method.getName(), expected_schema_methods)
             arguments = expected_schema_methods[schema_method.getName()]

@@ -40,7 +40,7 @@ class TestMockBuilder(unittest.TestCase):
         self.assert_(IBuilder.implementedBy(MockBuilder), 'MockBuilder does not implement the ImageBuilder interface...')
     
     def testInit(self):
-        self.assertEqual(self.builder.template, self.template)
+        self.assertIn(self.builder.template, (self.template, self.builder.image_id))
         self.assertEqual(self.builder.target, self.target)
     
     def testBuildImage(self):

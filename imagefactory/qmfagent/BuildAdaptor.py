@@ -30,7 +30,7 @@ class BuildAdaptor(object):
     qmf_schema = Schema(SCHEMA_TYPE_DATA, "com.redhat.imagefactory", "BuildAdaptor")
     qmf_schema.addProperty(SchemaProperty("status", SCHEMA_DATA_STRING))
     qmf_schema.addProperty(SchemaProperty("percent_complete", SCHEMA_DATA_INT))
-    qmf_schema.addProperty(SchemaProperty("image", SCHEMA_DATA_STRING))
+    qmf_schema.addProperty(SchemaProperty("image_id", SCHEMA_DATA_STRING))
     qmf_schema.addMethod(SchemaMethod("abort", desc = "If possible, abort running build."))
     # TODO: (redmine 256) - build_states needs to be implemented...
     # _states_method = SchemaMethod("build_states", desc = "Returns a representation of the build state transitions.")
@@ -103,17 +103,17 @@ class BuildAdaptor(object):
         return locals()
     percent_complete = property(**percent_complete())
     
-    def image():
+    def image_id():
         doc = "The image property."
         def fget(self):
-            return self._image
+            return self._image_id
         def fset(self, value):
-            self._image = value
-            self.qmf_object.image = value
+            self._image_id = value
+            self.qmf_object.image_id = value
         def fdel(self):
-            del self._image
+            del self._image_id
         return locals()
-    image = property(**image())
+    image = property(**image_id())
     
     def qmf_object():
         doc = "The qmf_object property."

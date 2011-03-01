@@ -60,11 +60,11 @@ class TestImageFactoryAgent(unittest.TestCase):
             self.fail("No imagefactory agent found...")
         # test for the correct version of the qmf2 bindings
         self.assertTrue(hasattr(AgentSession(self.connection), "raiseEvent"))
-        # test that build_image returns what we expect
+        # test that image returns what we expect
         try:
             self.assertIsNotNone(self.console.build_adaptor_addr_success)
         except AttributeError:
-            self.fail("build_image did not return a DataAddr for build_adaptor...")
+            self.fail("image did not return a DataAddr for build_adaptor...")
         
         # test that status changes in build adaptor create QMF events the consoles see.
         agent_name = self.console.agent.getName()
@@ -94,9 +94,9 @@ class MockConsole(ConsoleHandler):
     def agentAdded(self, agent):
         self.agent = agent
         factories = agent.query("{class:ImageFactory, package:'com.redhat.imagefactory'}")
-        response = factories[0].build_image("<template></template>", "mock")
+        response = factories[0].image("<template></template>", "mock")
         self.build_adaptor_addr_success = response["build_adaptor"]
-        response = factories[0].build_image("<template>FAIL</template>", "mock")
+        response = factories[0].image("<template>FAIL</template>", "mock")
         self.build_adaptor_addr_fail = response["build_adaptor"]
     
     def agentDeleted(self, agent, reason):

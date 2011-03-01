@@ -29,12 +29,12 @@ class ImageFactory(object):
     
     # QMF schema for ImageFactory
     qmf_schema = Schema(SCHEMA_TYPE_DATA, "com.redhat.imagefactory", "ImageFactory")
-    _build_image_method = SchemaMethod("build_image", desc="Build a new image")
+    _build_image_method = SchemaMethod("image", desc="Build a new image")
     _build_image_method.addArgument(SchemaProperty("template", SCHEMA_DATA_STRING, direction=DIR_IN))
     _build_image_method.addArgument(SchemaProperty("target", SCHEMA_DATA_STRING, direction=DIR_IN))
     _build_image_method.addArgument(SchemaProperty("build_adaptor", SCHEMA_DATA_MAP, direction=DIR_OUT))
     qmf_schema.addMethod(_build_image_method)
-    _push_image_method = SchemaMethod("push_image", desc="Push an image to a provider.")
+    _push_image_method = SchemaMethod("provider_image", desc="Push an image to a provider.")
     _push_image_method.addArgument(SchemaProperty("image_id", SCHEMA_DATA_STRING, direction=DIR_IN))
     _push_image_method.addArgument(SchemaProperty("provider", SCHEMA_DATA_STRING, direction=DIR_IN))
     _push_image_method.addArgument(SchemaProperty("credentials", SCHEMA_DATA_STRING, direction=DIR_IN))
@@ -62,12 +62,12 @@ class ImageFactory(object):
     def __init__(self):
     	self.qmf_object = Data(ImageFactory.qmf_schema)
     
-    def build_image(self,template,target):
+    def image(self,template,target):
         build_adaptor = BuildAdaptor.BuildAdaptor(template,target)
         build_adaptor.build_image()
         return build_adaptor
     
-    def push_image(self,image_id, provider, credentials):
+    def provider_image(self,image_id, provider, credentials):
         base_url = ApplicationConfiguration().configuration['warehouse']
         if (base_url):
             http = httplib2.Http()

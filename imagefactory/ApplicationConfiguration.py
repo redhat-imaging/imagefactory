@@ -37,17 +37,6 @@ class ApplicationConfiguration(object):
         return locals()
     configuration = property(**configuration())
     
-    def arguments():
-        doc = "The arguments property."
-        def fget(self):
-            return self._arguments
-        def fset(self, value):
-            self._arguments = value
-        def fdel(self):
-            del self._arguments
-        return locals()
-    arguments = property(**arguments())
-    
     
     def __new__(cls, *p, **k):
         if cls.instance is None:
@@ -57,9 +46,9 @@ class ApplicationConfiguration(object):
     def __init__(self):
         super(ApplicationConfiguration, self).__init__()
         self.configuration = {}
-        self.arguments = self.parse_arguments()
+        arguments = self.parse_arguments()
         
-        config_file_path = self.arguments.config
+        config_file_path = arguments.config
         if (os.path.isfile(config_file_path)):
             try:
                 config_file = open(config_file_path)
@@ -67,7 +56,7 @@ class ApplicationConfiguration(object):
                 self.configuration = self.parse_arguments(defaults=config).__dict__
             except IOError, e:
                 logging.exception(e)
-                self.configuration = self.arguments
+                self.configuration = arguments
             
     
     def parse_arguments(self, defaults=None):

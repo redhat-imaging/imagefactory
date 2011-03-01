@@ -19,33 +19,34 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import unittest
+import os
+import json
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 
 
 class TestApplicationConfiguration(unittest.TestCase):
     def setUp(self):
-        self.app_config = ApplicationConfiguration()
-        self.arguments = self.app_config.arguments
-        self.configuration = self.app_config.configuration
         self.defaults = dict(verbose=False, debug=False, foreground=False, config="/etc/imagefactory.conf", output="/tmp", qmf=False, broker="localhost", warehouse=None, template=None)
+        
+        config_file_path = self.defaults["config"]
+        if (os.path.isfile(config_file_path)):
+            try:
+                config_file = open(config_file_path)
+                self.defaults.update(json.load(config_file))
+                config_file.close()
+            except IOError, e:
+                pass
+        
     
     def tearDown(self):
-        del self.app_config
-        del self.arguments
-        del self.configuration
         del self.defaults
     
     def testSingleton(self):
-        self.assertIs(ApplicationConfiguration(), self.app_config)
+        self.assertIs(ApplicationConfiguration(), ApplicationConfiguration())
     
-    # def testArgumentDefaults(self):
-    #     self.assertIsNotNone(self.arguments)
-    #     for key in self.defaults:
-    #         self.assertEqual(getattr(self.arguments, key), self.defaults[key])
-    # 
-    # def testConfigurationDictionaryDefaults(self):
-    #     self.assertIsNotNone(self.configuration)
-    #     self.assertDictContainsSubset(self.defaults, self.configuration)
+    def testConfigurationDictionaryDefaults(self):
+        self.assertIsNotNone(ApplicationConfiguration().configuration)
+        self.assertDictContainsSubset(self.defaults, ApplicationConfiguration().configuration)
 
 if __name__ == '__main__':
     unittest.main()
