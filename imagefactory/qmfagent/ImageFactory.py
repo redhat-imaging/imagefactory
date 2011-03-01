@@ -69,9 +69,12 @@ class ImageFactory(object):
     
     def provider_image(self,image_id, provider, credentials):
         base_url = ApplicationConfiguration().configuration['warehouse']
+        if (base_url.endswith('/')):
+            base_url = base_url[0:len(base_url)-1]
+        
         if (base_url):
             http = httplib2.Http()
-            headers_response_template, template = http.request("%s/%s/template" % (base_url, image_id), "GET")
+            headers_response_template, template = http.request("%s/templates/%s" % (base_url, image_id), "GET")
             headers_response_target, target = http.request("%s/%s/target" % (base_url, image_id), "GET")
             if (template and target):
                 build_adaptor = BuildAdaptor.BuildAdaptor(template,target)
