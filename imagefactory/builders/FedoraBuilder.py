@@ -309,7 +309,7 @@ class FedoraBuilder(BaseBuilder):
 		f.close()
 
 		# Disable first boot - this slows things down otherwise
-		g.sh("/sbin/chkconfig firstboot off")
+		g.sh("[ -f /etc/init.d/firstboot ] && /sbin/chkconfig firstboot off")
 
                 # BG - Upload rc.local extra content
                 # Again, this uses a static copy - this bit is where the ssh key is downloaded
