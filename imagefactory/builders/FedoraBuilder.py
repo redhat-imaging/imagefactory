@@ -139,12 +139,16 @@ class FedoraBuilder(BaseBuilder):
                 # On entry the image points to our generic KVM image - we transform image
                 #  and then update the image property to point to our new image and update
                 #  the metadata
-
-                app_config = ApplicationConfiguration().configuration
-                output_dir=app_config['output_dir']
-                template_dir=app_config['template_dir']
-                self.ec2_copy_filesystem(output_dir)
-                self.ec2_modify_filesystem(template_dir)
+                try:
+                    app_config = ApplicationConfiguration().configuration
+                    output_dir=app_config['output_dir']
+                    self.ec2_copy_filesystem(output_dir)
+                    self.ec2_modify_filesystem()
+                except:
+                    self.log.debug("Exception during ec2_transform_image")
+                    self.log.debug("Unexpected error: (%s)" % (sys.exc_info()[0]))
+                    self.log.debug("             value: (%s)" % (sys.exc_info()[1]))
+                    self.log.debug("         traceback: %s" % (repr(traceback.format_tb(sys.exc_info()[2]))))
 
 
         def ec2_copy_filesystem(self, output_dir):
@@ -213,7 +217,7 @@ class FedoraBuilder(BaseBuilder):
                 self.image = target_image
 
 
-        def ec2_modify_filesystem(self, template_dir):
+        def ec2_modify_filesystem(self):
                 # Modifications
                 # These are more or less directly ported from BoxGrinder
                 # Should include a full ACK and links to BG
@@ -298,7 +302,11 @@ class FedoraBuilder(BaseBuilder):
                 # Upload a known good ifcfg-eth0 and then chkconfig on networking
                 self.log.info("Enabling networking and uploading ifcfg-eth0")
                 g.sh("/sbin/chkconfig network on")
-                g.upload(template_dir + "/ifcfg-eth0", "/etc/sysconfig/network-scripts/ifcfg-eth0")
+                f = NamedTemporaryFile()
+                f.write(self.ifcfg_eth0)
+                f.flush()
+                g.upload(f.name, "/etc/sysconfig/network-scripts/ifcfg-eth0")
+		f.close()
 
 		# Disable first boot - this slows things down otherwise
 		g.sh("/sbin/chkconfig firstboot off")
@@ -367,12 +375,12 @@ class FedoraBuilder(BaseBuilder):
 		self.percent_complete=0
 		try:
 		    self.ec2_push_image(image_id, provider, credentials)
-		except:
-		    self.log.debug("Exception during ec2_push_image")
+                except:
+                    self.log.debug("Exception during ec2_push_image")
                     self.log.debug("Unexpected error: (%s)" % (sys.exc_info()[0]))
                     self.log.debug("             value: (%s)" % (sys.exc_info()[1]))
                     self.log.debug("         traceback: %s" % (repr(traceback.format_tb(sys.exc_info()[2]))))
-		self.status="COMPLETED"
+                self.status="COMPLETED"
 
 	def ec2_push_image(self, image_id, provider, credentials):
 
