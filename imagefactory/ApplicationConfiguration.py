@@ -52,7 +52,11 @@ class ApplicationConfiguration(object):
         if (os.path.isfile(config_file_path)):
             try:
                 config_file = open(config_file_path)
-                config = json.load(config_file)
+                uconfig = json.load(config_file)
+		# coerce this dict to ascii for python 2.6
+		config = { } 
+		for k, v in uconfig.items():
+                    config[k.encode('ascii')]=v.encode('ascii')
                 self.configuration = self.parse_arguments(defaults=config).__dict__
             except IOError, e:
                 logging.exception(e)
