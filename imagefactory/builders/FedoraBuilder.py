@@ -522,7 +522,7 @@ class FedoraBuilder(BaseBuilder):
 		# TODO: Generate ICICLE - store as distinct object or as string
 		self.output_descriptor="unknown"
         	metadata = dict(uuid=self.image_id, type="provider_image", template=self.template, target=self.target, icicle=self.output_descriptor, image=image_id, provider=provider, target_identifier=ami_id)
-        	self.set_storage_metadata(this_image_url, metadata)
+        	self.__set_storage_metadata(this_image_url, metadata)
         	self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to warehouse location (%s) and set metadata: %s" % (id(self), str(image_id), this_image_url, str(metadata)))
 		self.percent_complete=100
 
