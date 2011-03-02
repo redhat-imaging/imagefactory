@@ -134,7 +134,7 @@ class FailureThread(Thread):
     
     def run(self):
         time.sleep(1)
-        self.target.delegate.builder_did_fail(self, self.message)
+        self.target.delegate.builder_did_fail(self, "Mock", self.message)
     
 
         
