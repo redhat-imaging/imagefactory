@@ -44,7 +44,7 @@ class MockBuilder(BaseBuilder):
     def build_image(self):
         if(self.template_xml == "<template>FAIL</template>"):
             self.log.debug("build_image() failed for MockBuilder...")
-            failing_thread = FailureThread(target=self)
+            failing_thread = FailureThread(target=self, kwargs=dict(message="Mock", "Testing failure conditions via mock target builder..."))
             failing_thread.start()
         else:
             self.log.debug("build_image() called on MockBuilder...")
@@ -91,10 +91,12 @@ class MockBuilder(BaseBuilder):
                 self.log.debug("No storage location specified, skipping this step...")
     
     def push_image(self, image_id, provider, credentials):
-        if(self.warehouse_url):
+        self.status = "INITIALIZING"
+        try:
             original_image_url = "%s/images/%s" % (self.warehouse_url, image_id)
             http_headers = {'content-type':'text/plain'}
             http = httplib2.Http()
+            self.status = "FETCHING IMAGE"
             headers_response_image, image = http.request(original_image_url, "GET")
             # write the provider image out to the filesystem
             image_path = "%s/deltacloud-%s/%s/images/%s.yml" % (self.app_config['output'], os.getlogin(), provider, self.image_id)
@@ -102,17 +104,22 @@ class MockBuilder(BaseBuilder):
             directory = os.path.dirname(image_path)
             if (not os.path.exists(directory)):
                 os.makedirs(directory)
+            self.status = "WRITING PROVIDER IMAGE"
             with open(image_path, 'w') as image_file:
                 image_file.write(image)
                 image_file.close()
             # push the provider image up to the warehouse
             this_image_url = "%s/provider_images/%s" % (self.warehouse_url, self.image_id)
+            self.status = "PUSHING TO WAREHOUSE"
             http.request(this_image_url, "PUT", body=image, headers=http_headers)
             metadata = dict(uuid=self.image_id, type="provider_image", template=self.template, target=self.target, icicle=self.output_descriptor, image=original_image_url, provider=provider, target_identifier=this_image_url)
             self.__set_warehouse_metadata(this_image_url, metadata)
+            self.status = "FINISHING"
             self.log.debug("MockBuilder instance %s pushed image with uuid %s to warehouse location (%s) and set metadata: %s" % (id(self), image_id, this_image_url, metadata))
-        else:
-            self.log.debug("No warehouse specified, provider image was not uploaded to any image warehouse!")
+            self.status = "COMPLETED"
+        except e:
+            failing_thread = FailureThread(target=self, kwargs=dict(message="%s" % (e, )))
+            failing_thread.start()
     
     def abort(self):
         self.log.debug("Method abort() called on MockBuilder instance %s" % (id(self), ))
@@ -123,10 +130,11 @@ class FailureThread(Thread):
     def __init__(self, group=None, target=None, name=None, args=(), kwargs={}):
         super(FailureThread, self).__init__(group=None, target=None, name=None, args=(), kwargs={})
         self.target = target
+        self.message = kwargs["message"]
     
     def run(self):
         time.sleep(1)
-        self.target.delegate.builder_did_fail(self, "Mock", "Testing failure conditions via mock target builder...")
+        self.target.delegate.builder_did_fail(self, self.message)
     
 
         
