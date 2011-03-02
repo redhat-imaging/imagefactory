@@ -267,7 +267,6 @@ class BaseBuilder(object):
         http = httplib2.Http()
         for item in metadata:
             response_header, response = http.request("%s/%s" % (url, item), "PUT", body=str(metadata[item]), headers={'content-type':'text/plain'})
-            self.log.debug("When storing %s...\n%s\n%s" % (item, response_header, response))
     
     def push_image(self, image_id, provider, credentials):
         """Prep the image for the provider and deploy.  This method is implemented by subclasses of the BaseBuilder to handle OS/Provider specific mechanics."""
