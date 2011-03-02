@@ -117,7 +117,7 @@ class MockBuilder(BaseBuilder):
             self.status = "FINISHING"
             self.log.debug("MockBuilder instance %s pushed image with uuid %s to warehouse location (%s) and set metadata: %s" % (id(self), image_id, this_image_url, metadata))
             self.status = "COMPLETED"
-        except e:
+        except Exception, e:
             failing_thread = FailureThread(target=self, kwargs=dict(message="%s" % (e, )))
             failing_thread.start()
     
