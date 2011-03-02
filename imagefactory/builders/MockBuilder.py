@@ -44,7 +44,7 @@ class MockBuilder(BaseBuilder):
     def build_image(self):
         if(self.template_xml == "<template>FAIL</template>"):
             self.log.debug("build_image() failed for MockBuilder...")
-            failing_thread = FailureThread(target=self, kwargs=dict(message="Mock", "Testing failure conditions via mock target builder..."))
+            failing_thread = FailureThread(target=self, kwargs=dict(message="Testing failure conditions via mock target builder..."))
             failing_thread.start()
         else:
             self.log.debug("build_image() called on MockBuilder...")
