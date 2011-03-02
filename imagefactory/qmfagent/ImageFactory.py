@@ -75,7 +75,7 @@ class ImageFactory(object):
                 base_url = base_url[0:len(base_url)-1]
 
             http = httplib2.Http()
-            headers_response_template_id, template_id = http.request("%s/%s/template" % (base_url, image_id), "GET")
+            headers_response_template_id, template_id = http.request("%s/images/%s/template" % (base_url, image_id), "GET")
             headers_response_template, template = http.request("%s/templates/%s" % (base_url, template_id), "GET")
             headers_response_target, target = http.request("%s/images/%s/target" % (base_url, image_id), "GET")
             if (template and target):
