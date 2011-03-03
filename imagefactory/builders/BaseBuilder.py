@@ -20,10 +20,11 @@ import logging
 import zope
 import uuid
 import os
-import pycurl
 import httplib2
 from IBuilder import IBuilder
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
+from imagefactory.ImageWarehouse import ImageWarehouse
+from imagefactory.Template import Template
 
 # TODO: (redmine 256) - add build_states() analagous to instance_states() in core - http://deltacloud.org/framework.html
 class BaseBuilder(object):
@@ -43,16 +44,6 @@ class BaseBuilder(object):
         return locals()
     template = property(**template())
     
-    def template_xml():
-        doc = "The template_xml property."
-        def fget(self):
-            return self._template_xml
-        def fset(self, value):
-            self._template_xml = value
-        def fdel(self):
-            del self._template_xml
-        return locals()
-    template_xml = property(**template_xml())
     def target():
         doc = "The target property."
         def fget(self):
@@ -185,13 +176,26 @@ class BaseBuilder(object):
         return locals()
     delegate = property(**delegate())
     
+    def warehouse():
+        doc = "The warehouse property."
+        def fget(self):
+            return self._warehouse
+        def fset(self, value):
+            self._warehouse = value
+        def fdel(self):
+            del self._warehouse
+        return locals()
+    warehouse = property(**warehouse())
     
     # Initializer
-    def __init__(self, template=None, target=None):
+    def __init__(self, template="<template></template>", target="Mock"):
         super(BaseBuilder, self).__init__()
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.image_id = uuid.uuid4()
-        self.template, self.template_xml = self.__fetch_template(template)
+        if(type(template) == Template):
+            self.template = template
+        else:
+            self.template = Template(template)
         self.target = target
         self.target_id = None
         self.provider = None
@@ -200,6 +204,7 @@ class BaseBuilder(object):
         self._percent_complete = 0
         self.output_descriptor = "<icicle></icicle>"
         self.delegate = None
+        self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
     
     # Make instances callable for passing to thread objects
     def __call__(self, *args, **kwargs):
@@ -215,86 +220,13 @@ class BaseBuilder(object):
         """Stop building the image file.  This method is implemented by subclasses of BaseBuilder to handle OS specific build mechanics."""
         raise NotImplementedError
     
-    def store_image(self, location, target_parameters=None):
-        """Store the image in an instance of Image Warehouse specified by 'location'.  Any provider specific 
-        parameters needed for later deploying images are passed as an XML block in 'target_parameters'."""
-        #  use top level buckets 'images', 'templates', 'provider_images', 'icicles'
-        
-        http = httplib2.Http()
-        http_headers = {'content-type':'text/plain'}
-        if (location.endswith('/')):
-            location = location[0:len(location)-1]
-        
-        # since there is no way to know if the bucket exists or not, do the put on the base URL first since it seems to be non-destructive
-        try:
-            http.request(location, "PUT", headers=http_headers)
-            
-            image_url = "%s/images/%s" % (location, self.image_id)
-            self.log.debug("File (%s) to be stored at %s" % (self.image, image_url))
-            image_file = open(self.image)
-            
-            # Upload the image itself
-            image_size = os.path.getsize(self.image)
-            curl = pycurl.Curl()
-            curl.setopt(pycurl.URL, image_url)
-            curl.setopt(pycurl.HTTPHEADER, ["User-Agent: Load Tool (PyCURL Load Tool)"])
-            curl.setopt(pycurl.PUT, 1)
-            curl.setopt(pycurl.INFILE, image_file)
-            curl.setopt(pycurl.INFILESIZE, image_size)
-            curl.perform()
-            curl.close()
-            image_file.close()
-            
-            # FIXME: if these buckets don't exist in the warehouse, this will fail and you will not proceed
-            if(self.template == self.image_id):
-                template_url = "%s/templates/%s" % (location, self.template)
-                http.request(template_url, "PUT", body=self.template_xml, headers=http_headers)
-                self.log.debug("Storing template at (%s) as xml: \n%s" % (template_url, self.template_xml))
-                
-            icicle_url = "%s/icicles/%s" % (location, self.image_id)
-            http.request(icicle_url, "PUT", body=self.output_descriptor, headers=http_headers)
-            self.log.debug("Storing icicle at (%s) as xml: \n%s)" % (icicle_url, self.output_descriptor))
-            # end FIXME
-            
-            metadata = dict(uuid=self.image_id, type="image", template=self.template, target=self.target, target_parameters=target_parameters, icicle=self.image_id)
-            self.__set_warehouse_metadata(image_url, metadata)
-        except Exception, e:
-            self.log.exception("Image could not be stored...  Check status of image warehouse!  \nCaught exception while trying to store image(%s):\n%s" % (self.image_id, e))
-        
-    
-    def __set_warehouse_metadata(self, url, metadata):
-        self.log.debug("Setting metadata (%s) for %s" % (metadata, url))
-        http = httplib2.Http()
-        for item in metadata:
-            response_header, response = http.request("%s/%s" % (url, item), "PUT", body=str(metadata[item]), headers={'content-type':'text/plain'})
+    def store_image(self, target_parameters=None):
+        template_id = self.warehouse.store_template(self.template.xml, self.template.identifier)
+        icicle_id = self.warehouse.store_icicle(self.output_descriptor)
+        metadata = dict(template=template_id, target=self.target, icicle=icicle_id, target_parameters=target_parameters)
+        self.warehouse.store_image(self.image_id, self.image, metadata)
     
     def push_image(self, image_id, provider, credentials):
         """Prep the image for the provider and deploy.  This method is implemented by subclasses of the BaseBuilder to handle OS/Provider specific mechanics."""
         raise NotImplementedError
-    
-    def __fetch_template(self, template_string):
-        if((not template_string) or (("<template>" in template_string.lower()) and ("</template>" in template_string.lower()))):
-            return self.image_id, template_string
-        
-        template_url = None
-        warehouse_url = ApplicationConfiguration().configuration['warehouse']
-        
-        try:
-            template_id = uuid.UUID(template_string)
-            template_url = "%s/templates/%s" % (warehouse_url, template_id)
-        except ValueError:
-            if(template_string.lower().startswith("http")):
-                template_url = template_string
-            else:
-                self.log.warning("Template (%s) is not XML, URL, or UUID!  Returning 'None'..." % (template_string, ))
-                return None
-        
-        http = httplib2.Http()
-        headers, template_xml = http.request(template_url, "GET")
-        
-        if(template_id or template_url.startswith(warehouse_url)):
-            return template_id, template_xml
-        else:
-            return template_url, template_xml
-        
     

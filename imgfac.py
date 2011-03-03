@@ -47,7 +47,8 @@ class Application(object):
     
     def __init__(self):
         super(Application, self).__init__()        
-        logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
+        # logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
+        self.daemon = False
         signal.signal(signal.SIGTERM, self.signal_handler)
         self.app_config = ApplicationConfiguration().configuration
     
@@ -113,12 +114,20 @@ class Application(object):
     def main(self):
         if (self.app_config['qmf']):
             if (not self.app_config['foreground']):
-                self.daemonize()
-                self.setup_logging()
-                logging.info("Launching daemon...")
+                self.daemon = self.daemonize()
+            
+            self.setup_logging()
+            if(self.daemon):
+                logging.info("Launched as daemon...")
+            elif(self.app_config['foreground']):
+                logging.info("Launching in foreground...")
+            else:
+                logging.warning("Failed to launch as daemon...")
             
             self.qmf_agent = ImageFactoryAgent(self.app_config['broker'])
             self.qmf_agent.run()
+        else:
+            self.setup_logging()
     
 
 

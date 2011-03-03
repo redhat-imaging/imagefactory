@@ -22,12 +22,13 @@ import zope
 import os.path
 from imagefactory.builders.IBuilder import IBuilder
 from imagefactory.builders.MockBuilder import MockBuilder
+from imagefactory.Template import Template
 
 
 class TestMockBuilder(unittest.TestCase):
     def setUp(self):
         # logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
-        self.template = "<template></template>"
+        self.template = Template("<template></template>")
         self.target = "mock"
         self.builder = MockBuilder(self.template, self.target)
     

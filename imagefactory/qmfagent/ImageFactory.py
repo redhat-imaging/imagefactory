@@ -21,6 +21,8 @@ from qmf2 import *
 import BuildAdaptor
 import httplib2
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
+from imagefactory.ImageWarehouse import ImageWarehouse
+from imagefactory.Template import Template
 
 # Singleton representing the Factory itself
 
@@ -61,29 +63,23 @@ class ImageFactory(object):
     
     def __init__(self):
     	self.qmf_object = Data(ImageFactory.qmf_schema)
+    	self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
     
     def image(self,template,target):
-        build_adaptor = BuildAdaptor.BuildAdaptor(template,target)
+        template_object = Template(template)
+        build_adaptor = BuildAdaptor.BuildAdaptor(template_object,target)
         build_adaptor.build_image()
         return build_adaptor
     
     def provider_image(self,image_id, provider, credentials):
-        base_url = ApplicationConfiguration().configuration['warehouse']
-        
-        if (base_url):
-            if (base_url.endswith('/')):
-                base_url = base_url[0:len(base_url)-1]
+        image, image_metadata = self.warehouse.image_with_id(image_id, ("target", ))
+        template_id, template = self.warehouse.template_for_image_id(image_id)
+        target = image_metadata["target"]
 
-            http = httplib2.Http()
-            headers_response_template_id, template_id = http.request("%s/images/%s/template" % (base_url, image_id), "GET")
-            headers_response_template, template = http.request("%s/templates/%s" % (base_url, template_id), "GET")
-            headers_response_target, target = http.request("%s/images/%s/target" % (base_url, image_id), "GET")
-            if (template and target):
-                build_adaptor = BuildAdaptor.BuildAdaptor(template,target)
-                build_adaptor.push_image(image_id, provider, credentials)
-                return build_adaptor
-            else:
-                raise RuntimeError("Could not retrieve template (%s) or target (%s) from %s/%s" % (template, target, base_url, image_id))
+        if (template and target):
+            build_adaptor = BuildAdaptor.BuildAdaptor(template,target)
+            build_adaptor.push_image(image_id, provider, credentials)
+            return build_adaptor
         else:
-            raise RuntimeError("No image warehouse found!")
+            raise RuntimeError("Could not return build_adaptor!\nimage: %s\nimage_metadata: %s\ntemplate_id: %s\ntemplate: %s\n" % (image, image_metadata, template_id, template))
     

@@ -27,7 +27,6 @@ def conforms_to_interface_invariant(obj):
     Returns 'Invalid' exception if the implementing object does not conform."""
     try:
         getattr(obj, "template")
-        getattr(obj, "template_xml")
         getattr(obj, "target")
         getattr(obj, "target_id")
         getattr(obj, "provider")
@@ -51,8 +50,7 @@ class IBuilder(Interface):
     # set the invariant checks
     zope.interface.invariant(conforms_to_interface_invariant)
     # attributes
-    template = Attribute("""XML document describing the image to be built, or a UUID or URL pointing to such a document.""")
-    template_xml = Attribute("""If template is a UUID or URL, this will be the fetched XML.""")
+    template = Attribute("""Template object created using the template string passed to the initializer. This string can be a UUID, URL, or XML document.""")
     target = Attribute("""The target backend the image is being built for.""")
     target_id = Attribute("""The unique handle or representation of the Replicated Image in the provider instance. For Amazon this will be an AMI. It's unclear what this might be on other providers.""")
     provider = Attribute("""Where the image is to be deployed / launched. (eg. ec2-us-west)""")
@@ -69,7 +67,7 @@ class IBuilder(Interface):
     def abort():
         """Tell the builder to stop building the image."""
 	
-    def store_image(location, target_parameters):
+    def store_image(target_parameters):
         """Upload the completed image to an image warehouse."""
 	
     def push_image(image_id, provider, credentials):

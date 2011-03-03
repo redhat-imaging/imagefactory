@@ -42,7 +42,7 @@ class MockBuilder(BaseBuilder):
     
     # Image actions
     def build_image(self):
-        if(self.template_xml == "<template>FAIL</template>"):
+        if(self.template.xml == "<template>FAIL</template>"):
             self.log.debug("build_image() failed for MockBuilder...")
             failing_thread = FailureThread(target=self, kwargs=dict(message="Testing failure conditions via mock target builder..."))
             failing_thread.start()
@@ -84,20 +84,13 @@ class MockBuilder(BaseBuilder):
             self.status = "COMPLETED"
             self.log.debug("Completed mock image build...")
             
-            if(self.warehouse_url):
-                self.log.debug("Storing mock image (%s) in warehouse (%s)..." % (self.image_id, self.warehouse_url))
-                self.store_image(self.warehouse_url)
-            else:
-                self.log.debug("No storage location specified, skipping this step...")
+            self.store_image()
     
     def push_image(self, image_id, provider, credentials):
         self.status = "INITIALIZING"
         try:
-            original_image_url = "%s/images/%s" % (self.warehouse_url, image_id)
-            http_headers = {'content-type':'text/plain'}
-            http = httplib2.Http()
             self.status = "FETCHING IMAGE"
-            headers_response_image, image = http.request(original_image_url, "GET")
+            image, image_metadata = self.warehouse.image_with_id(image_id, ("icicle", ))
             # write the provider image out to the filesystem
             image_path = "%s/deltacloud-%s/%s/images/%s.yml" % (self.app_config['output'], os.getlogin(), provider, self.image_id)
             self.log.debug("Storing mock image for %s at path: %s" % (provider, image_path))
@@ -109,11 +102,9 @@ class MockBuilder(BaseBuilder):
                 image_file.write(image)
                 image_file.close()
             # push the provider image up to the warehouse
-            this_image_url = "%s/provider_images/%s" % (self.warehouse_url, self.image_id)
             self.status = "PUSHING TO WAREHOUSE"
-            http.request(this_image_url, "PUT", body=image, headers=http_headers)
-            metadata = dict(uuid=self.image_id, type="provider_image", template=self.template, target=self.target, icicle=self.output_descriptor, image=original_image_url, provider=provider, target_identifier=this_image_url)
-            self.__set_warehouse_metadata(this_image_url, metadata)
+            metadata = dict(image=image_id, provider=provider, icicle=image_metadata["icicle"], target_identifier="Mock_%s_%s" % (provider, self.image_id))
+            self.warehouse.create_provider_image(self.image_id, txt=image)
             self.status = "FINISHING"
             self.log.debug("MockBuilder instance %s pushed image with uuid %s to warehouse location (%s) and set metadata: %s" % (id(self), image_id, this_image_url, metadata))
             self.status = "COMPLETED"
