@@ -63,7 +63,7 @@ class ImageWarehouse(object):
     
     def object_for_image_id(self, image_id, bucket, object_bucket, metadata_keys=()):
         response_headers, object_id = httplib2.Http().request("%s/%s/%s/icicle" % (self.url, bucket, image_id), "GET", headers={'content-type':'text/plain'})
-        return object_id, self.qbject_with_id(object_id, object_bucket, metadata_keys)
+        return object_id, self.object_with_id(object_id, object_bucket, metadata_keys)
     
     def set_metadata_for_id(self, metadata, object_id, bucket):
         object_url = "%s/%s/%s" % (self.url, bucket, object_id)
