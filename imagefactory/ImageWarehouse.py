@@ -44,6 +44,8 @@ class ImageWarehouse(object):
     def __init__(self, url):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         
+        self.http = httplib2.Http()
+        
         if (url.endswith('/')):
              self.url = url[0:len(url)-1]
         else:
@@ -51,34 +53,32 @@ class ImageWarehouse(object):
     
     
     def create_bucket(self, bucket_url):
-        response_headers, response = httplib2.Http().request(bucket_url, "PUT", headers={'content-type':'text/plain'})
+        response_headers, response = self.http.request(bucket_url, "PUT", headers={'content-type':'text/plain'})
         status = int(response_headers["status"])
         if(399 < status < 600):
             # raise RuntimeError("Could not create bucket: %s" % bucket_url)
             self.log.warning("Creating a bucket returned status %s, maybe the bucket already exists?" % (status, ))
     
     def object_with_id(self, object_id, bucket, metadata_keys=()):
-        response_headers, response = httplib2.Http().request("%s/%s/%s" % (self.url, bucket, object_id), "GET", headers={'content-type':'text/plain'})
+        response_headers, response = self.http.request("%s/%s/%s" % (self.url, bucket, object_id), "GET", headers={'content-type':'text/plain'})
         return response, self.metadata_for_id(metadata_keys, object_id, bucket)
     
     def object_for_image_id(self, image_id, bucket, object_bucket, metadata_keys=()):
-        response_headers, object_id = httplib2.Http().request("%s/%s/%s/icicle" % (self.url, bucket, image_id), "GET", headers={'content-type':'text/plain'})
+        response_headers, object_id = self.http.request("%s/%s/%s/icicle" % (self.url, bucket, image_id), "GET", headers={'content-type':'text/plain'})
         return object_id, self.object_with_id(object_id, object_bucket, metadata_keys)
     
     def set_metadata_for_id(self, metadata, object_id, bucket):
         object_url = "%s/%s/%s" % (self.url, bucket, object_id)
         self.log.debug("Setting metadata (%s) for %s" % (metadata, object_url))
-        http = httplib2.Http()
         for item in metadata:
-            response_header, response = http.request("%s/%s" % (object_url, item), "PUT", body=str(metadata[item]), headers={'content-type':'text/plain'})
+            response_header, response = self.http.request("%s/%s" % (object_url, item), "PUT", body=str(metadata[item]), headers={'content-type':'text/plain'})
     
     def metadata_for_id(self, metadata_keys, object_id, bucket):
         object_url = "%s/%s/%s" % (self.url, bucket, object_id)
         self.log.debug("Getting metadata (%s) from %s" % (metadata_keys, object_url))
         metadata = dict()
-        http = httplib2.Http()
         for item in metadata_keys:
-            response_header, response = http.request("%s/%s" % (object_url, item), "PUT", body=str(metadata[item]), headers={'content-type':'text/plain'})
+            response_header, response = self.http.request("%s/%s" % (object_url, item), "PUT", body=str(metadata[item]), headers={'content-type':'text/plain'})
             metadata.update(item, response)
         return metadata
     
@@ -111,7 +111,7 @@ class ImageWarehouse(object):
                 txt = "This object has the following metadata keys: %s" % (metadata.keys(), )
             else:
                 txt = "This object only exists to hold metadata."
-        response_headers, response = httplib2.Http().request(object_url, "PUT", body=txt, headers={'content-type':'text/plain'})
+        response_headers, response = self.http.request(object_url, "PUT", body=txt, headers={'content-type':'text/plain'})
         meta_data = dict(uuid=str(image_id), object_type="provider_image")
         if(metadata):
             meta_data.update(metadata)
@@ -122,7 +122,7 @@ class ImageWarehouse(object):
         if(not template_id):
             template_id = uuid.uuid4()
         object_url = "%s/%s/%s" % (self.url, bucket, template_id)
-        response_headers, response = httplib2.Http().request(object_url, "PUT", body=template, headers={'content-type':'text/plain'})
+        response_headers, response = self.http.request(object_url, "PUT", body=template, headers={'content-type':'text/plain'})
         meta_data = dict(uuid=str(template_id), object_type="template")
         if(metadata):
             meta_data.update(metadata)
@@ -134,7 +134,7 @@ class ImageWarehouse(object):
         if(not icicle_id):
             icicle_id = uuid.uuid4()
         object_url = "%s/%s/%s" % (self.url, bucket, icicle_id)
-        response_headers, response = httplib2.Http().request(object_url, "PUT", body=icicle, headers={'content-type':'text/plain'})
+        response_headers, response = self.http.request(object_url, "PUT", body=icicle, headers={'content-type':'text/plain'})
         meta_data = dict(uuid=str(icicle_id), object_type="icicle")
         if(metadata):
             meta_data.update(metadata)
