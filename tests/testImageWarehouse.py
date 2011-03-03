@@ -29,16 +29,16 @@ class testImageWarehouse(unittest.TestCase):
         pass
     
     def testStoreAndFetchImage(self):
-        self.fail("Needs to be implemented...")
+        self.fail("Test needs to be implemented...")
     
     def testStoreAndFetchTemplate(self):
-        self.fail("Needs to be implemented...")
+        self.fail("Test needs to be implemented...")
     
     def testStoreAndFetchIcicle(self):
-        self.fail("Needs to be implemented...")
+        self.fail("Test needs to be implemented...")
     
     def testStoreAndFetchMetadata(self):
-        self.fail("Needs to be implemented...")
+        self.fail("Test needs to be implemented...")
     
 
 

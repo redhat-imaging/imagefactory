@@ -29,13 +29,13 @@ class testTemplate(unittest.TestCase):
         pass
     
     def testTemplateFromUUID(self):
-        self.fail("Needs to be implemented...")
+        self.fail("Test needs to be implemented...")
     
     def testTemplateFromXML(self):
-        self.fail("Needs to be implemented...")
+        self.fail("Test needs to be implemented...")
     
     def testTemplateFromURL(self):
-        self.fail("Needs to be implemented...")
+        self.fail("Test needs to be implemented...")
     
 
 if __name__ == '__main__':
