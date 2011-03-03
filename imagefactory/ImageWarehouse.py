@@ -57,6 +57,14 @@ class ImageWarehouse(object):
             # raise RuntimeError("Could not create bucket: %s" % bucket_url)
             self.log.warning("Creating a bucket returned status %s, maybe the bucket already exists?" % (status, ))
     
+    def object_with_id(self, object_id, bucket, metadata_keys=()):
+        response_headers, response = httplib2.Http().request("%s/%s/%s" % (self.url, bucket, object_id), "GET", headers={'content-type':'text/plain'})
+        return response, self.metadata_for_id(metadata_keys, object_id, bucket)
+    
+    def object_for_image_id(self, image_id, bucket, object_bucket, metadata_keys=()):
+        response_headers, object_id = httplib2.Http().request("%s/%s/%s/icicle" % (self.url, bucket, image_id), "GET", headers={'content-type':'text/plain'})
+        return object_id, self.qbject_with_id(object_id, object_bucket, metadata_keys)
+    
     def set_metadata_for_id(self, metadata, object_id, bucket):
         object_url = "%s/%s/%s" % (self.url, bucket, object_id)
         self.log.debug("Setting metadata (%s) for %s" % (metadata, object_url))
@@ -133,15 +141,18 @@ class ImageWarehouse(object):
         self.set_metadata_for_id(meta_data, icicle_id, bucket)
         return icicle_id 
     
-    def template_with_id(self, template_id, bucket="templates"):
-        response_headers, response = httplib2.Http().request("%s/%s/%s" % (url, bucket, template_id), "GET", headers={'content-type':'text/plain'})
-        return response
+    def icicle_with_id(self, icicle_id, bucket="icicles", metadata_keys=()):
+        return self.object_with_id(icicle_id, bucket, metadata_keys)
     
-    def template_for_image_id(self, image_id, bucket="images"):
-        response_headers, template_id = httplib2.Http().request("%s/%s/%s/template" % (url, bucket, image_id), "GET", headers={'content-type':'text/plain'})
-        return template_id, self.template_with_id(template_id)
+    def icicle_for_image_id(self, image_id, bucket="images", icicle_bucket="icicles", metadata_keys=()):
+        return self.object_for_image_id(image_id, bucket, icicle_bucket, metadata_keys)
     
-    def image_with_id(self, image_id, bucket="images", metadata_keys=None):
-        response_headers, response = httplib2.Http().request("%s/%s/%s" % (url, bucket, image_id), "GET", headers={'content-type':'text/plain'})
-        return response, self.metadata_for_id(metadata_keys, image_id, bucket)
+    def template_with_id(self, template_id, bucket="templates", template_bucket="templates", metadata_keys=()):
+        return self.object_with_id(template_id, bucket, metadata_keys)
+    
+    def template_for_image_id(self, image_id, bucket="images", metadata_keys=()):
+        return self.object_for_image_id(image_id, bucket, template_bucket, metadata_keys)
+    
+    def image_with_id(self, image_id, bucket="images", metadata_keys=()):
+        return self.object_with_id(image_id, bucket, metadata_keys)
     
