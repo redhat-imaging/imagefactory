@@ -73,7 +73,7 @@ class ImageFactory(object):
     
     def provider_image(self,image_id, provider, credentials):
         template_id, template = self.warehouse.template_for_image_id(image_id)
-        image_metadata = self.warehouse.metadata_for_id(("target", ), image_id, "images")
+        image_metadata = self.warehouse.metadata_for_id([ "target" ], image_id, "images")
         target = image_metadata["target"]
 
         if (template and target):
