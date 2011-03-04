@@ -110,7 +110,7 @@ class Template(object):
         if(xml_string and self.__string_is_xml_template(xml_string)):
             return uuid.UUID(uuid_string), xml_string
         else:
-            template_id, xml_string = self.warehouse.template_for_image_id(uuid_string)
+            template_id, xml_string, metadata = self.warehouse.template_for_image_id(uuid_string)
             if(template_id and xml_string and self.__string_is_xml_template(xml_string)):
                 return uuid.UUID(template_id), xml_string
             else:
