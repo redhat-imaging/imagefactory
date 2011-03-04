@@ -516,7 +516,7 @@ class FedoraBuilder(BaseBuilder):
 
 		#self.output_descriptor="unknown"
         	#metadata = dict(uuid=self.image_id, type="provider_image", template=self.template, target=self.target, icicle=self.output_descriptor, image=image_id, provider=provider, target_identifier=ami_id)
-        	self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to warehouse location (%s) and set metadata: %s" % (id(self), str(image_id), this_image_url, str(metadata)))
+        	self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), str(image_id), str(self.image_id), str(metadata)))
 		self.percent_complete=100
 
 
