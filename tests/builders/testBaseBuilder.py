@@ -28,7 +28,7 @@ from imagefactory.builders.BaseBuilder import BaseBuilder
 class TestBaseBuilder(unittest.TestCase):
     def setUp(self):
         # logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
-        self.builder = BaseBuilder()
+        self.builder = BaseBuilder(template="<template></template>", target="mock")
         self.delegate = BuilderDelegate()
         self.new_builder_status = "NEW_STATUS"
     
@@ -40,7 +40,7 @@ class TestBaseBuilder(unittest.TestCase):
     def testImplementsIBuilder(self):
         self.assert_(IBuilder.implementedBy(BaseBuilder), 'BaseBuilder does not implement the ImageBuilder interface.')
         try:
-            IBuilder.validateInvariants(BaseBuilder())
+            IBuilder.validateInvariants(self.builder)
         except Invalid, e:
             self.fail(e)
     

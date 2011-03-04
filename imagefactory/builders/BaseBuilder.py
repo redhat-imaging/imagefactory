@@ -188,14 +188,16 @@ class BaseBuilder(object):
     warehouse = property(**warehouse())
     
     # Initializer
-    def __init__(self, template="<template></template>", target="Mock"):
+    def __init__(self, template, target):
         super(BaseBuilder, self).__init__()
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.image_id = uuid.uuid4()
         if(type(template) == Template):
             self.template = template
-        else:
+        elif(type(template) == str):
             self.template = Template(template)
+        else:
+            raise TypeError("template should be a string representation of UUID, URL, or XML document...")
         self.target = target
         self.target_id = None
         self.provider = None

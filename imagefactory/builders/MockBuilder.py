@@ -34,7 +34,7 @@ class MockBuilder(BaseBuilder):
     zope.interface.implements(IBuilder)
     
     # Initializer
-    def __init__(self, template='<template><name>Mock</name></template>', target='mock'):
+    def __init__(self, template="<template><name>Mock</name></template>", target='mock'):
         super(MockBuilder, self).__init__(template, target)
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.app_config = ApplicationConfiguration().configuration

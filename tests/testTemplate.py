@@ -19,6 +19,7 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import unittest
+from imagefactory.Template import Template
 
 
 class testTemplate(unittest.TestCase):
