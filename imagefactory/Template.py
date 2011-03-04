@@ -96,7 +96,7 @@ class Template(object):
         regex = re.compile(Template.uuid_pattern)
         match = regex.search(template_string)
         
-        if((len(template_string) == 32) and match):
+        if((match):
             return "UUID"
         elif(template_string.lower().startswith("http")):
             return "URL"
