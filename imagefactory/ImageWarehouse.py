@@ -79,7 +79,7 @@ class ImageWarehouse(object):
         metadata = dict()
         for item in metadata_keys:
             response_header, response = self.http.request("%s/%s" % (object_url, item), "GET", headers={'content-type':'text/plain'})
-            metadata.update(item, response)
+            metadata.update(item=response)
         return metadata
     
     def store_image(self, image_id, image_file_path, bucket="images", metadata=None):
