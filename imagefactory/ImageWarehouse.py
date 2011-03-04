@@ -78,7 +78,7 @@ class ImageWarehouse(object):
         self.log.debug("Getting metadata (%s) from %s" % (metadata_keys, object_url))
         metadata = dict()
         for item in metadata_keys:
-            response_header, response = self.http.request("%s/%s" % (object_url, item), "PUT", body=str(metadata[item]), headers={'content-type':'text/plain'})
+            response_header, response = self.http.request("%s/%s" % (object_url, item), "GET", headers={'content-type':'text/plain'})
             metadata.update(item, response)
         return metadata
     
