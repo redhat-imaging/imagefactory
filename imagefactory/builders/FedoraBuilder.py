@@ -66,7 +66,7 @@ class FedoraBuilder(BaseBuilder):
 		self.config.add_section('paths')
 		self.config.set('paths', 'output_dir', self.app_config["output_dir"])
 		#self.config.set('paths', 'data_dir', self.app_config["output_dir"])
-		self.guest = oz.Fedora.get_class(oz.TDL.TDL(xmlstring=template), self.config, None)
+		self.guest = oz.Fedora.get_class(oz.TDL.TDL(xmlstring=template.xml), self.config, None)
 		# TODO: Should this be global?
 		self.image_id = str(self.image_id)	
 		# May not be necessary to do both of these
@@ -128,9 +128,9 @@ class FedoraBuilder(BaseBuilder):
 
                 if (app_config['warehouse']):
                     self.log.debug("Storing Fedora image at %s..." % (app_config['warehouse'], ))
-                    self.store_image(app_config['warehouse'])
+		    # TODO: Revisit target_parameters for different providers
+                    self.store_image("No Target Paremeters Yet")
 		    self.log.debug("Image warehouse storage complete")
-
 		self.percent_complete=100
 		self.status="COMPLETED"
 
@@ -520,9 +520,9 @@ class FedoraBuilder(BaseBuilder):
 		# TODO: Retrieve template UUID from base image
 		#self.template="unknown"
 		# TODO: Generate ICICLE - store as distinct object or as string
-		self.output_descriptor="unknown"
-        	metadata = dict(uuid=self.image_id, type="provider_image", template=self.template, target=self.target, icicle=self.output_descriptor, image=image_id, provider=provider, target_identifier=ami_id)
-        	self.__set_storage_metadata(this_image_url, metadata)
+		#self.output_descriptor="unknown"
+        	#metadata = dict(uuid=self.image_id, type="provider_image", template=self.template, target=self.target, icicle=self.output_descriptor, image=image_id, provider=provider, target_identifier=ami_id)
+        	#self.__set_storage_metadata(this_image_url, metadata)
         	self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to warehouse location (%s) and set metadata: %s" % (id(self), str(image_id), this_image_url, str(metadata)))
 		self.percent_complete=100
 

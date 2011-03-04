@@ -24,6 +24,7 @@ import zope
 # TODO : One or the other but not both
 import imagefactory.builders
 from imagefactory.builders import *
+import imagefactory.Template
 
 class BuildAdaptor(object):
     # QMF schema for BuildAdaptor
@@ -143,7 +144,7 @@ class BuildAdaptor(object):
         
         builder_class = imagefactory.builders.MockBuilder.MockBuilder
         if (self.target != "mock"): # If target is mock always run mock builder regardless of template
-            parsed_doc = libxml2.parseDoc(template)
+            parsed_doc = libxml2.parseDoc(self.template.xml)
             node = parsed_doc.xpathEval('/template/os/name')
             os_name = node[0].content
             class_name = "%sBuilder" % (os_name, )
