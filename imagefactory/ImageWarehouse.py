@@ -63,8 +63,8 @@ class ImageWarehouse(object):
         response_headers, response = self.http.request("%s/%s/%s" % (self.url, bucket, object_id), "GET", headers={'content-type':'text/plain'})
         return response, self.metadata_for_id(metadata_keys, object_id, bucket)
     
-    def object_for_image_id(self, image_id, bucket, object_bucket, metadata_keys=()):
-        response_headers, object_id = self.http.request("%s/%s/%s/icicle" % (self.url, bucket, image_id), "GET", headers={'content-type':'text/plain'})
+    def object_for_image_id(self, image_id, bucket, object_bucket, object_key, metadata_keys=()):
+        response_headers, object_id = self.http.request("%s/%s/%s/%s" % (self.url, bucket, image_id, object_key), "GET", headers={'content-type':'text/plain'})
         return object_id, self.object_with_id(object_id, object_bucket, metadata_keys)
     
     def set_metadata_for_id(self, metadata, object_id, bucket):
@@ -145,13 +145,13 @@ class ImageWarehouse(object):
         return self.object_with_id(icicle_id, bucket, metadata_keys)
     
     def icicle_for_image_id(self, image_id, bucket="images", icicle_bucket="icicles", metadata_keys=()):
-        return self.object_for_image_id(image_id, bucket, icicle_bucket, metadata_keys)
+        return self.object_for_image_id(image_id, bucket, icicle_bucket, "icicle", metadata_keys)
     
     def template_with_id(self, template_id, bucket="templates", metadata_keys=()):
         return self.object_with_id(template_id, bucket, metadata_keys)
     
     def template_for_image_id(self, image_id, bucket="images", template_bucket="templates", metadata_keys=()):
-        return self.object_for_image_id(image_id, bucket, template_bucket, metadata_keys)
+        return self.object_for_image_id(image_id, bucket, template_bucket, "template", metadata_keys)
     
     def image_with_id(self, image_id, bucket="images", metadata_keys=()):
         return self.object_with_id(image_id, bucket, metadata_keys)
