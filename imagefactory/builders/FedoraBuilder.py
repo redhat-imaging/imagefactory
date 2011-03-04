@@ -508,21 +508,14 @@ class FedoraBuilder(BaseBuilder):
 		ec2_cert_file_object.close()
 		ec2_key_file_object.close()
 
-		# Create the base object for this newly generated ProviderImage
-		# Note that this is not a big binary blob - it is metadata-only
-        	this_image_url = "%s/%s" % (self.warehouse_url, self.image_id)
-        	http = httplib2.Http()
-		image="This is a placeholder object for EC2 image " + ami_id
-        	http_headers = {'content-type':'text/plain'}
-        	http.request(this_image_url, "PUT", body=image, headers=http_headers)
+		# Use new warehouse wrapper to do everything
+		# TODO: Generate and store ICICLE
+                self.status = "PUSHING"
+                metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=ami_id)
+                self.warehouse.create_provider_image(self.image_id, metadata=metadata)
 
-		# Set metadata on this object
-		# TODO: Retrieve template UUID from base image
-		#self.template="unknown"
-		# TODO: Generate ICICLE - store as distinct object or as string
 		#self.output_descriptor="unknown"
         	#metadata = dict(uuid=self.image_id, type="provider_image", template=self.template, target=self.target, icicle=self.output_descriptor, image=image_id, provider=provider, target_identifier=ami_id)
-        	#self.__set_storage_metadata(this_image_url, metadata)
         	self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to warehouse location (%s) and set metadata: %s" % (id(self), str(image_id), this_image_url, str(metadata)))
 		self.percent_complete=100
 
