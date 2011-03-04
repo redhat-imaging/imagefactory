@@ -74,13 +74,12 @@ class ImageFactory(object):
         return build_adaptor
     
     def provider_image(self,image_id, provider, credentials):
-        template_id, template = self.warehouse.template_for_image_id(image_id)
-	self.log.debug("Got template id: %s and template: %s" % (repr(template_id), repr(template)))
+        template_id, template_and_metadata = self.warehouse.template_for_image_id(image_id)
         image_metadata = self.warehouse.metadata_for_id([ "target" ], image_id, "images")
         target = image_metadata["target"]
 
         if (template and target):
-            build_adaptor = BuildAdaptor.BuildAdaptor(Template(template),target)
+            build_adaptor = BuildAdaptor.BuildAdaptor(Template(template_id),target)
             build_adaptor.push_image(image_id, provider, credentials)
             return build_adaptor
         else:
