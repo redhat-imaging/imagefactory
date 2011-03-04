@@ -147,10 +147,10 @@ class ImageWarehouse(object):
     def icicle_for_image_id(self, image_id, bucket="images", icicle_bucket="icicles", metadata_keys=()):
         return self.object_for_image_id(image_id, bucket, icicle_bucket, metadata_keys)
     
-    def template_with_id(self, template_id, bucket="templates", template_bucket="templates", metadata_keys=()):
+    def template_with_id(self, template_id, bucket="templates", metadata_keys=()):
         return self.object_with_id(template_id, bucket, metadata_keys)
     
-    def template_for_image_id(self, image_id, bucket="images", metadata_keys=()):
+    def template_for_image_id(self, image_id, bucket="images", template_bucket="templates", metadata_keys=()):
         return self.object_for_image_id(image_id, bucket, template_bucket, metadata_keys)
     
     def image_with_id(self, image_id, bucket="images", metadata_keys=()):
