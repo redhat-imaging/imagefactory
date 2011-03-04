@@ -77,7 +77,7 @@ class ImageFactory(object):
         target = image_metadata["target"]
 
         if (template and target):
-            build_adaptor = BuildAdaptor.BuildAdaptor(template,target)
+            build_adaptor = BuildAdaptor.BuildAdaptor(Template(template),target)
             build_adaptor.push_image(image_id, provider, credentials)
             return build_adaptor
         else:
