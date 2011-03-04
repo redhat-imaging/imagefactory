@@ -23,6 +23,7 @@ import httplib2
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 from imagefactory.ImageWarehouse import ImageWarehouse
 from imagefactory.Template import Template
+import logging
 
 # Singleton representing the Factory itself
 
@@ -62,6 +63,7 @@ class ImageFactory(object):
     	return cls.instance
     
     def __init__(self):
+        self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
     	self.qmf_object = Data(ImageFactory.qmf_schema)
     	self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
     
@@ -73,6 +75,7 @@ class ImageFactory(object):
     
     def provider_image(self,image_id, provider, credentials):
         template_id, template = self.warehouse.template_for_image_id(image_id)
+	self.log.debug("Got template id: %s and template: %s" % (repr(template_id), repr(template)))
         image_metadata = self.warehouse.metadata_for_id([ "target" ], image_id, "images")
         target = image_metadata["target"]
 
