@@ -117,7 +117,7 @@ class Template(object):
                 raise RuntimeError("Unable to fetch a template given the uuid %s!  No template or image matches this uuid!" % (uuid_string, ))
     
     def __string_is_xml_template(self, text):
-        retun (("<template>" in text.lower()) and ("</template>" in text.lower()))
+        return (("<template>" in text.lower()) and ("</template>" in text.lower()))
     
     def __fetch_template_with_url(self, url):
         regex = re.compile(Template.uuid_pattern)
