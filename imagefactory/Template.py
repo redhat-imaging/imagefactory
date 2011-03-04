@@ -106,7 +106,7 @@ class Template(object):
             raise ValueError("'template_string' must be a UUID, URL, or XML document...")
     
     def __fetch_template_for_uuid(self, uuid_string):
-        template_id, xml_string, metadata = self.warehouse.template_with_id(uuid_string)
+        xml_string, metadata = self.warehouse.template_with_id(uuid_string)
         if(xml_string and self.__string_is_xml_template(xml_string)):
             return uuid.UUID(uuid_string), xml_string
         else:
