@@ -78,7 +78,7 @@ class ImageFactory(object):
         image_metadata = self.warehouse.metadata_for_id([ "target" ], image_id, "images")
         target = image_metadata["target"]
 
-        if (template and target):
+        if (template_id and target):
             build_adaptor = BuildAdaptor.BuildAdaptor(Template(template_id),target)
             build_adaptor.push_image(image_id, provider, credentials)
             return build_adaptor
