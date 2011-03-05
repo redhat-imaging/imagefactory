@@ -96,12 +96,12 @@ class Template(object):
         regex = re.compile(Template.uuid_pattern)
         match = regex.search(template_string)
         
-        if(match):
-            return "UUID"
-        elif(template_string.lower().startswith("http")):
+        if(template_string.lower().startswith("http")):
             return "URL"
         elif(("<template>" in template_string.lower()) and ("</template>" in template_string.lower())):
             return "XML"
+        elif(match):
+            return "UUID"
         else:        
             raise ValueError("'template_string' must be a UUID, URL, or XML document...")
     
