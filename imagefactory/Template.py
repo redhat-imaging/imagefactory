@@ -72,25 +72,34 @@ class Template(object):
     xml = property(**xml())
     
     
-    def __init__(self, template_string):
+    def __init__(self, template=None, uuid=None, url=None, xml=None, bucket="templates"):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
+        self.bucket = bucket
         
         self.identifier = None
         self.url = None
         self.xml = None
         
-        template_string_type = self.__template_string_type(template_string)
-            
-        if(template_string_type == "UUID"):
-            self.identifier, self.xml = self.__fetch_template_for_uuid(template_string)
-        elif(template_string_type == "URL"):
-            self.url = template_string
-            self.identifier, self.xml = self.__fetch_template_with_url(template_string)
-        elif(template_string_type == "XML"):
-            self.xml = template_string
+        if(template):
+            template_string = str(template)
+            template_string_type = self.__template_string_type(template_string)
+            if(template_string_type == "UUID"):
+                uuid = template_string
+            elif(template_string_type == "URL"):
+                url = template_string
+            elif(template_string_type == "XML"):
+                xml = template_string
+        
+        if(uuid):
+            self.identifier, self.xml = self.__fetch_template_for_uuid(uuid, bucket)
+        elif(url):
+            self.url = url
+            self.identifier, self.xml = self.__fetch_template_with_url(url)
+        elif(xml):
+            self.xml = xml
         else:
-            raise ValueError("'template_string' must be a UUID, URL, or XML document...")
+            raise ValueError("'template' must be a UUID, URL, or XML document...")
     
     def __template_string_type(self, template_string):
         regex = re.compile(Template.uuid_pattern)
@@ -105,12 +114,12 @@ class Template(object):
         else:        
             raise ValueError("'template_string' must be a UUID, URL, or XML document...")
     
-    def __fetch_template_for_uuid(self, uuid_string):
-        xml_string, metadata = self.warehouse.template_with_id(uuid_string)
+    def __fetch_template_for_uuid(self, uuid_string, bucket):
+        xml_string, metadata = self.warehouse.template_with_id(uuid_string, bucket=self.bucket)
         if(xml_string and self.__string_is_xml_template(xml_string)):
             return uuid.UUID(uuid_string), xml_string
         else:
-            template_id, xml_string, metadata = self.warehouse.template_for_image_id(uuid_string)
+            template_id, xml_string = self.warehouse.template_for_image_id(uuid_string)
             if(template_id and xml_string and self.__string_is_xml_template(xml_string)):
                 return uuid.UUID(template_id), xml_string
             else:
