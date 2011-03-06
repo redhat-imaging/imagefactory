@@ -65,7 +65,8 @@ class ImageWarehouse(object):
     
     def object_for_image_id(self, image_id, bucket, object_bucket, object_key, metadata_keys=()):
         response_headers, object_id = self.http.request("%s/%s/%s/%s" % (self.url, bucket, image_id, object_key), "GET", headers={'content-type':'text/plain'})
-        return object_id, self.object_with_id(object_id, object_bucket, metadata_keys)
+        the_object, metadata = self.object_with_id(object_id, object_bucket, metadata_keys)
+        return object_id, the_object, metadata
     
     def set_metadata_for_id(self, metadata, object_id, bucket):
         object_url = "%s/%s/%s" % (self.url, bucket, object_id)
