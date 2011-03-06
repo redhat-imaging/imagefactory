@@ -90,7 +90,7 @@ class MockBuilder(BaseBuilder):
         self.status = "INITIALIZING"
         try:
             self.status = "FETCHING IMAGE"
-            image, image_metadata = self.warehouse.image_with_id(image_id, ("icicle", ))
+            image, image_metadata = self.warehouse.image_with_id(image_id, metadata_keys=("icicle", ))
             # write the provider image out to the filesystem
             image_path = "%s/deltacloud-%s/%s/images/%s.yml" % (self.app_config['output'], os.getlogin(), provider, self.image_id)
             self.log.debug("Storing mock image for %s at path: %s" % (provider, image_path))
@@ -106,7 +106,7 @@ class MockBuilder(BaseBuilder):
             metadata = dict(image=image_id, provider=provider, icicle=image_metadata["icicle"], target_identifier="Mock_%s_%s" % (provider, self.image_id))
             self.warehouse.create_provider_image(self.image_id, txt=image)
             self.status = "FINISHING"
-            self.log.debug("MockBuilder instance %s pushed image with uuid %s to warehouse location (%s) and set metadata: %s" % (id(self), image_id, this_image_url, metadata))
+            self.log.debug("MockBuilder instance %s pushed image with uuid %s to warehouse (%s) and set metadata: %s" % (id(self), image_id, self.warehouse.url, metadata))
             self.status = "COMPLETED"
         except Exception, e:
             failing_thread = FailureThread(target=self, kwargs=dict(message="%s" % (e, )))

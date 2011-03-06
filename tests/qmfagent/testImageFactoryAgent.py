@@ -38,7 +38,7 @@ class TestImageFactoryAgent(unittest.TestCase):
         self.console_session.open()
         self.console = MockConsole(self.console_session)
         self.console.start()
-        time.sleep(5) # Give the agent some time to show up. raise this value testQueries fails to find the agent.
+        time.sleep(5) # Give the agent some time to show up.
     
     def tearDown(self):
         del self.expected_state_transitions
@@ -53,13 +53,20 @@ class TestImageFactoryAgent(unittest.TestCase):
     
     def testImageFactoryAgent(self):
         """Test agent registration, method calls, and events"""
+        # test for the correct version of the qmf2 bindings
+        self.assertTrue(hasattr(AgentSession(self.connection), "raiseEvent"))
+        
+        # test the build failure qmf event raised by BuildAdaptor
+        self.assertEqual(len(self.console.test_failure_events), 1)
+        self.assertEqual(len(self.console.real_failure_events), 0, "Unexpected failure events raised!\n%s" % (self.console.real_failure_events, ))
+        self.assertEqual(self.console.build_adaptor_addr_fail, self.console.test_failure_events[0]["data"]["addr"])
+        
         # test that the agent registered and consoles can see it.
         try:
             self.assertIsNotNone(self.console.agent)
         except AttributeError:
             self.fail("No imagefactory agent found...")
-        # test for the correct version of the qmf2 bindings
-        self.assertTrue(hasattr(AgentSession(self.connection), "raiseEvent"))
+        
         # test that image returns what we expect
         try:
             self.assertIsNotNone(self.console.build_adaptor_addr_success)
@@ -68,36 +75,52 @@ class TestImageFactoryAgent(unittest.TestCase):
         
         # test that status changes in build adaptor create QMF events the consoles see.
         agent_name = self.console.agent.getName()
-        self.assertGreater(self.console.event_count, len(self.expected_state_transitions))
-        self.assertEqual(len(self.expected_state_transitions), len(self.console.status_events))
-        for event in self.console.status_events:
-            index = self.console.status_events.index(event)
+        self.assertEqual(len(self.expected_state_transitions), len(self.console.build_status_events))
+        for event in self.console.build_status_events:
+            index = self.console.build_status_events.index(event)
             self.assertEqual(agent_name, event["agent"].getName())
-            properties = event["data"].getProperties()
+            properties = event["data"]
             self.assertIsNotNone(properties)
             self.assertEqual(self.console.build_adaptor_addr_success, properties["addr"])
             self.assertEqual(self.expected_state_transitions[index][0],properties["old_status"])
             self.assertEqual(self.expected_state_transitions[index][1],properties["new_status"])
-        # test the build failure qmf event raised by BuildAdaptor
-        self.assertEqual(len(self.console.failure_events), 1)
-        self.assertEqual(self.console.build_adaptor_addr_fail, self.console.failure_events[0]["data"].getProperties()["addr"])
         
+        # test that provider_image returns what we expect
+        try:
+            self.assertIsNotNone(self.console.build_adaptor_addr_push)
+        except AttributeError:
+            self.fail("provider_image did not return a DataAddr for build_adaptor...")
+        
+        # test that status changes in build adaptor create QMF events the consoles see.
+        self.assertGreater(len(self.console.push_status_events), 0)
+        # self.assertEqual(len(self.expected_state_transitions), len(self.console.push_status_events))
+        # for event in self.console.push_status_events:
+        #     index = self.console.push_status_events.index(event)
+        #     self.assertEqual(agent_name, event["agent"].getName())
+        #     properties = event["data"].getProperties()
+        #     self.assertIsNotNone(properties)
+        #     self.assertEqual(self.console.build_adaptor_addr_push, properties["addr"])
+        #     self.assertEqual(self.expected_state_transitions[index][0],properties["old_status"])
+        #     self.assertEqual(self.expected_state_transitions[index][1],properties["new_status"])
     
 
 class MockConsole(ConsoleHandler):
     def __init__(self, consoleSession):
         super(MockConsole, self).__init__(consoleSession)
-        self.status_events = []
-        self.failure_events = []
+        self.build_adaptor_addr_success = ""
+        self.build_adaptor_addr_fail = ""
+        self.build_adaptor_addr_push = ""
+        self.build_status_events = []
+        self.push_status_events =[]
+        self.test_failure_events = []
+        self.real_failure_events = []
         self.event_count = 0
     
     def agentAdded(self, agent):
         self.agent = agent
-        factories = agent.query("{class:ImageFactory, package:'com.redhat.imagefactory'}")
-        response = factories[0].image("<template></template>", "mock")
-        self.build_adaptor_addr_success = response["build_adaptor"]
-        response = factories[0].image("<template>FAIL</template>", "mock")
-        self.build_adaptor_addr_fail = response["build_adaptor"]
+        self.factory = agent.query("{class:ImageFactory, package:'com.redhat.imagefactory'}")[0]
+        self.build_adaptor_addr_success = self.factory.image("<template></template>", "mock")["build_adaptor"]
+        self.build_adaptor_addr_fail = self.factory.image("<template>FAIL</template>", "mock")["build_adaptor"]
     
     def agentDeleted(self, agent, reason):
         self.agent = None
@@ -105,12 +128,22 @@ class MockConsole(ConsoleHandler):
     
     def eventRaised(self, agent, data, timestamp, severity):
         if(data.getProperties()["event"] == "STATUS"):
-            self.status_events.append(dict(agent=agent, data=data, timestamp=timestamp, severity=severity))
-        if(data.getProperties()["event"] == "FAILURE"):
-            self.failure_events.append(dict(agent=agent, data=data, timestamp=timestamp, severity=severity))
+            if(data.getProperties()["addr"] == self.build_adaptor_addr_success):
+                self.build_status_events.append(dict(agent=agent, data=data.getProperties(), timestamp=timestamp, severity=severity))
+                if(data.getProperties()["new_status"] == "COMPLETED"):
+                    time.sleep(2)
+                    image_id = self.build_adaptor_addr_success["_object_name"].split(":")[2]
+                    self.build_adaptor_addr_push = self.factory.provider_image(image_id, "mock-provider1", "None")["build_adaptor"]
+            elif(data.getProperties()["addr"] == self.build_adaptor_addr_push):
+                self.push_status_events.append(dict(agent=agent, data=data.getProperties(), timestamp=timestamp, severity=severity))
+        elif(data.getProperties()["event"] == "FAILURE"):
+            if(data.getProperties()["addr"] == self.build_adaptor_addr_fail):
+                self.test_failure_events.append(dict(agent=agent, data=data.getProperties(), timestamp=timestamp, severity=severity))
+            else:
+                self.real_failure_events.append(dict(agent=agent, data=data.getProperties(), timestamp=timestamp, severity=severity))
+        
         self.event_count = self.event_count + 1
     
-
 
 if __name__ == '__main__':
     unittest.main()
