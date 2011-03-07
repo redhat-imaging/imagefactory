@@ -93,6 +93,10 @@ class testImageWarehouse(unittest.TestCase):
         self.assertEqual(str(icicle_id), icicle_id3)
         self.assertEqual(icicle_content, fetched_icicle_content3)
     
+    def testBucketCreation(self):
+        bucket_url = "%s/unittests-create_bucket.%s" % (self.warehouse.url, uuid.uuid4())
+        self.assert_(self.warehouse.create_bucket(bucket_url))
+    
 
 
 if __name__ == '__main__':

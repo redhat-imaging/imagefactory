@@ -58,6 +58,9 @@ class ImageWarehouse(object):
         if(399 < status < 600):
             # raise RuntimeError("Could not create bucket: %s" % bucket_url)
             self.log.warning("Creating a bucket returned status %s, maybe the bucket already exists?" % (status, ))
+            return False
+        else:
+            return True
     
     def object_with_id(self, object_id, bucket, metadata_keys=()):
         response_headers, response = self.http.request("%s/%s/%s" % (self.url, bucket, object_id), "GET", headers={'content-type':'text/plain'})
