@@ -87,26 +87,26 @@ class ImageFactoryAgent(AgentHandler):
             
         try:
             result = getattr(target_obj, methodName)(**args)
+            
+            if (addr == self.image_factory_addr):
+                build_adaptor_instance_name = "build_adaptor:%s:%s" %  (methodName, result.builder.image_id)
+                qmf_object_addr = self.session.addData(result.qmf_object, build_adaptor_instance_name, persistent=True)
+                # FIXME: sloranz - I shouldn't have to set this... I should be able to use qmf_object.getAgent() when needed...
+                result.agent = self
+                self.managedObjects[repr(qmf_object_addr)] = result
+                handle.addReturnArgument("build_adaptor", qmf_object_addr.asMap())
+                self.session.methodSuccess(handle)
+            else:
+                if (result):
+                    if (isinstance(result, dict)):
+                        for key in result:
+                            handle.addReturnArgument(key, str(result[key]))
+                    else:
+                        handle.addReturnArgument("result", repr(result))
+                self.session.methodSuccess(handle)
         except Exception, e:
             self.log.exception(e)
             self.session.raiseException(handle, "Exception: %s %s" % (repr(e), str(e)))
-        
-        if (addr == self.image_factory_addr):
-            build_adaptor_instance_name = "build_adaptor:%s:%s" %  (methodName, result.builder.image_id)
-            qmf_object_addr = self.session.addData(result.qmf_object, build_adaptor_instance_name, persistent=True)
-            # FIXME: sloranz - I shouldn't have to set this... I should be able to use qmf_object.getAgent() when needed...
-            result.agent = self
-            self.managedObjects[repr(qmf_object_addr)] = result
-            handle.addReturnArgument("build_adaptor", qmf_object_addr.asMap())
-            self.session.methodSuccess(handle)
-        else:
-            if (result):
-                if (isinstance(result, dict)):
-                    for key in result:
-                        handle.addReturnArgument(key, str(result[key]))
-                else:
-                    handle.addReturnArgument("result", repr(result))
-            self.session.methodSuccess(handle)
     
     def shutdown(self):
         """
