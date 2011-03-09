@@ -38,7 +38,6 @@ def conforms_to_interface_invariant(obj):
         getattr(obj, "delegate")
         getattr(obj, "build_image")
         getattr(obj, "abort")
-        getattr(obj, "store_image")
         getattr(obj, "push_image")
     except AttributeError, e:
         raise Invalid(e)
@@ -66,9 +65,6 @@ class IBuilder(Interface):
 	
     def abort():
         """Tell the builder to stop building the image."""
-	
-    def store_image(target_parameters):
-        """Upload the completed image to an image warehouse."""
 	
     def push_image(image_id, provider, credentials):
         """Deploy an image to the cloud provider."""
