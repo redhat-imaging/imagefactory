@@ -105,6 +105,10 @@ class TestImageFactoryAgent(unittest.TestCase):
         #     self.assertEqual(self.console.build_adaptor_addr_push, properties["addr"])
         #     self.assertEqual(self.expected_state_transitions[index][0],properties["old_status"])
         #     self.assertEqual(self.expected_state_transitions[index][1],properties["new_status"])
+        
+        # test instance_states method
+        self.assertIsNotNone(self.console.image_factory_states)
+        self.assertIsNotNone(self.console.build_adaptor_states)
     
 
 class MockConsole(ConsoleHandler):
@@ -124,6 +128,9 @@ class MockConsole(ConsoleHandler):
         self.factory = agent.query("{class:ImageFactory, package:'com.redhat.imagefactory'}")[0]
         self.build_adaptor_addr_success = self.factory.image("<template></template>", "mock")["build_adaptor"]
         self.build_adaptor_addr_fail = self.factory.image("<template>FAIL</template>", "mock")["build_adaptor"]
+        
+        self.image_factory_states = self.factory.instance_states("ImageFactory")
+        self.build_adaptor_states = self.factory.instance_states("BuildAdaptor")
         
         try:
             self.image_exception = self.factory.image()

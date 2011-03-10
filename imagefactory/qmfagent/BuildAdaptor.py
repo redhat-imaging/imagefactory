@@ -15,47 +15,53 @@
 # MA  02110-1301, USA.  A copy of the GNU General Public License is
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
+import sys
 import libxml2
 import logging
 import cqpid
 from qmf2 import *
 from threading import Thread, Lock
 import zope
-# TODO : One or the other but not both
-import imagefactory.builders
 from imagefactory.builders import *
 import imagefactory.Template
 
 class BuildAdaptor(object):
     # QMF schema for BuildAdaptor
     qmf_schema = Schema(SCHEMA_TYPE_DATA, "com.redhat.imagefactory", "BuildAdaptor")
-    qmf_schema.addProperty(SchemaProperty("status", SCHEMA_DATA_STRING))
-    qmf_schema.addProperty(SchemaProperty("percent_complete", SCHEMA_DATA_INT))
-    qmf_schema.addProperty(SchemaProperty("image_id", SCHEMA_DATA_STRING))
+    qmf_schema.addProperty(SchemaProperty("status", SCHEMA_DATA_STRING, desc="string representing the status (see instance_states() on ImageFactory)"))
+    qmf_schema.addProperty(SchemaProperty("percent_complete", SCHEMA_DATA_INT, desc="the estimated percentage through an operation"))
+    qmf_schema.addProperty(SchemaProperty("image_id", SCHEMA_DATA_STRING, desc="string representation of the assigned uuid"))
     qmf_schema.addMethod(SchemaMethod("abort", desc = "If possible, abort running build."))
-    # TODO: (redmine 256) - build_states needs to be implemented...
-    # _states_method = SchemaMethod("build_states", desc = "Returns a representation of the build state transitions.")
-    # _states_method.addArgument(SchemaProperty("states", SCHEMA_DATA_MAP, direction=DIR_IN_OUT))
-    # qmf_schema.addMethod(_states_method)
     
     #QMF schema for status change event
     qmf_event_schema_status = Schema(SCHEMA_TYPE_EVENT, "com.redhat.imagefactory", "BuildAdaptorStatusEvent")
-    qmf_event_schema_status.addProperty(SchemaProperty("addr", SCHEMA_DATA_MAP))
-    qmf_event_schema_status.addProperty(SchemaProperty("event", SCHEMA_DATA_STRING))
-    qmf_event_schema_status.addProperty(SchemaProperty("new_status", SCHEMA_DATA_STRING))
-    qmf_event_schema_status.addProperty(SchemaProperty("old_status", SCHEMA_DATA_STRING))
+    qmf_event_schema_status.addProperty(SchemaProperty("addr", SCHEMA_DATA_MAP, desc="the address of the object raising this event"))
+    qmf_event_schema_status.addProperty(SchemaProperty("event", SCHEMA_DATA_STRING, desc="string describing the type of event, in this case 'STATUS'"))
+    qmf_event_schema_status.addProperty(SchemaProperty("new_status", SCHEMA_DATA_STRING, desc="string value of the new status"))
+    qmf_event_schema_status.addProperty(SchemaProperty("old_status", SCHEMA_DATA_STRING, desc="string value of the old status"))
     #QMF schema for change to percent_complete event
     qmf_event_schema_percentage = Schema(SCHEMA_TYPE_EVENT, "com.redhat.imagefactory", "BuildAdaptorPercentCompleteEvent")
-    qmf_event_schema_percentage.addProperty(SchemaProperty("addr", SCHEMA_DATA_MAP))
-    qmf_event_schema_percentage.addProperty(SchemaProperty("event", SCHEMA_DATA_STRING))
-    qmf_event_schema_percentage.addProperty(SchemaProperty("percent_complete", SCHEMA_DATA_INT))
+    qmf_event_schema_percentage.addProperty(SchemaProperty("addr", SCHEMA_DATA_MAP, desc="the address of the object raising this event"))
+    qmf_event_schema_percentage.addProperty(SchemaProperty("event", SCHEMA_DATA_STRING, desc="string describing the type of event, in this case 'PERCENTAGE'"))
+    qmf_event_schema_percentage.addProperty(SchemaProperty("percent_complete", SCHEMA_DATA_INT, desc="the estimated percentage through an operation"))
     #QMF schema for build failure events
     qmf_event_schema_build_failed = Schema(SCHEMA_TYPE_EVENT, "com.redhat.imagefactory", "BuildFailedEvent")
-    qmf_event_schema_build_failed.addProperty(SchemaProperty("addr", SCHEMA_DATA_MAP))
-    qmf_event_schema_build_failed.addProperty(SchemaProperty("event", SCHEMA_DATA_STRING))
-    qmf_event_schema_build_failed.addProperty(SchemaProperty("type", SCHEMA_DATA_STRING))    
-    qmf_event_schema_build_failed.addProperty(SchemaProperty("info", SCHEMA_DATA_STRING))    
+    qmf_event_schema_build_failed.addProperty(SchemaProperty("addr", SCHEMA_DATA_MAP, desc="the address of the object raising this event"))
+    qmf_event_schema_build_failed.addProperty(SchemaProperty("event", SCHEMA_DATA_STRING, desc="string describing the type of event, in this case 'FAILURE'"))
+    qmf_event_schema_build_failed.addProperty(SchemaProperty("type", SCHEMA_DATA_STRING, desc="short string description of the failure"))
+    qmf_event_schema_build_failed.addProperty(SchemaProperty("info", SCHEMA_DATA_STRING, desc="longer string description of the failure"))
     
+    @classmethod
+    def object_states(cls):
+        """Returns a dictionary representing the finite state machine for instances of this class."""
+        return {
+                "NEW":({"INITIALIZING":("build_image", "push_image")}, {"PENDING":("build_image", "push_image")}, {"FAILED":("build_image", "push_image")}),
+                "INITIALIZING":({"PENDING":("_auto_")}, {"FAILED":("_auto_")}),
+                "PENDING":({"FINISHING":("_auto_")}, {"COMPLETED":("_auto_")}, {"FAILED":("_auto_")}),
+                "FINISHING":({"COMPLETED":("_auto_")}, {"FAILED":("_auto_")}),
+                "COMPLETED":()
+                }
+        
     
     ### Properties
     def template():
@@ -142,23 +148,25 @@ class BuildAdaptor(object):
         self.image = "None"
         self.builder = None
         
-        builder_class = imagefactory.builders.MockBuilder.MockBuilder
+        builder_class = MockBuilder.MockBuilder
         if (self.target != "mock"): # If target is mock always run mock builder regardless of template
             parsed_doc = libxml2.parseDoc(self.template.xml)
             node = parsed_doc.xpathEval('/template/os/name')
             os_name = node[0].content
             class_name = "%sBuilder" % (os_name, )
             try:
-                builder_module = getattr(imagefactory.builders, class_name)
-                builder_class = getattr(builder_module, class_name)
+                module_name = "imagefactory.builders.%s" % (class_name, )
+                __import__(module_name)
+                builder_class = getattr(sys.modules[module_name], class_name)
             except AttributeError, e:
                 self.log.exception("CAUGHT EXCEPTION: %s \n Could not find builder class for %s, returning MockBuilder!", e, os_name)
-		
+        
         self.builder = builder_class(template, target)
         # Register as a delegate to the builder
         self.builder.delegate = self
         self.image = str(self.builder.image_id)
     
+    ### Methods to conform to IBuilder that BaseBuilder doesn't implement
     def build_image(self):
         thread_name = "%s.build_image()" % (self.builder.image_id, )
         # using args to pass the method we want to call on the target object.
@@ -187,7 +195,7 @@ class BuildAdaptor(object):
         event.event = "STATUS"
         event.new_status = str(new_status)
         event.old_status = str(old_status)
-        agent.session.raiseEvent(data=event, severity=4)
+        agent.session.raiseEvent(data=event, severity=SEV_NOTICE)
         
         if(new_status == "COMPLETED"):
             agent.deregister(self.qmf_object)
@@ -203,7 +211,7 @@ class BuildAdaptor(object):
         event.addr = self.qmf_object.getAddr().asMap()
         event.event = "PERCENTAGE"
         event.percent_complete = new_percentage
-        agent.session.raiseEvent(data=event, severity=4)
+        agent.session.raiseEvent(data=event, severity=SEV_NOTICE)
     
     def builder_did_fail(self, builder, failure_type, failure_info):
         # FIXME: sloranz - I should be able to get the agent from the qmf_object this is a workaround...
@@ -216,7 +224,7 @@ class BuildAdaptor(object):
         event.type = failure_type
         event.info = failure_info
         # TODO: Find out more about the severity value and set it to the most severe.  is that 0 or 7?
-        agent.session.raiseEvent(data=event, severity=4)
+        agent.session.raiseEvent(data=event, severity=SEV_ERROR)
     
 
 # if __name__ == '__main__':

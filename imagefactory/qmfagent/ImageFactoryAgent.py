@@ -80,15 +80,18 @@ class ImageFactoryAgent(AgentHandler):
         """
         self.log.debug("Method called: name = %s \n args = %s \n handle = %s \n addr = %s \n subtypes = %s \n userId = %s", methodName, args, handle, addr, subtypes, userId)
         
-        if (addr == self.image_factory_addr):
-            target_obj = self.image_factory
-        elif (repr(addr) in self.managedObjects):
-            target_obj = self.managedObjects[repr(addr)]
-            
         try:
-            result = getattr(target_obj, methodName)(**args)
             
             if (addr == self.image_factory_addr):
+                target_obj = self.image_factory
+            elif (repr(addr) in self.managedObjects):
+                target_obj = self.managedObjects[repr(addr)]
+            else:
+                raise RuntimeError("%s does not match an object managed by ImageFactoryAgent!  Unable to respond to %s." % (repr(addr), methodName))
+            
+            result = getattr(target_obj, methodName)(**args)
+            
+            if ((addr == self.image_factory_addr) and (methodName in ("image", "provider_image"))):
                 build_adaptor_instance_name = "build_adaptor:%s:%s" %  (methodName, result.builder.image_id)
                 qmf_object_addr = self.session.addData(result.qmf_object, build_adaptor_instance_name, persistent=True)
                 # FIXME: sloranz - I shouldn't have to set this... I should be able to use qmf_object.getAgent() when needed...
@@ -96,17 +99,21 @@ class ImageFactoryAgent(AgentHandler):
                 self.managedObjects[repr(qmf_object_addr)] = result
                 handle.addReturnArgument("build_adaptor", qmf_object_addr.asMap())
                 self.session.methodSuccess(handle)
-            else:
-                if (result):
-                    if (isinstance(result, dict)):
-                        for key in result:
-                            handle.addReturnArgument(key, str(result[key]))
-                    else:
-                        handle.addReturnArgument("result", repr(result))
+            elif(result and isinstance(result, dict)):
+                for key in result:
+                    handle.addReturnArgument(key, result[key])
                 self.session.methodSuccess(handle)
+            else:
+                returned_dictionary = {}
+                for method in type(target_obj).qmf_schema.getMethods():
+                    if (method.getName() == methodName):
+                        for method_arg in method.getArguments():
+                            if (method_arg.getDirection() == DIR_OUT):
+                                returned_dictionary.update({method_arg.getName() : method_arg.getDesc()})
+                raise RuntimeError("Method '%s' on objects of class %s must return a dictionary of %s" % (methodName, target_obj.__class__.__name__, returned_dictionary))
         except Exception, e:
-            self.log.exception(e)
-            self.session.raiseException(handle, "Exception: %s %s" % (repr(e), str(e)))
+            self.log.exception(str(e))
+            self.session.raiseException(handle, str(e))
     
     def shutdown(self):
         """
