@@ -247,6 +247,14 @@ class FedoraBuilder(BaseBuilder):
 
                 self.log.info("Modifying flat FS contents to be EC2 compatible")
 
+		self.log.info("Creating cloud-info file for EC2")
+		tmpl = 'CLOUD_TYPE="ec2"\n'
+		g.write("/etc/sysconfig/cloud-info", tmpl)
+ 
+		self.log.info("Disabling SELINUX")
+		tmpl = '# Factory Disabled SELINUX - sorry\nSELINUX=permissive\nSELINUXTYPE=targeted\n'
+		g.write("/etc/sysconfig/selinux", tmpl)
+
                 # Do this if we wish to try to use networking for further action
                 # self.log.info("Updating resolve.conf")
                 # g.upload("/etc/resolv.conf", "/etc/resolv.conf")
@@ -292,11 +300,13 @@ class FedoraBuilder(BaseBuilder):
                 tmpl = string.replace(tmpl, "#DISK_DEVICE_PREFIX#", prefix)
                 tmpl = string.replace(tmpl, "#FILESYSTEM_TYPE#", fstype)
 
-                f = NamedTemporaryFile()
-                f.write(tmpl)
-                f.flush()
-                g.upload(f.name, "/etc/fstab")
-                f.close()
+                #f = NamedTemporaryFile()
+                #f.write(tmpl)
+                #f.flush()
+                #g.upload(f.name, "/etc/fstab")
+                #f.close()
+		g.write("/etc/fstab", tmpl)
+		
 
                 # BG - Enable networking
                 # Upload a known good ifcfg-eth0 and then chkconfig on networking
@@ -331,11 +341,19 @@ class FedoraBuilder(BaseBuilder):
 
                 # Look at /lib/modules and assume that the last kernel listed is the version we use
                 # TODO: In 32 bit we can end up with PAE versions which we must select
-                # TODO: REally? This is what BG does but I am not sure it is correct or needed
 
                 self.log.info("Modifying and updating menu.lst")
                 kernel_versions = g.ls("/lib/modules")
-                kernel_version = kernel_versions[len(kernel_versions)-1]
+		kernel_version = None
+                if (len(kernel_versions) > 1) and (arch == "i386"):
+                    paere = re.compile("PAE$")
+                    for kern in kernel_versions:
+                        if paere.search(kern):
+                            kernel_version = kern
+		else:
+                    kernel_version = kernel_versions[len(kernel_versions)-1]
+		
+		self.log.debug("Using kernel version: %s" % (kernel_version))
 
                 # We could deduce this from version but it's easy to inspect
                 bootramfs = int(g.sh("ls -1 /boot | grep initramfs | wc -l"))
@@ -553,6 +571,9 @@ if [ $? -eq 0 ] ; then
    done
    rm /tmp/my-key
 fi
+
+# This conditionally runs Audrey if it exists
+[ -f /usr/bin/audrey ] && /usr/bin/audrey
 """
 
 	ifcfg_eth0="""DEVICE=eth0
