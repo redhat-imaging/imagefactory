@@ -60,6 +60,9 @@ class TestImageFactoryAgent(unittest.TestCase):
         self.assertEqual(len(self.console.test_failure_events), 1)
         self.assertEqual(len(self.console.real_failure_events), 0, "Unexpected failure events raised!\n%s" % (self.console.real_failure_events, ))
         self.assertEqual(self.console.build_adaptor_addr_fail, self.console.test_failure_events[0]["data"]["addr"])
+        # test that exceptions are passed properly by the agent handler
+        self.assertIsInstance(self.console.image_exception, Exception)
+        self.assertEqual(str(self.console.image_exception), "Wrong number of arguments: expected 2, got 0")
         
         # test that the agent registered and consoles can see it.
         try:
@@ -121,6 +124,11 @@ class MockConsole(ConsoleHandler):
         self.factory = agent.query("{class:ImageFactory, package:'com.redhat.imagefactory'}")[0]
         self.build_adaptor_addr_success = self.factory.image("<template></template>", "mock")["build_adaptor"]
         self.build_adaptor_addr_fail = self.factory.image("<template>FAIL</template>", "mock")["build_adaptor"]
+        
+        try:
+            self.image_exception = self.factory.image()
+        except Exception, e:
+            self.image_exception = e
     
     def agentDeleted(self, agent, reason):
         self.agent = None
