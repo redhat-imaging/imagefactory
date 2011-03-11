@@ -82,7 +82,7 @@ class ImageFactory(object):
     	self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
     
     def image(self,template,target):
-        template_object = Template(template)
+        template_object = Template(template=template)
         build_adaptor = BuildAdaptor.BuildAdaptor(template_object,target)
         build_adaptor.build_image()
         return build_adaptor
@@ -93,7 +93,7 @@ class ImageFactory(object):
         target = image_metadata["target"]
         
         if (template_id and target):
-            build_adaptor = BuildAdaptor.BuildAdaptor(Template(template_id),target)
+            build_adaptor = BuildAdaptor.BuildAdaptor(Template(uuid=template_id),target)
             build_adaptor.push_image(image_id, provider, credentials)
             return build_adaptor
         else:
