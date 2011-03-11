@@ -26,7 +26,6 @@ from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 from imagefactory.ImageWarehouse import ImageWarehouse
 from imagefactory.Template import Template
 
-# TODO: (redmine 256) - add build_states() analagous to instance_states() in core - http://deltacloud.org/framework.html
 class BaseBuilder(object):
     """BaseBuilder provides a starting point for builder classes conforming to the IBuilder interface.  Subclasses of BaseBuilder 
     can focus on the OS/Provider specific activity for creating and deploying images."""
