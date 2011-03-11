@@ -59,7 +59,7 @@ class MockBuilder(BaseBuilder):
                 os.makedirs(directory)
             
             with open(self.image, 'w') as image_file:
-                self.status = "BUILDING"
+                self.status = "PENDING"
                 self.log.debug("Building mock image...")
                 image_file.write(':description: This is a mock build image for testing the image factory.\n')
                 self.percent_complete = 5
