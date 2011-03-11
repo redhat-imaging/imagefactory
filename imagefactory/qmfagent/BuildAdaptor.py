@@ -223,7 +223,6 @@ class BuildAdaptor(object):
         event.event = "FAILURE"
         event.type = failure_type
         event.info = failure_info
-        # TODO: Find out more about the severity value and set it to the most severe.  is that 0 or 7?
         agent.session.raiseEvent(data=event, severity=SEV_ERROR)
     
 
