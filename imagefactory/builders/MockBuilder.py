@@ -89,7 +89,7 @@ class MockBuilder(BaseBuilder):
     def push_image(self, image_id, provider, credentials):
         self.status = "INITIALIZING"
         try:
-            self.status = "FETCHING IMAGE"
+            self.status = "PENDING"
             image, image_metadata = self.warehouse.image_with_id(image_id, metadata_keys=("icicle", ))
             # write the provider image out to the filesystem
             image_path = "%s/deltacloud-%s/%s/images/%s.yml" % (self.app_config['output'], os.getlogin(), provider, self.image_id)
@@ -97,12 +97,10 @@ class MockBuilder(BaseBuilder):
             directory = os.path.dirname(image_path)
             if (not os.path.exists(directory)):
                 os.makedirs(directory)
-            self.status = "WRITING PROVIDER IMAGE"
             with open(image_path, 'w') as image_file:
                 image_file.write(image)
                 image_file.close()
             # push the provider image up to the warehouse
-            self.status = "PUSHING TO WAREHOUSE"
             metadata = dict(image=image_id, provider=provider, icicle=image_metadata["icicle"], target_identifier="Mock_%s_%s" % (provider, self.image_id))
             self.warehouse.create_provider_image(self.image_id, txt=image)
             self.status = "FINISHING"
