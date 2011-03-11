@@ -27,13 +27,14 @@ from imagefactory.ImageWarehouse import ImageWarehouse
 from imagefactory.Template import Template
 
 class BaseBuilder(object):
-    """BaseBuilder provides a starting point for builder classes conforming to the IBuilder interface.  Subclasses of BaseBuilder 
-    can focus on the OS/Provider specific activity for creating and deploying images."""
+    """BaseBuilder provides a starting point for builder classes conforming to the IBuilder interface.  
+    Subclasses of BaseBuilder     can focus on the OS/Provider specific activity for creating and 
+    deploying images."""
     zope.interface.implements(IBuilder)
     
     # Properties
     def template():
-        doc = "The template property."
+        doc = "An instance of the Template class."
         def fget(self):
             return self._template
         def fset(self, value):
@@ -44,7 +45,7 @@ class BaseBuilder(object):
     template = property(**template())
     
     def target():
-        doc = "The target property."
+        doc = "The target cloud for which to build this image."
         def fget(self):
             return self._target
         def fset(self, value):
@@ -55,7 +56,7 @@ class BaseBuilder(object):
     target = property(**target())
     
     def target_id():
-        doc = "The target_id property."
+        doc = "The identifier provided by the target."
         def fget(self):
             return self._target_id
         def fset(self, value):
@@ -66,7 +67,7 @@ class BaseBuilder(object):
     target_id = property(**target_id())
     
     def provider():
-        doc = "The provider property."
+        doc = "The a string name of the target region or provider."
         def fget(self):
             return self._provider
         def fset(self, value):
@@ -77,7 +78,7 @@ class BaseBuilder(object):
     provider = property(**provider())
     
     def image_id():
-        doc = "The image_id property."
+        doc = "The uuid of the image."
         def fget(self):
             return self._image_id
         def fset(self, value):
@@ -88,7 +89,7 @@ class BaseBuilder(object):
     image_id = property(**image_id())
     
     def image():
-        doc = "The image property."
+        doc = "The image file path."
         def fget(self):
             return self._image
         def fset(self, value):
@@ -99,7 +100,7 @@ class BaseBuilder(object):
     image = property(**image())
     
     def status():
-        doc = "The status property."
+        doc = "A string value."
         def fget(self):
             return self._status
         
@@ -126,7 +127,7 @@ class BaseBuilder(object):
     status = property(**status())
     
     def percent_complete():
-        doc = "The percent_complete property."
+        doc = "The percentage through an operation."
         def fget(self):
             return self._percent_complete
         
@@ -154,7 +155,7 @@ class BaseBuilder(object):
     percent_complete = property(**percent_complete())
     
     def output_descriptor():
-        doc = "The output_descriptor property."
+        doc = "An XML string describing the completed image, aka: CDL or ICICLE."
         def fget(self):
             return self._output_descriptor
         def fset(self, value):
@@ -165,7 +166,7 @@ class BaseBuilder(object):
     output_descriptor = property(**output_descriptor())
     
     def delegate():
-        doc = "The delegate property."
+        doc = "An object that responds to IBuilderDelegate methods."
         def fget(self):
             return self._delegate
         def fset(self, value):
@@ -176,7 +177,7 @@ class BaseBuilder(object):
     delegate = property(**delegate())
     
     def warehouse():
-        doc = "The warehouse property."
+        doc = "A warehouse object used to store/fetch images, templates, icicle, provider_images, etc..."
         def fget(self):
             return self._warehouse
         def fset(self, value):
@@ -214,11 +215,13 @@ class BaseBuilder(object):
     
     # Image actions
     def build_image(self):
-        """Build the image file.  This method is implemented by subclasses of BaseBuilder to handle OS specific build mechanics."""
+        """Build the image file.  This method is implemented by subclasses of BaseBuilder to handle 
+        OS specific build mechanics."""
         raise NotImplementedError
     
     def abort(self):
-        """Stop building the image file.  This method is implemented by subclasses of BaseBuilder to handle OS specific build mechanics."""
+        """Stop building the image file.  This method is implemented by subclasses of BaseBuilder to handle 
+        OS specific build mechanics."""
         raise NotImplementedError
     
     def store_image(self, target_parameters=None):
@@ -228,6 +231,7 @@ class BaseBuilder(object):
         self.warehouse.store_image(self.image_id, self.image, metadata=metadata)
     
     def push_image(self, image_id, provider, credentials):
-        """Prep the image for the provider and deploy.  This method is implemented by subclasses of the BaseBuilder to handle OS/Provider specific mechanics."""
+        """Prep the image for the provider and deploy.  This method is implemented by subclasses of the 
+        BaseBuilder to handle OS/Provider specific mechanics."""
         raise NotImplementedError
     

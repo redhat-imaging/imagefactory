@@ -45,7 +45,7 @@ def conforms_to_interface_invariant(obj):
 
 class IBuilder(Interface):
     """The Builder interface provides guidance on attributes and methods 
-	that expected by Image Factory for objects that serve to build OS images."""
+    that expected by Image Factory for objects that serve to build OS images."""
     # set the invariant checks
     zope.interface.invariant(conforms_to_interface_invariant)
     # attributes
@@ -62,10 +62,10 @@ class IBuilder(Interface):
     # methods
     def build_image():
         """Tell the builder to start building the image."""
-	
+    
     def abort():
         """Tell the builder to stop building the image."""
-	
+    
     def push_image(image_id, provider, credentials):
         """Deploy an image to the cloud provider."""
     
