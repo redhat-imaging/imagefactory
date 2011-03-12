@@ -129,11 +129,16 @@ class Template(object):
         return (("<template>" in text.lower()) and ("</template>" in text.lower()))
     
     def __fetch_template_with_url(self, url):
+        template_id = None
         regex = re.compile(Template.uuid_pattern)
-        template_id = uuid.UUID(regex.search(url).group())
+        match = regex.search(url)
+        
+        if (match):
+            template_id = uuid.UUID(match.group())
+            
         response_headers, response = httplib2.Http().request(url, "GET", headers={'content-type':'text/plain'})
         if(response and self.__string_is_xml_template(response)):
             return template_id, response
         else:
-            raise RuntimeError("Unable to fetch template from %s!" % (url, ))
+            raise RuntimeError("Recieved status %s fetching a template from %s!\n--- Response Headers:\n%s\n--- Response:\n%s" % (response_headers["status"], url, response_headers, response))
     
