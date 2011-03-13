@@ -119,11 +119,11 @@ class Template(object):
         if(xml_string and self.__string_is_xml_template(xml_string)):
             return uuid.UUID(uuid_string), xml_string
         else:
-            template_id, xml_string = self.warehouse.template_for_image_id(uuid_string)
+            template_id, xml_string, metadata = self.warehouse.template_for_image_id(uuid_string, bucket=self.bucket.replace("templates", "images"), template_bucket=self.bucket)
             if(template_id and xml_string and self.__string_is_xml_template(xml_string)):
                 return uuid.UUID(template_id), xml_string
             else:
-                raise RuntimeError("Unable to fetch a template given the uuid %s!  No template or image matches this uuid!" % (uuid_string, ))
+                raise RuntimeError("Unable to fetch a template given the uuid %s!\n--- Template ID: %s\n--- Template: %s" % (uuid_string, template_id, xml_string))
     
     def __string_is_xml_template(self, text):
         return (("<template>" in text.lower()) and ("</template>" in text.lower()))

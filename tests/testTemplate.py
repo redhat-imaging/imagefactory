@@ -22,6 +22,7 @@ import unittest
 from imagefactory.Template import Template
 from imagefactory.ImageWarehouse import ImageWarehouse
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
+from imagefactory.builders.MockBuilder import MockBuilder
 
 
 class testTemplate(unittest.TestCase):
@@ -29,10 +30,13 @@ class testTemplate(unittest.TestCase):
         self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
         self.template_xml = "<template>This is a test template.  There is not much to it.</template>"
         self.template_bucket = "unittests_templates"
+        self.image_bucket = "unittests_images"
     
     def tearDown(self):
         del self.warehouse
         del self.template_xml
+        del self.template_bucket
+        del self.image_bucket
     
     def testTemplateFromUUID(self):
         template_id = self.warehouse.store_template(self.template_xml, bucket=self.template_bucket)
@@ -40,6 +44,21 @@ class testTemplate(unittest.TestCase):
         self.assertEqual(template_id, template.identifier)
         self.assertEqual(self.template_xml, template.xml)
         self.assertIsNone(template.url)
+    
+    def testTemplateFramImageID(self):
+        template_id = self.warehouse.store_template(self.template_xml, bucket=self.template_bucket)
+        template = Template(template_id, bucket=self.template_bucket)
+        target = "mock"
+        builder = MockBuilder(self.template_xml, target)
+        builder.build_image()
+        metadata = dict(template=template_id, target=target, icicle="None", target_parameters="None")
+        self.warehouse.store_image(builder.image_id, builder.image, metadata=metadata, bucket=self.image_bucket)
+        # print("*** Image ID: %s\n*** Template ID: %s" % (builder.image_id, template_id))
+        image_template = Template(builder.image_id, bucket=self.template_bucket)
+        self.assertEqual(template_id, image_template.identifier)
+        self.assertEqual(self.template_xml, image_template.xml)
+        self.assertIsNone(template.url)
+        
     
     def testTemplateFromXML(self):
         template = Template(self.template_xml)
