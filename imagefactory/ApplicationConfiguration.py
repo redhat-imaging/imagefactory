@@ -82,8 +82,6 @@ class ApplicationConfiguration(object):
             argparser.set_defaults(**defaults)
         if (sys.argv[0].endswith("imgfac.py")):
             return argparser.parse_args()
-        # elif ('unittest' in sys.argv):
-        #     return argparser.parse_args(['--debug'])
         else:
             return argparser.parse_args([])
     

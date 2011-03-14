@@ -27,7 +27,7 @@ from imagefactory.builders.BaseBuilder import BaseBuilder
 
 class TestBaseBuilder(unittest.TestCase):
     def setUp(self):
-        # logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
+        logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/tmp/imagefactory-unittests.log')
         self.builder = BaseBuilder(template="<template></template>", target="mock")
         self.delegate = BuilderDelegate()
         self.new_builder_status = "NEW_STATUS"

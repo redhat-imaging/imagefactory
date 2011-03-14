@@ -19,6 +19,7 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import unittest
+import logging
 from imagefactory.Template import Template
 from imagefactory.ImageWarehouse import ImageWarehouse
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
@@ -27,6 +28,7 @@ from imagefactory.builders.MockBuilder import MockBuilder
 
 class testTemplate(unittest.TestCase):
     def setUp(self):
+        logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/tmp/imagefactory-unittests.log')
         self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
         self.template_xml = "<template>This is a test template.  There is not much to it.</template>"
         self.template_bucket = "unittests_templates"
@@ -53,7 +55,6 @@ class testTemplate(unittest.TestCase):
         builder.build_image()
         metadata = dict(template=template_id, target=target, icicle="None", target_parameters="None")
         self.warehouse.store_image(builder.image_id, builder.image, metadata=metadata, bucket=self.image_bucket)
-        # print("*** Image ID: %s\n*** Template ID: %s" % (builder.image_id, template_id))
         image_template = Template(builder.image_id, bucket=self.template_bucket)
         self.assertEqual(template_id, image_template.identifier)
         self.assertEqual(self.template_xml, image_template.xml)

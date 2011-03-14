@@ -23,7 +23,7 @@ from imagefactory.qmfagent.ImageFactory import ImageFactory
 
 class TestImageFactory(unittest.TestCase):
     def setUp(self):
-        # logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
+        logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/tmp/imagefactory-unittests.log')
         pass
     
     def tearDown(self):

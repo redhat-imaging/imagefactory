@@ -19,6 +19,7 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import unittest
+import logging
 import os
 import json
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
@@ -26,6 +27,8 @@ from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 
 class TestApplicationConfiguration(unittest.TestCase):
     def setUp(self):
+        logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/tmp/imagefactory-unittests.log')
+        
         self.defaults = dict(verbose=False, debug=False, foreground=False, config="/etc/imagefactory.conf", output="/tmp", qmf=False, broker="localhost", warehouse=None, template=None)
         
         config_file_path = self.defaults["config"]

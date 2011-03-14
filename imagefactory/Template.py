@@ -93,6 +93,8 @@ class Template(object):
         
         if(uuid):
             self.identifier, self.xml = self.__fetch_template_for_uuid(uuid, bucket)
+            if((not self.identifier) and (not self.xml)):
+                raise RuntimeError("Could not create a template with the uuid %s" % (uuid, ))
         elif(url):
             self.url = url
             self.identifier, self.xml = self.__fetch_template_with_url(url)
@@ -119,11 +121,13 @@ class Template(object):
         if(xml_string and self.__string_is_xml_template(xml_string)):
             return uuid.UUID(uuid_string), xml_string
         else:
+            self.log.debug("Unable to fetch a valid template given template id %s:\n%s\n" % (uuid_string, self._addreviated_template(xml_string)))
             template_id, xml_string, metadata = self.warehouse.template_for_image_id(uuid_string, bucket=self.bucket.replace("templates", "images"), template_bucket=self.bucket)
             if(template_id and xml_string and self.__string_is_xml_template(xml_string)):
                 return uuid.UUID(template_id), xml_string
             else:
-                raise RuntimeError("Unable to fetch a template given the uuid %s!\n--- Template ID: %s\n--- Template: %s" % (uuid_string, template_id, xml_string))
+                self.log.debug("Unable to fetch a valid template given an image id %s:\n%s\n" % (uuid_string, self._addreviated_template(xml_string)))
+                return None, None
     
     def __string_is_xml_template(self, text):
         return (("<template>" in text.lower()) and ("</template>" in text.lower()))
@@ -141,4 +145,11 @@ class Template(object):
             return template_id, response
         else:
             raise RuntimeError("Recieved status %s fetching a template from %s!\n--- Response Headers:\n%s\n--- Response:\n%s" % (response_headers["status"], url, response_headers, response))
+    
+    def _addreviated_template(self, template_string):
+        lines = template_string.splitlines(True)
+        if(len(lines) > 20):
+            return "%s\n...\n...\n...\n%s" % ("".join(lines[0:10]), "".join(lines[-10:len(lines)]))
+        else:
+            return template_string
     

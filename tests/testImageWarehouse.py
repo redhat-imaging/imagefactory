@@ -19,12 +19,14 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 import unittest
+import logging
 import uuid
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 from imagefactory.ImageWarehouse import ImageWarehouse
 
 class testImageWarehouse(unittest.TestCase):
     def setUp(self):
+        logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/tmp/imagefactory-unittests.log')
         self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
         self.bucket = "unittests"
         self.metadata = dict(key1="value1", key2="value2", key3="value3")
