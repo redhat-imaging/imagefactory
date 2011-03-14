@@ -152,7 +152,7 @@ class BuildAdaptor(object):
         if (self.target != "mock"): # If target is mock always run mock builder regardless of template
             parsed_doc = libxml2.parseDoc(self.template.xml)
             node = parsed_doc.xpathEval('/template/os/name')
-            os_name = node[0].content
+            os_name = node[0].content.title()
             class_name = "%sBuilder" % (os_name, )
             try:
                 module_name = "imagefactory.builders.%s" % (class_name, )
