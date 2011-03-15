@@ -72,6 +72,7 @@ class ApplicationConfiguration(object):
         argparser.add_argument('--config', default='/etc/imagefactory.conf', help='Configuration file to use. (default: %(default)s)')
         argparser.add_argument('--output', default='/tmp', help='Build image files in location specified. (default: %(default)s)')
         argparser.add_argument('--warehouse', help='URL of the warehouse location to store images.')
+        argparser.add_argument('--timeout', type=int, default=3600, help='Set the timeout period for image building in seconds. (default: %(default)s)')
         group_qmf = argparser.add_argument_group(title='QMF options', description='Provide a QMFv2 agent interface.')
         group_qmf.add_argument('--qmf', action='store_true', default=False, help='Turn on QMF agent interface. (default: %(default)s)')
         group_qmf.add_argument('--broker', default='localhost', help='URL of qpidd to connect to. (default: %(default)s)')
