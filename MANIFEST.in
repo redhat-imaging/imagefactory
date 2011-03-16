@@ -1,1 +1,1 @@
-include imagefactory.conf
+include imagefactory.conf imagefactory/scripts/imagefactory

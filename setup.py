@@ -3,7 +3,7 @@ import os
 
 VERSION = '0.1.5'
 
-datafiles=[('/etc', ['imagefactory.conf'])]
+datafiles=[('/etc', ['imagefactory.conf']), ('/etc/rc.d/init.d', ['imagefactory/scripts/imagefactory'])]
 
 setup(name='imagefactory',
       version=VERSION,
