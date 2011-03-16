@@ -41,14 +41,15 @@ class Application(object):
     
     
     def __new__(cls, *p, **k):
-    	if cls.instance is None:
-    		cls.instance = object.__new__(cls, *p, **k)
-    	return cls.instance
+        if cls.instance is None:
+            cls.instance = object.__new__(cls, *p, **k)
+        return cls.instance
     
     def __init__(self):
         super(Application, self).__init__()        
         # logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
         self.daemon = False
+        self.pid_file_path = "/var/run/imagefactory.pid"
         signal.signal(signal.SIGTERM, self.signal_handler)
         self.app_config = ApplicationConfiguration().configuration
     
@@ -66,8 +67,14 @@ class Application(object):
         """docstring for sigterm_handler"""
         if (signum == signal.SIGTERM):
             logging.warn('caught signal SIGTERM, stopping...')
+            
             if (self.qmf_agent):
                 self.qmf_agent.shutdown()
+                try:
+                    os.remove(self.pid_file_path)
+                except Exception, e:
+                    self.log.warning(str(e))
+            
             sys.exit(0)
     
     
@@ -76,12 +83,12 @@ class Application(object):
         UMASK = 0
         WORKING_DIRECTORY = '/'
         IO_REDIRECT = os.devnull
-                
+        
         try:
             pid = os.fork()
         except OSError, e:
             raise Exception, "%s [%d]" % (e.strerror, e.errno)
-                
+        
         if (pid == 0):
             os.setsid()
             signal.signal(signal.SIGHUP, signal.SIG_IGN)
@@ -97,17 +104,17 @@ class Application(object):
                 os._exit(0)
         else:
             os._exit(0)
-                
+        
         for file_descriptor in range(0, 2): # close stdin, stdout, stderr
             try:
                 os.close(file_descriptor)
             except OSError:
                 pass # The file descriptor wasn't open to begin with, just ignore
-                
+        
         os.open(IO_REDIRECT, os.O_RDWR)
         os.dup2(0, 1)
         os.dup2(0, 2)
-                
+        
         return(True)
     
     
@@ -118,6 +125,12 @@ class Application(object):
             
             self.setup_logging()
             if(self.daemon):
+                try:
+                    with open(self.pid_file_path, "w") as pidfile:
+                        pidfile.write("%s\n" % (str(os.getpid()), ))
+                        pidfile.close()
+                except Exception, e:
+                    logging.warning(str(e))
                 logging.info("Launched as daemon...")
             elif(self.app_config['foreground']):
                 logging.info("Launching in foreground...")
