@@ -29,9 +29,11 @@ import string
 import libxml2
 import httplib2
 import traceback
+import pycurl
 import ConfigParser
 from tempfile import *
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
+from imagefactory.ImageFactoryException import ImageFactoryException
 from IBuilder import IBuilder
 from BaseBuilder import BaseBuilder
 from boto.s3.connection import S3Connection
@@ -45,9 +47,9 @@ def subprocess_check_output(*popenargs, **kwargs):
     process = subprocess.Popen(stdout=subprocess.PIPE, stderr=subprocess.STDOUT, *popenargs, **kwargs)
     stdout, stderr = process.communicate()
     retcode = process.poll()
-    # if retcode:
-    #     cmd = ' '.join(*popenargs)
-    #     raise OzException("'%s' failed(%d): %s" % (cmd, retcode, stderr))
+    if retcode:
+        cmd = ' '.join(*popenargs)
+        raise ImageFactoryException("'%s' failed(%d): %s" % (cmd, retcode, stderr))
     return (stdout, stderr, retcode)
 
 class FedoraBuilder(BaseBuilder):
@@ -87,6 +89,8 @@ class FedoraBuilder(BaseBuilder):
             self.log.debug("Unexpected error: (%s)" % (sys.exc_info()[0]))
             self.log.debug("             value: (%s)" % (sys.exc_info()[1]))
             self.log.debug("         traceback: %s" % (repr(traceback.format_tb(sys.exc_info()[2]))))
+            self.status="FAILED"
+            raise
         
         try:
             self.guest.generate_diskimage()
@@ -112,10 +116,10 @@ class FedoraBuilder(BaseBuilder):
                 self.log.debug("             value: (%s)" % (sys.exc_info()[1]))
                 self.log.debug("         traceback: (%s)" % (sys.exc_info()[2]))
                 self.guest.cleanup_old_guest()
+                self.status="FAILED"
                 raise
         finally:
             self.guest.cleanup_install()
-        # TODO: Catch exceptions here and err out if we don't end up with an image
         
         self.log.debug("Generated disk image (%s)" % (self.guest.diskimage))
         # OK great, we now have a customized KVM image
@@ -145,6 +149,8 @@ class FedoraBuilder(BaseBuilder):
             self.log.debug("Unexpected error: (%s)" % (sys.exc_info()[0]))
             self.log.debug("             value: (%s)" % (sys.exc_info()[1]))
             self.log.debug("         traceback: %s" % (repr(traceback.format_tb(sys.exc_info()[2]))))
+            self.status="FAILED"
+            raise
     
     def ec2_copy_filesystem(self, output_dir):
         target_image=output_dir + "/ec2-image-" + self.image_id + ".dsk"
@@ -212,12 +218,13 @@ class FedoraBuilder(BaseBuilder):
     
     def ec2_modify_filesystem(self):
         # Modifications
-        # These are more or less directly ported from BoxGrinder
-        # Should include a full ACK and links to BG
+        # Many of these are more or less directly ported from BoxGrinder
+        # Boxgrinder is written and maintained by Marek Goldmann and can be found at:
+        # http://boxgrinder.org/
+
         # TODO: This would be safer and more robust if done within the running modified
         # guest - in this would require tighter Oz integration
         
-        # TODO: Can we recycle the guestfs object?
         g = guestfs.GuestFS ()
         
         g.add_drive(self.image)
@@ -248,23 +255,15 @@ class FedoraBuilder(BaseBuilder):
         tmpl = '# Factory Disabled SELINUX - sorry\nSELINUX=permissive\nSELINUXTYPE=targeted\n'
         g.write("/etc/sysconfig/selinux", tmpl)
         
-        # Do this if we wish to try to use networking for further action
-        # self.log.info("Updating resolve.conf")
-        # g.upload("/etc/resolv.conf", "/etc/resolv.conf")
-        
         # TODO: If we are dealing with RHEL Remove kernel, install kernel-xen via sh
         # recreate initrd using scheme described below
         # g.sh("yum -y remove kernel")
         # g.sh("yum -y install kernel-xen")
         # recreate INITRD 
-        # BG - create_devices
-        # TODO: Why?
-        # TODO: MAKEDEV is no longer even a standard part of F14 - force it in ks.cfg?
-        #   It isn't even on the ISO so we'd really have to fiddle
-        #print "Making device files"
-        #g.sh("/sbin/MAKEDEV -d /dev -x console")
-        #g.sh("/sbin/MAKEDEV -d /dev -x null")
-        #g.sh("/sbin/MAKEDEV -d /dev -x zero")
+
+        # REMOVED - BG - create_devices
+        # This supported activating network to do additional install tasks
+        # If we really need this we should do so in the running guest in Oz
         
         # BG - Make a /data directory for 64 bit hosts
         # Epemeral devs come pre-formatted from AWS - weird
@@ -292,24 +291,13 @@ class FedoraBuilder(BaseBuilder):
         
         tmpl = string.replace(tmpl, "#DISK_DEVICE_PREFIX#", prefix)
         tmpl = string.replace(tmpl, "#FILESYSTEM_TYPE#", fstype)
-        
-        #f = NamedTemporaryFile()
-        #f.write(tmpl)
-        #f.flush()
-        #g.upload(f.name, "/etc/fstab")
-        #f.close()
         g.write("/etc/fstab", tmpl)
-        
         
         # BG - Enable networking
         # Upload a known good ifcfg-eth0 and then chkconfig on networking
         self.log.info("Enabling networking and uploading ifcfg-eth0")
         g.sh("/sbin/chkconfig network on")
-        f = NamedTemporaryFile()
-        f.write(self.ifcfg_eth0)
-        f.flush()
-        g.upload(f.name, "/etc/sysconfig/network-scripts/ifcfg-eth0")
-        f.close()
+        g.write("/etc/sysconfig/network-scripts/ifcfg-eth0", self.ifcfg_eth0)
         
         # Disable first boot - this slows things down otherwise
         if g.is_file("/etc/init.d/firstboot"):
@@ -321,20 +309,14 @@ class FedoraBuilder(BaseBuilder):
         # TODO - Possibly modify the key injection from rc_local to be only non-root
         #  and add a special user to sudoers - this is what BG has evolved to do
         self.log.info("Updating rc.local for key injection")
-        f = NamedTemporaryFile()
-        f.write(self.rc_local)
-        f.flush()
-        g.upload(f.name, "/tmp/rc.local")
+        g.write("/tmp/rc.local", self.rc_local)
         g.sh("cat /tmp/rc.local >> /etc/rc.local")
-        f.close()
         
         # Install menu list
         # Derive the kernel version from the last element of ls /lib/modules and some
         # other magic - look at linux_helper for details
         
         # Look at /lib/modules and assume that the last kernel listed is the version we use
-        # TODO: In 32 bit we can end up with PAE versions which we must select
-        
         self.log.info("Modifying and updating menu.lst")
         kernel_versions = g.ls("/lib/modules")
         kernel_version = None
@@ -359,12 +341,8 @@ class FedoraBuilder(BaseBuilder):
         tmpl = string.replace(tmpl, "#KERNEL_IMAGE_NAME#", ramfs_prefix)
         tmpl = string.replace(tmpl, "#TITLE#", name)
         
-        f = NamedTemporaryFile()
-        f.write(tmpl)
-        f.flush()
-        g.upload(f.name, "/boot/grub/menu.lst")
-        f.close()
-        
+        g.write("/boot/grub/menu.lst", tmpl)       
+ 
         # F14 bug fix
         # This fixes issues with Fedora 14 on EC2: https://bugzilla.redhat.com/show_bug.cgi?id=651861#c39
         if (distro == "fedora") and (major_version == 14):
@@ -391,6 +369,8 @@ class FedoraBuilder(BaseBuilder):
             self.log.debug("Unexpected error: (%s)" % (sys.exc_info()[0]))
             self.log.debug("             value: (%s)" % (sys.exc_info()[1]))
             self.log.debug("         traceback: %s" % (repr(traceback.format_tb(sys.exc_info()[2]))))
+            self.status="FAILED"
+            raise
         self.status="COMPLETED"
     
     def ec2_push_image(self, image_id, provider, credentials):
@@ -423,8 +403,21 @@ class FedoraBuilder(BaseBuilder):
         input_image_name="ec2-image-" + image_id + ".dsk"
         input_image=input_image_path + input_image_name
         
-        # TODO: Conditionally grab from warehouse
-        
+        # Conditionally grab from warehouse
+        # TODO: Use Warehouse class instead
+        if not os.path.isfile(input_image):
+            if not (self.app_config['warehouse']):
+                raise ImageFactoryException("No warehouse configured - cannot retrieve image")
+            url = "%simages/%s" % (self.app_config['warehouse'], image_id)
+            self.log.debug("Image not present locally - Fetching from %s" % (url))
+            fp = open(input_image, "wb")
+            curl = pycurl.Curl()
+            curl.setopt(pycurl.URL, url)
+            curl.setopt(pycurl.WRITEDATA, fp)
+            curl.perform()
+            curl.close()
+            fp.close()
+
         bundle_destination=self.app_config['output_dir']
         
         # TODO: Cross check against template XML and warn if they do not match
