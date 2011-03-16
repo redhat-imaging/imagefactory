@@ -5,7 +5,7 @@ version_file = open("version.txt", "r")
 VERSION = version_file.read()[0:-1]
 version_file.close()
 
-datafiles=[('/etc', ['imagefactory.conf']), ('', ['version.txt'])]
+datafiles=[('/etc', ['imagefactory.conf']), ('/etc/rc.d/init.d', ['imagefactory/scripts/imagefactory']), ('', ['version.txt'])]
 
 setup(name='imagefactory',
       version=VERSION,
