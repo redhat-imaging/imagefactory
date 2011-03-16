@@ -1,7 +1,7 @@
 from distutils.core import setup, Extension
 import os
 
-VERSION = '0.1.4'
+VERSION = '0.1.5'
 
 datafiles=[('/etc', ['imagefactory.conf'])]
 
