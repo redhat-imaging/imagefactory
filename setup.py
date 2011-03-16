@@ -1,9 +1,11 @@
 from distutils.core import setup, Extension
 import os
 
-VERSION = '0.1.5'
+version_file = open("version.txt", "r")
+VERSION = version_file.read()[0:-1]
+version_file.close()
 
-datafiles=[('/etc', ['imagefactory.conf'])]
+datafiles=[('/etc', ['imagefactory.conf']), ('', ['version.txt'])]
 
 setup(name='imagefactory',
       version=VERSION,
