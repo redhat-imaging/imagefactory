@@ -443,25 +443,36 @@ class FedoraBuilder(BaseBuilder):
         
         self.percent_complete=10
         
-        # TODO: When boto 2.0 is out uncomment USWest and APSoutheast
+        # TODO: Ideally we should use boto "Location" references when possible - 1.9 contains only DEFAULT and EU
+        #       The rest are hard coded strings for now.
         ec2_region_details=\
-        {'ec2-us-east-1':      { 'boto_loc': Location.DEFAULT,     'i386': 'aki-407d9529', 'x86_64': 'aki-427d952b' },
-        #'ec2-us-west-1':      { 'boto_loc': Location.USWest,      'i386': 'aki-99a0f1dc', 'x86_64': 'aki-9ba0f1de' },
-        #'ec2-ap-southeast-1': { 'boto_loc': Location.APSoutheast, 'i386': 'aki-13d5aa41', 'x86_64': 'aki-11d5aa43' },
-        'ec2-eu-west-1':      { 'boto_loc': Location.EU,          'i386': 'aki-4deec439', 'x86_64': 'aki-4feec43b' } }
+        {'ec2-us-east-1':      { 'boto_loc': Location.DEFAULT,     'host':'us-east-1',      'i386': 'aki-407d9529', 'x86_64': 'aki-427d952b' },
+         'ec2-us-west-1':      { 'boto_loc': 'us-west-1',          'host':'us-west-1',      'i386': 'aki-99a0f1dc', 'x86_64': 'aki-9ba0f1de' },
+         'ec2-ap-southeast-1': { 'boto_loc': 'ap-southeast-1',     'host':'ap-southeast-1', 'i386': 'aki-13d5aa41', 'x86_64': 'aki-11d5aa43' },
+         'ec2-ap-northeast-1': { 'boto_loc': 'ap-northeast-1',     'host':'ap-northeast-1', 'i386': 'aki-d209a2d3', 'x86_64': 'aki-d409a2d5' },
+         'ec2-eu-west-1':      { 'boto_loc': Location.EU,          'host':'eu-west-1',      'i386': 'aki-4deec439', 'x86_64': 'aki-4feec43b' } }
         
         region=provider
         region_conf=ec2_region_details[region]
         aki = region_conf[arch] 
         boto_loc = region_conf['boto_loc']
+        if region != "ec2-us-east-1":
+            upload_url = "http://s3-%s.amazonaws.com/" % (region_conf['host'])
+        else:
+            # Note to Amazon - would it be that hard to have s3-us-east-1.amazonaws.com?
+            upload_url = "http://s3.amazonaws.com/"
+
+        register_url = "http://ec2.%s.amazonaws.com/" % (region_conf['host'])
         
         bucket= "imagefactory-" + region + "-" + ec2_user_id
         
         # Euca does not support specifying region for bucket
         # (Region URL is not sufficient)
         # See: https://bugs.launchpad.net/euca2ools/+bug/704658
-        
-        # Create bucket in correct region ourselves using boto
+        # What we end up having to do is manually create a bucket in the right region
+        # then explicitly point to that region URL when doing the image upload
+        # We CANNOT let euca create the bucket when uploading or it will end up in us-east-1
+
         conn = S3Connection(ec2_access_key, ec2_secret_key)
         try:
             conn.create_bucket(bucket, location=boto_loc)
@@ -491,8 +502,6 @@ class FedoraBuilder(BaseBuilder):
         self.percent_complete=40
         
         manifest = bundle_destination + "/" + input_image_name + ".manifest.xml"
-        # Same for all regions - see above
-        upload_url="http://s3.amazonaws.com"
         
         upload_command = [ "euca-upload-bundle", "-b", bucket, "-m", manifest, "--ec2cert", ec2_service_cert, "-a", ec2_access_key, "-s", ec2_secret_key, "-U" , upload_url ]
         self.log.debug("Executing upload command: %s " % (upload_command))
@@ -501,11 +510,11 @@ class FedoraBuilder(BaseBuilder):
         self.percent_complete=90
         
         s3_path = bucket + "/" + input_image_name + ".manifest.xml"
-        ec2_url = "http://ec2.amazonaws.com"
-        
-        register_command = [ "euca-register" , "-U", ec2_url, "-A", ec2_access_key, "-S", ec2_secret_key, s3_path ]
-        self.log.debug("Executing register command: %s " % (register_command))
-        register_output = subprocess_check_output(register_command)
+
+        register_env = { 'EC2_URL':register_url }
+        register_command = [ "euca-register" , "-A", ec2_access_key, "-S", ec2_secret_key, s3_path ]
+        self.log.debug("Executing register command: %s with environment %s " % (register_command, repr(register_env)))
+        register_output = subprocess_check_output(register_command, env=register_env)
         self.log.debug("Register command output: %s " % (str(register_output)))
         m = re.match(".*(ami-[a-fA-F0-9]+)", register_output[0])
         ami_id = m.group(1)
