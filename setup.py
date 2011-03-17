@@ -1,9 +1,17 @@
 from distutils.core import setup, Extension
 import os
+import os.path
+import subprocess
 
-version_file = open("version.txt", "r")
-VERSION = version_file.read()[0:-1]
-version_file.close()
+version_file_name = "version.txt"
+try:
+    if(not os.path.exists(version_file_name)):
+        subprocess.call('/usr/bin/git describe > %s' % (version_file_name, ), shell=True)
+    version_file = open(version_file_name, "r")
+    VERSION = version_file.read()[0:-1]
+    version_file.close()
+except Exception, e:
+    raise RuntimeError("ERROR: version.txt could not be found.  Run 'git describe > version.txt' to get the correct version info.")
 
 datafiles=[('/etc', ['imagefactory.conf']), ('/etc/rc.d/init.d', ['imagefactory/scripts/imagefactory']), ('', ['version.txt'])]
 
