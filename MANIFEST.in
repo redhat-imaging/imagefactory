@@ -1,1 +1,1 @@
-include imagefactory.conf imagefactory/scripts/imagefactory
+include cert-ec2.pem imagefactory.conf imagefactory/scripts/imagefactory

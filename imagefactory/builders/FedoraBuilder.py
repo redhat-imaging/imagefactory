@@ -114,7 +114,9 @@ class FedoraBuilder(BaseBuilder):
             except:
                 self.log.debug("Unexpected error: (%s)" % (sys.exc_info()[0]))
                 self.log.debug("             value: (%s)" % (sys.exc_info()[1]))
-                self.log.debug("         traceback: (%s)" % (sys.exc_info()[2]))
+                self.log.debug("         traceback:")
+                for tbline in traceback.format_tb(sys.exc_info()[2]):
+                    self.log.debug("   %s" %  (tbline))
                 self.guest.cleanup_old_guest()
                 self.status="FAILED"
                 raise
@@ -476,8 +478,8 @@ class FedoraBuilder(BaseBuilder):
             else:
                 raise
         
-        # TODO: Make configurable?  - Bundle with our RPM?
-        ec2_service_cert = "/etc/ec2/amitools/cert-ec2.pem"
+        # TODO: Make configurable?
+        ec2_service_cert = "/etc/pki/imagefactory/cert-ec2.pem"
         
         bundle_command = [ "euca-bundle-image", "-i", input_image, "--kernel", aki, "-d", bundle_destination, "-a", ec2_access_key, "-s", ec2_secret_key ]
         bundle_command.extend( [ "-c", ec2_cert_file ] )
