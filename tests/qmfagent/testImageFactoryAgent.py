@@ -26,9 +26,7 @@ from imagefactory.qmfagent.ImageFactoryAgent import ImageFactoryAgent
 class TestImageFactoryAgent(unittest.TestCase):
     def setUp(self):
         logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/tmp/imagefactory-unittests.log')
-        # FIXME: sloranz - We miss the change from NEW to INITIALIZING until qmf_object.getAgent() works as expected
-        # self.expected_state_transitions = (("NEW","INITIALIZING"),("INITIALIZING","PENDING"),("PENDING","FINISHING"),("FINISHING","COMPLETED"))
-        self.expected_state_transitions = (("INITIALIZING","PENDING"),("PENDING","FINISHING"),("FINISHING","COMPLETED"))
+        self.expected_state_transitions = (("NEW","INITIALIZING"),("INITIALIZING","PENDING"),("PENDING","FINISHING"),("FINISHING","COMPLETED"))
         self.if_agent = ImageFactoryAgent("localhost")
         self.if_agent.start()
         self.connection = cqpid.Connection("localhost")

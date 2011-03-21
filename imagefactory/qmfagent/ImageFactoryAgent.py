@@ -69,7 +69,7 @@ class ImageFactoryAgent(AgentHandler):
         self.session.registerSchema(BuildAdaptor.qmf_event_schema_percentage)
         self.session.registerSchema(BuildAdaptor.qmf_event_schema_build_failed)
         # Now add the image factory object
-        self.image_factory = ImageFactory()
+        self.image_factory = ImageFactory(agent=self)
         self.image_factory_addr = self.session.addData(self.image_factory.qmf_object, "image_factory")
         self.log.info("image_factory has qmf/qpid address: %s", self.image_factory_addr)
     
@@ -94,8 +94,6 @@ class ImageFactoryAgent(AgentHandler):
             if ((addr == self.image_factory_addr) and (methodName in ("image", "provider_image"))):
                 build_adaptor_instance_name = "build_adaptor:%s:%s" %  (methodName, result.builder.image_id)
                 qmf_object_addr = self.session.addData(result.qmf_object, build_adaptor_instance_name, persistent=True)
-                # FIXME: sloranz - I shouldn't have to set this... I should be able to use qmf_object.getAgent() when needed...
-                result.agent = self
                 self.managedObjects[repr(qmf_object_addr)] = result
                 handle.addReturnArgument("build_adaptor", qmf_object_addr.asMap())
                 self.session.methodSuccess(handle)

@@ -133,17 +133,16 @@ class BuildAdaptor(object):
         return locals()
     qmf_object = property(**qmf_object())
     
-    def __init__(self, template, target):
+    def __init__(self, template, target, agent=None):
         super(BuildAdaptor, self).__init__()
         
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.qmf_object = Data(BuildAdaptor.qmf_schema)
-        # FIXME: sloranz - I should be able to get the agent from the qmf_object this is a workaround...
-        self.agent = None 
+        self.agent = agent 
         
         self.template = template
         self.target = target
-        self.status = "None"
+        self.status = "New"
         self.percent_complete = 0
         self.image = "None"
         self.builder = None
@@ -186,44 +185,35 @@ class BuildAdaptor(object):
     # Builder delegate methods
     def builder_did_update_status(self, builder, old_status, new_status):
         self.status = new_status
-        # FIXME: sloranz - I should be able to get the agent from the qmf_object this is a workaround...
-        agent = self.agent
-        # agent = self.qmf_object.getAgent()
-        self.log.debug("Raising event with agent (%s), changed status from %s to %s" % (agent, old_status, new_status))
+        self.log.debug("Raising event with agent handler (%s), changed status from %s to %s" % (self.agent, old_status, new_status))
         event = Data(BuildAdaptor.qmf_event_schema_status)
         event.addr = self.qmf_object.getAddr().asMap()
         event.event = "STATUS"
         event.new_status = str(new_status)
         event.old_status = str(old_status)
-        agent.session.raiseEvent(data=event, severity=SEV_NOTICE)
+        self.agent.session.raiseEvent(data=event, severity=SEV_NOTICE)
         
         if(new_status == "COMPLETED"):
-            agent.deregister(self.qmf_object)
+            self.agent.deregister(self.qmf_object)
         
     
     def builder_did_update_percentage(self, builder, original_percentage, new_percentage):
         self.percent_complete = new_percentage
-        # FIXME: sloranz - I should be able to get the agent from the qmf_object this is a workaround...
-        agent = self.agent
-        # agent = self.qmf_object.getAgent()
-        self.log.debug("Raising event with agent (%s), changed percent complete from %s to %s" % (agent, original_percentage, new_percentage))
+        self.log.debug("Raising event with agent handler (%s), changed percent complete from %s to %s" % (self.agent, original_percentage, new_percentage))
         event = Data(BuildAdaptor.qmf_event_schema_percentage)
         event.addr = self.qmf_object.getAddr().asMap()
         event.event = "PERCENTAGE"
         event.percent_complete = new_percentage
-        agent.session.raiseEvent(data=event, severity=SEV_NOTICE)
+        self.agent.session.raiseEvent(data=event, severity=SEV_NOTICE)
     
     def builder_did_fail(self, builder, failure_type, failure_info):
-        # FIXME: sloranz - I should be able to get the agent from the qmf_object this is a workaround...
-        agent = self.agent
-        # agent = self.qmf_object.getAgent()
-        self.log.debug("Raising event with agent (%s), BUILD FAILED: %s - %s" % (agent, failure_type, failure_info))
+        self.log.debug("Raising event with agent handler (%s), BUILD FAILED: %s - %s" % (self.agent, failure_type, failure_info))
         event = Data(BuildAdaptor.qmf_event_schema_build_failed)
         event.addr = self.qmf_object.getAddr().asMap()
         event.event = "FAILURE"
         event.type = failure_type
         event.info = failure_info
-        agent.session.raiseEvent(data=event, severity=SEV_ERROR)
+        self.agent.session.raiseEvent(data=event, severity=SEV_ERROR)
     
 
 # if __name__ == '__main__':

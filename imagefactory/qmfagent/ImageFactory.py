@@ -72,18 +72,19 @@ class ImageFactory(object):
     
     
     def __new__(cls, *p, **k):
-    	if cls.instance is None:
-    		cls.instance = object.__new__(cls, *p, **k)
-    	return cls.instance
+        if cls.instance is None:
+            cls.instance = object.__new__(cls, *p, **k)
+        return cls.instance
     
-    def __init__(self):
+    def __init__(self, agent=None):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-    	self.qmf_object = Data(ImageFactory.qmf_schema)
-    	self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
+        self.qmf_object = Data(ImageFactory.qmf_schema)
+        self.agent = agent
+        self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
     
     def image(self,template,target):
         template_object = Template(template=template)
-        build_adaptor = BuildAdaptor.BuildAdaptor(template_object,target)
+        build_adaptor = BuildAdaptor.BuildAdaptor(template_object,target,self.agent)
         build_adaptor.build_image()
         return build_adaptor
     
@@ -93,7 +94,7 @@ class ImageFactory(object):
         target = image_metadata["target"]
         
         if (template_id and target):
-            build_adaptor = BuildAdaptor.BuildAdaptor(Template(uuid=template_id),target)
+            build_adaptor = BuildAdaptor.BuildAdaptor(Template(uuid=template_id),target,self.agent)
             build_adaptor.push_image(image_id, provider, credentials)
             return build_adaptor
         else:
