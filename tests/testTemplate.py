@@ -59,7 +59,6 @@ class testTemplate(unittest.TestCase):
         self.assertEqual(template_id, image_template.identifier)
         self.assertEqual(self.template_xml, image_template.xml)
         self.assertIsNone(template.url)
-        
     
     def testTemplateFromXML(self):
         template = Template(self.template_xml)
@@ -74,6 +73,11 @@ class testTemplate(unittest.TestCase):
         self.assertEqual(template_url, template.url)
         self.assertEqual(template_id, template.identifier)
         self.assertEqual(self.template_xml, template.xml)
+    
+    def testTemplateStringRepresentation(self):
+        template = Template(self.template_xml)
+        self.assertEqual(self.template_xml, repr(template))
+        self.assertEqual(self.template_xml, str(template))
     
 
 if __name__ == '__main__':
