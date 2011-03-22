@@ -78,6 +78,7 @@ class testTemplate(unittest.TestCase):
         template = Template(self.template_xml)
         self.assertEqual(self.template_xml, repr(template))
         self.assertEqual(self.template_xml, str(template))
+        self.assertEqual(self.template_xml, "%r" % (template, ))
         self.assertEqual(self.template_xml, "%s" % (template, ))
     
 

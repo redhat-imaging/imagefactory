@@ -78,9 +78,6 @@ class Template(object):
         else:
             return super(Template, self).__repr__
     
-    def __str__(self):
-        return self.__repr__()
-    
     def __init__(self, template=None, uuid=None, url=None, xml=None, bucket="templates"):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
