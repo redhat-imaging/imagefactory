@@ -73,12 +73,17 @@ class ApplicationConfiguration(object):
         argparser.add_argument('--output', default='/tmp', help='Build image files in location specified. (default: %(default)s)')
         argparser.add_argument('--warehouse', help='URL of the warehouse location to store images.')
         argparser.add_argument('--timeout', type=int, default=3600, help='Set the timeout period for image building in seconds. (default: %(default)s)')
-        group_qmf = argparser.add_argument_group(title='QMF options', description='Provide a QMFv2 agent interface.')
+        group_qmf = argparser.add_argument_group(title='QMF agent', description='Provide a QMFv2 agent interface.')
         group_qmf.add_argument('--qmf', action='store_true', default=False, help='Turn on QMF agent interface. (default: %(default)s)')
         group_qmf.add_argument('--broker', default='localhost', help='URL of qpidd to connect to. (default: %(default)s)')
-        group_build = argparser.add_argument_group(title='One time build options', description='NOT YET IMPLEMENTED: Build specified system and exit.')
-        group_build.add_argument('-b', '--build', dest='qmf', action='store_false', help='Build image specified by template.')
-        group_build.add_argument('-t', '--template', help='Template XML file to build from.')
+        group_build = argparser.add_argument_group(title='Image building', description='NOT YET IMPLEMENTED: Build specified system and exit.')
+        group_build.add_argument('--template', help='Template XML file to build from.')
+        group_build.add_argument('--target', help='Cloud service to target')
+        group_push = argparser.add_argument_group(title='Image instantiation', description='NOT YET IMPLEMENTED: Instantiate an image and exit.')
+        group_push.add_argument('--image', help='Image to instantiate')
+        group_push.add_argument('--provider', help='Cloud service provider upon which to instantiate the image')
+        group_push.add_argument('--credentials', help='Cloud provider credentials')
+        
         if(defaults):
             argparser.set_defaults(**defaults)
         if (sys.argv[0].endswith("imgfac.py")):
