@@ -28,7 +28,7 @@ from imagefactory.Template import Template
 
 class BaseBuilder(object):
     """BaseBuilder provides a starting point for builder classes conforming to the IBuilder interface.  
-    Subclasses of BaseBuilder     can focus on the OS/Provider specific activity for creating and 
+    Subclasses of BaseBuilder can focus on the OS/Provider specific activity for creating and 
     deploying images."""
     zope.interface.implements(IBuilder)
     

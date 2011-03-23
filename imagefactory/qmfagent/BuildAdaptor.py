@@ -165,7 +165,6 @@ class BuildAdaptor(object):
         self.builder.delegate = self
         self.image = str(self.builder.image_id)
     
-    ### Methods to conform to IBuilder that BaseBuilder doesn't implement
     def build_image(self):
         thread_name = "%s.build_image()" % (self.builder.image_id, )
         # using args to pass the method we want to call on the target object.

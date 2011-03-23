@@ -102,7 +102,7 @@ class MockBuilder(BaseBuilder):
                 image_file.close()
             # push the provider image up to the warehouse
             metadata = dict(image=image_id, provider=provider, icicle=image_metadata["icicle"], target_identifier="Mock_%s_%s" % (provider, self.image_id))
-            self.warehouse.create_provider_image(self.image_id, txt=image)
+            self.warehouse.create_provider_image(self.image_id, txt=image, metadata=metadata)
             self.status = "FINISHING"
             self.log.debug("MockBuilder instance %s pushed image with uuid %s to warehouse (%s) and set metadata: %s" % (id(self), image_id, self.warehouse.url, metadata))
             self.status = "COMPLETED"
