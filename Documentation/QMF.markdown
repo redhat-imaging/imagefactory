@@ -174,7 +174,7 @@ The console can poll the build_adaptor for build status or receive events listed
                 desc = "the address of the object raising this event"
             name = "event"
                 dtype = SCHEMA_DATA_STRING
-                desc = "string describing the type of event, in this case 'STATUS'"
+                desc = "string describing the type of event, in this case 'PERCENTAGE'"
             name = "percent_complete"
                 dtype = SCHEMA_DATA_INT
                 desc = "string value of the new status"
@@ -189,7 +189,7 @@ The console can poll the build_adaptor for build status or receive events listed
                 desc = "the address of the object raising this event"
             name = "event"
                 dtype = SCHEMA_DATA_STRING
-                desc = "string describing the type of event, in this case 'STATUS'"
+                desc = "string describing the type of event, in this case 'FAILURE'"
             name = "type"
                 dtype = SCHEMA_DATA_STRING
                 desc = "string value of the new status"
