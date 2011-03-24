@@ -1,15 +1,17 @@
 Title: Image Factory README
 Format: complete
 Author: Steve Loranz
-Date: January 12, 2011
-Revision: 1.0
+Date: March 24, 2011
+Revision: 1.1
 Keywords: aeolus,image_factory,cloud
 
-## Usage ##
+## Usage: ##
 
-	usage: imagefactory [-h] [--version] [-v] [--debug] [--config CONFIG]
-	                    [--output OUTPUT] [--warehouse WAREHOUSE] [--qmf]
-	                    [--broker BROKER] [-b] [-t TEMPLATE]
+	usage: imgfac [-h] [--version] [-v] [--debug] [--foreground] [--config CONFIG]
+	              [--output OUTPUT] [--warehouse WAREHOUSE] [--timeout TIMEOUT]
+	              [--qmf] [--broker BROKER] [--template TEMPLATE]
+	              [--target TARGET] [--image IMAGE] [--provider PROVIDER]
+	              [--credentials CREDENTIALS]
 	
 	System image creation tool...
 	
@@ -18,38 +20,52 @@ Keywords: aeolus,image_factory,cloud
 	  --version             Version info
 	  -v, --verbose         Set verbose logging.
 	  --debug               Set really verbose logging for debugging.
+	  --foreground          Stay in the foreground and avoid launching a daemon.
+	                        (default: False)
 	  --config CONFIG       Configuration file to use. (default:
 	                        /etc/imagefactory.conf)
 	  --output OUTPUT       Build image files in location specified. (default:
 	                        /tmp)
 	  --warehouse WAREHOUSE
 	                        URL of the warehouse location to store images.
+	  --timeout TIMEOUT     Set the timeout period for image building in seconds.
+	                        (default: 3600)
 	
-	QMF options:
+	QMF agent:
 	  Provide a QMFv2 agent interface.
 	
 	  --qmf                 Turn on QMF agent interface. (default: False)
 	  --broker BROKER       URL of qpidd to connect to. (default: localhost)
 	
-	One time build options:
+	Image building:
 	  NOT YET IMPLEMENTED: Build specified system and exit.
 	
-	  -b, --build           Build image specified by template.
-	  -t TEMPLATE, --template TEMPLATE
-	                        Template XML file to build from.
+	  --template TEMPLATE   Template XML file to build from.
+	  --target TARGET       Cloud service to target
 	
-## Dependencies ##
+	Image instantiation:
+	  NOT YET IMPLEMENTED: Instantiate an image and exit.
+	
+	  --image IMAGE         Image to instantiate
+	  --provider PROVIDER   Cloud service provider upon which to instantiate the
+	                        image
+	  --credentials CREDENTIALS
+	                        Cloud provider credentials	
+	
+## Dependencies: ##
 
-QMFv2 Python bindings
-: [QMF-Homepage][]  
-*Note:* QMFv2 is currently only available by checking out the C++ source from [QPID-Repo][].
+[QMFv2](https://cwiki.apache.org/qpid/qmfv2-project-page.html) Python bindings       
+These binding are part of the qpid-cpp package    
+*Note:* You can install qpid-cpp with yum using the Aeolus testing [repository][aeolus_testing_repo].
 
-Oz
-: [Oz-Repo][]  
-Oz is a set of classes and scripts to do automated installations of various
-guest operating systems.
+[Oz](http://aeolusproject.org/oz.html) - [Download](http://aeolusproject.org/oz-download.html)      
+Oz is a set of classes and scripts to do automated installations of various guest operating systems.    
+*Note:* You can install oz with yum using the Aeolus testing [repository][aeolus_testing_repo].
+
+[Image Warehouse](http://git.fedorahosted.org/git/?p=iwhd.git)     
+Provides storage for images and related metadata.       
+*Note:* You can install iwhd with yum using the Aeolus [repository][aeolus_package_repo]
 
 
-[QMF-Homepage]: https://cwiki.apache.org/qpid/qpid-management-framework.html
-[QPID-Repo]: https://svn.apache.org/repos/asf/qpid/trunk/qpid/cpp/
-[Oz-Repo]: https://github.com/clalancette/oz
+[aeolus_testing_repo]: http://repos.fedorapeople.org/repos/aeolus/packages-testing/
+[aeolus_package_repo]: http://repos.fedorapeople.org/repos/aeolus/packages/
