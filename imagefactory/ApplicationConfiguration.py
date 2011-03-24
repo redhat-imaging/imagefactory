@@ -75,7 +75,7 @@ class ApplicationConfiguration(object):
         argparser.add_argument('--timeout', type=int, default=3600, help='Set the timeout period for image building in seconds. (default: %(default)s)')
         group_qmf = argparser.add_argument_group(title='QMF agent', description='Provide a QMFv2 agent interface.')
         group_qmf.add_argument('--qmf', action='store_true', default=False, help='Turn on QMF agent interface. (default: %(default)s)')
-        group_qmf.add_argument('--broker', default='localhost', help='URL of qpidd to connect to. (default: %(default)s)')
+        group_qmf.add_argument('--qpidd', default='localhost', help='URL of qpidd to connect to. (default: %(default)s)')
         group_build = argparser.add_argument_group(title='Image building', description='NOT YET IMPLEMENTED: Build specified system and exit.')
         group_build.add_argument('--template', help='Template XML file to build from.')
         group_build.add_argument('--target', help='Cloud service to target')

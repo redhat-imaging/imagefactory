@@ -51,7 +51,7 @@ class ImageFactoryAgent(AgentHandler):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self._managedObjects = {}
         self.session = None
-        # Create and open a messaging connection to a broker.
+        # create a connection and connect to qpidd
         # TODO: (redmine 277) - Make this use actual amqp:// urls... currently, only host works
         self.connection = cqpid.Connection(url)
         self.connection.open()

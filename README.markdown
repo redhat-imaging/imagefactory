@@ -35,7 +35,7 @@ Keywords: aeolus,image_factory,cloud
 	  Provide a QMFv2 agent interface.
 	
 	  --qmf                 Turn on QMF agent interface. (default: False)
-	  --broker BROKER       URL of qpidd to connect to. (default: localhost)
+	  --qpidd QPIDD         URL of qpidd to connect to. (default: localhost)
 	
 	Image building:
 	  NOT YET IMPLEMENTED: Build specified system and exit.

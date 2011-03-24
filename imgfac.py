@@ -137,7 +137,7 @@ class Application(object):
             else:
                 logging.warning("Failed to launch as daemon...")
             
-            self.qmf_agent = ImageFactoryAgent(self.app_config['broker'])
+            self.qmf_agent = ImageFactoryAgent(self.app_config['qpidd'])
             self.qmf_agent.run()
         else:
             self.setup_logging()

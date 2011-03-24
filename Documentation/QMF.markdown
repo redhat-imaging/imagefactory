@@ -7,19 +7,19 @@ Keywords: aeolus,image_factory,cloud,qmf,qmf2,api
 
 ## Introduction ##
 
-The script imagefactory.py can be used to start a daemon running a QMF agent.  Using the 'broker' option, the host that qpidd is running on can be set.  Currently this defaults to the default qpidd port on localhost.  Future versions will accept an amqp:// URL to fully configure the agent session.
+The script imagefactory.py can be used to start a daemon running a QMF agent.  Using the 'qpidd' option, the host that qpidd is running on can be set.  Currently this defaults to the default qpidd port on localhost.  Future versions will accept an amqp:// URL to fully configure the agent session.
 
 	Example usage:
 	
-		./imgfac.py --verbose --qmf --broker localhost
+		./imgfac.py --verbose --qmf --qpidd localhost
 
-Once the agent has opened a session with the broker, QMF consoles can send messages to the agent start image builds, get status on builds, etc.
+Once the agent has opened a session, QMF consoles can send messages to the agent start image builds, get status on builds, etc.
 
 ---
 
 ## Image Factory Agent ##
 
-Once a console connects to the same broker as the Image Factory, the agent can be found given the vendor ("redhat.com") and product ("imagefactory") portions of the agent name.  
+Once a console connects to the same QMF bus as the Image Factory, the agent can be found given the vendor ("redhat.com") and product ("imagefactory") portions of the agent name.  
 
 	Example 1 - Getting an agent list in python
 	
