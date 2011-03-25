@@ -2,7 +2,7 @@
 
 ## Installation ##
 1.  Q: How do I install image_factory?      
-    A: The simplest approach is to install from rpm.  To read about creating the rpm and/or other installation options, please read the INSTALL document in the Documentation directory of source distribution.
+    A: The simplest approach is to install from rpm.  To read about creating the rpm and/or other installation options, please read the [INSTALL](https://github.com/aeolusproject/image_factory/blob/master/Documentation/INSTALL.markdown) document in the Documentation directory of source distribution.
 
 ## Configuration ##
 1.  Q: Where does the configuration live?       
