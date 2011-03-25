@@ -170,7 +170,7 @@ The console can poll the build_adaptor for build status or receive events listed
                 desc = "string describing the type of event, in this case 'PERCENTAGE'"
             name = "percent_complete"
                 dtype = SCHEMA_DATA_INT
-                desc = "string value of the new status"
+                desc = "the estimated percentage through an operation"
         
 * Failure Notification
         
@@ -185,8 +185,8 @@ The console can poll the build_adaptor for build status or receive events listed
                 desc = "string describing the type of event, in this case 'FAILURE'"
             name = "type"
                 dtype = SCHEMA_DATA_STRING
-                desc = "string value of the new status"
+                desc = "short string description of the failure"
             name = "info"
                 dtype = SCHEMA_DATA_STRING
-                desc = "string value of the old status"
+                desc = "longer string description of the failure"
 
