@@ -34,7 +34,7 @@ class TestImageFactoryAgent(unittest.TestCase):
         self.console_session = ConsoleSession(self.connection)
         self.console_session.setAgentFilter("[and, [eq, _vendor, [quote, 'redhat.com']], [eq, _product, [quote, 'imagefactory']]]")
         self.console_session.open()
-        self.console = MockConsole(self.console_session)
+        self.console = MockConsole(self.console_session, self.if_agent.image_factory_addr)
         self.console.start()
         time.sleep(5) # Give the agent some time to show up.
     
@@ -110,8 +110,9 @@ class TestImageFactoryAgent(unittest.TestCase):
     
 
 class MockConsole(ConsoleHandler):
-    def __init__(self, consoleSession):
+    def __init__(self, consoleSession, agent_addr):
         super(MockConsole, self).__init__(consoleSession)
+        self.agent_addr = agent_addr
         self.build_adaptor_addr_success = ""
         self.build_adaptor_addr_fail = ""
         self.build_adaptor_addr_push = ""
@@ -122,22 +123,24 @@ class MockConsole(ConsoleHandler):
         self.event_count = 0
     
     def agentAdded(self, agent):
-        self.agent = agent
-        self.factory = agent.query("{class:ImageFactory, package:'com.redhat.imagefactory'}")[0]
-        self.build_adaptor_addr_success = self.factory.image("<template></template>", "mock")["build_adaptor"]
-        self.build_adaptor_addr_fail = self.factory.image("<template>FAIL</template>", "mock")["build_adaptor"]
-        
-        self.image_factory_states = self.factory.instance_states("ImageFactory")
-        self.build_adaptor_states = self.factory.instance_states("BuildAdaptor")
-        
-        try:
-            self.image_exception = self.factory.image()
-        except Exception, e:
-            self.image_exception = e
+        if(str(self.agent_addr).startswith(agent.getName())):
+            self.agent = agent
+            self.factory = agent.query("{class:ImageFactory, package:'com.redhat.imagefactory'}")[0]
+            self.build_adaptor_addr_success = self.factory.image("<template></template>", "mock")["build_adaptor"]
+            self.build_adaptor_addr_fail = self.factory.image("<template>FAIL</template>", "mock")["build_adaptor"]
+            
+            self.image_factory_states = self.factory.instance_states("ImageFactory")
+            self.build_adaptor_states = self.factory.instance_states("BuildAdaptor")
+            
+            try:
+                self.image_exception = self.factory.image()
+            except Exception, e:
+                self.image_exception = e
     
     def agentDeleted(self, agent, reason):
         self.agent = None
         self.reason_for_missing_agent = reason
+        print("Uh... the agent was delete because: %s" % (reason, ))
     
     def eventRaised(self, agent, data, timestamp, severity):
         if(data.getProperties()["event"] == "STATUS"):
