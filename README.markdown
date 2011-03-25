@@ -1,10 +1,3 @@
-Title: Image Factory README
-Format: complete
-Author: Steve Loranz
-Date: March 24, 2011
-Revision: 1.1
-Keywords: aeolus,image_factory,cloud
-
 ## Usage: ##
 
 	usage: imgfac [-h] [--version] [-v] [--debug] [--foreground] [--config CONFIG]

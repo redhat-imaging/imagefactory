@@ -1,10 +1,3 @@
-Title: Image Factory QMF API
-Format: complete
-Author: Steve Loranz
-Date: March 24, 2011
-Revision: 1.1
-Keywords: aeolus,image_factory,cloud,qmf,qmf2,api
-
 ## Introduction ##
 
 The script imagefactory.py can be used to start a daemon running a QMF agent.  Using the 'qpidd' option, the host that qpidd is running on can be set.  Currently this defaults to the default qpidd port on localhost.  Future versions will accept an amqp:// URL to fully configure the agent session.
