@@ -23,6 +23,7 @@ import pycurl
 import httplib2
 import uuid
 import os
+from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 
 
 class ImageWarehouse(object):
@@ -39,60 +40,143 @@ class ImageWarehouse(object):
         return locals()
     url = property(**url())
     
+    def image_bucket():
+        doc = "The image_bucket property."
+        def fget(self):
+            return self._image_bucket
+        def fset(self, value):
+            self._image_bucket = value
+        def fdel(self):
+            del self._image_bucket
+        return locals()
+    image_bucket = property(**image_bucket())
+    
+    def template_bucket():
+        doc = "The template_bucket property."
+        def fget(self):
+            return self._template_bucket
+        def fset(self, value):
+            self._template_bucket = value
+        def fdel(self):
+            del self._template_bucket
+        return locals()
+    template_bucket = property(**template_bucket())
+    
+    def icicle_bucket():
+        doc = "The icicle_bucket property."
+        def fget(self):
+            return self._icicle_bucket
+        def fset(self, value):
+            self._icicle_bucket = value
+        def fdel(self):
+            del self._icicle_bucket
+        return locals()
+    icicle_bucket = property(**icicle_bucket())
+    
+    def provider_image_bucket():
+        doc = "The provider_image_bucket property."
+        def fget(self):
+            return self._provider_image_bucket
+        def fset(self, value):
+            self._provider_image_bucket = value
+        def fdel(self):
+            del self._provider_image_bucket
+        return locals()
+    provider_image_bucket = property(**provider_image_bucket())
+    
     # Properties end
     
-    def __init__(self, url):
+    def __repr__(self):
+        return "%s - %r" % (super(ImageWarehouse, self).__repr__(), self.__dict__)
+    
+    def __str__(self):
+        return "%s - buckets(%s, %s, %s, %s)" % (self.url, self.image_bucket, self.template_bucket, self.icicle_bucket, self.provider_image_bucket)
+    
+    def __init__(self, url=None):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         
         self.http = httplib2.Http()
+        
+        if(not url):
+            url = ApplicationConfiguration().configuration['warehouse']
+            self.log.debug("Property (url) not specified.  Pulling from application configuration: %s" % (url, ))
+        
+        self.image_bucket = ApplicationConfiguration().configuration['image_bucket']
+        self.template_bucket = ApplicationConfiguration().configuration['template_bucket']
+        self.icicle_bucket = ApplicationConfiguration().configuration['icicle_bucket']
+        self.provider_image_bucket = ApplicationConfiguration().configuration['provider_bucket']
         
         if (url.endswith('/')):
              self.url = url[0:len(url)-1]
         else:
             self.url = url
+        
+        self.log.debug("Created Image Warehouse instance %s" % (self, ))
     
-    
-    def create_bucket(self, bucket_url):
+    def create_bucket_at_url(self, url):
         try:
-            response_headers, response = self.http.request(bucket_url, "PUT", headers={'content-type':'text/plain'})
+            response_headers, response = self.http.request(url, "PUT", headers={'content-type':'text/plain'})
             status = int(response_headers["status"])
             if(399 < status < 600):
-                # raise RuntimeError("Could not create bucket: %s" % bucket_url)
-                self.log.warning("Creating a bucket returned status %s, maybe the bucket already exists?" % (status, ))
+                # raise RuntimeError("Could not create bucket: %s" % url)
+                self.log.warning("Creating a bucket returned status %s.  If only iwhd would provide a sane way to know if a bucket exists so we wouldn't have to try and create one every time..." % (status, ))
                 return False
             else:
                 return True
         except Exception, e:
             raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
     
-    def object_with_id(self, object_id, bucket, metadata_keys=()):
+    def __url_for_id_of_type(self, object_id, object_type, create=True):
+        bucket = getattr(self, "_%s_bucket" % (object_type, ))
+        if(bucket):
+            if(create):
+                self.create_bucket_at_url("%s/%s" % (self.url, bucket))
+            object_url = "%s/%s/%s" % (self.url, bucket, object_id)
+        else:
+            object_url ="%s/%s" % (self.url, object_id)
+        
+        return object_url
+    
+    def object_with_id_of_type(self, object_id, object_type, metadata_keys=()):
+        object_url = self.__url_for_id_of_type(object_id, object_type, create=False)
         try:
-            response_headers, response = self.http.request("%s/%s/%s" % (self.url, bucket, object_id), "GET", headers={'content-type':'text/plain'})
-            return response, self.metadata_for_id(metadata_keys, object_id, bucket)
+            response_headers, response = self.http.request(object_url, "GET", headers={'content-type':'text/plain'})
+            if(len(metadata_keys) > 0):
+                metadata = self.metadata_for_id_of_type(metadata_keys, object_id, object_type)
+            else:
+                metadata = {}
+            return response, metadata
         except Exception, e:
             raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
     
-    def object_for_image_id(self, image_id, bucket, object_bucket, object_key, metadata_keys=()):
+    def object_for_image_id(self, image_id, object_type, metadata_keys=()):
+        object_url = self.__url_for_id_of_type(image_id, "image", create=False)
         try:
-            response_headers, object_id = self.http.request("%s/%s/%s/%s" % (self.url, bucket, image_id, object_key), "GET", headers={'content-type':'text/plain'})
+            response_headers, object_id = self.http.request("%s/%s" % (object_url, object_type), "GET", headers={'content-type':'text/plain'})
         except Exception, e:
             raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
             
-        the_object, metadata = self.object_with_id(object_id, object_bucket, metadata_keys)
+        the_object, metadata = self.object_with_id_of_type(object_id, object_type, metadata_keys)
         return object_id, the_object, metadata
     
-    def set_metadata_for_id(self, metadata, object_id, bucket):
+    def set_metadata_for_id_of_type(self, metadata, object_id, object_type):
+        object_url = self.__url_for_id_of_type(object_id, object_type, create=False)
+        self.set_metadata_for_object_at_url(metadata, object_url)
+    
+    def set_metadata_for_object_at_url(self, metadata, object_url):
         try:
-            object_url = "%s/%s/%s" % (self.url, bucket, object_id)
             self.log.debug("Setting metadata (%s) for %s" % (metadata, object_url))
             for item in metadata:
                 response_header, response = self.http.request("%s/%s" % (object_url, item), "PUT", body=str(metadata[item]), headers={'content-type':'text/plain'})
         except Exception, e:
             raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
     
-    def metadata_for_id(self, metadata_keys, object_id, bucket):
+    def metadata_for_id_of_type(self, metadata_keys, object_id, object_type):
+        object_url = self.__url_for_id_of_type(object_id, object_type, create=False)
+        return self.metadata_for_object_at_url(metadata_keys, object_url)
+    
+    def metadata_for_object_at_url(self, metadata_keys, object_url):
         try:
-            object_url = "%s/%s/%s" % (self.url, bucket, object_id)
             self.log.debug("Getting metadata (%s) from %s" % (metadata_keys, object_url))
             metadata = dict()
             for item in metadata_keys:
@@ -102,10 +186,9 @@ class ImageWarehouse(object):
         except Exception, e:
             raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
     
-    def store_image(self, image_id, image_file_path, bucket="images", metadata=None):
-        self.create_bucket("%s/%s" % (self.url, bucket))
+    def store_image(self, image_id, image_file_path, metadata=None):
+        object_url = self.__url_for_id_of_type(image_id, "image")
         try:
-            object_url = "%s/%s/%s" % (self.url, bucket, image_id)
             image_file = open(image_file_path)
             
             # Upload the image itself
@@ -119,16 +202,16 @@ class ImageWarehouse(object):
             curl.perform()
             curl.close()
             image_file.close()
-            meta_data = dict(uuid=str(image_id), object_type="image")
-            if(metadata):
-                meta_data.update(metadata)
-            self.set_metadata_for_id(meta_data, image_id, bucket)        
         except Exception, e:
             raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
+        
+        meta_data = dict(uuid=str(image_id), object_type="image")
+        if(metadata):
+            meta_data.update(metadata)
+        self.set_metadata_for_object_at_url(meta_data, object_url)
     
-    def create_provider_image(self, image_id, txt=None, bucket="provider_images", metadata=None):
-        self.create_bucket("%s/%s" % (self.url, bucket))
-        object_url = "%s/%s/%s" % (self.url, bucket, image_id)
+    def create_provider_image(self, image_id, txt=None, metadata=None):
+        object_url = self.__url_for_id_of_type(image_id, object_type="provider_image")
         if(not txt):
             if(metadata):
                 txt = "This object has the following metadata keys: %s" % (metadata.keys(), )
@@ -143,13 +226,12 @@ class ImageWarehouse(object):
         meta_data = dict(uuid=str(image_id), object_type="provider_image")
         if(metadata):
             meta_data.update(metadata)
-        self.set_metadata_for_id(meta_data, image_id, bucket)        
+        self.set_metadata_for_object_at_url(meta_data, object_url)
     
-    def store_template(self, template, template_id=None, bucket="templates", metadata=None):
-        self.create_bucket("%s/%s" % (self.url, bucket))
+    def store_template(self, template, template_id=None, metadata=None):
         if(not template_id):
             template_id = uuid.uuid4()
-        object_url = "%s/%s/%s" % (self.url, bucket, template_id)
+        object_url = self.__url_for_id_of_type(template_id, object_type="template")
         
         try:
             response_headers, response = self.http.request(object_url, "PUT", body=template, headers={'content-type':'text/plain'})
@@ -159,14 +241,15 @@ class ImageWarehouse(object):
         meta_data = dict(uuid=str(template_id), object_type="template")
         if(metadata):
             meta_data.update(metadata)
-        self.set_metadata_for_id(meta_data, template_id, bucket)
+        self.set_metadata_for_object_at_url(meta_data, object_url)
+         
         return template_id     
     
-    def store_icicle(self, icicle, icicle_id=None, bucket="icicles", metadata=None):
-        self.create_bucket("%s/%s" % (self.url, bucket))
+    def store_icicle(self, icicle, icicle_id=None, metadata=None):
         if(not icicle_id):
             icicle_id = uuid.uuid4()
-        object_url = "%s/%s/%s" % (self.url, bucket, icicle_id)
+        object_url = self.__url_for_id_of_type(icicle_id, object_type="icicle")
+        
         try:
             response_headers, response = self.http.request(object_url, "PUT", body=icicle, headers={'content-type':'text/plain'})
         except Exception, e:
@@ -175,23 +258,24 @@ class ImageWarehouse(object):
         meta_data = dict(uuid=str(icicle_id), object_type="icicle")
         if(metadata):
             meta_data.update(metadata)
-        self.set_metadata_for_id(meta_data, icicle_id, bucket)
+        self.set_metadata_for_object_at_url(meta_data, object_url)
+        
         return icicle_id 
     
-    def icicle_with_id(self, icicle_id, bucket="icicles", metadata_keys=()):
-        return self.object_with_id(icicle_id, bucket, metadata_keys)
+    def icicle_with_id(self, icicle_id, metadata_keys=()):
+        return self.object_with_id_of_type(icicle_id, "icicle", metadata_keys)
     
-    def icicle_for_image_id(self, image_id, bucket="images", icicle_bucket="icicles", metadata_keys=()):
-        return self.object_for_image_id(image_id, bucket, icicle_bucket, "icicle", metadata_keys)
+    def icicle_for_image_id(self, image_id, metadata_keys=()):
+        return self.object_for_image_id(image_id, "icicle", metadata_keys)
     
-    def template_with_id(self, template_id, bucket="templates", metadata_keys=()):
-        return self.object_with_id(template_id, bucket, metadata_keys)
+    def template_with_id(self, template_id, metadata_keys=()):
+        return self.object_with_id_of_type(template_id, "template", metadata_keys)
     
-    def template_for_image_id(self, image_id, bucket="images", template_bucket="templates", metadata_keys=()):
-        return self.object_for_image_id(image_id, bucket, template_bucket, "template", metadata_keys)
+    def template_for_image_id(self, image_id, metadata_keys=()):
+        return self.object_for_image_id(image_id, "template", metadata_keys)
     
-    def image_with_id(self, image_id, bucket="images", metadata_keys=()):
-        return self.object_with_id(image_id, bucket, metadata_keys)
+    def image_with_id(self, image_id, metadata_keys=()):
+        return self.object_with_id_of_type(image_id, "image", metadata_keys)
     
 
 class WarehouseError(Exception):

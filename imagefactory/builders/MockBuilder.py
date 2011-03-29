@@ -38,7 +38,6 @@ class MockBuilder(BaseBuilder):
         super(MockBuilder, self).__init__(template, target)
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.app_config = ApplicationConfiguration().configuration
-        self.warehouse_url = self.app_config['warehouse']
     
     # Image actions
     def build_image(self):
@@ -104,7 +103,7 @@ class MockBuilder(BaseBuilder):
             metadata = dict(image=image_id, provider=provider, icicle=image_metadata["icicle"], target_identifier="Mock_%s_%s" % (provider, self.image_id))
             self.warehouse.create_provider_image(self.image_id, txt=image, metadata=metadata)
             self.status = "FINISHING"
-            self.log.debug("MockBuilder instance %s pushed image with uuid %s to warehouse (%s) and set metadata: %s" % (id(self), image_id, self.warehouse.url, metadata))
+            self.log.debug("MockBuilder instance %s pushed image with uuid %s to warehouse (%s/%s) and set metadata: %s" % (id(self), image_id, self.warehouse.url, self.warehouse.provider_image_bucket, metadata))
             self.status = "COMPLETED"
         except Exception, e:
             failing_thread = FailureThread(target=self, kwargs=dict(message="%s" % (e, )))

@@ -78,10 +78,9 @@ class Template(object):
         else:
             return super(Template, self).__repr__
     
-    def __init__(self, template=None, uuid=None, url=None, xml=None, bucket="templates"):
+    def __init__(self, template=None, uuid=None, url=None, xml=None):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
-        self.bucket = bucket
         
         self.identifier = None
         self.url = None
@@ -98,7 +97,7 @@ class Template(object):
                 xml = template_string
         
         if(uuid):
-            self.identifier, self.xml = self.__fetch_template_for_uuid(uuid, bucket)
+            self.identifier, self.xml = self.__fetch_template_for_uuid(uuid)
             if((not self.identifier) and (not self.xml)):
                 raise RuntimeError("Could not create a template with the uuid %s" % (uuid, ))
         elif(url):
@@ -122,13 +121,13 @@ class Template(object):
         else:        
             raise ValueError("'template_string' must be a UUID, URL, or XML document...")
     
-    def __fetch_template_for_uuid(self, uuid_string, bucket):
-        xml_string, metadata = self.warehouse.template_with_id(uuid_string, bucket=self.bucket)
+    def __fetch_template_for_uuid(self, uuid_string):
+        xml_string, metadata = self.warehouse.template_with_id(uuid_string)
         if(xml_string and self.__string_is_xml_template(xml_string)):
             return uuid.UUID(uuid_string), xml_string
         else:
-            self.log.debug("Unable to fetch a valid template given template id %s:\n%s\n" % (uuid_string, self._addreviated_template(xml_string)))
-            template_id, xml_string, metadata = self.warehouse.template_for_image_id(uuid_string, bucket=self.bucket.replace("templates", "images"), template_bucket=self.bucket)
+            self.log.debug("Unable to fetch a valid template given template id %s:\n%s\nWill try fetching template id from an image with this id..." % (uuid_string, self._addreviated_template(xml_string)))
+            template_id, xml_string, metadata = self.warehouse.template_for_image_id(uuid_string)
             if(template_id and xml_string and self.__string_is_xml_template(xml_string)):
                 return uuid.UUID(template_id), xml_string
             else:

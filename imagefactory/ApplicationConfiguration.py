@@ -54,7 +54,7 @@ class ApplicationConfiguration(object):
                 config_file = open(config_file_path)
                 uconfig = json.load(config_file)
                 # coerce this dict to ascii for python 2.6
-                config = { } 
+                config = {}
                 for k, v in uconfig.items():
                     config[k.encode('ascii')]=v.encode('ascii')
                 self.configuration = self.parse_arguments(defaults=config).__dict__
@@ -71,7 +71,6 @@ class ApplicationConfiguration(object):
         argparser.add_argument('--foreground', action='store_true', default=False, help='Stay in the foreground and avoid launching a daemon. (default: %(default)s)')
         argparser.add_argument('--config', default='/etc/imagefactory.conf', help='Configuration file to use. (default: %(default)s)')
         argparser.add_argument('--output', default='/tmp', help='Build image files in location specified. (default: %(default)s)')
-        argparser.add_argument('--warehouse', help='URL of the warehouse location to store images.')
         argparser.add_argument('--timeout', type=int, default=3600, help='Set the timeout period for image building in seconds. (default: %(default)s)')
         group_qmf = argparser.add_argument_group(title='QMF agent', description='Provide a QMFv2 agent interface.')
         group_qmf.add_argument('--qmf', action='store_true', default=False, help='Turn on QMF agent interface. (default: %(default)s)')
@@ -83,11 +82,20 @@ class ApplicationConfiguration(object):
         group_push.add_argument('--image', help='Image to instantiate')
         group_push.add_argument('--provider', help='Cloud service provider upon which to instantiate the image')
         group_push.add_argument('--credentials', help='Cloud provider credentials')
+        group_warehouse = argparser.add_argument_group(title='Image Warehouse', description='Options for specifying Image Warehouse base URL and bucket names.')
+        group_warehouse.add_argument('--warehouse', default='http://localhost:9090/', help='URL of the warehouse location to store images. (default: %(default)s)')
+        group_warehouse.add_argument('--image_bucket', help='Name of warehouse bucket to look in for images. (default: %(default)s)')
+        group_warehouse.add_argument('--template_bucket', help='Name of warehouse bucket to look in for templates. (default: %(default)s)')
+        group_warehouse.add_argument('--icicle_bucket', help='Name of warehouse bucket to look in for icicles. (default: %(default)s)')
+        group_warehouse.add_argument('--provider_bucket', help='Name of warehouse bucket to look in for provider image instances. (default: %(default)s)')
         
         if(defaults):
             argparser.set_defaults(**defaults)
+        
         if (sys.argv[0].endswith("imgfac.py")):
             return argparser.parse_args()
+        elif(sys.argv[0].endswith("unittest")):
+            return argparser.parse_args('--image_bucket unittests_images --template_bucket unittests_templates --icicle_bucket unittests_icicles --provider_bucket unittests_provider_images'.split())
         else:
             return argparser.parse_args([])
     

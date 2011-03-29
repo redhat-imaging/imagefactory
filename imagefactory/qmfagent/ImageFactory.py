@@ -89,7 +89,7 @@ class ImageFactory(object):
         return build_adaptor
     
     def provider_image(self,image_id, provider, credentials):
-        image_metadata = self.warehouse.metadata_for_id(("template", "target"), image_id, "images")
+        image_metadata = self.warehouse.metadata_for_id_of_type(("template", "target"), image_id, "image")
         template_id = image_metadata["template"]
         target = image_metadata["target"]
         

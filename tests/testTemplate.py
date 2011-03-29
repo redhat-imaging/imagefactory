@@ -31,31 +31,27 @@ class testTemplate(unittest.TestCase):
         logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/tmp/imagefactory-unittests.log')
         self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
         self.template_xml = "<template>This is a test template.  There is not much to it.</template>"
-        self.template_bucket = "unittests_templates"
-        self.image_bucket = "unittests_images"
     
     def tearDown(self):
         del self.warehouse
         del self.template_xml
-        del self.template_bucket
-        del self.image_bucket
     
     def testTemplateFromUUID(self):
-        template_id = self.warehouse.store_template(self.template_xml, bucket=self.template_bucket)
-        template = Template(template_id, bucket=self.template_bucket)
+        template_id = self.warehouse.store_template(self.template_xml)
+        template = Template(template_id)
         self.assertEqual(template_id, template.identifier)
         self.assertEqual(self.template_xml, template.xml)
         self.assertIsNone(template.url)
     
     def testTemplateFramImageID(self):
-        template_id = self.warehouse.store_template(self.template_xml, bucket=self.template_bucket)
-        template = Template(template_id, bucket=self.template_bucket)
+        template_id = self.warehouse.store_template(self.template_xml)
+        template = Template(template_id)
         target = "mock"
         builder = MockBuilder(self.template_xml, target)
         builder.build_image()
         metadata = dict(template=template_id, target=target, icicle="None", target_parameters="None")
-        self.warehouse.store_image(builder.image_id, builder.image, metadata=metadata, bucket=self.image_bucket)
-        image_template = Template(builder.image_id, bucket=self.template_bucket)
+        self.warehouse.store_image(builder.image_id, builder.image, metadata=metadata)
+        image_template = Template(builder.image_id)
         self.assertEqual(template_id, image_template.identifier)
         self.assertEqual(self.template_xml, image_template.xml)
         self.assertIsNone(template.url)
@@ -67,8 +63,8 @@ class testTemplate(unittest.TestCase):
         self.assertIsNone(template.url)
     
     def testTemplateFromURL(self):
-        template_id = self.warehouse.store_template(self.template_xml, bucket=self.template_bucket)
-        template_url = "%s/%s/%s" % (self.warehouse.url, self.template_bucket, template_id)
+        template_id = self.warehouse.store_template(self.template_xml)
+        template_url = "%s/%s/%s" % (self.warehouse.url, self.warehouse.template_bucket, template_id)
         template = Template(template_url)
         self.assertEqual(template_url, template.url)
         self.assertEqual(template_id, template.identifier)
