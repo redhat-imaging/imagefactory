@@ -31,6 +31,8 @@ import httplib2
 import traceback
 import pycurl
 import ConfigParser
+import boto.ec2
+from time import *
 from tempfile import *
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 from imagefactory.ImageFactoryException import ImageFactoryException
@@ -52,33 +54,72 @@ def subprocess_check_output(*popenargs, **kwargs):
         raise ImageFactoryException("'%s' failed(%d): %s" % (cmd, retcode, stderr))
     return (stdout, stderr, retcode)
 
+# This allows us to use the utility methods in Oz without errors due to lack of libvirt
+class FedoraRemoteGuest(oz.Fedora.FedoraGuest):
+    def __init__(self, tdl, config, auto, nicmodel, haverepo, diskbus,
+                 brokenisomethod):
+        # The debug output in the Guest parent class needs this property to exist
+        self.host_bridge_ip = "0.0.0.0"
+        oz.Fedora.FedoraGuest.__init__(self, tdl, config, auto, nicmodel, haverepo, diskbus,
+                 brokenisomethod)
+
+    def connect_to_libvirt(self):
+        pass
+
+
 class FedoraBuilder(BaseBuilder):
     """docstring for FedoraBuilder"""
     zope.interface.implements(IBuilder)
     
-    # Initializer
     def __init__(self, template, target):
         super(FedoraBuilder, self).__init__(template, target)
         self.app_config = ApplicationConfiguration().configuration
         self.warehouse_url = self.app_config['warehouse']
-        # populate a config object to pass to OZ
-        # This allows us to specify working directories
-        self.config = ConfigParser.ConfigParser()
-        self.config.add_section('paths')
-        self.config.set('paths', 'output_dir', self.app_config["output_dir"])
-        # self.config.set('paths', 'data_dir', self.app_config["output_dir"])
-        self.guest = oz.Fedora.get_class(oz.TDL.TDL(xmlstring=template.xml), self.config, None)
         # TODO: Should this be global?
         self.image_id = str(self.image_id)	
         # May not be necessary to do both of these
+        self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml)
+
+    def init_guest(self, guesttype):
+        # populate a config object to pass to OZ
+        # This allows us to specify our own output dir but inherit other Oz behavior
+        # TODO: Messy?
+        config_file = "/etc/oz/oz.cfg"
+        config = ConfigParser.SafeConfigParser()
+        config.read(config_file)
+        config.set('paths', 'output_dir', self.app_config["output_dir"])
+        if guesttype == "local":
+            self.guest = oz.Fedora.get_class(self.tdlobj, config, None)
+        else:
+            self.guest = FedoraRemoteGuest(self.tdlobj, config, None, "virtio", True, "virtio", True)    
         self.guest.diskimage = self.app_config["output_dir"] + "/base-image-" + self.image_id + ".dsk"
-    
-    # Image actions
+        # Oz assumes unique names - TDL built for multiple backends guarantees they are not unique
+        # We don't really care about the name so just force uniqueness
+        self.guest.name = self.guest.name + "-" + str(self.image_id)
+
     def build_image(self):
-        self.build()
-    
-    def build(self):
-        self.log.debug("build() called on FedoraBuilder...")
+        if self.target == "ec2" and self.app_config["ec2_build_style"] == "upload":
+            self.init_guest("local")
+            self.build_upload()
+        else:
+            # No actual need to have a guest object here so don't bother
+            self.build_snapshot()
+
+    def build_snapshot(self):
+        # All we need do here is store the relevant bits in the Warehouse
+        self.log.debug("Building Linux for a non-upload cloud")
+        self.image = "%s/placeholder-linux-image-%s" % (self.app_config['output'], self.image_id)
+        image_file = open(self.image, 'w')
+        image_file.write("Placeholder for non upload cloud Linux image")
+        image_file.close()
+        self.percent_complete = 100
+        self.status = "COMPLETED"
+        self.log.debug("Completed mock image build...")
+        self.store_image()
+        image_file.close()
+
+    def build_upload(self):
+        self.log.debug("build_upload() called on FedoraBuilder...")
         self.log.debug("Building for target %s with warehouse config %s" % (self.target, self.app_config['warehouse']))
         self.status="BUILDING"
         try:
@@ -360,12 +401,208 @@ class FedoraBuilder(BaseBuilder):
         # regional AKIs for pvgrub
     
     def push_image(self, image_id, provider, credentials):
+        try:
+	    if self.target == "ec2" and self.app_config["ec2_build_style"] == "upload":
+                self.push_image_upload(image_id, provider, credentials)
+            else:
+                self.init_guest("remote")
+                self.push_image_snapshot(image_id, provider, credentials)
+        except:
+            self.log.debug("Exception during push_image")
+            self.log.debug("Unexpected error: (%s)" % (sys.exc_info()[0]))
+            self.log.debug("             value: (%s)" % (sys.exc_info()[1]))
+            self.log.debug("         traceback: %s" % (repr(traceback.format_tb(sys.exc_info()[2]))))
+            self.status="FAILED"
+
+
+    def push_image_snapshot(self, image_id, provider, credentials):
+        self.log.debug("Being asked to push for provider %s" % (provider))
+        self.log.debug("distro: %s - update: %s - arch: %s" % (self.tdlobj.distro, self.tdlobj.update, self.tdlobj.arch))
+        self.ec2_decode_credentials(credentials)
+        self.log.debug("acting as EC2 user: %s" % (str(self.ec2_user_id)))
+
+        self.status="PUSHING"
+        self.percent_complete=0
+        # TODO: This is a cut and paste - should really be a function
+        # TODO: Ideally we should use boto "Location" references when possible - 1.9 contains only DEFAULT and EU
+        #       The rest are hard coded strings for now.
+        ec2_region_details=\
+        {'ec2-us-east-1':      { 'boto_loc': Location.DEFAULT,     'host':'us-east-1',      'i386': 'aki-407d9529', 'x86_64': 'aki-427d952b' },
+         'ec2-us-west-1':      { 'boto_loc': 'us-west-1',          'host':'us-west-1',      'i386': 'aki-99a0f1dc', 'x86_64': 'aki-9ba0f1de' },
+         'ec2-ap-southeast-1': { 'boto_loc': 'ap-southeast-1',     'host':'ap-southeast-1', 'i386': 'aki-13d5aa41', 'x86_64': 'aki-11d5aa43' },
+         'ec2-ap-northeast-1': { 'boto_loc': 'ap-northeast-1',     'host':'ap-northeast-1', 'i386': 'aki-d209a2d3', 'x86_64': 'aki-d409a2d5' },
+         'ec2-eu-west-1':      { 'boto_loc': Location.EU,          'host':'eu-west-1',      'i386': 'aki-4deec439', 'x86_64': 'aki-4feec43b' } }
+
+        region=provider
+        region_conf=ec2_region_details[region]
+        aki = region_conf[self.tdlobj.arch]
+        boto_loc = region_conf['boto_loc']
+        if region != "ec2-us-east-1":
+            upload_url = "http://s3-%s.amazonaws.com/" % (region_conf['host'])
+        else:
+            # Note to Amazon - would it be that hard to have s3-us-east-1.amazonaws.com?
+            upload_url = "http://s3.amazonaws.com/"
+
+        register_url = "http://ec2.%s.amazonaws.com/" % (region_conf['host'])
+
+        ec2region = boto.ec2.get_region(region_conf['host'], aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key)
+        conn = ec2region.connect(aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key)
+
+        # Construct the shell script that will inject our public key
+        pubkey_file=open("/etc/oz/id_rsa-icicle-gen.pub", "r")
+        pubkey = pubkey_file.read()
+
+        user_data_start='''#!/bin/bash
+
+if [ ! -d /root/.ssh ] ; then
+  mkdir /root/.ssh
+  chmod 700 /root/.ssh
+fi
+
+cat << "EOF" >> /root/.ssh/authorized_keys
+'''
+
+        user_data_finish='''EOF
+chmod 600 /root/.ssh/authorized_keys
+'''
+
+        user_data="%s%s%s" % (user_data_start, pubkey, user_data_finish)
+
+        ec2_jeos_amis=\
+        {'ec2-us-east-1': {'Fedora': { '14' : { 'x86_64': 'ami-80db26e9', 'i386': 'ami-f0e71a99' },
+                                       '13' : { 'x86_64': 'ami-c2db26ab', 'i386': 'ami-92e31efb' } } } ,
+         'ec2-us-west-1': {'Fedora': { '14' : { 'x86_64': 'ami-ffffffff', 'i386': 'ami-ffffffff' },
+                                       '13' : { 'x86_64': 'ami-ffffffff', 'i386': 'ami-ffffffff' } } } }
+
+        ami_id = "none"
+        try:
+            ami_id = ec2_jeos_amis[provider][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]
+        except KeyError:
+            pass
+
+        if ami_id == "none":
+            self.status="FAILED"
+            raise ImageFactoryException("No available JEOS for desired OS, verison, region combination")
+
+        instance_type='m1.large'
+        if self.tdlobj.arch == "i386":
+            instance_type='m1.small'
+
+        self.log.debug("Starting ami %s with instance_type %s" % (ami_id, instance_type))
+
+        reservation = conn.run_instances(ami_id,instance_type=instance_type,user_data=user_data)
+        
+        if len(reservation.instances) != 1:
+            self.status="FAILED"
+            raise ImageFactoryException("run_instances did not result in the expected single instance - stopping")
+
+        instance = reservation.instances[0]
+
+        for i in range(30):
+            self.log.debug("Waiting for EC2 instance to start: %d/300" % (i*10))
+            instance.update()
+            if instance.state == u'running':
+                break
+            sleep(10)
+
+        if instance.state != u'running':
+            self.status="FAILED"
+            raise ImageFactoryException("Instance failed to start after 300 seconds - stopping")
+
+        # From this point on we must be sure to terminate the instance when we are done
+        # so wrap in a try/finally
+        # Accidentally running a 64 bit instance doing nothing costs 56 USD week
+        try:
+            guestaddr = instance.public_dns_name
+
+            self.guest.sshprivkey = "/etc/oz/id_rsa-icicle-gen"
+
+            self.log.debug("Waiting 60 seconds for ssh to become available")
+            sleep(60)
+
+            self.log.debug("Customizing guest: %s" % (guestaddr))
+            self.guest.mkdir_p(self.guest.icicle_tmp)
+            self.guest.do_customize(guestaddr)
+            self.log.debug("Customization step complete")
+
+            cert = self.ec2_cert_file
+            key = self.ec2_key_file
+            ec2cert =  "/etc/pki/imagefactory/cert-ec2.pem"
+
+            self.log.debug("Uploading cert material")
+            self.guest.guest_live_upload(guestaddr, cert, "/tmp")
+            self.guest.guest_live_upload(guestaddr, key, "/tmp")
+            self.guest.guest_live_upload(guestaddr, ec2cert, "/tmp")
+            self.log.debug("Cert upload complete")
+
+            ec2_uid = self.ec2_user_id
+            arch = self.tdlobj.arch
+            # AKI is set above
+            uuid = self.image_id
+
+            # remove utility package and repo so that it isn't in the final image
+            # Our access key remains in place after this
+            self.log.debug("Removing utility package and repo")
+            self.guest.guest_execute_command(guestaddr, "rpm -e imgfacsnapinit")
+            self.guest.guest_execute_command(guestaddr, "rm -f /etc/yum.repos.d/imgfacsnap.repo")
+            self.log.debug("Removal complete")
+
+            # We exclude /mnt /tmp and /root/.ssh to avoid embedding our utility key into the image
+            command = "euca-bundle-vol -c /tmp/%s -k /tmp/%s -u %s -e /mnt,/tmp,/root/.ssh --arch %s -d /mnt/bundles --kernel %s -p %s -s 10240 --ec2cert /tmp/cert-ec2.pem --fstab /etc/fstab -v /" % (os.path.basename(cert), os.path.basename(key), ec2_uid, arch, aki, uuid)
+            self.log.debug("Executing bundle vol command: %s" % (command))
+            stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, command)
+            self.log.debug("Bundle output: %s" % (stdout))
+
+            # Now, ensure we have an appropriate bucket to receive this image
+            # TODO: This is another copy - make it a function soon please
+            bucket= "imagefactory-" + region + "-" + self.ec2_user_id
+
+            sconn = S3Connection(self.ec2_access_key, self.ec2_secret_key)
+            try:
+                sconn.create_bucket(bucket, location=boto_loc)
+            except S3CreateError as buckerr:
+                if buckerr.error_code == "BucketAlreadyOwnedByYou":
+                    # Expected behavior after first push - not an error
+                    pass
+                else:
+                    raise
+            # TODO: End of copy
+       
+            manifest = "/mnt/bundles/%s.manifest.xml" % (uuid)
+            command = 'euca-upload-bundle -b %s -m %s --ec2cert /tmp/cert-ec2.pem -a "%s" -s "%s" -U %s' % (bucket, manifest, self.ec2_access_key, self.ec2_secret_key, upload_url)
+            self.log.debug("Executing upload bundle command: %s" % (command))
+            stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, command)
+            self.log.debug("Upload output: %s" % (stdout))
+
+            manifest_s3_loc = "%s/%s.manifest.xml" % (bucket, uuid)
+
+            command = 'euca-register -U %s -A "%s" -S "%s" %s' % (register_url, self.ec2_access_key, self.ec2_secret_key, manifest_s3_loc)
+            self.log.debug("Executing register command: %s" % (command))
+            stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, command)
+            self.log.debug("Register output: %s" % (stdout))
+
+            m = re.match(".*(ami-[a-fA-F0-9]+)", stdout)
+            ami_id = m.group(1)
+            self.log.debug("Extracted AMI ID: %s " % (ami_id))
+
+            metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=ami_id)
+            self.warehouse.create_provider_image(self.image_id, metadata=metadata)
+        finally:
+            self.log.debug("Stopping EC2 instance")
+            instance.stop()
+
+        self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), str(image_id), str(self.image_id), str(metadata)))
+        self.percent_complete=100
+        self.status="COMPLETED"
+
+        
+    def push_image_upload(self, image_id, provider, credentials):
         # TODO: Conditional on provider type
         # TODO: Providers other than EC2
         self.status="PUSHING"
         self.percent_complete=0
         try:
-            self.ec2_push_image(image_id, provider, credentials)
+            self.ec2_push_image_upload(image_id, provider, credentials)
         except:
             self.log.debug("Exception during ec2_push_image")
             self.log.debug("Unexpected error: (%s)" % (sys.exc_info()[0]))
@@ -374,32 +611,34 @@ class FedoraBuilder(BaseBuilder):
             self.status="FAILED"
             raise
         self.status="COMPLETED"
-    
-    def ec2_push_image(self, image_id, provider, credentials):
-        # Decode credentials
+
+    def ec2_decode_credentials(self, credentials): 
         doc = libxml2.parseDoc(credentials)
         ctxt = doc.xpathNewContext()
         
-        ec2_user_id = ctxt.xpathEval("//provider_credentials/ec2_credentials/account_number")[0].content
+        self.ec2_user_id = ctxt.xpathEval("//provider_credentials/ec2_credentials/account_number")[0].content
+        self.ec2_access_key = ctxt.xpathEval("//provider_credentials/ec2_credentials/access_key")[0].content
+        self.ec2_secret_key = ctxt.xpathEval("//provider_credentials/ec2_credentials/secret_access_key")[0].content
         ec2_key = ctxt.xpathEval("//provider_credentials/ec2_credentials/key")[0].content
         ec2_cert = ctxt.xpathEval("//provider_credentials/ec2_credentials/certificate")[0].content
-        ec2_access_key = ctxt.xpathEval("//provider_credentials/ec2_credentials/access_key")[0].content
-        ec2_secret_key = ctxt.xpathEval("//provider_credentials/ec2_credentials/secret_access_key")[0].content
         
         doc.freeDoc()
         ctxt.xpathFreeContext()		
         
         # Shove certs into  named temporary files
-        ec2_cert_file_object = NamedTemporaryFile()
-        ec2_cert_file_object.write(ec2_cert)
-        ec2_cert_file_object.flush()
-        ec2_cert_file=ec2_cert_file_object.name
+        self.ec2_cert_file_object = NamedTemporaryFile()
+        self.ec2_cert_file_object.write(ec2_cert)
+        self.ec2_cert_file_object.flush()
+        self.ec2_cert_file=self.ec2_cert_file_object.name
         
-        ec2_key_file_object = NamedTemporaryFile()
-        ec2_key_file_object.write(ec2_key)
-        ec2_key_file_object.flush()
-        ec2_key_file=ec2_key_file_object.name
-        
+        self.ec2_key_file_object = NamedTemporaryFile()
+        self.ec2_key_file_object.write(ec2_key)
+        self.ec2_key_file_object.flush()
+        self.ec2_key_file=self.ec2_key_file_object.name
+ 
+    def ec2_push_image_upload(self, image_id, provider, credentials):
+        self.ec2_decode_credentials(credentials)      
+
         # if the image is already here, great, otherwise grab it from the warehouse
         input_image_path=self.app_config['output_dir'] + "/"
         input_image_name="ec2-image-" + image_id + ".dsk"
@@ -459,7 +698,7 @@ class FedoraBuilder(BaseBuilder):
 
         register_url = "http://ec2.%s.amazonaws.com/" % (region_conf['host'])
         
-        bucket= "imagefactory-" + region + "-" + ec2_user_id
+        bucket= "imagefactory-" + region + "-" + self.ec2_user_id
         
         # Euca does not support specifying region for bucket
         # (Region URL is not sufficient)
@@ -468,7 +707,7 @@ class FedoraBuilder(BaseBuilder):
         # then explicitly point to that region URL when doing the image upload
         # We CANNOT let euca create the bucket when uploading or it will end up in us-east-1
 
-        conn = S3Connection(ec2_access_key, ec2_secret_key)
+        conn = S3Connection(self.ec2_access_key, self.ec2_secret_key)
         try:
             conn.create_bucket(bucket, location=boto_loc)
         except S3CreateError as buckerr:
@@ -481,10 +720,10 @@ class FedoraBuilder(BaseBuilder):
         # TODO: Make configurable?
         ec2_service_cert = "/etc/pki/imagefactory/cert-ec2.pem"
         
-        bundle_command = [ "euca-bundle-image", "-i", input_image, "--kernel", aki, "-d", bundle_destination, "-a", ec2_access_key, "-s", ec2_secret_key ]
-        bundle_command.extend( [ "-c", ec2_cert_file ] )
-        bundle_command.extend( [ "-k", ec2_key_file ] )
-        bundle_command.extend( [ "-u", ec2_user_id ] )
+        bundle_command = [ "euca-bundle-image", "-i", input_image, "--kernel", aki, "-d", bundle_destination, "-a", self.ec2_access_key, "-s", self.ec2_secret_key ]
+        bundle_command.extend( [ "-c", self.ec2_cert_file ] )
+        bundle_command.extend( [ "-k", self.ec2_key_file ] )
+        bundle_command.extend( [ "-u", self.ec2_user_id ] )
         bundle_command.extend( [ "-r", arch ] )
         bundle_command.extend( [ "--ec2cert", ec2_service_cert ] )
         
@@ -498,7 +737,7 @@ class FedoraBuilder(BaseBuilder):
         
         manifest = bundle_destination + "/" + input_image_name + ".manifest.xml"
         
-        upload_command = [ "euca-upload-bundle", "-b", bucket, "-m", manifest, "--ec2cert", ec2_service_cert, "-a", ec2_access_key, "-s", ec2_secret_key, "-U" , upload_url ]
+        upload_command = [ "euca-upload-bundle", "-b", bucket, "-m", manifest, "--ec2cert", ec2_service_cert, "-a", self.ec2_access_key, "-s", self.ec2_secret_key, "-U" , upload_url ]
         self.log.debug("Executing upload command: %s " % (upload_command))
         upload_output = subprocess_check_output(upload_command)
         self.log.debug("Upload command output: %s " % (str(upload_output)))
@@ -507,7 +746,7 @@ class FedoraBuilder(BaseBuilder):
         s3_path = bucket + "/" + input_image_name + ".manifest.xml"
 
         register_env = { 'EC2_URL':register_url }
-        register_command = [ "euca-register" , "-A", ec2_access_key, "-S", ec2_secret_key, s3_path ]
+        register_command = [ "euca-register" , "-A", self.ec2_access_key, "-S", self.ec2_secret_key, s3_path ]
         self.log.debug("Executing register command: %s with environment %s " % (register_command, repr(register_env)))
         register_output = subprocess_check_output(register_command, env=register_env)
         self.log.debug("Register command output: %s " % (str(register_output)))
@@ -516,8 +755,8 @@ class FedoraBuilder(BaseBuilder):
         self.log.debug("Extracted AMI ID: %s " % (ami_id))
         
         # TODO: This should be in a finally statement that rethrows exceptions
-        ec2_cert_file_object.close()
-        ec2_key_file_object.close()
+        self.ec2_cert_file_object.close()
+        self.ec2_key_file_object.close()
         
         # Use new warehouse wrapper to do everything
         # TODO: Generate and store ICICLE
