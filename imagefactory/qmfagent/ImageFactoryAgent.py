@@ -53,7 +53,7 @@ class ImageFactoryAgent(AgentHandler):
         self.session = None
         # create a connection and connect to qpidd
         # TODO: (redmine 277) - Make this use actual amqp:// urls... currently, only host works
-        self.connection = cqpid.Connection(url)
+        self.connection = cqpid.Connection(url, "{reconnect:True}")
         self.connection.open()
         # Create, configure, and open a QMFv2 agent session using the connection.
         self.session = AgentSession(self.connection)
