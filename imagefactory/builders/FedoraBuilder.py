@@ -471,8 +471,8 @@ chmod 600 /root/.ssh/authorized_keys
         ec2_jeos_amis=\
         {'ec2-us-east-1': {'Fedora': { '14' : { 'x86_64': 'ami-80db26e9', 'i386': 'ami-f0e71a99' },
                                        '13' : { 'x86_64': 'ami-c2db26ab', 'i386': 'ami-92e31efb' } } } ,
-         'ec2-us-west-1': {'Fedora': { '14' : { 'x86_64': 'ami-ffffffff', 'i386': 'ami-ffffffff' },
-                                       '13' : { 'x86_64': 'ami-ffffffff', 'i386': 'ami-ffffffff' } } } }
+         'ec2-us-west-1': {'Fedora': { '14' : { 'x86_64': 'ami-cb3a698e', 'i386': 'ami-193a695c' },
+                                       '13' : { 'x86_64': 'ami-cd3a6988', 'i386': 'ami-373a6972' } } } }
 
         ami_id = "none"
         try:
@@ -517,8 +517,9 @@ chmod 600 /root/.ssh/authorized_keys
 
             self.guest.sshprivkey = "/etc/oz/id_rsa-icicle-gen"
 
-            self.log.debug("Waiting 60 seconds for ssh to become available")
-            sleep(60)
+            # TODO: Make this loop so we can take advantage of early availability
+            self.log.debug("Waiting 90 seconds for ssh to become available")
+            sleep(90)
 
             self.log.debug("Customizing guest: %s" % (guestaddr))
             self.guest.mkdir_p(self.guest.icicle_tmp)
