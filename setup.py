@@ -1,4 +1,5 @@
 from distutils.core import setup, Extension
+from distutils.command.sdist import sdist as _sdist
 import os
 import os.path
 import subprocess
@@ -6,7 +7,7 @@ import subprocess
 version_file_name = "version.txt"
 try:
     if(not os.path.exists(version_file_name)):
-        subprocess.call('/usr/bin/git describe > %s' % (version_file_name, ), shell=True)
+        subprocess.call('/usr/bin/git describe | tr - _ > %s' % (version_file_name, ), shell=True)
     version_file = open(version_file_name, "r")
     VERSION = version_file.read()[0:-1]
     version_file.close()
@@ -14,6 +15,16 @@ except Exception, e:
     raise RuntimeError("ERROR: version.txt could not be found.  Run 'git describe > version.txt' to get the correct version info.")
 
 datafiles=[('/etc', ['imagefactory.conf']), ('/etc/pki/imagefactory', ['cert-ec2.pem']),    ('/etc/rc.d/init.d', ['scripts/imagefactory']), ('', ['version.txt'])]
+
+class sdist(_sdist):
+    """ custom sdist command to prepare imagefactory.spec file """
+
+    def run(self):
+        cmd = (""" sed -e "s/@VERSION@/%s/g" < imagefactory.spec.in """ %
+               VERSION) + " > imagefactory.spec"
+        os.system(cmd)
+
+        _sdist.run(self)
 
 setup(name='imagefactory',
       version=VERSION,
@@ -25,4 +36,5 @@ setup(name='imagefactory',
       packages=['imagefactory', 'imagefactory.builders', 'imagefactory.qmfagent'],
       scripts=['imgfac.py'],
       data_files = datafiles,
+      cmdclass = {'sdist': sdist}
       )
