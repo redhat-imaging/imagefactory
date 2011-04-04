@@ -112,10 +112,10 @@ class FedoraBuilder(BaseBuilder):
         image_file = open(self.image, 'w')
         image_file.write("Placeholder for non upload cloud Linux image")
         image_file.close()
+        self.store_image()
         self.percent_complete = 100
         self.status = "COMPLETED"
-        self.log.debug("Completed mock image build...")
-        self.store_image()
+        self.log.debug("Completed placeholder warehouse object for linux non-upload image...")
         image_file.close()
 
     def build_upload(self):
