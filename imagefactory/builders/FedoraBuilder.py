@@ -434,6 +434,7 @@ class FedoraBuilder(BaseBuilder):
          'ec2-eu-west-1':      { 'boto_loc': Location.EU,          'host':'eu-west-1',      'i386': 'aki-4deec439', 'x86_64': 'aki-4feec43b' } }
 
         region=provider
+        # These are the region details for the TARGET region for our new AMI
         region_conf=ec2_region_details[region]
         aki = region_conf[self.tdlobj.arch]
         boto_loc = region_conf['boto_loc']
@@ -444,9 +445,6 @@ class FedoraBuilder(BaseBuilder):
             upload_url = "http://s3.amazonaws.com/"
 
         register_url = "http://ec2.%s.amazonaws.com/" % (region_conf['host'])
-
-        ec2region = boto.ec2.get_region(region_conf['host'], aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key)
-        conn = ec2region.connect(aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key)
 
         # Construct the shell script that will inject our public key
         pubkey_file=open("/etc/oz/id_rsa-icicle-gen.pub", "r")
@@ -468,28 +466,46 @@ chmod 600 /root/.ssh/authorized_keys
 
         user_data="%s%s%s" % (user_data_start, pubkey, user_data_finish)
 
+        # v0.2 of these AMIs - created week of April 4, 2011
         ec2_jeos_amis=\
-        {'ec2-us-east-1': {'Fedora': { '14' : { 'x86_64': 'ami-80db26e9', 'i386': 'ami-f0e71a99' },
-                                       '13' : { 'x86_64': 'ami-c2db26ab', 'i386': 'ami-92e31efb' } } } ,
-         'ec2-us-west-1': {'Fedora': { '14' : { 'x86_64': 'ami-cb3a698e', 'i386': 'ami-193a695c' },
-                                       '13' : { 'x86_64': 'ami-cd3a6988', 'i386': 'ami-373a6972' } } } }
+        {'ec2-us-east-1': {'Fedora': { '14' : { 'x86_64': 'ami-6e11ec07', 'i386': 'ami-7c10ed15' },
+                                       '13' : { 'x86_64': 'ami-de10edb7', 'i386': 'ami-0610ed6f' } } } ,
+         'ec2-us-west-1': {'Fedora': { '14' : { 'x86_64': 'ami-03287b46', 'i386': 'ami-07287b42' },
+                                       '13' : { 'x86_64': 'ami-7b287b3e', 'i386': 'ami-7f287b3a' } } } }
 
         ami_id = "none"
+        build_region = provider
+
         try:
             ami_id = ec2_jeos_amis[provider][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]
         except KeyError:
             pass
 
+        try:
+            # Fallback to modification on us-east and upload cross-region
+            ami_id = ec2_jeos_amis['ec2-us-east-1'][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]
+            build_region = 'ec2-us-east-1'
+            self.log.info("WARNING: Building in us-east-1 for upload to %s" % (provider))
+            self.log.info(" This will be a bit slow - ask the Factory team to create a region-local JEOS")
+        except KeyError:
+            pass
+
         if ami_id == "none":
             self.status="FAILED"
-            raise ImageFactoryException("No available JEOS for desired OS, verison, region combination")
+            raise ImageFactoryException("No available JEOS for desired OS, verison combination")
 
         instance_type='m1.large'
         if self.tdlobj.arch == "i386":
             instance_type='m1.small'
 
+        # These are the region details for the region we are building in (which may be different from the target)
+        build_region_conf = ec2_region_details[build_region]
+
         self.log.debug("Starting ami %s with instance_type %s" % (ami_id, instance_type))
 
+        # Note that this connection may be to a region other than the target
+        ec2region = boto.ec2.get_region(build_region_conf['host'], aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key)
+        conn = ec2region.connect(aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key)
         reservation = conn.run_instances(ami_id,instance_type=instance_type,user_data=user_data)
         
         if len(reservation.instances) != 1:
@@ -518,8 +534,30 @@ chmod 600 /root/.ssh/authorized_keys
             self.guest.sshprivkey = "/etc/oz/id_rsa-icicle-gen"
 
             # TODO: Make this loop so we can take advantage of early availability
-            self.log.debug("Waiting 90 seconds for ssh to become available")
-            sleep(90)
+            # Ugly ATM because failed access always triggers an exception
+            self.log.debug("Waiting up to 300 seconds for ssh to become available on %s" % (guestaddr))
+            retcode = 1
+            for i in range(30):
+                self.log.debug("Waiting for EC2 ssh access: %d/300" % (i*10))
+
+                access=1
+                try:
+                    stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, "/bin/true")
+                except:
+                    access=0
+
+                if access:
+                    break
+
+                sleep(10)
+
+            if retcode:
+                raise ImageFactoryException("Unable to gain ssh access after 300 seconds - aborting")
+
+            # There are a handful of additional boot tasks after SSH starts running
+            # Give them an additional 20 seconds for good measure
+            self.log.debug("Waiting 20 seconds for remaining boot tasks")
+            sleep(20)
 
             self.log.debug("Customizing guest: %s" % (guestaddr))
             self.guest.mkdir_p(self.guest.icicle_tmp)
@@ -542,7 +580,7 @@ chmod 600 /root/.ssh/authorized_keys
             uuid = self.image_id
 
             # remove utility package and repo so that it isn't in the final image
-            # Our access key remains in place after this
+            # Our temporary SSH access key remains in place after this
             self.log.debug("Removing utility package and repo")
             self.guest.guest_execute_command(guestaddr, "rpm -e imgfacsnapinit")
             self.guest.guest_execute_command(guestaddr, "rm -f /etc/yum.repos.d/imgfacsnap.repo")
