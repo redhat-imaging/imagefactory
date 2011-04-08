@@ -481,14 +481,15 @@ chmod 600 /root/.ssh/authorized_keys
         except KeyError:
             pass
 
-        try:
-            # Fallback to modification on us-east and upload cross-region
-            ami_id = ec2_jeos_amis['ec2-us-east-1'][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]
-            build_region = 'ec2-us-east-1'
-            self.log.info("WARNING: Building in us-east-1 for upload to %s" % (provider))
-            self.log.info(" This will be a bit slow - ask the Factory team to create a region-local JEOS")
-        except KeyError:
-            pass
+        if ami_id == "none":
+	    try:
+	        # Fallback to modification on us-east and upload cross-region
+	        ami_id = ec2_jeos_amis['ec2-us-east-1'][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]
+	        build_region = 'ec2-us-east-1'
+	        self.log.info("WARNING: Building in us-east-1 for upload to %s" % (provider))
+	        self.log.info(" This will be a bit slow - ask the Factory team to create a region-local JEOS")
+	    except KeyError:
+	        pass
 
         if ami_id == "none":
             self.status="FAILED"
