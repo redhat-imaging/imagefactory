@@ -13,7 +13,7 @@ try:
 except Exception, e:
     raise RuntimeError("ERROR: version.txt could not be found.  Run 'git describe > version.txt' to get the correct version info.")
 
-datafiles=[('/etc', ['imagefactory.conf']), ('/etc/pki/imagefactory', ['cert-ec2.pem']),    ('/etc/rc.d/init.d', ['imagefactory/scripts/imagefactory']), ('', ['version.txt'])]
+datafiles=[('/etc', ['imagefactory.conf']), ('/etc/pki/imagefactory', ['cert-ec2.pem']),    ('/etc/rc.d/init.d', ['scripts/imagefactory']), ('', ['version.txt'])]
 
 setup(name='imagefactory',
       version=VERSION,
