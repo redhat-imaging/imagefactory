@@ -514,6 +514,10 @@ chmod 600 /root/.ssh/authorized_keys
 
         instance = reservation.instances[0]
 
+        # We have occasionally seen issues when you immediately query an instance
+        # Give it 10 seconds to settle
+        sleep(10)
+
         for i in range(30):
             self.log.debug("Waiting for EC2 instance to start: %d/300" % (i*10))
             instance.update()
