@@ -70,12 +70,17 @@ class FedoraRemoteGuest(oz.Fedora.FedoraGuest):
 class FedoraBuilder(BaseBuilder):
     """docstring for FedoraBuilder"""
     zope.interface.implements(IBuilder)
-    
+
+    # Reference vars - don't change these
+    # EC2 is a special case as it can be either and is set in the config file
+    upload_clouds = [ "rhev-m", "vmware", "condorcloud" ]
+    nonul_clouds = [ "rackspace", "gogrid" ]     
+
     def __init__(self, template, target):
         super(FedoraBuilder, self).__init__(template, target)
         self.app_config = ApplicationConfiguration().configuration
         self.warehouse_url = self.app_config['warehouse']
-        # TODO: Should this be global?
+        # TODO: Should this be in base?  Does image_id ever need to be an actual UUID object?
         self.image_id = str(self.image_id)	
         # May not be necessary to do both of these
         self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml)
@@ -98,12 +103,14 @@ class FedoraBuilder(BaseBuilder):
         self.guest.name = self.guest.name + "-" + str(self.image_id)
 
     def build_image(self):
-        if self.target == "ec2" and self.app_config["ec2_build_style"] == "upload":
+        if  self.target in self.upload_clouds or (self.target == "ec2" and self.app_config["ec2_build_style"] == "upload"):
             self.init_guest("local")
             self.build_upload()
-        else:
+        elif self.target in self.nonul_clouds or (self.target == "ec2" and self.app_config["ec2_build_style"] == "snapshot"):
             # No actual need to have a guest object here so don't bother
             self.build_snapshot()
+        else:
+            raise ImageFactoryException("Invalid build target (%s) passed to build_image()" % (self.target))
 
     def build_snapshot(self):
         # All we need do here is store the relevant bits in the Warehouse
@@ -132,7 +139,10 @@ class FedoraBuilder(BaseBuilder):
             self.log.debug("         traceback: %s" % (repr(traceback.format_tb(sys.exc_info()[2]))))
             self.status="FAILED"
             raise
-        
+
+        # We want to save this later for use by RHEV-M and Condor clouds
+        libvirt_xml=""
+
         try:
             self.guest.generate_diskimage()
             try:
@@ -146,12 +156,6 @@ class FedoraBuilder(BaseBuilder):
                 self.guest.customize(libvirt_xml)
                 self.log.debug("Customization complete")
                 self.percent_complete=50
-                # if customize:
-                #     guest.customize(libvirt_xml)
-                # if generate_cdl:
-                #     print guest.generate_cdl(libvirt_xml)
-                # else:
-                #     print libvirt_xml
             except:
                 self.log.debug("Unexpected error: (%s)" % (sys.exc_info()[0]))
                 self.log.debug("             value: (%s)" % (sys.exc_info()[1]))
@@ -174,7 +178,14 @@ class FedoraBuilder(BaseBuilder):
         if (self.app_config['warehouse']):
             self.log.debug("Storing Fedora image at %s..." % (self.app_config['warehouse'], ))
             # TODO: Revisit target_parameters for different providers
-            self.store_image("No Target Paremeters Yet")
+            
+            if self.target in [ "condorcloud", "rhev-m" ]:
+                # TODO: Prune any unneeded elements
+                target_parameters=libvirt_xml
+            else:
+                target_parameters="No target parameters for cloud type %s" % (self.target)
+
+            self.store_image(target_parameters)
             self.log.debug("Image warehouse storage complete")
         self.percent_complete=100
         self.status="COMPLETED"
@@ -198,7 +209,6 @@ class FedoraBuilder(BaseBuilder):
     def ec2_copy_filesystem(self, output_dir):
         target_image=output_dir + "/ec2-image-" + self.image_id + ".dsk"
         
-        # TODO: Whole thing should be in a try/excep block
         self.log.debug("init guestfs")
         g = guestfs.GuestFS ()
         
@@ -214,7 +224,7 @@ class FedoraBuilder(BaseBuilder):
         
         self.log.debug("creat tmp image")
         # We need a small FS to mount target and dest on - make image file for it
-        # TODO: Use the temp file module instead of creating one by hand
+        # TODO: Use Marek's create mount point trick instead of a temp file
         tmp_image_file = "/tmp/tmp-img-" + self.image_id
         f = open (tmp_image_file, "w")
         f.truncate (10 * 1024 * 1024)
@@ -224,6 +234,7 @@ class FedoraBuilder(BaseBuilder):
         self.log.debug("launch guestfs")
         g.launch ()
         
+        # TODO: Re-enable this?
         # Do inspection here, as libguestfs prefers we do it before mounting anything
         #inspection = g.inspect_os()
         # This assumes, I think reasonably, only one OS on the disk image provided by Oz
@@ -298,18 +309,8 @@ class FedoraBuilder(BaseBuilder):
         tmpl = '# Factory Disabled SELINUX - sorry\nSELINUX=permissive\nSELINUXTYPE=targeted\n'
         g.write("/etc/sysconfig/selinux", tmpl)
         
-        # TODO: If we are dealing with RHEL Remove kernel, install kernel-xen via sh
-        # recreate initrd using scheme described below
-        # g.sh("yum -y remove kernel")
-        # g.sh("yum -y install kernel-xen")
-        # recreate INITRD 
-
-        # REMOVED - BG - create_devices
-        # This supported activating network to do additional install tasks
-        # If we really need this we should do so in the running guest in Oz
-        
-        # BG - Make a /data directory for 64 bit hosts
-        # Epemeral devs come pre-formatted from AWS - weird
+        # Make a /data directory for 64 bit hosts
+        # Ephemeral devs come pre-formatted from AWS - weird
         if arch == "x86_64":
             self.log.info("Making data directory")
             g.mkdir("/data")
@@ -363,21 +364,33 @@ class FedoraBuilder(BaseBuilder):
         self.log.info("Modifying and updating menu.lst")
         kernel_versions = g.ls("/lib/modules")
         kernel_version = None
-        if (len(kernel_versions) > 1) and (arch == "i386"):
+        if (distro == "rhel") and (major_version == 5):
+            xenre = re.compile("xen$")
+            for kern in kernel_versions:
+                if xenre.search(kern):
+                    kernel_version = kern
+        elif (len(kernel_versions) > 1) and (arch == "i386"):
             paere = re.compile("PAE$")
             for kern in kernel_versions:
                 if paere.search(kern):
                     kernel_version = kern
         else:
             kernel_version = kernel_versions[len(kernel_versions)-1]
-        
+
+        if not kernel_version:
+            raise ImageFactoryException("Unable to extract kernel version")
+
         self.log.debug("Using kernel version: %s" % (kernel_version))
+
         
         # We could deduce this from version but it's easy to inspect
         bootramfs = int(g.sh("ls -1 /boot | grep initramfs | wc -l"))
         ramfs_prefix = "initramfs" if bootramfs > 0 else "initrd"
         
         name="Image Factory EC2 boot - kernel: " + kernel_version
+
+        if (distro == "rhel") and (major_version == 5):
+            g.sh("/sbin/mkinitrd -f -v --preload xenblk --preload xennet /boot/initrd-%s.img %s" % (kernel_version))
         
         tmpl = self.menu_lst
         tmpl = string.replace(tmpl, "#KERNEL_VERSION#", kernel_version)
@@ -402,11 +415,15 @@ class FedoraBuilder(BaseBuilder):
     
     def push_image(self, image_id, provider, credentials):
         try:
-	    if self.target == "ec2" and self.app_config["ec2_build_style"] == "upload":
+            if  self.target in self.upload_clouds or (self.target == "ec2" and self.app_config["ec2_build_style"] == "upload"):
+                #No need to have an image object here
+                #self.init_guest("local")
                 self.push_image_upload(image_id, provider, credentials)
-            else:
+            elif self.target in self.nonul_clouds or (self.target == "ec2" and self.app_config["ec2_build_style"] == "snapshot"):
                 self.init_guest("remote")
                 self.push_image_snapshot(image_id, provider, credentials)
+            else:
+                raise ImageFactoryException("Invalid build target (%s) passed to build_image()" % (self.target))
         except:
             self.log.debug("Exception during push_image")
             self.log.debug("Unexpected error: (%s)" % (sys.exc_info()[0]))
@@ -416,6 +433,10 @@ class FedoraBuilder(BaseBuilder):
 
 
     def push_image_snapshot(self, image_id, provider, credentials):
+        # TODO: Rackspace and other snapshot builds - for now this is always EC2
+        self.push_image_snapshot_ec2(image_id, provider, credentials)
+
+    def push_image_snapshot_ec2(self, image_id, provider, credentials):
         self.log.debug("Being asked to push for provider %s" % (provider))
         self.log.debug("distro: %s - update: %s - arch: %s" % (self.tdlobj.distro, self.tdlobj.update, self.tdlobj.arch))
         self.ec2_decode_credentials(credentials)
@@ -467,11 +488,12 @@ chmod 600 /root/.ssh/authorized_keys
         user_data="%s%s%s" % (user_data_start, pubkey, user_data_finish)
 
         # v0.2 of these AMIs - created week of April 4, 2011
+        # v0.3 for F13 64 bit only - created April 12, 2011
         ec2_jeos_amis=\
         {'ec2-us-east-1': {'Fedora': { '14' : { 'x86_64': 'ami-6e11ec07', 'i386': 'ami-7c10ed15' },
-                                       '13' : { 'x86_64': 'ami-de10edb7', 'i386': 'ami-0610ed6f' } } } ,
+                                       '13' : { 'x86_64': 'ami-12a8547b', 'i386': 'ami-0610ed6f' } } } ,
          'ec2-us-west-1': {'Fedora': { '14' : { 'x86_64': 'ami-03287b46', 'i386': 'ami-07287b42' },
-                                       '13' : { 'x86_64': 'ami-7b287b3e', 'i386': 'ami-7f287b3a' } } } }
+                                       '13' : { 'x86_64': 'ami-17471452', 'i386': 'ami-7f287b3a' } } } }
 
         ami_id = "none"
         build_region = provider
@@ -639,16 +661,69 @@ chmod 600 /root/.ssh/authorized_keys
         self.percent_complete=100
         self.status="COMPLETED"
 
+    def condorcloud_push_image_upload(self, image_id, provider, credentials):
+        # condorcloud is a simple local cloud instance using Condor
+        # The push action in this case simply requires that we copy the image to a known
+        # location and then move it to another known loacation
+
+        # This is where the image should be after a local build
+        input_image = self.app_config["output_dir"] + "/base-image-" + image_id + ".dsk"
+        # Grab from Warehouse if it isn't here
+        self.retrieve_image(image_id, input_image)
         
+        storage = "/home/cloud/images"
+        if not os.path.isdir(storage):
+            raise ImageFactoryException("Storage dir (%s) for condorcloud is not present" % (storage))
+
+        staging = storage + "/staging"
+        if not os.path.isdir(staging):
+            raise ImageFactoryException("Staging dir (%s) for condorcloud is not present" % (staging))
+               
+        image_base = "/condorimage-" + str(self.image_id) + ".img"
+        staging_image = staging + image_base
+
+        # Copy to staging location
+        # The os-native cp command in Fedora and RHEL does sparse file detection which is good
+        self.log.debug("Copying (%s) to (%s)" % (input_image, staging_image))
+        if subprocess.call(["cp", "-f", input_image, staging_image]):
+            raise ImageFactoryException("Copy of condorcloud image to staging location (%s) failed" % (staging_image))
+
+        # Retrieve original XML and write it out to the final dir
+        image_xml_base="/condorimage-" + str(self.image_id) + ".xml"
+        image_xml_file= storage + image_xml_base
+
+        image_metadata = self.warehouse.metadata_for_id_of_type(("target_parameters",), image_id, "image")
+        self.log.debug("Got metadata output of: %s", repr(image_metadata))
+        libvirt_xml = image_metadata["target_parameters"]
+        
+        f = open(image_xml_file, 'w')
+        f.write(libvirt_xml)
+        f.close()
+
+        # Now move the image file to the final location
+        final_image = storage + image_base
+        self.log.debug("Moving (%s) to (%s)" % (staging_image, final_image))
+        if subprocess.call(["mv", "-f", staging_image, final_image]):
+            raise ImageFactoryException("Move of condorcloud image to final location (%s) failed" % (final_image))
+
+        metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=self.image_id)
+        self.warehouse.create_provider_image(self.image_id, metadata=metadata)
+        self.percent_complete = 100
+
+
     def push_image_upload(self, image_id, provider, credentials):
-        # TODO: Conditional on provider type
-        # TODO: Providers other than EC2
+        # TODO: RHEV-M and VMWare
         self.status="PUSHING"
         self.percent_complete=0
         try:
-            self.ec2_push_image_upload(image_id, provider, credentials)
+            if self.target == "ec2":
+                self.ec2_push_image_upload(image_id, provider, credentials)
+            elif self.target == "condorcloud":
+                self.condorcloud_push_image_upload(image_id, provider, credentials)
+            else:
+                raise ImageFactoryException("Invalid upload push requested for target (%s) and provider (%s)" % (self.target, provider))
         except:
-            self.log.debug("Exception during ec2_push_image")
+            self.log.debug("Exception during push_image_upload")
             self.log.debug("Unexpected error: (%s)" % (sys.exc_info()[0]))
             self.log.debug("             value: (%s)" % (sys.exc_info()[1]))
             self.log.debug("         traceback: %s" % (repr(traceback.format_tb(sys.exc_info()[2]))))
@@ -679,7 +754,26 @@ chmod 600 /root/.ssh/authorized_keys
         self.ec2_key_file_object.write(ec2_key)
         self.ec2_key_file_object.flush()
         self.ec2_key_file=self.ec2_key_file_object.name
+
+    def retrieve_image(self, image_id, local_image_file):
+        # Grab image_id from warehouse unless it is already present as local_image_file
+        # TODO: Use Warehouse class instead
+        if not os.path.isfile(local_image_file):
+            if not (self.app_config['warehouse']):
+                raise ImageFactoryException("No warehouse configured - cannot retrieve image")
+            url = "%simages/%s" % (self.app_config['warehouse'], image_id)
+            self.log.debug("Image %s not present locally - Fetching from %s" % (local_image_file, url))
+            fp = open(local_image_file, "wb")
+            curl = pycurl.Curl()
+            curl.setopt(pycurl.URL, url)
+            curl.setopt(pycurl.WRITEDATA, fp)
+            curl.perform()
+            curl.close()
+            fp.close()
+        else:
+            self.log.debug("Image file %s already present - skipping warehouse download" % (local_image_file))
  
+
     def ec2_push_image_upload(self, image_id, provider, credentials):
         self.ec2_decode_credentials(credentials)      
 
@@ -688,20 +782,7 @@ chmod 600 /root/.ssh/authorized_keys
         input_image_name="ec2-image-" + image_id + ".dsk"
         input_image=input_image_path + input_image_name
         
-        # Conditionally grab from warehouse
-        # TODO: Use Warehouse class instead
-        if not os.path.isfile(input_image):
-            if not (self.app_config['warehouse']):
-                raise ImageFactoryException("No warehouse configured - cannot retrieve image")
-            url = "%simages/%s" % (self.app_config['warehouse'], image_id)
-            self.log.debug("Image not present locally - Fetching from %s" % (url))
-            fp = open(input_image, "wb")
-            curl = pycurl.Curl()
-            curl.setopt(pycurl.URL, url)
-            curl.setopt(pycurl.WRITEDATA, fp)
-            curl.perform()
-            curl.close()
-            fp.close()
+        self.retrieve_image(image_id, input_image)
 
         bundle_destination=self.app_config['output_dir']
         
