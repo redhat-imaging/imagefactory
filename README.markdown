@@ -17,7 +17,7 @@
 	                        (default: False)
 	  --config CONFIG       Configuration file to use. (default:
 	                        /etc/imagefactory.conf)
-	  imgdir IMGDIR       Build image files in location specified. (default:
+	  --imgdir IMGDIR       Build image files in location specified. (default:
 	                        /tmp)
 	  --warehouse WAREHOUSE
 	                        URL of the warehouse location to store images.
