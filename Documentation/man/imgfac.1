@@ -12,7 +12,7 @@ Currently supported private cloud services: RHEV-M, KVM.
 
 .SH SYNOPSIS
 .B imgfac [-h] [--version] [-v] [--debug] [--foreground] [--config CONFIG]
-.B          [--output OUTPUT] [--timeout TIMEOUT] [--qmf] [--qpidd QPIDD]
+.B          [imgdir IMGDIR] [--timeout TIMEOUT] [--qmf] [--qpidd QPIDD]
 .B          [--template TEMPLATE] [--target TARGET] [--image IMAGE]
 .B          [--provider PROVIDER] [--credentials CREDENTIALS]
 .B          [--warehouse WAREHOUSE] [--image_bucket IMAGE_BUCKET]
@@ -37,7 +37,7 @@ Set really verbose logging for debugging.
 .B --config CONFIG
 Image factory configuration file to use.  (default: /etc/imagefactory.conf)
 
-.B --output OUTPUT
+.B imgdir IMGDIR
 Build image files in location specified. After the image is finished it will be saved in this location.  (default: /tmp)
 
 .B --timeout TIMEOUT

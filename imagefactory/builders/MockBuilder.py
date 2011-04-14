@@ -47,7 +47,7 @@ class MockBuilder(BaseBuilder):
             failing_thread.start()
         else:
             self.log.debug("build_image() called on MockBuilder...")
-            self.image = "%s/deltacloud-%s/images/%s.yml" % (self.app_config['output'], os.getlogin(), self.image_id)
+            self.image = "%s/deltacloud-%s/images/%s.yml" % (self.app_config['imgdir'], os.getlogin(), self.image_id)
             self.log.debug("Setting image build path: %s" % (self.image, ))
             self.status = "INITIALIZING"
             self.log.debug("Initializing mock image...")
@@ -91,7 +91,7 @@ class MockBuilder(BaseBuilder):
             self.status = "PENDING"
             image, image_metadata = self.warehouse.image_with_id(image_id, metadata_keys=("icicle", ))
             # write the provider image out to the filesystem
-            image_path = "%s/deltacloud-%s/%s/images/%s.yml" % (self.app_config['output'], os.getlogin(), provider, self.image_id)
+            image_path = "%s/deltacloud-%s/%s/images/%s.yml" % (self.app_config['imgdir'], os.getlogin(), provider, self.image_id)
             self.log.debug("Storing mock image for %s at path: %s" % (provider, image_path))
             directory = os.path.dirname(image_path)
             if (not os.path.exists(directory)):

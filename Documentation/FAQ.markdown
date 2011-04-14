@@ -14,7 +14,7 @@
 3.  Q: Where does Image Factory put the images that are created?        
     A: There are really three parts to this answer...
     
-    1. Image Factory stores a local copy of the image in the path pointed to by the configuration option `output_dir`, which defaults to `/var/tmp`
+    1. Image Factory stores a local copy of the image in the path pointed to by the configuration option `imgdir`, which defaults to `/var/tmp`
     2. Oz caches .iso files in `/var/lib/oz`
     3. If an Image Warehouse is configured and the JEOS was created by Image Factory, the resulting image is uploaded to the Image Warehouse in the `images` bucket.
 

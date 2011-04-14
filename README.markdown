@@ -1,7 +1,7 @@
 ## Usage: ##
 
 	usage: imgfac [-h] [--version] [-v] [--debug] [--foreground] [--config CONFIG]
-	              [--output OUTPUT] [--warehouse WAREHOUSE] [--timeout TIMEOUT]
+	              [imgdir IMGDIR] [--warehouse WAREHOUSE] [--timeout TIMEOUT]
 	              [--qmf] [--broker BROKER] [--template TEMPLATE]
 	              [--target TARGET] [--image IMAGE] [--provider PROVIDER]
 	              [--credentials CREDENTIALS]
@@ -17,7 +17,7 @@
 	                        (default: False)
 	  --config CONFIG       Configuration file to use. (default:
 	                        /etc/imagefactory.conf)
-	  --output OUTPUT       Build image files in location specified. (default:
+	  imgdir IMGDIR       Build image files in location specified. (default:
 	                        /tmp)
 	  --warehouse WAREHOUSE
 	                        URL of the warehouse location to store images.

@@ -92,12 +92,12 @@ class FedoraBuilder(BaseBuilder):
         config_file = "/etc/oz/oz.cfg"
         config = ConfigParser.SafeConfigParser()
         config.read(config_file)
-        config.set('paths', 'output_dir', self.app_config["output_dir"])
+        config.set('paths', 'output_dir', self.app_config["imgdir"])
         if guesttype == "local":
             self.guest = oz.Fedora.get_class(self.tdlobj, config, None)
         else:
             self.guest = FedoraRemoteGuest(self.tdlobj, config, None, "virtio", True, "virtio", True)    
-        self.guest.diskimage = self.app_config["output_dir"] + "/base-image-" + self.image_id + ".dsk"
+        self.guest.diskimage = self.app_config["imgdir"] + "/base-image-" + self.image_id + ".dsk"
         # Oz assumes unique names - TDL built for multiple backends guarantees they are not unique
         # We don't really care about the name so just force uniqueness
         self.guest.name = self.guest.name + "-" + str(self.image_id)
@@ -195,7 +195,7 @@ class FedoraBuilder(BaseBuilder):
         #  and then update the image property to point to our new image and update
         #  the metadata
         try:
-            output_dir=self.app_config['output_dir']
+            output_dir=self.app_config['imgdir']
             self.ec2_copy_filesystem(output_dir)
             self.ec2_modify_filesystem()
         except:
@@ -670,7 +670,7 @@ chmod 600 /root/.ssh/authorized_keys
         # location and then move it to another known loacation
 
         # This is where the image should be after a local build
-        input_image = self.app_config["output_dir"] + "/base-image-" + image_id + ".dsk"
+        input_image = self.app_config["imgdir"] + "/base-image-" + image_id + ".dsk"
         # Grab from Warehouse if it isn't here
         self.retrieve_image(image_id, input_image)
         
@@ -781,13 +781,13 @@ chmod 600 /root/.ssh/authorized_keys
         self.ec2_decode_credentials(credentials)      
 
         # if the image is already here, great, otherwise grab it from the warehouse
-        input_image_path=self.app_config['output_dir'] + "/"
+        input_image_path=self.app_config['imgdir'] + "/"
         input_image_name="ec2-image-" + image_id + ".dsk"
         input_image=input_image_path + input_image_name
         
         self.retrieve_image(image_id, input_image)
 
-        bundle_destination=self.app_config['output_dir']
+        bundle_destination=self.app_config['imgdir']
         
         # TODO: Cross check against template XML and warn if they do not match
         g = guestfs.GuestFS ()
