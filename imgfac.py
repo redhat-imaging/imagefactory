@@ -52,6 +52,11 @@ class Application(object):
         self.pid_file_path = "/var/run/imagefactory.pid"
         signal.signal(signal.SIGTERM, self.signal_handler)
         self.app_config = ApplicationConfiguration().configuration
+
+        # by setting TMPDIR here we make sure that libguestfs
+        # (imagefactory -> oz -> libguestfs) uses the temporary directory of
+        # the user's choosing
+        os.putenv('TMPDIR', self.app_config['tmpdir'])
     
     def setup_logging(self):
         if (self.app_config['foreground']):
