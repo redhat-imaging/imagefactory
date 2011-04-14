@@ -490,10 +490,10 @@ chmod 600 /root/.ssh/authorized_keys
         # v0.2 of these AMIs - created week of April 4, 2011
         # v0.3 for F13 64 bit only - created April 12, 2011
         ec2_jeos_amis=\
-        {'ec2-us-east-1': {'Fedora': { '14' : { 'x86_64': 'ami-6e11ec07', 'i386': 'ami-7c10ed15' },
-                                       '13' : { 'x86_64': 'ami-12a8547b', 'i386': 'ami-0610ed6f' } } } ,
-         'ec2-us-west-1': {'Fedora': { '14' : { 'x86_64': 'ami-03287b46', 'i386': 'ami-07287b42' },
-                                       '13' : { 'x86_64': 'ami-17471452', 'i386': 'ami-7f287b3a' } } } }
+        {'ec2-us-east-1': {'Fedora': { '14' : { 'x86_64': 'ami-289b6741', 'i386': 'ami-909a66f9' },
+                                       '13' : { 'x86_64': 'ami-a49a66cd', 'i386': 'ami-109a6679' } } } ,
+         'ec2-us-west-1': {'Fedora': { '14' : { 'x86_64': 'ami-b34a19f6', 'i386': 'ami-b74a19f2' },
+                                       '13' : { 'x86_64': 'ami-ad4a19e8', 'i386': 'ami-a14a19e4' } } } }
 
         ami_id = "none"
         build_region = provider
@@ -508,8 +508,8 @@ chmod 600 /root/.ssh/authorized_keys
 	        # Fallback to modification on us-east and upload cross-region
 	        ami_id = ec2_jeos_amis['ec2-us-east-1'][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]
 	        build_region = 'ec2-us-east-1'
-	        self.log.info("WARNING: Building in us-east-1 for upload to %s" % (provider))
-	        self.log.info(" This will be a bit slow - ask the Factory team to create a region-local JEOS")
+	        self.log.info("WARNING: Building in ec2-us-east-1 for upload to %s" % (provider))
+	        self.log.info(" This may be a bit slow - ask the Factory team to create a region-local JEOS")
 	    except KeyError:
 	        pass
 
@@ -609,6 +609,9 @@ chmod 600 /root/.ssh/authorized_keys
             # remove utility package and repo so that it isn't in the final image
             # Our temporary SSH access key remains in place after this
             self.log.debug("Removing utility package and repo")
+            # Removing the util package adds back the mlocate cron job - it cannot be allowed to run
+            # so stop cron if it is running
+            self.guest.guest_execute_command(guestaddr, "/sbin/service crond stop")
             self.guest.guest_execute_command(guestaddr, "rpm -e imgfacsnapinit")
             self.guest.guest_execute_command(guestaddr, "rm -f /etc/yum.repos.d/imgfacsnap.repo")
             self.log.debug("Removal complete")
