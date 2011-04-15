@@ -115,7 +115,7 @@ class FedoraBuilder(BaseBuilder):
     def build_snapshot(self):
         # All we need do here is store the relevant bits in the Warehouse
         self.log.debug("Building Linux for a non-upload cloud")
-        self.image = "%s/placeholder-linux-image-%s" % (self.app_config['output'], self.image_id)
+        self.image = "%s/placeholder-linux-image-%s" % (self.app_config['imgdir'], self.image_id)
         image_file = open(self.image, 'w')
         image_file.write("Placeholder for non upload cloud Linux image")
         image_file.close()
