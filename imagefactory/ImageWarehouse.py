@@ -159,6 +159,22 @@ class ImageWarehouse(object):
         the_object, metadata = self.object_with_id_of_type(object_id, object_type, metadata_keys)
         return object_id, the_object, metadata
     
+    def delete_object_at_url(self, object_url):
+        try:
+            response_headers, response = self.http.request(object_url, "DELETE", headers={'content-type':'text/plain'})
+            status = int(response_headers["status"])
+            if(status == 200):
+                return True
+            else:
+                self.log.error("Unable to delete object from %s.  Warehouse returned status %s." % (object_url, status))
+                return False
+        except Exception, e:
+            raise WarehouseError("Problem encountered trying to delete object at %s.\nPlease check that iwhd is running and reachable.\nException text: %s" % (object_url, e))
+    
+    def delete_object_with_id_of_type(self, object_id, object_type):
+        object_url = self.__url_for_id_of_type(object_id, object_type, create=False)
+        return self.delete_object_at_url(object_url)
+    
     def set_metadata_for_id_of_type(self, metadata, object_id, object_type):
         object_url = self.__url_for_id_of_type(object_id, object_type, create=False)
         self.set_metadata_for_object_at_url(metadata, object_url)
@@ -276,6 +292,15 @@ class ImageWarehouse(object):
     
     def image_with_id(self, image_id, metadata_keys=()):
         return self.object_with_id_of_type(image_id, "image", metadata_keys)
+    
+    def remove_template_with_id(self, template_id):
+        return self.delete_object_with_id_of_type(template_id, "template")
+    
+    def remove_icicle_with_id(self, icicle_id):
+        return self.delete_object_with_id_of_type(icicle_id, "icicle")
+    
+    def remove_image_with_id(self, image_id):
+        return self.delete_object_with_id_of_type(image_id, "image")
     
 
 class WarehouseError(Exception):

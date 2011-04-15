@@ -36,7 +36,7 @@ class testImageWarehouse(unittest.TestCase):
         del self.metadata
     
     def testImageWarehouseMethods(self):
-        """Tests storing and fetching images, templates, icicles, and metadata on those objects..."""
+        """Tests CRUD operations on images, templates, icicles, and metadata on those objects..."""
         # IMAGE
         # store an image
         image_id = uuid.uuid4()
@@ -91,6 +91,12 @@ class testImageWarehouse(unittest.TestCase):
         icicle_id3, fetched_icicle_content3, icicle_metadata3 = self.warehouse.icicle_for_image_id(image_id)
         self.assertEqual(str(icicle_id), icicle_id3)
         self.assertEqual(icicle_content, fetched_icicle_content3)
+        
+        self.assertTrue(self.warehouse.remove_image_with_id(image_id))
+        self.assertTrue(self.warehouse.remove_template_with_id(template_id))
+        self.assertTrue(self.warehouse.remove_template_with_id(template_id2))
+        self.assertTrue(self.warehouse.remove_icicle_with_id(icicle_id))
+        self.assertTrue(self.warehouse.remove_icicle_with_id(icicle_id2))
     
     def testBucketCreation(self):
         # self.assert_(self.warehouse.create_bucket_at_url("%s/unittests-create_bucket/%s" % (self.warehouse.url, uuid.uuid4())))
