@@ -20,10 +20,13 @@
 
 import sys
 import os
+import os.path
 import signal
 import logging
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 from imagefactory.qmfagent.ImageFactoryAgent import *
+from imagefactory.BuildDispatcher import BuildDispatcher
+from imagefactory.ImageWarehouse import ImageWarehouse
 
 class Application(object):
     instance = None
@@ -144,8 +147,34 @@ class Application(object):
             
             self.qmf_agent = ImageFactoryAgent(self.app_config['qpidd'])
             self.qmf_agent.run()
+            
         else:
+            self.app_config['foreground'] = True
             self.setup_logging()
+            
+            if (self.app_config['template'] and self.app_config['target']):
+                self.builder = BuildDispatcher.builder_for_target_with_template(self.app_config['target'], self.app_config['template'])
+                self.builder_thread = BuildDispatcher.builder_thread_with_method(self.builder, 'build_image')
+                print("Image created with id: %s" % (self.builder.image_id, ))
+            
+            elif (self.app_config['image'] and self.app_config['provider'] and self.app_config['credentials']):
+                credentials = self.app_config['credentials']
+                if(os.path.exists(credentials)):
+                    credentials_file = open(credentials, "r")
+                    file_contents = credentials_file.read()
+                    credentials_file.close()
+                    credentials = file_contents
+                    
+                if(not (("<provider_credentials>" in file_contents.lower()) and ("</provider_credentials>" in file_contents.lower()))):
+                    print("Unexpected content or formatting of credentials...")
+                    sys.exit(1)
+                
+                warehouse = ImageWarehouse(self.app_config['warehouse'])
+                metadata = warehouse.metadata_for_id_of_type(('template', 'target'), self.app_config['image'], object_type='image')
+                self.builder = BuildDispatcher.builder_for_target_with_template(metadata['target'], metadata['template'])
+                kwargs = dict(image_id=self.app_config['image'], provider=self.app_config['provider'], credentials=credentials)
+                self.builder_thread = BuildDispatcher.builder_thread_with_method(self.builder, 'push_image', kwargs)
+                print("Image instance created with id: %s" % (self.builder.image_id, ))
     
 
 

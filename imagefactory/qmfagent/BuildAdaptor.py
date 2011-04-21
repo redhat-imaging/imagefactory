@@ -21,9 +21,8 @@ import logging
 import cqpid
 from qmf2 import *
 from threading import Thread, Lock
-import zope
 from imagefactory.builders import *
-import imagefactory.Template
+from imagefactory.BuildDispatcher import *
 
 class BuildAdaptor(object):
     # QMF schema for BuildAdaptor
@@ -147,36 +146,17 @@ class BuildAdaptor(object):
         self.image = "None"
         self.builder = None
         
-        builder_class = MockBuilder.MockBuilder
-        if (self.target != "mock"): # If target is mock always run mock builder regardless of template
-            parsed_doc = libxml2.parseDoc(self.template.xml)
-            node = parsed_doc.xpathEval('/template/os/name')
-            os_name = node[0].content.title()
-            class_name = "%sBuilder" % (os_name, )
-            try:
-                module_name = "imagefactory.builders.%s" % (class_name, )
-                __import__(module_name)
-                builder_class = getattr(sys.modules[module_name], class_name)
-            except AttributeError, e:
-                self.log.exception("CAUGHT EXCEPTION: %s \n Could not find builder class for %s, returning MockBuilder!", e, os_name)
-        
-        self.builder = builder_class(template, target)
+        self.builder = BuildDispatcher.builder_for_target_with_template(template=template, target=target)
         # Register as a delegate to the builder
         self.builder.delegate = self
         self.image = str(self.builder.image_id)
     
     def build_image(self):
-        thread_name = "%s.build_image()" % (self.builder.image_id, )
-        # using args to pass the method we want to call on the target object.
-        self._builder_thread = Thread(target = self.builder, name=thread_name, args=('build_image'))
-        self._builder_thread.start()
+        BuildDispatcher.builder_thread_with_method(builder=self.builder, method_name="build_image")
     
     def push_image(self, image_id, provider, credentials):
-        thread_name = "%s.push_image()" % (image_id, )
-        # using args to pass the method we want to call on the target object.
         kwargs = dict(image_id=image_id, provider=provider, credentials=credentials)
-        self._builder_thread = Thread(target = self.builder, name=thread_name, args=('push_image'), kwargs=kwargs)
-        self._builder_thread.start()
+        BuildDispatcher.builder_thread_with_method(builder=self.builder, method_name="push_image", arg_dict=kwargs)
     
     def abort(self):
         self.builder.abort()

@@ -54,7 +54,7 @@ class TestBuildAdaptor(unittest.TestCase):
                 self.assertIn(schema_property.getName(), arguments)
 	
     def testInstantiateMockBuilder(self):
-        build_adaptor = BuildAdaptor(self.tdl_string, "mock")
+        build_adaptor = BuildAdaptor(template=self.tdl_string, target="mock")
         self.assertIsInstance(build_adaptor.builder, MockBuilder.MockBuilder)
         self.assertEqual(build_adaptor.template, self.tdl_string)
         self.assertEqual(build_adaptor.target, "mock")

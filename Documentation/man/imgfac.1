@@ -1,11 +1,8 @@
-.TH IMiGFAC 1 "April 2011" "imgfac"
+.TH IMGFAC 1 "April 2011" "imgfac"
 
 .SH NAME
-imgfac - is a CLI tool for creating and customizing OS images, both for private and public clouds.
-There are three functionalities this tool can perform:
-- to act as a QMF agent, so that other Image Factory instances can use it to pass QMF messages.
-- to build images from installation media, customize them by installing packages, and upload the image to the public cloud provider that supports upload. (Applies only to Amazon EC using Fedora images)
-- to start instances in public cloud providers, customize them by installing packages, then saving them as images.
+imgfac - Create and customize OS images for private and public clouds.
+This tool can be launched as a daemon to provide a QMFv2 interface that other applications can use for building images and instantiating these images on supported clouds.  Alternatively, a single image can be built or instantiated using the command line options described below without creating a daemon process or using QMF.
 
 Currently supported public cloud services are: Amazon EC2, Rackspace.
 Currently supported private cloud services: RHEV-M, KVM.

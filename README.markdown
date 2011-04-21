@@ -31,13 +31,13 @@
 	  --qpidd QPIDD         URL of qpidd to connect to. (default: localhost)
 	
 	Image building:
-	  NOT YET IMPLEMENTED: Build specified system and exit.
+	  Build specified system and exit.
 	
 	  --template TEMPLATE   Template XML file to build from.
 	  --target TARGET       Cloud service to target
 	
 	Image instantiation:
-	  NOT YET IMPLEMENTED: Instantiate an image and exit.
+	  Instantiate an image and exit.
 	
 	  --image IMAGE         Image to instantiate
 	  --provider PROVIDER   Cloud service provider upon which to instantiate the

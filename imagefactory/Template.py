@@ -22,20 +22,12 @@ import logging
 import httplib2
 import re
 import uuid
+import os.path
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 from imagefactory.ImageWarehouse import ImageWarehouse
 
 class Template(object):
     uuid_pattern = '([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})'
-    
-    # @classmethod
-    # def fetch_template_with_id(cls, identifier):
-    #     return cls(uuid)
-    # 
-    # @classmethod
-    # def fetch_template_with_url(cls, url):
-    #     return cls(url)
-    # 
     
     # Properties
     def identifier():
@@ -97,7 +89,8 @@ class Template(object):
                 xml = template_string
         
         if(uuid):
-            self.identifier, self.xml = self.__fetch_template_for_uuid(uuid)
+            uuid_string = uuid
+            self.identifier, self.xml = self.__fetch_template_for_uuid(uuid_string)
             if((not self.identifier) and (not self.xml)):
                 raise RuntimeError("Could not create a template with the uuid %s" % (uuid, ))
         elif(url):
@@ -105,6 +98,14 @@ class Template(object):
             self.identifier, self.xml = self.__fetch_template_with_url(url)
         elif(xml):
             self.xml = xml
+        elif(template_string_type == "PATH"):
+            template_file = open(template_string, "r")
+            file_content = template_file.read()
+            template_file.close()
+            if(self.__string_is_xml_template(file_content)):
+                self.xml = file_content
+            else:
+                raise ValueError("File %s does not contain properly formatted template xml:\n%s" % (template_string, self.__abbreviated_template(file_content)))
         else:
             raise ValueError("'template' must be a UUID, URL, or XML document...")
     
@@ -118,20 +119,22 @@ class Template(object):
             return "XML"
         elif(match):
             return "UUID"
+        elif(os.path.exists(template_string)):
+            return "PATH"
         else:        
-            raise ValueError("'template_string' must be a UUID, URL, or XML document...")
+            raise ValueError("'template_string' must be a UUID, URL, or XML document...\n--- TEMPLATE STRING ---\n%s\n-----------------" % (template_string, ))
     
     def __fetch_template_for_uuid(self, uuid_string):
         xml_string, metadata = self.warehouse.template_with_id(uuid_string)
         if(xml_string and self.__string_is_xml_template(xml_string)):
             return uuid.UUID(uuid_string), xml_string
         else:
-            self.log.debug("Unable to fetch a valid template given template id %s:\n%s\nWill try fetching template id from an image with this id..." % (uuid_string, self._addreviated_template(xml_string)))
+            self.log.debug("Unable to fetch a valid template given template id %s:\n%s\nWill try fetching template id from an image with this id..." % (uuid_string, self.__abbreviated_template(xml_string)))
             template_id, xml_string, metadata = self.warehouse.template_for_image_id(uuid_string)
             if(template_id and xml_string and self.__string_is_xml_template(xml_string)):
                 return uuid.UUID(template_id), xml_string
             else:
-                self.log.debug("Unable to fetch a valid template given an image id %s:\n%s\n" % (uuid_string, self._addreviated_template(xml_string)))
+                self.log.debug("Unable to fetch a valid template given an image id %s:\n%s\n" % (uuid_string, self.__abbreviated_template(xml_string)))
                 return None, None
     
     def __string_is_xml_template(self, text):
@@ -151,7 +154,7 @@ class Template(object):
         else:
             raise RuntimeError("Recieved status %s fetching a template from %s!\n--- Response Headers:\n%s\n--- Response:\n%s" % (response_headers["status"], url, response_headers, response))
     
-    def _addreviated_template(self, template_string):
+    def __abbreviated_template(self, template_string):
         lines = template_string.splitlines(True)
         if(len(lines) > 20):
             return "%s\n...\n...\n...\n%s" % ("".join(lines[0:10]), "".join(lines[-10:len(lines)]))
