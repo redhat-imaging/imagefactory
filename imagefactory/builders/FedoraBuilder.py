@@ -586,6 +586,17 @@ chmod 600 /root/.ssh/authorized_keys
             self.log.debug("Waiting 20 seconds for remaining boot tasks")
             sleep(20)
 
+            # remove utility package and repo so that it isn't in the final image
+            # and does not screw up our customize step
+            # Our temporary SSH access key remains in place after this
+            self.log.debug("Removing utility package and repo")
+            # Removing the util package adds back the mlocate cron job - it cannot be allowed to run
+            # so stop cron if it is running
+            self.guest.guest_execute_command(guestaddr, "/sbin/service crond stop")
+            self.guest.guest_execute_command(guestaddr, "rpm -e imgfacsnapinit")
+            self.guest.guest_execute_command(guestaddr, "rm -f /etc/yum.repos.d/imgfacsnap.repo")
+            self.log.debug("Removal complete")
+
             self.log.debug("Customizing guest: %s" % (guestaddr))
             self.guest.mkdir_p(self.guest.icicle_tmp)
             self.guest.do_customize(guestaddr)
@@ -595,26 +606,19 @@ chmod 600 /root/.ssh/authorized_keys
             key = self.ec2_key_file
             ec2cert =  "/etc/pki/imagefactory/cert-ec2.pem"
 
+            # This is needed for uploading and registration
+            # Note that it is excluded from the final image
             self.log.debug("Uploading cert material")
             self.guest.guest_live_upload(guestaddr, cert, "/tmp")
             self.guest.guest_live_upload(guestaddr, key, "/tmp")
             self.guest.guest_live_upload(guestaddr, ec2cert, "/tmp")
             self.log.debug("Cert upload complete")
 
+            # Some local variables to make the calls below look a little cleaner
             ec2_uid = self.ec2_user_id
             arch = self.tdlobj.arch
             # AKI is set above
             uuid = self.image_id
-
-            # remove utility package and repo so that it isn't in the final image
-            # Our temporary SSH access key remains in place after this
-            self.log.debug("Removing utility package and repo")
-            # Removing the util package adds back the mlocate cron job - it cannot be allowed to run
-            # so stop cron if it is running
-            self.guest.guest_execute_command(guestaddr, "/sbin/service crond stop")
-            self.guest.guest_execute_command(guestaddr, "rpm -e imgfacsnapinit")
-            self.guest.guest_execute_command(guestaddr, "rm -f /etc/yum.repos.d/imgfacsnap.repo")
-            self.log.debug("Removal complete")
 
             # We exclude /mnt /tmp and /root/.ssh to avoid embedding our utility key into the image
             command = "euca-bundle-vol -c /tmp/%s -k /tmp/%s -u %s -e /mnt,/tmp,/root/.ssh --arch %s -d /mnt/bundles --kernel %s -p %s -s 10240 --ec2cert /tmp/cert-ec2.pem --fstab /etc/fstab -v /" % (os.path.basename(cert), os.path.basename(key), ec2_uid, arch, aki, uuid)
@@ -637,6 +641,7 @@ chmod 600 /root/.ssh/authorized_keys
                     raise
             # TODO: End of copy
        
+            # TODO: We cannot timeout on any of the three commands below - can we fix that?
             manifest = "/mnt/bundles/%s.manifest.xml" % (uuid)
             command = 'euca-upload-bundle -b %s -m %s --ec2cert /tmp/cert-ec2.pem -a "%s" -s "%s" -U %s' % (bucket, manifest, self.ec2_access_key, self.ec2_secret_key, upload_url)
             self.log.debug("Executing upload bundle command: %s" % (command))
@@ -713,6 +718,14 @@ chmod 600 /root/.ssh/authorized_keys
         self.warehouse.create_provider_image(self.image_id, metadata=metadata)
         self.percent_complete = 100
 
+    def rhevm_push_image_upload(self, image_id, provider, credentials):
+        pass
+        # Decode the config file, verify that the provider is in it - err out if not
+        # Execute the POST against our warehouse URL and collect the results
+        # NOW: Pull back the ami-id
+        # FUTURE: Read the actual output of the post
+        # Then use that information to create the provider_image object
+
 
     def push_image_upload(self, image_id, provider, credentials):
         # TODO: RHEV-M and VMWare
@@ -723,6 +736,8 @@ chmod 600 /root/.ssh/authorized_keys
                 self.ec2_push_image_upload(image_id, provider, credentials)
             elif self.target == "condorcloud":
                 self.condorcloud_push_image_upload(image_id, provider, credentials)
+            elif self.target == "rhev-m":
+                self.rhevm_push_image_upload(image_id, provider, credentials)
             else:
                 raise ImageFactoryException("Invalid upload push requested for target (%s) and provider (%s)" % (self.target, provider))
         except:
