@@ -31,6 +31,7 @@ import httplib2
 import traceback
 import pycurl
 import json
+from cloudservers import CloudServers
 import ConfigParser
 import boto.ec2
 from time import *
@@ -104,27 +105,35 @@ class FedoraBuilder(BaseBuilder):
         self.guest.name = self.guest.name + "-" + str(self.image_id)
 
     def build_image(self):
-        if  self.target in self.upload_clouds or (self.target == "ec2" and self.app_config["ec2_build_style"] == "upload"):
-            self.init_guest("local")
-            self.build_upload()
-        elif self.target in self.nonul_clouds or (self.target == "ec2" and self.app_config["ec2_build_style"] == "snapshot"):
-            # No actual need to have a guest object here so don't bother
-            self.build_snapshot()
-        else:
-            raise ImageFactoryException("Invalid build target (%s) passed to build_image()" % (self.target))
+        try:
+            if  self.target in self.upload_clouds or (self.target == "ec2" and self.app_config["ec2_build_style"] == "upload"):
+                self.init_guest("local")
+                self.build_upload()
+            elif self.target in self.nonul_clouds or (self.target == "ec2" and self.app_config["ec2_build_style"] == "snapshot"):
+                # No actual need to have a guest object here so don't bother
+                self.build_snapshot()
+            else:
+                raise ImageFactoryException("Invalid build target (%s) passed to build_image()" % (self.target))
+        except:
+            self.log.debug("Unexpected error: (%s)" % (sys.exc_info()[0]))
+            self.log.debug("             value: (%s)" % (sys.exc_info()[1]))
+            self.log.debug("         traceback: %s" % (repr(traceback.format_tb(sys.exc_info()[2]))))
+            self.status="FAILED"
+            raise
 
     def build_snapshot(self):
         # All we need do here is store the relevant bits in the Warehouse
-        self.log.debug("Building Linux for a non-upload cloud")
+        self.log.debug("Building Linux for non-upload cloud (%s)" % (self.target))
         self.image = "%s/placeholder-linux-image-%s" % (self.app_config['imgdir'], self.image_id)
         image_file = open(self.image, 'w')
         image_file.write("Placeholder for non upload cloud Linux image")
         image_file.close()
+        self.log.debug("Storing placeholder object for non upload cloud image")
         self.store_image()
         self.percent_complete = 100
         self.status = "COMPLETED"
         self.log.debug("Completed placeholder warehouse object for linux non-upload image...")
-        image_file.close()
+        sleep(5)
 
     def build_upload(self):
         self.log.debug("build_upload() called on FedoraBuilder...")
@@ -434,8 +443,117 @@ class FedoraBuilder(BaseBuilder):
 
 
     def push_image_snapshot(self, image_id, provider, credentials):
-        # TODO: Rackspace and other snapshot builds - for now this is always EC2
-        self.push_image_snapshot_ec2(image_id, provider, credentials)
+        if provider == "rackspace":
+            self.push_image_snapshot_rackspace(image_id, provider, credentials)
+        else:
+            self.push_image_snapshot_ec2(image_id, provider, credentials)
+
+    def push_image_snapshot_rackspace(self,image_id, provider, credentials):
+
+        doc = libxml2.parseDoc(credentials)
+        ctxt = doc.xpathNewContext()
+
+        rack_username = ctxt.xpathEval("//provider_credentials/rackspace_credentials/username")[0].content
+        rack_access_key = ctxt.xpathEval("//provider_credentials/rackspace_credentials/access_key")[0].content
+
+        cloudservers = CloudServers(rack_username, rack_access_key)
+	cloudservers.authenticate()
+
+        # TODO: Config file
+        rack_jeos = {'Fedora': { '14' : { 'x86_64': 71},
+                                 '13' : { 'x86_64': 53} } }
+
+        jeos_id = None
+        try:
+            jeos_id = rack_jeos[self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]
+        except KeyError:
+            raise ImageFactoryException("Unable to find Rackspace JEOS for desired distro - ask Rackspace")
+
+
+	jeos_image = cloudservers.images.get(jeos_id)
+        # Hardcode to use a modest sized server
+	onegig_flavor = cloudservers.flavors.get(3)
+
+        # This is the Rackspace version of key injection
+	mypub = open("/etc/oz/id_rsa-icicle-gen.pub")
+	server_files = { "/root/.ssh/authorized_keys":mypub }
+
+        instance_name = "factory-build-%s" % (str(self.image_id))
+	jeos_instance = cloudservers.servers.create(instance_name,jeos_image, onegig_flavor, files=server_files)
+
+	for i in range(30):
+	  if jeos_instance.status == "ACTIVE":
+	    self.log.debug("JEOS instance now active - moving to customize")
+	    break
+          self.log.debug("Waiting for Rackspace instance to start access: %d/300" % (i*10))
+	  sleep(10)
+	  # There is no query or update method, we simply recreate
+	  jeos_instance = cloudservers.servers.get(jeos_instance.id)
+
+	#print "Public ip: " , jeos_instance.public_ip
+	#print "ID: " , jeos_instance.id
+
+        # As with EC2 put this all in a try block and then terminate at the end to avoid long running
+        # instances which cost users money
+        try:
+            self.guest.sshprivkey = "/etc/oz/id_rsa-icicle-gen"
+	    guestaddr = jeos_instance.public_ip
+
+            # TODO: Make this loop so we can take advantage of early availability
+            # Ugly ATM because failed access always triggers an exception
+            self.log.debug("Waiting up to 300 seconds for ssh to become available on %s" % (guestaddr))
+            retcode = 1
+            for i in range(30):
+                self.log.debug("Waiting for Rackspace ssh access: %d/300" % (i*10))
+
+                access=1
+                try:
+                    stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, "/bin/true")
+                except:
+                    access=0
+
+                if access:
+                    break
+
+                sleep(10)
+
+            if retcode:
+                raise ImageFactoryException("Unable to gain ssh access after 300 seconds - aborting")
+
+            # There are a handful of additional boot tasks after SSH starts running
+            # Give them an additional 20 seconds for good measure
+            self.log.debug("Waiting 20 seconds for remaining boot tasks")
+            sleep(20)
+
+	    self.log.debug("Doing Rackspace Customize")
+	    self.guest.mkdir_p(self.guest.icicle_tmp)
+	    self.guest.do_customize(guestaddr)
+	    self.log.debug("Done!")
+
+            image_name = "factory-image-%s" % (str(self.image_id))
+	    snap_image = cloudservers.images.create(image_name, jeos_instance)
+
+	    self.log.debug("New Rackspace image created with ID: %s" % (snap_image.id))
+
+	    for i in range(30):
+	        if snap_image.status == "ACTIVE":
+                    self.log.debug("Snapshot Completed")
+                    break
+                self.log.debug("Image status: %s - Waiting for completion: %d/300" % (snap_image.status, i*10))
+                sleep(10)
+	        # There is no query or update method, we simply recreate
+	        snap_image = cloudservers.images.get(snap_image.id)
+
+            self.log.debug("Storing Rackspace image ID (%s) and details in Warehouse" % (snap_image.id))
+	    metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=snap_image.id)
+	    self.warehouse.create_provider_image(self.image_id, metadata=metadata)
+
+	finally:
+            self.log.debug("Shutting down Rackspace server")
+            cloudservers.servers.delete(jeos_instance.id)
+
+        self.percent_complete=100
+        self.status = "COMPLETED"
 
     def push_image_snapshot_ec2(self, image_id, provider, credentials):
         self.log.debug("Being asked to push for provider %s" % (provider))
@@ -746,7 +864,7 @@ chmod 600 /root/.ssh/authorized_keys
         self.log.debug("Got metadata output of: %s", repr(image_metadata))
 	m = re.match("OK ([a-fA-F0-9-]+)", image_metadata["ami-id"])
 	rhevm_uuid = m.group(1)
-	print "Extracted RHEVM UUID: %s " % (rhevm_uuid)
+	self.log.debug("Extracted RHEVM UUID: %s " % (rhevm_uuid))
 
         # Create the provdier image
         metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=rhevm_uuid)
