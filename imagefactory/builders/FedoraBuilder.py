@@ -30,6 +30,7 @@ import libxml2
 import httplib2
 import traceback
 import pycurl
+import json
 import ConfigParser
 import boto.ec2
 from time import *
@@ -719,12 +720,38 @@ chmod 600 /root/.ssh/authorized_keys
         self.percent_complete = 100
 
     def rhevm_push_image_upload(self, image_id, provider, credentials):
-        pass
         # Decode the config file, verify that the provider is in it - err out if not
-        # Execute the POST against our warehouse URL and collect the results
-        # NOW: Pull back the ami-id
-        # FUTURE: Read the actual output of the post
-        # Then use that information to create the provider_image object
+        # TODO: Make file location CONFIG value
+	file = open("/etc/rhevm.json","r")
+	rhevm_json = file.read()
+	local_rhevm=json.loads(rhevm_json)
+
+        post_data = None
+        try:
+            post_data = local_rhevm[provider]
+        except KeyError:
+            raise ImageFactoryException("RHEV-M instance (%s) not found in local configuraiton file /etc/rhevm.json" % (provider))
+
+        post_data['op'] = "register"
+        post_data['site'] = provider
+
+        # ATM the return is expected to be an empty string
+        # The RHEV-M UUID is stored as a new piece of metadata with a key of "ami-id"
+        # This is not thread-safe
+        # TODO: Coordinate with Pete when he changes this to return the AMI ID as the body
+        response = self.warehouse.post_on_object_with_id_of_type(image_id, "image", post_data)
+
+        # TODO: Remove this when the change mentioned above has been made
+        image_metadata = self.warehouse.metadata_for_id_of_type(("ami-id",), image_id, "image")
+        self.log.debug("Got metadata output of: %s", repr(image_metadata))
+	m = re.match("OK ([a-fA-F0-9-]+)", image_metadata["ami-id"])
+	rhevm_uuid = m.group(1)
+	print "Extracted RHEVM UUID: %s " % (rhevm_uuid)
+
+        # Create the provdier image
+        metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=rhevm_uuid)
+        self.warehouse.create_provider_image(self.image_id, metadata=metadata)
+        self.percent_complete = 100
 
 
     def push_image_upload(self, image_id, provider, credentials):

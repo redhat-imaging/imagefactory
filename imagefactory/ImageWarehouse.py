@@ -21,6 +21,7 @@
 import logging
 import pycurl
 import httplib2
+import urllib
 import uuid
 import os
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
@@ -136,7 +137,15 @@ class ImageWarehouse(object):
             object_url ="%s/%s" % (self.url, object_id)
         
         return object_url
-    
+
+    def post_on_object_with_id_of_type(self, object_id, object_type, post_data):
+        object_url = self.__url_for_id_of_type(object_id, object_type, create=False)
+        try:
+            response_headers, response = self.http.request(object_url, "POST", urllib.urlencode(post_data), headers={'Content-Type': 'application/x-www-form-urlencoded'})   
+            return response
+        except Exception, e:
+            raise WarehouseError("Problem encountered trying to POST to image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
+ 
     def object_with_id_of_type(self, object_id, object_type, metadata_keys=()):
         object_url = self.__url_for_id_of_type(object_id, object_type, create=False)
         try:
