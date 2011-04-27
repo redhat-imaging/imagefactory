@@ -181,6 +181,10 @@ class FedoraBuilder(BaseBuilder):
         self.log.debug("Generated disk image (%s)" % (self.guest.diskimage))
         # OK great, we now have a customized KVM image
         # Now we do some target specific transformation
+
+        # Add the cloud-info file
+        self.tag_oz_filesystem()
+
         if self.target == "ec2":
             self.log.info("Transforming image for use on EC2")
             self.ec2_transform_image()
@@ -215,7 +219,30 @@ class FedoraBuilder(BaseBuilder):
             self.log.debug("         traceback: %s" % (repr(traceback.format_tb(sys.exc_info()[2]))))
             self.status="FAILED"
             raise
+
+    def tag_oz_filesystem(self):
+        self.log.debug("Adding cloud-info to local image")
+
+        self.log.debug("init guestfs")
+        g = guestfs.GuestFS ()
+
+        self.log.debug("add input image")
+        g.add_drive (self.image)
+
+        self.log.debug("launch guestfs")
+        g.launch ()
+
+        g.mount_options("", "/dev/VolGroup00/LogVol00", "/")
+        g.mount_options("", "/dev/sda1", "/boot")
+
+        self.log.info("Creating cloud-info file indicating target (%s)" % (self.target))
+        tmpl = 'CLOUD_TYPE="%s"\n' % (self.target)
+        g.write("/etc/sysconfig/cloud-info", tmpl)
+
+        g.sync ()
+        g.umount_all ()
     
+
     def ec2_copy_filesystem(self, output_dir):
         target_image=output_dir + "/ec2-image-" + self.image_id + ".dsk"
         
@@ -310,10 +337,6 @@ class FedoraBuilder(BaseBuilder):
         g.mount_options ("", osroot, "/")
         
         self.log.info("Modifying flat FS contents to be EC2 compatible")
-        
-        self.log.info("Creating cloud-info file for EC2")
-        tmpl = 'CLOUD_TYPE="ec2"\n'
-        g.write("/etc/sysconfig/cloud-info", tmpl)
         
         self.log.info("Disabling SELINUX")
         tmpl = '# Factory Disabled SELINUX - sorry\nSELINUX=permissive\nSELINUXTYPE=targeted\n'
@@ -609,10 +632,10 @@ chmod 600 /root/.ssh/authorized_keys
         # v0.2 of these AMIs - created week of April 4, 2011
         # v0.3 for F13 64 bit only - created April 12, 2011
         ec2_jeos_amis=\
-        {'ec2-us-east-1': {'Fedora': { '14' : { 'x86_64': 'ami-289b6741', 'i386': 'ami-909a66f9' },
-                                       '13' : { 'x86_64': 'ami-a49a66cd', 'i386': 'ami-109a6679' } } } ,
-         'ec2-us-west-1': {'Fedora': { '14' : { 'x86_64': 'ami-b34a19f6', 'i386': 'ami-b74a19f2' },
-                                       '13' : { 'x86_64': 'ami-ad4a19e8', 'i386': 'ami-a14a19e4' } } } }
+        {'ec2-us-east-1': {'Fedora': { '14' : { 'x86_64': 'ami-d6b946bf', 'i386': 'ami-6ab94603' },
+                                       '13' : { 'x86_64': 'ami-10bc4379', 'i386': 'ami-06ba456f' } } } ,
+         'ec2-us-west-1': {'Fedora': { '14' : { 'x86_64': 'ami-c9693a8c', 'i386': 'ami-c7693a82' },
+                                       '13' : { 'x86_64': 'ami-33693a76', 'i386': 'ami-23693a66' } } } }
 
         ami_id = "none"
         build_region = provider
@@ -1062,10 +1085,21 @@ chmod 600 /root/.ssh/authorized_keys
     
     # This file content is tightly bound up with our mod code above
     # I've inserted it as class variables for convenience
-    rc_local="""curl http://169.254.169.254/2009-04-04/meta-data/public-keys/0/openssh-key 2>/dev/null >/tmp/my-key
+    rc_local="""# We have seen timing issues with curl commands - try several times
+for t in 1 2 3 4 5 6 7 8 9 10; do
+  echo "Try number $t" >> /tmp/ec2-keypull.stderr
+  curl -o /tmp/my-key http://169.254.169.254/2009-04-04/meta-data/public-keys/0/openssh-key 2>> /tmp/ec2-keypull.stderr
+  [ -f /tmp/my-key ] && break 
+  sleep 10
+done
 
-if [ $? -eq 0 ] ; then
+if ! [ -f /tmp/my-key ]; then
+  echo "Failed to retrieve SSH key after 10 tries and 100 seconds" > /dev/hvc0
+  exit 1
+fi
+
 dd if=/dev/urandom count=50 2>/dev/null|md5sum|awk '{ print $1 }'|passwd --stdin root >/dev/null
+
 if [ ! -d /root/.ssh ] ; then
 mkdir /root/.ssh
 chmod 700 /root/.ssh
