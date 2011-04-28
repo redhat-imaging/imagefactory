@@ -744,6 +744,10 @@ chmod 600 /root/.ssh/authorized_keys
             self.guest.do_customize(guestaddr)
             self.log.debug("Customization step complete")
 
+            self.log.debug("Re-de-activate firstboot just in case it has been revived during customize")
+            self.guest.guest_execute_command(guestaddr, "[ -f /etc/init.d/firstboot ] && /sbin/chkconfig firstboot off")
+            self.log.debug("De-activation complete")
+
             cert = self.ec2_cert_file
             key = self.ec2_key_file
             ec2cert =  "/etc/pki/imagefactory/cert-ec2.pem"
