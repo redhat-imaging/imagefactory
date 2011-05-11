@@ -671,7 +671,16 @@ chmod 600 /root/.ssh/authorized_keys
         # Note that this connection may be to a region other than the target
         ec2region = boto.ec2.get_region(build_region_conf['host'], aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key)
         conn = ec2region.connect(aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key)
-        reservation = conn.run_instances(ami_id,instance_type=instance_type,user_data=user_data)
+
+        # Create a use-once SSH-able security group
+        factory_security_group_name = "imagefactory-%s" % (str(self.image_id))
+        factory_security_group_desc = "Temporary ImageFactory generated security group with SSH access"
+	self.log.debug("Creating temporary security group (%s)" % (factory_security_group_name))
+	factory_security_group = conn.create_security_group(factory_security_group_name, factory_security_group_desc)
+	factory_security_group.authorize('tcp', 22, 22, '0.0.0.0/0')
+
+        # Now launch it
+        reservation = conn.run_instances(ami_id,instance_type=instance_type,user_data=user_data, security_groups = [ factory_security_group_name ])
         
         if len(reservation.instances) != 1:
             self.status="FAILED"
@@ -745,7 +754,7 @@ chmod 600 /root/.ssh/authorized_keys
             self.log.debug("Customization step complete")
 
             self.log.debug("Re-de-activate firstboot just in case it has been revived during customize")
-            self.guest.guest_execute_command(guestaddr, "[ -f /etc/init.d/firstboot ] && /sbin/chkconfig firstboot off")
+            self.guest.guest_execute_command(guestaddr, "[ -f /etc/init.d/firstboot ] && /sbin/chkconfig firstboot off || /bin/true")
             self.log.debug("De-activation complete")
 
             cert = self.ec2_cert_file
@@ -808,8 +817,9 @@ chmod 600 /root/.ssh/authorized_keys
             metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=ami_id)
             self.warehouse.create_provider_image(self.image_id, metadata=metadata)
         finally:
-            self.log.debug("Stopping EC2 instance")
+            self.log.debug("Stopping EC2 instance and deleting temp security group")
             instance.stop()
+            factory_security_group.delete()
 
         self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), str(image_id), str(self.image_id), str(metadata)))
         self.percent_complete=100
