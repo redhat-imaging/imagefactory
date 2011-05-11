@@ -239,6 +239,12 @@ class FedoraBuilder(BaseBuilder):
         tmpl = 'CLOUD_TYPE="%s"\n' % (self.target)
         g.write("/etc/sysconfig/cloud-info", tmpl)
 
+        # EC2 does this in its modify step - all other upload clouds get it here
+        if self.target != "ec2":
+            self.log.info("Updating rc.local with Audrey conditional")
+            g.write("/tmp/rc.local", self.rc_local_all)
+            g.sh("cat /tmp/rc.local >> /etc/rc.local")
+
         g.sync ()
         g.umount_all ()
     
@@ -1139,6 +1145,11 @@ done
 rm /tmp/my-key
 fi
 
+# This conditionally runs Audrey if it exists
+[ -f /usr/bin/audrey ] && /usr/bin/audrey
+"""
+
+    rc_local_all="""
 # This conditionally runs Audrey if it exists
 [ -f /usr/bin/audrey ] && /usr/bin/audrey
 """
