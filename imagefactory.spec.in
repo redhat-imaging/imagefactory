@@ -18,6 +18,7 @@ Requires: python-boto
 Requires: libxml2-python
 Requires: python-httplib2
 Requires: python-argparse
+Requires: python-cloudservers
 BuildRequires: python
 
 %description
