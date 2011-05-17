@@ -944,9 +944,25 @@ chmod 600 /root/.ssh/authorized_keys
         self.ec2_user_id = ctxt.xpathEval("//provider_credentials/ec2_credentials/account_number")[0].content
         self.ec2_access_key = ctxt.xpathEval("//provider_credentials/ec2_credentials/access_key")[0].content
         self.ec2_secret_key = ctxt.xpathEval("//provider_credentials/ec2_credentials/secret_access_key")[0].content
-        ec2_key = ctxt.xpathEval("//provider_credentials/ec2_credentials/key")[0].content
-        ec2_cert = ctxt.xpathEval("//provider_credentials/ec2_credentials/certificate")[0].content
-        
+
+        # Support both "key" and "x509_private" as element names
+        ec2_key_node = None
+        ec2_key_node = ctxt.xpathEval("//provider_credentials/ec2_credentials/key")
+        if not ec2_key_node:
+            ec2_key_node = ctxt.xpathEval("//provider_credentials/ec2_credentials/x509_private")
+        if not ec2_key_node:
+            raise ImageFactoryException("No x509 private key found in ec2 credentials")
+        ec2_key=ec2_key_node[0].content
+
+        # Support both "certificate" and "x509_public" as element names
+        ec2_cert_node = None
+        ec2_cert_node = ctxt.xpathEval("//provider_credentials/ec2_credentials/certificate")
+        if not ec2_cert_node:
+            ec2_cert_node = ctxt.xpathEval("//provider_credentials/ec2_credentials/x509_public")
+        if not ec2_cert_node:
+            raise ImageFactoryException("No x509 public certificate found in ec2 credentials")
+        ec2_cert = ec2_cert_node[0].content
+
         doc.freeDoc()
         ctxt.xpathFreeContext()		
         
