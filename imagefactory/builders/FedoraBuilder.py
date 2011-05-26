@@ -38,11 +38,13 @@ from time import *
 from tempfile import *
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 from imagefactory.ImageFactoryException import ImageFactoryException
+from imagefactory.VMWare import VMImport
 from IBuilder import IBuilder
 from BaseBuilder import BaseBuilder
 from boto.s3.connection import S3Connection
 from boto.s3.connection import Location
 from boto.exception import *
+from VMDKstream import convert_to_stream
 
 def subprocess_check_output(*popenargs, **kwargs):
     if 'stdout' in kwargs:
@@ -188,7 +190,10 @@ class FedoraBuilder(BaseBuilder):
         if self.target == "ec2":
             self.log.info("Transforming image for use on EC2")
             self.ec2_transform_image()
-        
+        elif self.target == "vmware":
+            self.log.info("Transforming image for use on VMWare")
+            self.vmware_transform_image()        
+
         if (self.app_config['warehouse']):
             self.log.debug("Storing Fedora image at %s..." % (self.app_config['warehouse'], ))
             # TODO: Revisit target_parameters for different providers
@@ -203,7 +208,19 @@ class FedoraBuilder(BaseBuilder):
             self.log.debug("Image warehouse storage complete")
         self.percent_complete=100
         self.status="COMPLETED"
-    
+
+    def vmware_transform_image(self):
+        # On entry the image points to our generic KVM raw image    
+        # Convert to stream-optimized VMDK and then update the image property
+        target_image = self.app_config['imgdir'] + "/vmware-image-" + self.image_id + ".vmdk"
+        self.log.debug("Converting raw kvm image (%s) to vmware stream-optimized image (%s)" % (self.image, target_image))
+        convert_to_stream(self.image, target_image)
+        self.log.debug("VMWare stream conversion complete")
+        # Save the original image file name but update our property to point to new VMWare image
+        # TODO: Delete the original image?
+        self.original_image = self.image
+        self.image = target_image
+
     def ec2_transform_image(self):
         # On entry the image points to our generic KVM image - we transform image
         #  and then update the image property to point to our new image and update
@@ -880,6 +897,40 @@ chmod 600 /root/.ssh/authorized_keys
         self.warehouse.create_provider_image(self.image_id, metadata=metadata)
         self.percent_complete = 100
 
+    def vmware_push_image_upload(self, image_id, provider, credentials):
+        # Decode the config file, verify that the provider is in it - err out if not
+        # TODO: Make file location CONFIG value
+        cfg_file = open("/etc/vmware.json","r")
+        vmware_json = cfg_file.read()
+        local_vmware=json.loads(vmware_json)
+
+        provider_data = None
+        try:
+            provider_data = local_vmware[provider]
+        except KeyError:
+            raise ImageFactoryException("VMWare instance (%s) not found in local configuraiton file /etc/vmware.json" % (provider))
+
+        # This is where the image should be after a local build
+        input_image = self.app_config['imgdir'] + "/vmware-image-" + image_id + ".vmdk"
+        # Grab from Warehouse if it isn't here
+        self.retrieve_image(image_id, input_image)
+
+        # Example of some JSON for westford_esx
+        # {"westford_esx": {"api-url": "https://vsphere.virt.bos.redhat.com/sdk", "username": "Administrator", "password": "changeme",
+        #       "datastore": "datastore1", "network_name": "VM Network" } }
+
+        vm_name = "factory-image-" + str(self.image_id)
+        vm_import = VMImport(provider_data['api-url'], provider_data['username'], provider_data['password'])
+        vm_import.import_vm(datastore=provider_data['datastore'], network_name = provider_data['network_name'],
+                       name=vm_name, disksize_kb = (10*1024*1024 + 2 ), memory=512, num_cpus=1,
+                       guest_id='otherLinux64Guest', imagefilename=input_image)
+
+        # Create the provdier image
+        metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=vm_name)
+        self.warehouse.create_provider_image(self.image_id, metadata=metadata)
+        self.percent_complete = 100
+
+
     def rhevm_push_image_upload(self, image_id, provider, credentials):
         # Decode the config file, verify that the provider is in it - err out if not
         # TODO: Make file location CONFIG value
@@ -926,6 +977,8 @@ chmod 600 /root/.ssh/authorized_keys
                 self.condorcloud_push_image_upload(image_id, provider, credentials)
             elif self.target == "rhev-m":
                 self.rhevm_push_image_upload(image_id, provider, credentials)
+            elif self.target == "vmware":
+                self.vmware_push_image_upload(image_id, provider, credentials)
             else:
                 raise ImageFactoryException("Invalid upload push requested for target (%s) and provider (%s)" % (self.target, provider))
         except:
