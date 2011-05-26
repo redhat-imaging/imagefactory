@@ -19,6 +19,9 @@ Requires: libxml2-python
 Requires: python-httplib2
 Requires: python-argparse
 Requires: python-cloudservers
+Requires: python-psphere
+Requires: VMDKstream
+Requires: python-suds
 BuildRequires: python
 
 %description
