@@ -39,6 +39,7 @@ from time import sleep
 from time import time
 import logging
 
+logging.getLogger('suds').setLevel(logging.INFO)
 
 class VMImport:
     def __init__(self, url, username, password):
