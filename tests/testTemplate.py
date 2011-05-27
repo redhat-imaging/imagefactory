@@ -18,8 +18,10 @@
 # MA  02110-1301, USA.  A copy of the GNU General Public License is
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
+import os
 import unittest
 import logging
+import tempfile
 from imagefactory.Template import Template
 from imagefactory.ImageWarehouse import ImageWarehouse
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
@@ -69,6 +71,18 @@ class testTemplate(unittest.TestCase):
         self.assertEqual(template_url, template.url)
         self.assertEqual(template_id, template.identifier)
         self.assertEqual(self.template_xml, template.xml)
+
+    def testTemplateFromPath(self):
+        (fd, template_path) = tempfile.mkstemp(prefix = "test_image_factory-")
+        os.write(fd, self.template_xml)
+        os.close(fd)
+
+        template = Template(template_path)
+        self.assertIsNone(template.url)
+        self.assertIsNone(template.identifier)
+        self.assertEqual(self.template_xml, template.xml)
+
+        os.remove(template_path)
 
     def testTemplateStringRepresentation(self):
         template = Template(self.template_xml)

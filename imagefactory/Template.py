@@ -78,6 +78,7 @@ class Template(object):
         self.url = None
         self.xml = None
 
+        path = None
         if(template):
             template_string = str(template)
             template_string_type = self.__template_string_type(template_string)
@@ -87,6 +88,8 @@ class Template(object):
                 url = template_string
             elif(template_string_type == "XML"):
                 xml = template_string
+            elif(template_string_type == "PATH"):
+                path = template_string
 
         if(uuid):
             uuid_string = uuid
@@ -98,16 +101,16 @@ class Template(object):
             self.identifier, self.xml = self.__fetch_template_with_url(url)
         elif(xml):
             self.xml = xml
-        elif(template_string_type == "PATH"):
-            template_file = open(template_string, "r")
+        elif(path):
+            template_file = open(path, "r")
             file_content = template_file.read()
             template_file.close()
             if(self.__string_is_xml_template(file_content)):
                 self.xml = file_content
             else:
-                raise ValueError("File %s does not contain properly formatted template xml:\n%s" % (template_string, self.__abbreviated_template(file_content)))
+                raise ValueError("File %s does not contain properly formatted template xml:\n%s" % (path, self.__abbreviated_template(file_content)))
         else:
-            raise ValueError("'template' must be a UUID, URL, or XML document...")
+            raise ValueError("'template' must be a UUID, URL, XML string or XML document path...")
 
     def __template_string_type(self, template_string):
         regex = re.compile(Template.uuid_pattern)
