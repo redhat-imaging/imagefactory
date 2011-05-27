@@ -43,11 +43,8 @@ class TestImageFactory(unittest.TestCase):
         image_factory_one = ImageFactory()
         image_factory_two = ImageFactory()
         self.assertIs(image_factory_one, image_factory_two)
-    
-    # def testClassDefinition(self):
-    #     pass
-    # 
-
+        del image_factory_one
+        del image_factory_two
 
 if __name__ == '__main__':
-	unittest.main()
+    unittest.main()

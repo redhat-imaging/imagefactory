@@ -30,7 +30,7 @@ import logging
 
 class ImageFactory(object):
     instance = None
-    
+
     # QMF schema for ImageFactory
     qmf_schema = Schema(SCHEMA_TYPE_DATA, "com.redhat.imagefactory", "ImageFactory")
     # method for building images
@@ -51,13 +51,12 @@ class ImageFactory(object):
     _states_method.addArgument(SchemaProperty("class_name", SCHEMA_DATA_STRING, direction=DIR_IN, desc="the name of the class to query for instance states"))
     _states_method.addArgument(SchemaProperty("states", SCHEMA_DATA_STRING, direction=DIR_OUT, desc="string representation of a dictionary describing the workflow"))
     qmf_schema.addMethod(_states_method)
-    
+
     @classmethod
     def object_states(cls):
         """Returns a dictionary representing the finite state machine for instances of this class."""
         return {}
-    
-    
+
     ## Properties
     def qmf_object():
         doc = "The qmf_object property."
@@ -69,40 +68,54 @@ class ImageFactory(object):
             del self._qmf_object
         return locals()
     qmf_object = property(**qmf_object())
-    
-    
+
+    def agent():
+        """The property agent"""
+        def fget(self):
+            return self._agent
+        def fset(self, value):
+            self._agent = value
+        def fdel(self):
+            del self._agent
+        return locals()
+    agent = property(**agent())
+
     def __new__(cls, *p, **k):
         if cls.instance is None:
-            cls.instance = object.__new__(cls, *p, **k)
+            i = super(ImageFactory, cls).__new__(cls, *p, **k)
+            # initialize here, not in __init__()
+            i.log = logging.getLogger('%s.%s' % (__name__, i.__class__.__name__))
+            i.qmf_object = Data(ImageFactory.qmf_schema)
+            #i.agent = k.get('agent', p[0] if (len(p) > 0) else None)
+            i.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
+            cls.instance = i
+        elif(len(p) | len(k) > 0):
+            cls.instance.log.warn('Attempted re-initialize of singleton: %s' % (cls.instance, ))
         return cls.instance
-    
-    def __init__(self, agent=None):
-        self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        self.qmf_object = Data(ImageFactory.qmf_schema)
-        self.agent = agent
-        self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
-    
+
+    def __init__(self):
+        pass
+
     def image(self,template,target):
         template_object = Template(template=template)
         build_adaptor = BuildAdaptor.BuildAdaptor(template_object,target,self.agent)
         build_adaptor.build_image()
         return build_adaptor
-    
+
     def provider_image(self,image_id, provider, credentials):
         image_metadata = self.warehouse.metadata_for_id_of_type(("template", "target"), image_id, "image")
         template_id = image_metadata["template"]
         target = image_metadata["target"]
-        
+
         if (template_id and target):
             build_adaptor = BuildAdaptor.BuildAdaptor(Template(uuid=template_id),target,self.agent)
             build_adaptor.push_image(image_id, provider, credentials)
             return build_adaptor
         else:
             raise RuntimeError("Could not return build_adaptor!\nimage_metadata: %s\ntemplate_id: %s\ntemplate: %s\n" % (image_metadata, template_id, target))
-    
+
     def instance_states(self, class_name):
         """Returns a dictionary representing the finite state machine for instances of the class specified."""
         module_name = "imagefactory.qmfagent.%s" % (class_name, )
         __import__(module_name)
         return dict(states=str(getattr(sys.modules[module_name], class_name).object_states()))
-    

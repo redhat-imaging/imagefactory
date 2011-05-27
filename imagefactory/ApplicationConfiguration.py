@@ -22,10 +22,11 @@ import sys
 import os
 import argparse
 import json
+import logging
 
 class ApplicationConfiguration(object):
     instance = None
-    
+
     def configuration():
         doc = "The configuration property."
         def fget(self):
@@ -36,34 +37,38 @@ class ApplicationConfiguration(object):
             del self._configuration
         return locals()
     configuration = property(**configuration())
-    
-    
+
     def __new__(cls, *p, **k):
         if cls.instance is None:
-            cls.instance = object.__new__(cls, *p, **k)
+            i = super(ApplicationConfiguration, cls).__new__(cls, *p, **k)
+            #initialize here, not in __init__()
+            i.log = logging.getLogger('%s.%s' % (__name__, i.__class__.__name__))
+            i.configuration = {}
+            i.argparser = i.__new_argument_parser()
+            arguments = i.parse_arguments()
+
+            config_file_path = arguments.config
+            if (os.path.isfile(config_file_path)):
+                try:
+                    config_file = open(config_file_path)
+                    uconfig = json.load(config_file)
+                    # coerce this dict to ascii for python 2.6
+                    config = {}
+                    for k, v in uconfig.items():
+                        config[k.encode('ascii')]=v.encode('ascii')
+                    i.configuration = i.parse_arguments(defaults=config).__dict__
+                except IOError, e:
+                    i.log.exception(e)
+                    i.configuration = arguments
+
+            cls.instance = i
+        elif(len(p) | len(k) > 0):
+            cls.instance.log.warn('Attempted re-initialize of singleton: %s' % (cls.instance, ))
         return cls.instance
-    
+
     def __init__(self):
-        super(ApplicationConfiguration, self).__init__()
-        self.configuration = {}
-        self.argparser = self.__new_argument_parser()
-        arguments = self.parse_arguments()
-        
-        config_file_path = arguments.config
-        if (os.path.isfile(config_file_path)):
-            try:
-                config_file = open(config_file_path)
-                uconfig = json.load(config_file)
-                # coerce this dict to ascii for python 2.6
-                config = {}
-                for k, v in uconfig.items():
-                    config[k.encode('ascii')]=v.encode('ascii')
-                self.configuration = self.parse_arguments(defaults=config).__dict__
-            except IOError, e:
-                logging.exception(e)
-                self.configuration = arguments
-            
-    
+            pass
+
     def __new_argument_parser(self):
         main_description = """Image Factory is an application for creating system images to run virtual machines in various public and private \
                                 clouds.  The imgfac command can be used to start a daemon providing a QMFv2 agent interface, allowing for \
@@ -73,7 +78,7 @@ class ApplicationConfiguration(object):
         cli_build_description = """Build specified system and exit."""
         cli_push_description = """Instantiate an image and exit."""
         warehouse_description = """Options for specifying Image Warehouse (http://aeolusproject.org/imagewarehouse.html) base URL and bucket names."""
-        
+
         argparser = argparse.ArgumentParser(description=main_description, prog='imgfac')
         argparser.add_argument('--version', action='version', version='%(prog)s 0.1', help='Version info')
         argparser.add_argument('-v', '--verbose', action='store_true', default=False, help='Set verbose logging.')
@@ -99,9 +104,9 @@ class ApplicationConfiguration(object):
         group_warehouse.add_argument('--template_bucket', help='Name of warehouse bucket to look in for templates. (default: %(default)s)')
         group_warehouse.add_argument('--icicle_bucket', help='Name of warehouse bucket to look in for icicles. (default: %(default)s)')
         group_warehouse.add_argument('--provider_bucket', help='Name of warehouse bucket to look in for provider image instances. (default: %(default)s)')
-        
+
         return argparser
-    
+
     def parse_arguments(self, defaults=None):
         if(defaults):
             self.argparser.set_defaults(**defaults)
@@ -114,4 +119,3 @@ class ApplicationConfiguration(object):
             return self.argparser.parse_args('--image_bucket unittests_images --template_bucket unittests_templates --icicle_bucket unittests_icicles --provider_bucket unittests_provider_images'.split())
         else:
             return self.argparser.parse_args([])
-    
