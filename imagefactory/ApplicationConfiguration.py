@@ -106,20 +106,17 @@ class ApplicationConfiguration(object):
             return self.argparser.parse_args([])
 
     def __parse_arguments(self):
-        self.configuration = {}
         self.argparser = self.__new_argument_parser()
-        arguments = self.__parse_args()
-
-        config_file_path = arguments.config
-        if (os.path.isfile(config_file_path)):
+        configuration = self.__parse_args()
+        if (os.path.isfile(configuration.config)):
             try:
-                config_file = open(config_file_path)
+                config_file = open(configuration.config)
                 uconfig = json.load(config_file)
                 # coerce this dict to ascii for python 2.6
                 config = {}
                 for k, v in uconfig.items():
                     config[k.encode('ascii')]=v.encode('ascii')
-                return self.__parse_args(defaults=config).__dict__
+                configuration = self.__parse_args(defaults=config)
             except IOError, e:
                 i.log.exception(e)
-                return arguments
+        return configuration.__dict__
