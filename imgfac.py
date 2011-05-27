@@ -44,7 +44,7 @@ class Application(object):
 
     def __new__(cls, *p, **k):
         if cls.instance is None:
-            i = super(Application, self).__new__(cls, *p, **k)
+            i = super(Application, cls).__new__(cls, *p, **k)
             # initialize here, not in __init__()
             i.log = logging.getLogger('%s.%s' % (__name__, i.__class__.__name__))
             i.daemon = False
@@ -55,7 +55,7 @@ class Application(object):
             # by setting TMPDIR here we make sure that libguestfs
             # (imagefactory -> oz -> libguestfs) uses the temporary directory of
             # the user's choosing
-            os.putenv('TMPDIR', self.app_config['tmpdir'])
+            os.putenv('TMPDIR', i.app_config['tmpdir'])
 
             cls.instance = i
         elif(len(p) | len(k) > 0):
