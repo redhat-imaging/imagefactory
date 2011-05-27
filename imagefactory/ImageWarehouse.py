@@ -114,18 +114,30 @@ class ImageWarehouse(object):
 
         self.log.debug("Created Image Warehouse instance %s" % (self, ))
 
-    def create_bucket_at_url(self, url):
+    def _http_request(self, url, method, body = None, content_type = 'text/plain'):
         try:
-            response_headers, response = self.http.request(url, "PUT", headers={'content-type':'text/plain'})
-            status = int(response_headers["status"])
-            if(399 < status < 600):
-                # raise RuntimeError("Could not create bucket: %s" % url)
-                self.log.info("Creating a bucket returned status %s.  If only iwhd would provide a sane way to know if a bucket exists so we wouldn't have to try and create one every time..." % (status, ))
-                return False
-            else:
-                return True
+            return self.http.request(url, method, body, headers={'content-type': content_type})
         except Exception, e:
             raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
+
+    def _http_get(self, url):
+        return self._http_request(url, 'GET')[1]
+
+    def _http_post(self, url, body, content_type):
+        return self._http_request(url, 'POST', body, content_type)[1]
+
+    def _http_put(self, url, body = None):
+        self._http_request(url, 'PUT', body)[1]
+
+    def create_bucket_at_url(self, url):
+        response_headers, response = self._http_request(url, 'PUT')
+        status = int(response_headers["status"])
+        if(399 < status < 600):
+            # raise RuntimeError("Could not create bucket: %s" % url)
+            self.log.info("Creating a bucket returned status %s.  If only iwhd would provide a sane way to know if a bucket exists so we wouldn't have to try and create one every time..." % (status, ))
+            return False
+        else:
+            return True
 
     def __url_for_id_of_type(self, object_id, object_type, create=True):
         bucket = getattr(self, "_%s_bucket" % (object_type, ))
@@ -140,45 +152,32 @@ class ImageWarehouse(object):
 
     def post_on_object_with_id_of_type(self, object_id, object_type, post_data):
         object_url = self.__url_for_id_of_type(object_id, object_type, create=False)
-        try:
-            response_headers, response = self.http.request(object_url, "POST", urllib.urlencode(post_data), headers={'Content-Type': 'application/x-www-form-urlencoded'})
-            return response
-        except Exception, e:
-            raise WarehouseError("Problem encountered trying to POST to image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
+        return self._http_post(object_url, urllib.urlencode(post_data), 'application/x-www-form-urlencoded')
 
     def object_with_id_of_type(self, object_id, object_type, metadata_keys=()):
         object_url = self.__url_for_id_of_type(object_id, object_type, create=False)
-        try:
-            response_headers, response = self.http.request(object_url, "GET", headers={'content-type':'text/plain'})
-            if(len(metadata_keys) > 0):
-                metadata = self.metadata_for_id_of_type(metadata_keys, object_id, object_type)
-            else:
-                metadata = {}
-            return response, metadata
-        except Exception, e:
-            raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
+        obj = self._http_get(object_url)
+        if(len(metadata_keys) > 0):
+            metadata = self.metadata_for_id_of_type(metadata_keys, object_id, object_type)
+        else:
+            metadata = {}
+        return obj, metadata
 
     def object_for_image_id(self, image_id, object_type, metadata_keys=()):
         object_url = self.__url_for_id_of_type(image_id, "image", create=False)
-        try:
-            response_headers, object_id = self.http.request("%s/%s" % (object_url, object_type), "GET", headers={'content-type':'text/plain'})
-        except Exception, e:
-            raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
+        object_id = self._http_get("%s/%s" % (object_url, object_type))
 
         the_object, metadata = self.object_with_id_of_type(object_id, object_type, metadata_keys)
         return object_id, the_object, metadata
 
     def delete_object_at_url(self, object_url):
-        try:
-            response_headers, response = self.http.request(object_url, "DELETE", headers={'content-type':'text/plain'})
-            status = int(response_headers["status"])
-            if(status == 200):
-                return True
-            else:
-                self.log.error("Unable to delete object from %s.  Warehouse returned status %s." % (object_url, status))
-                return False
-        except Exception, e:
-            raise WarehouseError("Problem encountered trying to delete object at %s.\nPlease check that iwhd is running and reachable.\nException text: %s" % (object_url, e))
+        response_headers, response = self._http_request(object_url, 'DELETE')
+        status = int(response_headers["status"])
+        if(status == 200):
+            return True
+        else:
+            self.log.error("Unable to delete object from %s.  Warehouse returned status %s." % (object_url, status))
+            return False
 
     def delete_object_with_id_of_type(self, object_id, object_type):
         object_url = self.__url_for_id_of_type(object_id, object_type, create=False)
@@ -189,27 +188,20 @@ class ImageWarehouse(object):
         self.set_metadata_for_object_at_url(metadata, object_url)
 
     def set_metadata_for_object_at_url(self, metadata, object_url):
-        try:
-            self.log.debug("Setting metadata (%s) for %s" % (metadata, object_url))
-            for item in metadata:
-                response_header, response = self.http.request("%s/%s" % (object_url, item), "PUT", body=str(metadata[item]), headers={'content-type':'text/plain'})
-        except Exception, e:
-            raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
+        self.log.debug("Setting metadata (%s) for %s" % (metadata, object_url))
+        for item in metadata:
+            self._http_put("%s/%s" % (object_url, item), str(metadata[item]))
 
     def metadata_for_id_of_type(self, metadata_keys, object_id, object_type):
         object_url = self.__url_for_id_of_type(object_id, object_type, create=False)
         return self.metadata_for_object_at_url(metadata_keys, object_url)
 
     def metadata_for_object_at_url(self, metadata_keys, object_url):
-        try:
-            self.log.debug("Getting metadata (%s) from %s" % (metadata_keys, object_url))
-            metadata = dict()
-            for item in metadata_keys:
-                response_header, response = self.http.request("%s/%s" % (object_url, item), "GET", headers={'content-type':'text/plain'})
-                metadata.update( { item : response } )
-            return metadata
-        except Exception, e:
-            raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
+        self.log.debug("Getting metadata (%s) from %s" % (metadata_keys, object_url))
+        metadata = dict()
+        for item in metadata_keys:
+            metadata.update( { item : self._http_get("%s/%s" % (object_url, item)) } )
+        return metadata
 
     def store_image(self, image_id, image_file_path, metadata=None):
         object_url = self.__url_for_id_of_type(image_id, "image")
@@ -243,10 +235,7 @@ class ImageWarehouse(object):
             else:
                 txt = "This object only exists to hold metadata."
 
-        try:
-            response_headers, response = self.http.request(object_url, "PUT", body=txt, headers={'content-type':'text/plain'})
-        except Exception, e:
-            raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
+        self._http_put(object_url, txt)
 
         meta_data = dict(uuid=str(image_id), object_type="provider_image")
         if(metadata):
@@ -258,10 +247,7 @@ class ImageWarehouse(object):
             template_id = uuid.uuid4()
         object_url = self.__url_for_id_of_type(template_id, object_type="template")
 
-        try:
-            response_headers, response = self.http.request(object_url, "PUT", body=template, headers={'content-type':'text/plain'})
-        except Exception, e:
-            raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
+        self._http_put(object_url, template)
 
         meta_data = dict(uuid=str(template_id), object_type="template")
         if(metadata):
@@ -275,10 +261,7 @@ class ImageWarehouse(object):
             icicle_id = uuid.uuid4()
         object_url = self.__url_for_id_of_type(icicle_id, object_type="icicle")
 
-        try:
-            response_headers, response = self.http.request(object_url, "PUT", body=icicle, headers={'content-type':'text/plain'})
-        except Exception, e:
-            raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
+        self._http_put(object_url, icicle)
 
         meta_data = dict(uuid=str(icicle_id), object_type="icicle")
         if(metadata):
