@@ -28,9 +28,9 @@ from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 class TestApplicationConfiguration(unittest.TestCase):
     def setUp(self):
         logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/tmp/imagefactory-unittests.log')
-        
+
         self.defaults = dict(verbose=False, debug=False, foreground=False, config="/etc/imagefactory.conf", imgdir="/tmp", qmf=False, qpidd="localhost", warehouse=None, template=None)
-        
+
         config_file_path = self.defaults["config"]
         if (os.path.isfile(config_file_path)):
             try:
@@ -39,18 +39,18 @@ class TestApplicationConfiguration(unittest.TestCase):
                 config_file.close()
             except IOError, e:
                 pass
-        
-    
+
+
     def tearDown(self):
         del self.defaults
-    
+
     def testSingleton(self):
         self.assertIs(ApplicationConfiguration(), ApplicationConfiguration())
-    
+
     # def testConfigurationDictionaryDefaults(self):
     #     self.assertIsNotNone(ApplicationConfiguration().configuration)
     #     self.assertDictContainsSubset(self.defaults, ApplicationConfiguration().configuration)
-    # 
+    #
 
 if __name__ == '__main__':
     unittest.main()

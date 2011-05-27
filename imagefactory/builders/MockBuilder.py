@@ -32,13 +32,13 @@ from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 class MockBuilder(BaseBuilder):
     """docstring for MockBuilder"""
     zope.interface.implements(IBuilder)
-    
+
     # Initializer
     def __init__(self, template="<template><name>Mock</name></template>", target='mock'):
         super(MockBuilder, self).__init__(template, target)
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.app_config = ApplicationConfiguration().configuration
-    
+
     # Image actions
     def build_image(self):
         if(self.template.xml == "<template>FAIL</template>"):
@@ -52,11 +52,11 @@ class MockBuilder(BaseBuilder):
             self.status = "INITIALIZING"
             self.log.debug("Initializing mock image...")
             self.percent_complete = 0
-            
+
             directory = os.path.dirname(self.image)
             if (not os.path.exists(directory)):
                 os.makedirs(directory)
-            
+
             with open(self.image, 'w') as image_file:
                 self.status = "PENDING"
                 self.log.debug("Building mock image...")
@@ -73,7 +73,7 @@ class MockBuilder(BaseBuilder):
                 image_file.write(":created_by: %s\n" % (sys.argv[0].rpartition('/')[2], ))
                 image_file.write(":created_on: %s\n" % (time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()), ))
                 image_file.close()
-            
+
             self.percent_complete = 50
             self.percent_complete = 75
             self.percent_complete = 95
@@ -82,9 +82,9 @@ class MockBuilder(BaseBuilder):
             self.percent_complete = 100
             self.status = "COMPLETED"
             self.log.debug("Completed mock image build...")
-            
+
             self.store_image()
-    
+
     def push_image(self, image_id, provider, credentials):
         self.status = "INITIALIZING"
         try:
@@ -108,10 +108,10 @@ class MockBuilder(BaseBuilder):
         except Exception, e:
             failing_thread = FailureThread(target=self, kwargs=dict(message="%s" % (e, )))
             failing_thread.start()
-    
+
     def abort(self):
         self.log.debug("Method abort() called on MockBuilder instance %s" % (id(self), ))
-    
+
 
 class FailureThread(Thread):
     """docstring for FailureThread"""
@@ -119,10 +119,7 @@ class FailureThread(Thread):
         super(FailureThread, self).__init__(group=None, target=None, name=None, args=(), kwargs={})
         self.target = target
         self.message = kwargs["message"]
-    
+
     def run(self):
         time.sleep(1)
         self.target.delegate.builder_did_fail(self, "Mock", self.message)
-    
-
-        

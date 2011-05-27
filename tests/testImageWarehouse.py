@@ -30,11 +30,11 @@ class testImageWarehouse(unittest.TestCase):
         logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/tmp/imagefactory-unittests.log')
         self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
         self.metadata = dict(key1="value1", key2="value2", key3="value3")
-    
+
     def tearDown(self):
         del self.warehouse
         del self.metadata
-    
+
     def testImageWarehouseMethods(self):
         """Tests CRUD operations on images, templates, icicles, and metadata on those objects..."""
         # IMAGE
@@ -51,7 +51,7 @@ class testImageWarehouse(unittest.TestCase):
         # now make the assertions
         self.assertEqual(file_content, image)
         self.assertEqual(self.metadata, metadata)
-        
+
         # TEMPLATE
         template_content = "<template>This is a test template. There is not much to see here.</template>"
         # store the template and let an id get assigned
@@ -71,7 +71,7 @@ class testImageWarehouse(unittest.TestCase):
         template_id3, fetched_template_content3, template_metadata3 = self.warehouse.template_for_image_id(image_id)
         self.assertEqual(str(template_id), template_id3)
         self.assertEqual(template_content, fetched_template_content3)
-        
+
         # ICICLE
         icicle_content = "<icicle>This is a test icicle. There is not much to see here.</icicle>"
         # store the icicle and let an id get assigned
@@ -91,18 +91,18 @@ class testImageWarehouse(unittest.TestCase):
         icicle_id3, fetched_icicle_content3, icicle_metadata3 = self.warehouse.icicle_for_image_id(image_id)
         self.assertEqual(str(icicle_id), icicle_id3)
         self.assertEqual(icicle_content, fetched_icicle_content3)
-        
+
         self.assertTrue(self.warehouse.remove_image_with_id(image_id))
         self.assertTrue(self.warehouse.remove_template_with_id(template_id))
         self.assertTrue(self.warehouse.remove_template_with_id(template_id2))
         self.assertTrue(self.warehouse.remove_icicle_with_id(icicle_id))
         self.assertTrue(self.warehouse.remove_icicle_with_id(icicle_id2))
-    
+
     def testBucketCreation(self):
         # self.assert_(self.warehouse.create_bucket_at_url("%s/unittests-create_bucket/%s" % (self.warehouse.url, uuid.uuid4())))
         self.warehouse.create_bucket_at_url("%s/unittests-create_bucket" % (self.warehouse.url, ))
         self.assert_(self.warehouse.create_bucket_at_url("%s/unittests-create_bucket/%s" % (self.warehouse.url, time.asctime().replace(' ', '-'))))
-    
+
 
 
 if __name__ == '__main__':

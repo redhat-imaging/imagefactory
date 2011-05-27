@@ -49,7 +49,7 @@ from VMDKstream import convert_to_stream
 def subprocess_check_output(*popenargs, **kwargs):
     if 'stdout' in kwargs:
         raise ValueError('stdout argument not allowed, it will be overridden.')
-    
+
     process = subprocess.Popen(stdout=subprocess.PIPE, stderr=subprocess.STDOUT, *popenargs, **kwargs)
     stdout, stderr = process.communicate()
     retcode = process.poll()
@@ -78,14 +78,14 @@ class FedoraBuilder(BaseBuilder):
     # Reference vars - don't change these
     # EC2 is a special case as it can be either and is set in the config file
     upload_clouds = [ "rhev-m", "vmware", "condorcloud" ]
-    nonul_clouds = [ "rackspace", "gogrid" ]     
+    nonul_clouds = [ "rackspace", "gogrid" ]
 
     def __init__(self, template, target):
         super(FedoraBuilder, self).__init__(template, target)
         self.app_config = ApplicationConfiguration().configuration
         self.warehouse_url = self.app_config['warehouse']
         # TODO: Should this be in base?  Does image_id ever need to be an actual UUID object?
-        self.image_id = str(self.image_id)	
+        self.image_id = str(self.image_id)
         # May not be necessary to do both of these
         self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml)
 
@@ -100,7 +100,7 @@ class FedoraBuilder(BaseBuilder):
         if guesttype == "local":
             self.guest = oz.Fedora.get_class(self.tdlobj, config, None)
         else:
-            self.guest = FedoraRemoteGuest(self.tdlobj, config, None, "virtio", True, "virtio", True)    
+            self.guest = FedoraRemoteGuest(self.tdlobj, config, None, "virtio", True, "virtio", True)
         self.guest.diskimage = self.app_config["imgdir"] + "/base-image-" + self.image_id + ".dsk"
         # Oz assumes unique names - TDL built for multiple backends guarantees they are not unique
         # We don't really care about the name so just force uniqueness
@@ -179,7 +179,7 @@ class FedoraBuilder(BaseBuilder):
                 raise
         finally:
             self.guest.cleanup_install()
-        
+
         self.log.debug("Generated disk image (%s)" % (self.guest.diskimage))
         # OK great, we now have a customized KVM image
         # Now we do some target specific transformation
@@ -192,12 +192,12 @@ class FedoraBuilder(BaseBuilder):
             self.ec2_transform_image()
         elif self.target == "vmware":
             self.log.info("Transforming image for use on VMWare")
-            self.vmware_transform_image()        
+            self.vmware_transform_image()
 
         if (self.app_config['warehouse']):
             self.log.debug("Storing Fedora image at %s..." % (self.app_config['warehouse'], ))
             # TODO: Revisit target_parameters for different providers
-            
+
             if self.target in [ "condorcloud", "rhev-m" ]:
                 # TODO: Prune any unneeded elements
                 target_parameters=libvirt_xml
@@ -210,7 +210,7 @@ class FedoraBuilder(BaseBuilder):
         self.status="COMPLETED"
 
     def vmware_transform_image(self):
-        # On entry the image points to our generic KVM raw image    
+        # On entry the image points to our generic KVM raw image
         # Convert to stream-optimized VMDK and then update the image property
         target_image = self.app_config['imgdir'] + "/vmware-image-" + self.image_id + ".vmdk"
         self.log.debug("Converting raw kvm image (%s) to vmware stream-optimized image (%s)" % (self.image, target_image))
@@ -264,24 +264,24 @@ class FedoraBuilder(BaseBuilder):
 
         g.sync ()
         g.umount_all ()
-    
+
 
     def ec2_copy_filesystem(self, output_dir):
         target_image=output_dir + "/ec2-image-" + self.image_id + ".dsk"
-        
+
         self.log.debug("init guestfs")
         g = guestfs.GuestFS ()
-        
+
         self.log.debug("add input image")
         g.add_drive (self.image)
-        
+
         self.log.debug("creat target image")
         f = open (target_image, "w")
         # TODO: Can this be larger, smaller - should it be?
         f.truncate (10000 * 1024 * 1024)
         f.close ()
         g.add_drive(target_image)
-        
+
         self.log.debug("creat tmp image")
         # We need a small FS to mount target and dest on - make image file for it
         # TODO: Use Marek's create mount point trick instead of a temp file
@@ -290,16 +290,16 @@ class FedoraBuilder(BaseBuilder):
         f.truncate (10 * 1024 * 1024)
         f.close
         g.add_drive(tmp_image_file)
-        
+
         self.log.debug("launch guestfs")
         g.launch ()
-        
+
         # TODO: Re-enable this?
         # Do inspection here, as libguestfs prefers we do it before mounting anything
         #inspection = g.inspect_os()
         # This assumes, I think reasonably, only one OS on the disk image provided by Oz
         #rootdev = inspection[0]
-        
+
         # At this point sda is original image - sdb is blank target - sdc is small helper
         self.log.info("Making filesystems for EC2 transform")
         # TODO: Make different FS types depending on the type of the original root fs
@@ -316,20 +316,20 @@ class FedoraBuilder(BaseBuilder):
         g.mount_ro ("/dev/VolGroup00/LogVol00", "/in")
         g.mount_ro ("/dev/sda1", "/in/boot")
         g.mount_options ("", "/dev/sdb", "/out/in")
-        
+
         self.log.info("Copying image contents to EC2 flat filesystem")
         g.cp_a("/in/", "/out")
         self.log.info("Done")
-        
+
         g.sync ()
         g.umount_all ()
         os.unlink(tmp_image_file)
-        
+
         # Save the original image file name but update our property to point to new EC2 image
         # TODO: Delete the original image?
         self.original_image = self.image
         self.image = target_image
-    
+
     def ec2_modify_filesystem(self):
         # Modifications
         # Many of these are more or less directly ported from BoxGrinder
@@ -338,39 +338,39 @@ class FedoraBuilder(BaseBuilder):
 
         # TODO: This would be safer and more robust if done within the running modified
         # guest - in this would require tighter Oz integration
-        
+
         g = guestfs.GuestFS ()
-        
+
         g.add_drive(self.image)
         g.launch ()
-        
+
         # Do inspection here, as libguestfs prefers we do it before mounting anything
         inspection = g.inspect_os()
         # This should always be /dev/vda or /dev/sda but we do it anyway to be safe
-        osroot = inspection[0] 
-        
+        osroot = inspection[0]
+
         # eg "fedora"
         distro = g.inspect_get_distro(osroot)
         arch = g.inspect_get_arch(osroot)
         major_version = g.inspect_get_major_version(osroot)
         minor_version = g.inspect_get_minor_version(osroot)
-        
+
         self.log.debug("distro: %s - arch: %s - major: %s - minor %s" % (distro, arch, major_version, minor_version))
-        
+
         g.mount_options ("", osroot, "/")
-        
+
         self.log.info("Modifying flat FS contents to be EC2 compatible")
-        
+
         self.log.info("Disabling SELINUX")
         tmpl = '# Factory Disabled SELINUX - sorry\nSELINUX=permissive\nSELINUXTYPE=targeted\n'
         g.write("/etc/sysconfig/selinux", tmpl)
-        
+
         # Make a /data directory for 64 bit hosts
         # Ephemeral devs come pre-formatted from AWS - weird
         if arch == "x86_64":
             self.log.info("Making data directory")
             g.mkdir("/data")
-        
+
         # BG - Upload one of two templated fstabs
         # Input - root device name
         # PREFIX is xv unless we are dealing with RHEL5, which is interesting - must mean we hack
@@ -381,28 +381,28 @@ class FedoraBuilder(BaseBuilder):
         # TODO: Match OS default behavior and/or what is found in the existing image
         prefix="xv"
         fstype="ext3"
-        
+
         self.log.info("Modifying and uploading fstab")
         # Make arch conditional
         if arch == "x86_64":
             tmpl=self.fstab_64bit
         else:
             tmpl=self.fstab_32bit
-        
+
         tmpl = string.replace(tmpl, "#DISK_DEVICE_PREFIX#", prefix)
         tmpl = string.replace(tmpl, "#FILESYSTEM_TYPE#", fstype)
         g.write("/etc/fstab", tmpl)
-        
+
         # BG - Enable networking
         # Upload a known good ifcfg-eth0 and then chkconfig on networking
         self.log.info("Enabling networking and uploading ifcfg-eth0")
         g.sh("/sbin/chkconfig network on")
         g.write("/etc/sysconfig/network-scripts/ifcfg-eth0", self.ifcfg_eth0)
-        
+
         # Disable first boot - this slows things down otherwise
         if g.is_file("/etc/init.d/firstboot"):
             g.sh("/sbin/chkconfig firstboot off")
-        
+
         # BG - Upload rc.local extra content
         # Again, this uses a static copy - this bit is where the ssh key is downloaded
         # TODO: Is this where we inject puppet?
@@ -411,11 +411,11 @@ class FedoraBuilder(BaseBuilder):
         self.log.info("Updating rc.local for key injection")
         g.write("/tmp/rc.local", self.rc_local)
         g.sh("cat /tmp/rc.local >> /etc/rc.local")
-        
+
         # Install menu list
         # Derive the kernel version from the last element of ls /lib/modules and some
         # other magic - look at linux_helper for details
-        
+
         # Look at /lib/modules and assume that the last kernel listed is the version we use
         self.log.info("Modifying and updating menu.lst")
         kernel_versions = g.ls("/lib/modules")
@@ -438,23 +438,23 @@ class FedoraBuilder(BaseBuilder):
 
         self.log.debug("Using kernel version: %s" % (kernel_version))
 
-        
+
         # We could deduce this from version but it's easy to inspect
         bootramfs = int(g.sh("ls -1 /boot | grep initramfs | wc -l"))
         ramfs_prefix = "initramfs" if bootramfs > 0 else "initrd"
-        
+
         name="Image Factory EC2 boot - kernel: " + kernel_version
 
         if (distro == "rhel") and (major_version == 5):
             g.sh("/sbin/mkinitrd -f -v --preload xenblk --preload xennet /boot/initrd-%s.img %s" % (kernel_version))
-        
+
         tmpl = self.menu_lst
         tmpl = string.replace(tmpl, "#KERNEL_VERSION#", kernel_version)
         tmpl = string.replace(tmpl, "#KERNEL_IMAGE_NAME#", ramfs_prefix)
         tmpl = string.replace(tmpl, "#TITLE#", name)
-        
-        g.write("/boot/grub/menu.lst", tmpl)       
- 
+
+        g.write("/boot/grub/menu.lst", tmpl)
+
         # F14 bug fix
         # This fixes issues with Fedora 14 on EC2: https://bugzilla.redhat.com/show_bug.cgi?id=651861#c39
         if (distro == "fedora") and (major_version == 14):
@@ -462,13 +462,13 @@ class FedoraBuilder(BaseBuilder):
             g.sh("echo \"hwcap 1 nosegneg\" > /etc/ld.so.conf.d/libc6-xen.conf")
             g.sh("/sbin/ldconfig")
             self.log.info("Done with EC2 filesystem modifications")
-        
+
         g.sync ()
         g.umount_all ()
-        
+
         # TODO: Based on architecture associate one of two XML blocks that contain the correct
         # regional AKIs for pvgrub
-    
+
     def push_image(self, image_id, provider, credentials):
         try:
             if  self.target in self.upload_clouds or (self.target == "ec2" and self.app_config["ec2_build_style"] == "upload"):
@@ -704,7 +704,7 @@ chmod 600 /root/.ssh/authorized_keys
 
         # Now launch it
         reservation = conn.run_instances(ami_id,instance_type=instance_type,user_data=user_data, security_groups = [ factory_security_group_name ])
-        
+
         if len(reservation.instances) != 1:
             self.status="FAILED"
             raise ImageFactoryException("run_instances did not result in the expected single instance - stopping")
@@ -818,7 +818,7 @@ chmod 600 /root/.ssh/authorized_keys
                 else:
                     raise
             # TODO: End of copy
-       
+
             # TODO: We cannot timeout on any of the three commands below - can we fix that?
             manifest = "/mnt/bundles/%s.manifest.xml" % (uuid)
             command = 'euca-upload-bundle -b %s -m %s --ec2cert /tmp/cert-ec2.pem -a "%s" -s "%s" -U %s' % (bucket, manifest, self.ec2_access_key, self.ec2_secret_key, upload_url)
@@ -857,7 +857,7 @@ chmod 600 /root/.ssh/authorized_keys
         input_image = self.app_config["imgdir"] + "/base-image-" + image_id + ".dsk"
         # Grab from Warehouse if it isn't here
         self.retrieve_image(image_id, input_image)
-        
+
         storage = "/home/cloud/images"
         if not os.path.isdir(storage):
             raise ImageFactoryException("Storage dir (%s) for condorcloud is not present" % (storage))
@@ -865,7 +865,7 @@ chmod 600 /root/.ssh/authorized_keys
         staging = storage + "/staging"
         if not os.path.isdir(staging):
             raise ImageFactoryException("Staging dir (%s) for condorcloud is not present" % (staging))
-               
+
         image_base = "/condorimage-" + str(self.image_id) + ".img"
         staging_image = staging + image_base
 
@@ -882,7 +882,7 @@ chmod 600 /root/.ssh/authorized_keys
         image_metadata = self.warehouse.metadata_for_id_of_type(("target_parameters",), image_id, "image")
         self.log.debug("Got metadata output of: %s", repr(image_metadata))
         libvirt_xml = image_metadata["target_parameters"]
-        
+
         f = open(image_xml_file, 'w')
         f.write(libvirt_xml)
         f.close()
@@ -990,10 +990,10 @@ chmod 600 /root/.ssh/authorized_keys
             raise
         self.status="COMPLETED"
 
-    def ec2_decode_credentials(self, credentials): 
+    def ec2_decode_credentials(self, credentials):
         doc = libxml2.parseDoc(credentials)
         ctxt = doc.xpathNewContext()
-        
+
         self.ec2_user_id = ctxt.xpathEval("//provider_credentials/ec2_credentials/account_number")[0].content
         self.ec2_access_key = ctxt.xpathEval("//provider_credentials/ec2_credentials/access_key")[0].content
         self.ec2_secret_key = ctxt.xpathEval("//provider_credentials/ec2_credentials/secret_access_key")[0].content
@@ -1017,14 +1017,14 @@ chmod 600 /root/.ssh/authorized_keys
         ec2_cert = ec2_cert_node[0].content
 
         doc.freeDoc()
-        ctxt.xpathFreeContext()		
-        
+        ctxt.xpathFreeContext()
+
         # Shove certs into  named temporary files
         self.ec2_cert_file_object = NamedTemporaryFile()
         self.ec2_cert_file_object.write(ec2_cert)
         self.ec2_cert_file_object.flush()
         self.ec2_cert_file=self.ec2_cert_file_object.name
-        
+
         self.ec2_key_file_object = NamedTemporaryFile()
         self.ec2_key_file_object.write(ec2_key)
         self.ec2_key_file_object.flush()
@@ -1047,20 +1047,20 @@ chmod 600 /root/.ssh/authorized_keys
             fp.close()
         else:
             self.log.debug("Image file %s already present - skipping warehouse download" % (local_image_file))
- 
+
 
     def ec2_push_image_upload(self, image_id, provider, credentials):
-        self.ec2_decode_credentials(credentials)      
+        self.ec2_decode_credentials(credentials)
 
         # if the image is already here, great, otherwise grab it from the warehouse
         input_image_path=self.app_config['imgdir'] + "/"
         input_image_name="ec2-image-" + image_id + ".dsk"
         input_image=input_image_path + input_image_name
-        
+
         self.retrieve_image(image_id, input_image)
 
         bundle_destination=self.app_config['imgdir']
-        
+
         # TODO: Cross check against template XML and warn if they do not match
         g = guestfs.GuestFS ()
         g.add_drive(input_image)
@@ -1074,9 +1074,9 @@ chmod 600 /root/.ssh/authorized_keys
             self.log.debug("Warning - unable to inspect EC2 image file - assuming x86_64 arch")
             arch = "x86_64"
         g.umount_all()
-        
+
         self.percent_complete=10
-        
+
         # TODO: Ideally we should use boto "Location" references when possible - 1.9 contains only DEFAULT and EU
         #       The rest are hard coded strings for now.
         ec2_region_details=\
@@ -1085,10 +1085,10 @@ chmod 600 /root/.ssh/authorized_keys
          'ec2-ap-southeast-1': { 'boto_loc': 'ap-southeast-1',     'host':'ap-southeast-1', 'i386': 'aki-13d5aa41', 'x86_64': 'aki-11d5aa43' },
          'ec2-ap-northeast-1': { 'boto_loc': 'ap-northeast-1',     'host':'ap-northeast-1', 'i386': 'aki-d209a2d3', 'x86_64': 'aki-d409a2d5' },
          'ec2-eu-west-1':      { 'boto_loc': Location.EU,          'host':'eu-west-1',      'i386': 'aki-4deec439', 'x86_64': 'aki-4feec43b' } }
-        
+
         region=provider
         region_conf=ec2_region_details[region]
-        aki = region_conf[arch] 
+        aki = region_conf[arch]
         boto_loc = region_conf['boto_loc']
         if region != "ec2-us-east-1":
             upload_url = "http://s3-%s.amazonaws.com/" % (region_conf['host'])
@@ -1097,9 +1097,9 @@ chmod 600 /root/.ssh/authorized_keys
             upload_url = "http://s3.amazonaws.com/"
 
         register_url = "http://ec2.%s.amazonaws.com/" % (region_conf['host'])
-        
+
         bucket= "imagefactory-" + region + "-" + self.ec2_user_id
-        
+
         # Euca does not support specifying region for bucket
         # (Region URL is not sufficient)
         # See: https://bugs.launchpad.net/euca2ools/+bug/704658
@@ -1116,33 +1116,33 @@ chmod 600 /root/.ssh/authorized_keys
                 pass
             else:
                 raise
-        
+
         # TODO: Make configurable?
         ec2_service_cert = "/etc/pki/imagefactory/cert-ec2.pem"
-        
+
         bundle_command = [ "euca-bundle-image", "-i", input_image, "--kernel", aki, "-d", bundle_destination, "-a", self.ec2_access_key, "-s", self.ec2_secret_key ]
         bundle_command.extend( [ "-c", self.ec2_cert_file ] )
         bundle_command.extend( [ "-k", self.ec2_key_file ] )
         bundle_command.extend( [ "-u", self.ec2_user_id ] )
         bundle_command.extend( [ "-r", arch ] )
         bundle_command.extend( [ "--ec2cert", ec2_service_cert ] )
-        
+
         self.log.debug("Executing bundle command: %s " % (bundle_command))
-        
+
         bundle_output = subprocess_check_output(bundle_command)
-        
+
         self.log.debug("Bundle command complete")
         self.log.debug("Bundle command output: %s " % (str(bundle_output)))
         self.percent_complete=40
-        
+
         manifest = bundle_destination + "/" + input_image_name + ".manifest.xml"
-        
+
         upload_command = [ "euca-upload-bundle", "-b", bucket, "-m", manifest, "--ec2cert", ec2_service_cert, "-a", self.ec2_access_key, "-s", self.ec2_secret_key, "-U" , upload_url ]
         self.log.debug("Executing upload command: %s " % (upload_command))
         upload_output = subprocess_check_output(upload_command)
         self.log.debug("Upload command output: %s " % (str(upload_output)))
         self.percent_complete=90
-        
+
         s3_path = bucket + "/" + input_image_name + ".manifest.xml"
 
         register_env = { 'EC2_URL':register_url }
@@ -1153,32 +1153,32 @@ chmod 600 /root/.ssh/authorized_keys
         m = re.match(".*(ami-[a-fA-F0-9]+)", register_output[0])
         ami_id = m.group(1)
         self.log.debug("Extracted AMI ID: %s " % (ami_id))
-        
+
         # TODO: This should be in a finally statement that rethrows exceptions
         self.ec2_cert_file_object.close()
         self.ec2_key_file_object.close()
-        
+
         # Use new warehouse wrapper to do everything
         # TODO: Generate and store ICICLE
         self.status = "PUSHING"
         metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=ami_id)
         self.warehouse.create_provider_image(self.image_id, metadata=metadata)
-        
+
         #self.output_descriptor="unknown"
         #metadata = dict(uuid=self.image_id, type="provider_image", template=self.template, target=self.target, icicle=self.output_descriptor, image=image_id, provider=provider, target_identifier=ami_id)
         self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), str(image_id), str(self.image_id), str(metadata)))
         self.percent_complete=100
-    
+
     def abort(self):
         pass
-    
+
     # This file content is tightly bound up with our mod code above
     # I've inserted it as class variables for convenience
     rc_local="""# We have seen timing issues with curl commands - try several times
 for t in 1 2 3 4 5 6 7 8 9 10; do
   echo "Try number $t" >> /tmp/ec2-keypull.stderr
   curl -o /tmp/my-key http://169.254.169.254/2009-04-04/meta-data/public-keys/0/openssh-key 2>> /tmp/ec2-keypull.stderr
-  [ -f /tmp/my-key ] && break 
+  [ -f /tmp/my-key ] && break
   sleep 10
 done
 
@@ -1222,7 +1222,7 @@ fi
 # This conditionally runs Audrey if it exists
 [ -f /usr/bin/audrey ] && /usr/bin/audrey
 """
-    
+
     ifcfg_eth0="""DEVICE=eth0
 BOOTPROTO=dhcp
 ONBOOT=yes
@@ -1231,7 +1231,7 @@ USERCTL=yes
 PEERDNS=yes
 IPV6INIT=no
 """
-    
+
     menu_lst="""default=0
 timeout=0
 title #TITLE#
@@ -1239,7 +1239,7 @@ title #TITLE#
     kernel /boot/vmlinuz-#KERNEL_VERSION# ro root=LABEL=/ rd_NO_PLYMOUTH
     initrd /boot/#KERNEL_IMAGE_NAME#-#KERNEL_VERSION#.img
 """
-    
+
     fstab_32bit="""LABEL=/    /         #FILESYSTEM_TYPE#    defaults         1 1
 /dev/#DISK_DEVICE_PREFIX#da2  /mnt      ext3    defaults         1 2
 /dev/#DISK_DEVICE_PREFIX#da3  swap      swap    defaults         0 0
@@ -1248,7 +1248,7 @@ none       /dev/shm  tmpfs   defaults         0 0
 none       /proc     proc    defaults         0 0
 none       /sys      sysfs   defaults         0 0
 """
-    
+
     fstab_64bit="""LABEL=/    /         #FILESYSTEM_TYPE#    defaults         1 1
 /dev/#DISK_DEVICE_PREFIX#db   /mnt      ext3    defaults         0 0
 /dev/#DISK_DEVICE_PREFIX#dc   /data     ext3    defaults         0 0
@@ -1257,7 +1257,7 @@ none       /dev/shm  tmpfs   defaults         0 0
 none       /proc     proc    defaults         0 0
 none       /sys      sysfs   defaults         0 0
 """
-    
+
     # Dont attempt to be clever with ephemeral devices - leave it to users
     fstab_generic="""LABEL=/    /         #FILESYSTEM_TYPE#    defaults         1 1
 none       /dev/pts  devpts  gid=5,mode=620   0 0

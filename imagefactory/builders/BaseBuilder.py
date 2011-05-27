@@ -27,11 +27,11 @@ from imagefactory.ImageWarehouse import ImageWarehouse
 from imagefactory.Template import Template
 
 class BaseBuilder(object):
-    """BaseBuilder provides a starting point for builder classes conforming to the IBuilder interface.  
-    Subclasses of BaseBuilder can focus on the OS/Provider specific activity for creating and 
+    """BaseBuilder provides a starting point for builder classes conforming to the IBuilder interface.
+    Subclasses of BaseBuilder can focus on the OS/Provider specific activity for creating and
     deploying images."""
     zope.interface.implements(IBuilder)
-    
+
     # Properties
     def template():
         doc = "An instance of the Template class."
@@ -43,7 +43,7 @@ class BaseBuilder(object):
             del self._template
         return locals()
     template = property(**template())
-    
+
     def target():
         doc = "The target cloud for which to build this image."
         def fget(self):
@@ -54,7 +54,7 @@ class BaseBuilder(object):
             del self._target
         return locals()
     target = property(**target())
-    
+
     def target_id():
         doc = "The identifier provided by the target."
         def fget(self):
@@ -65,7 +65,7 @@ class BaseBuilder(object):
             del self._target_id
         return locals()
     target_id = property(**target_id())
-    
+
     def provider():
         doc = "The a string name of the target region or provider."
         def fget(self):
@@ -76,7 +76,7 @@ class BaseBuilder(object):
             del self._provider
         return locals()
     provider = property(**provider())
-    
+
     def image_id():
         doc = "The uuid of the image."
         def fget(self):
@@ -87,7 +87,7 @@ class BaseBuilder(object):
             del self._image_id
         return locals()
     image_id = property(**image_id())
-    
+
     def image():
         doc = "The image file path."
         def fget(self):
@@ -98,12 +98,12 @@ class BaseBuilder(object):
             del self._image
         return locals()
     image = property(**image())
-    
+
     def status():
         doc = "A string value."
         def fget(self):
             return self._status
-        
+
         def fset(self, value):
             if(self.delegate):
                 try: #check with the delegate if we should update
@@ -125,12 +125,12 @@ class BaseBuilder(object):
                 self._status = value
         return locals()
     status = property(**status())
-    
+
     def percent_complete():
         doc = "The percentage through an operation."
         def fget(self):
             return self._percent_complete
-        
+
         def fset(self, value):
             if(self.delegate):
                 try: #check with the delegate if we should update
@@ -150,10 +150,10 @@ class BaseBuilder(object):
                         pass
             else:
                 self._percent_complete = value
-        
+
         return locals()
     percent_complete = property(**percent_complete())
-    
+
     def output_descriptor():
         doc = "An XML string describing the completed image, aka: CDL or ICICLE."
         def fget(self):
@@ -164,7 +164,7 @@ class BaseBuilder(object):
             del self._output_descriptor
         return locals()
     output_descriptor = property(**output_descriptor())
-    
+
     def delegate():
         doc = "An object that responds to IBuilderDelegate methods."
         def fget(self):
@@ -175,7 +175,7 @@ class BaseBuilder(object):
             del self._delegate
         return locals()
     delegate = property(**delegate())
-    
+
     def warehouse():
         doc = "A warehouse object used to store/fetch images, templates, icicle, provider_images, etc..."
         def fget(self):
@@ -186,7 +186,7 @@ class BaseBuilder(object):
             del self._warehouse
         return locals()
     warehouse = property(**warehouse())
-    
+
     # Initializer
     def __init__(self, template, target):
         super(BaseBuilder, self).__init__()
@@ -207,31 +207,30 @@ class BaseBuilder(object):
         self.output_descriptor = "<icicle></icicle>"
         self.delegate = None
         self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
-    
+
     # Make instances callable for passing to thread objects
     def __call__(self, *args, **kwargs):
         # the method that we want to call on self is in args... kwargs is the method parameters, if there are any.
         getattr(self, str().join(args))(**kwargs)
-    
+
     # Image actions
     def build_image(self):
-        """Build the image file.  This method is implemented by subclasses of BaseBuilder to handle 
+        """Build the image file.  This method is implemented by subclasses of BaseBuilder to handle
         OS specific build mechanics."""
         raise NotImplementedError
-    
+
     def abort(self):
-        """Stop building the image file.  This method is implemented by subclasses of BaseBuilder to handle 
+        """Stop building the image file.  This method is implemented by subclasses of BaseBuilder to handle
         OS specific build mechanics."""
         raise NotImplementedError
-    
+
     def store_image(self, target_parameters=None):
         template_id = self.warehouse.store_template(self.template.xml, self.template.identifier)
         icicle_id = self.warehouse.store_icicle(self.output_descriptor)
         metadata = dict(template=template_id, target=self.target, icicle=icicle_id, target_parameters=target_parameters)
         self.warehouse.store_image(self.image_id, self.image, metadata=metadata)
-    
+
     def push_image(self, image_id, provider, credentials):
-        """Prep the image for the provider and deploy.  This method is implemented by subclasses of the 
+        """Prep the image for the provider and deploy.  This method is implemented by subclasses of the
         BaseBuilder to handle OS/Provider specific mechanics."""
         raise NotImplementedError
-    

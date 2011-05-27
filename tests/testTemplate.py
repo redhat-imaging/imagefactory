@@ -31,18 +31,18 @@ class testTemplate(unittest.TestCase):
         logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/tmp/imagefactory-unittests.log')
         self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
         self.template_xml = "<template>This is a test template.  There is not much to it.</template>"
-    
+
     def tearDown(self):
         del self.warehouse
         del self.template_xml
-    
+
     def testTemplateFromUUID(self):
         template_id = self.warehouse.store_template(self.template_xml)
         template = Template(template_id)
         self.assertEqual(template_id, template.identifier)
         self.assertEqual(self.template_xml, template.xml)
         self.assertIsNone(template.url)
-    
+
     def testTemplateFramImageID(self):
         template_id = self.warehouse.store_template(self.template_xml)
         template = Template(template_id)
@@ -55,13 +55,13 @@ class testTemplate(unittest.TestCase):
         self.assertEqual(template_id, image_template.identifier)
         self.assertEqual(self.template_xml, image_template.xml)
         self.assertIsNone(template.url)
-    
+
     def testTemplateFromXML(self):
         template = Template(self.template_xml)
         self.assertEqual(self.template_xml, template.xml)
         self.assertIsNone(template.identifier)
         self.assertIsNone(template.url)
-    
+
     def testTemplateFromURL(self):
         template_id = self.warehouse.store_template(self.template_xml)
         template_url = "%s/%s/%s" % (self.warehouse.url, self.warehouse.template_bucket, template_id)
@@ -69,14 +69,14 @@ class testTemplate(unittest.TestCase):
         self.assertEqual(template_url, template.url)
         self.assertEqual(template_id, template.identifier)
         self.assertEqual(self.template_xml, template.xml)
-    
+
     def testTemplateStringRepresentation(self):
         template = Template(self.template_xml)
         self.assertEqual(self.template_xml, repr(template))
         self.assertEqual(self.template_xml, str(template))
         self.assertEqual(self.template_xml, "%r" % (template, ))
         self.assertEqual(self.template_xml, "%s" % (template, ))
-    
+
 
 if __name__ == '__main__':
     unittest.main()

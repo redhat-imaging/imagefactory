@@ -20,17 +20,17 @@
 # import logging
 # from imagefactory.builders.IBuilder import IBuilder
 # from imagefactory.builders.FedoraBuilder import FedoraBuilder
-# 
-# 
+#
+#
 # class TestFedoraBuilder(unittest.TestCase):
 #     def setUp(self):
 #         pass
-#     
+#
 #     def tearDown(self):
 #         pass
-#     
+#
 #     def testImplementsIBuilder(self):
 #         self.assert_(IBuilder.implementedBy(FedoraBuilder), 'FedoraBuilder does not implement the ImageBuilder interface.')
-#     
+#
 # if __name__ == '__main__':
 #   unittest.main()

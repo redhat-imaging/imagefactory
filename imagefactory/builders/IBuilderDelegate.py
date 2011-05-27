@@ -25,25 +25,24 @@ class IBuilderDelegate(Interface):
     Subclasses of the BaseBuilder class will get this for free.  Classes
     that conform to the IBuilderDelegate interface can selectively
     implement methods from this interface."""
-    
+
     def builder_will_update_status(self, builder, original_status, new_status):
 		"""The builder will update from original_status to new_status."""
-	
+
     def builder_did_update_status(self, builder, original_status, new_status):
 		"""The builder updated the status from original_status to new_status."""
-	
+
     def builder_should_update_status(self, builder, original_status, new_status):
 		"""Returns whether the builder should update the status from original_status to new_status."""
-	
+
     def builder_will_update_percentage(self, builder, original_percentage, new_percentage):
 		"""The builder will update from original_percentage to new_percentage."""
-	
+
     def builder_did_update_percentage(self, builder, original_percentage, new_percentage):
 		"""The builder updated from original_percentage to new_percentage."""
-	
+
     def builder_should_update_percentage(self, builder, original_percentage, new_percentage):
         """Returns whether the builder should update from original_percentage to new_percentage."""
-    
+
     def builder_did_fail(self, builder, failure_type, failure_info):
         """Notification that there was a failure of specified type, with further information describing what happened."""
-    

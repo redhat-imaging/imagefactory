@@ -23,7 +23,7 @@ from zope.interface import Invalid
 
 
 def conforms_to_interface_invariant(obj):
-    """Invariant method testing for mandatory aspects of the interface.  
+    """Invariant method testing for mandatory aspects of the interface.
     Returns 'Invalid' exception if the implementing object does not conform."""
     try:
         getattr(obj, "template")
@@ -44,7 +44,7 @@ def conforms_to_interface_invariant(obj):
 
 
 class IBuilder(Interface):
-    """The Builder interface provides guidance on attributes and methods 
+    """The Builder interface provides guidance on attributes and methods
     that expected by Image Factory for objects that serve to build OS images."""
     # set the invariant checks
     zope.interface.invariant(conforms_to_interface_invariant)
@@ -62,10 +62,9 @@ class IBuilder(Interface):
     # methods
     def build_image():
         """Tell the builder to start building the image."""
-    
+
     def abort():
         """Tell the builder to stop building the image."""
-    
+
     def push_image(image_id, provider, credentials):
         """Deploy an image to the cloud provider."""
-    

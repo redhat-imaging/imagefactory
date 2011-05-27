@@ -20,17 +20,17 @@
 # import logging
 # from imagefactory.builders.IBuilder import IBuilder
 # from imagefactory.builders.RHELBuilder import RHELBuilder
-# 
-# 
+#
+#
 # class TestRHELBuilder(unittest.TestCase):
 #     def setUp(self):
 #         pass
-#     
+#
 #     def tearDown(self):
 #         pass
-#     
+#
 #     def testImplementsIBuilder(self):
 #         self.assert_(IBuilder.implementedBy(RHELBuilder), 'RHELBuilder does not implement the ImageBuilder interface.')
-#     
+#
 # if __name__ == '__main__':
 #   unittest.main()

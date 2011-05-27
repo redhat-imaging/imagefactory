@@ -28,7 +28,7 @@ class iCurl:
        self.contents = ''
 
    def body_callback(self, buf):
-       self.contents = self.contents + buf 
+       self.contents = self.contents + buf
 
 
 if len(sys.argv) != 5:
@@ -116,4 +116,3 @@ else:
 
 session.close()
 connection.close()
-

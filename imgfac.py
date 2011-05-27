@@ -179,6 +179,7 @@ class Application(object):
                 self.builder_thread = BuildDispatcher.builder_thread_with_method(self.builder, 'push_image', kwargs)
                 print("Image instance created with id: %s" % (self.builder.image_id, ))
 
+
 if __name__ == "__main__":
     application = Application()
     sys.exit(application.main())

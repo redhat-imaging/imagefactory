@@ -1,14 +1,14 @@
 # Copyright (C) 2010-2011 Red Hat, Inc.
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; version 2 of the License.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
@@ -38,10 +38,10 @@ class TestBuildAdaptor(unittest.TestCase):
           <description>Fedora 14</description>
         </template>
         """
-	
+
     def tearDown(self):
         del self.tdl_string
-    
+
     def testQMFSchemaDefinition(self):
         expected_schema_properties = ("status", "percent_complete", "image_id")
         expected_schema_methods = dict(abort=(), instance_states=("class_name", "states"))
@@ -52,13 +52,13 @@ class TestBuildAdaptor(unittest.TestCase):
             arguments = expected_schema_methods[schema_method.getName()]
             for schema_property in schema_method.getArguments():
                 self.assertIn(schema_property.getName(), arguments)
-	
+
     def testInstantiateMockBuilder(self):
         build_adaptor = BuildAdaptor(template=self.tdl_string, target="mock")
         self.assertIsInstance(build_adaptor.builder, MockBuilder.MockBuilder)
         self.assertEqual(build_adaptor.template, self.tdl_string)
         self.assertEqual(build_adaptor.target, "mock")
-    
+
 
 if __name__ == '__main__':
 	unittest.main()

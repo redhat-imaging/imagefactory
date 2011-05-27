@@ -1,14 +1,14 @@
 # Copyright (C) 2010-2011 Red Hat, Inc.
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; version 2 of the License.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
@@ -31,7 +31,7 @@ class BuildAdaptor(object):
     qmf_schema.addProperty(SchemaProperty("percent_complete", SCHEMA_DATA_INT, desc="the estimated percentage through an operation"))
     qmf_schema.addProperty(SchemaProperty("image_id", SCHEMA_DATA_STRING, desc="string representation of the assigned uuid"))
     qmf_schema.addMethod(SchemaMethod("abort", desc = "If possible, abort running build."))
-    
+
     #QMF schema for status change event
     qmf_event_schema_status = Schema(SCHEMA_TYPE_EVENT, "com.redhat.imagefactory", "BuildAdaptorStatusEvent")
     qmf_event_schema_status.addProperty(SchemaProperty("addr", SCHEMA_DATA_MAP, desc="the address of the object raising this event"))
@@ -49,7 +49,7 @@ class BuildAdaptor(object):
     qmf_event_schema_build_failed.addProperty(SchemaProperty("event", SCHEMA_DATA_STRING, desc="string describing the type of event, in this case 'FAILURE'"))
     qmf_event_schema_build_failed.addProperty(SchemaProperty("type", SCHEMA_DATA_STRING, desc="short string description of the failure"))
     qmf_event_schema_build_failed.addProperty(SchemaProperty("info", SCHEMA_DATA_STRING, desc="longer string description of the failure"))
-    
+
     @classmethod
     def object_states(cls):
         """Returns a dictionary representing the finite state machine for instances of this class."""
@@ -60,8 +60,8 @@ class BuildAdaptor(object):
                 "FINISHING":({"COMPLETED":("_auto_")}, {"FAILED":("_auto_")}),
                 "COMPLETED":()
                 }
-        
-    
+
+
     ### Properties
     def template():
         doc = "The template property."
@@ -73,7 +73,7 @@ class BuildAdaptor(object):
             del self._template
         return locals()
     template = property(**template())
-    
+
     def target():
         doc = "The target property."
         def fget(self):
@@ -84,7 +84,7 @@ class BuildAdaptor(object):
             del self._target
         return locals()
     target = property(**target())
-    
+
     def status():
         doc = "The status property."
         def fget(self):
@@ -96,7 +96,7 @@ class BuildAdaptor(object):
             del self._status
         return locals()
     status = property(**status())
-    
+
     def percent_complete():
         doc = "The percent_complete property."
         def fget(self):
@@ -108,7 +108,7 @@ class BuildAdaptor(object):
             del self._percent_complete
         return locals()
     percent_complete = property(**percent_complete())
-    
+
     def image_id():
         doc = "The image property."
         def fget(self):
@@ -120,7 +120,7 @@ class BuildAdaptor(object):
             del self._image_id
         return locals()
     image = property(**image_id())
-    
+
     def qmf_object():
         doc = "The qmf_object property."
         def fget(self):
@@ -131,36 +131,36 @@ class BuildAdaptor(object):
             del self._qmf_object
         return locals()
     qmf_object = property(**qmf_object())
-    
+
     def __init__(self, template, target, agent=None):
         super(BuildAdaptor, self).__init__()
-        
+
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.qmf_object = Data(BuildAdaptor.qmf_schema)
-        self.agent = agent 
-        
+        self.agent = agent
+
         self.template = template
         self.target = target
         self.status = "New"
         self.percent_complete = 0
         self.image = "None"
         self.builder = None
-        
+
         self.builder = BuildDispatcher.builder_for_target_with_template(template=template, target=target)
         # Register as a delegate to the builder
         self.builder.delegate = self
         self.image = str(self.builder.image_id)
-    
+
     def build_image(self):
         BuildDispatcher.builder_thread_with_method(builder=self.builder, method_name="build_image")
-    
+
     def push_image(self, image_id, provider, credentials):
         kwargs = dict(image_id=image_id, provider=provider, credentials=credentials)
         BuildDispatcher.builder_thread_with_method(builder=self.builder, method_name="push_image", arg_dict=kwargs)
-    
+
     def abort(self):
         self.builder.abort()
-    
+
     # Builder delegate methods
     def builder_did_update_status(self, builder, old_status, new_status):
         self.status = new_status
@@ -171,11 +171,11 @@ class BuildAdaptor(object):
         event.new_status = str(new_status)
         event.old_status = str(old_status)
         self.agent.session.raiseEvent(data=event, severity=SEV_NOTICE)
-        
+
         if(new_status == "COMPLETED"):
             self.agent.deregister(self.qmf_object)
-        
-    
+
+
     def builder_did_update_percentage(self, builder, original_percentage, new_percentage):
         self.percent_complete = new_percentage
         self.log.debug("Raising event with agent handler (%s), changed percent complete from %s to %s" % (self.agent, original_percentage, new_percentage))
@@ -184,7 +184,7 @@ class BuildAdaptor(object):
         event.event = "PERCENTAGE"
         event.percent_complete = new_percentage
         self.agent.session.raiseEvent(data=event, severity=SEV_NOTICE)
-    
+
     def builder_did_fail(self, builder, failure_type, failure_info):
         self.log.debug("Raising event with agent handler (%s), BUILD FAILED: %s - %s" % (self.agent, failure_type, failure_info))
         event = Data(BuildAdaptor.qmf_event_schema_build_failed)
@@ -193,7 +193,7 @@ class BuildAdaptor(object):
         event.type = failure_type
         event.info = failure_info
         self.agent.session.raiseEvent(data=event, severity=SEV_ERROR)
-    
+
 
 # if __name__ == '__main__':
 # 	unittest.main()

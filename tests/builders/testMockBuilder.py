@@ -31,24 +31,24 @@ class TestMockBuilder(unittest.TestCase):
         self.template = Template("<template></template>")
         self.target = "mock"
         self.builder = MockBuilder(self.template, self.target)
-    
+
     def tearDown(self):
         del self.builder
         del self.template
         del self.target
-    
+
     def testImplementsIBuilder(self):
         self.assert_(IBuilder.implementedBy(MockBuilder), 'MockBuilder does not implement the ImageBuilder interface...')
-    
+
     def testInit(self):
         self.assertIn(self.builder.template, (self.template, self.builder.image_id))
         self.assertEqual(self.builder.target, self.target)
-    
+
     def testBuildImage(self):
         self.builder.build_image()
         self.assertEqual(self.builder.status, "COMPLETED")
         self.assert_(os.path.exists(self.builder.image))
-    
+
 
 
 if __name__ == '__main__':

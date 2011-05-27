@@ -24,15 +24,14 @@ from BaseBuilder import BaseBuilder
 class RHELBuilder(BaseBuilder):
 	"""docstring for RHELBuilder"""
 	zope.interface.implements(IBuilder)
-	
+
 # Initializer
 	def __init__(self, template=None, target=None):
 		super(RHELBuilder, self).__init__(template, target)
-	
+
 # Image actions
 	def build_image(self):
 		pass
-	
+
 	def abort(self):
 		pass
-	
