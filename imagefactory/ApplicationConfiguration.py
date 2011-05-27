@@ -43,23 +43,8 @@ class ApplicationConfiguration(object):
             i = super(ApplicationConfiguration, cls).__new__(cls, *p, **k)
             #initialize here, not in __init__()
             i.log = logging.getLogger('%s.%s' % (__name__, i.__class__.__name__))
-            i.configuration = {}
-            i.argparser = i.__new_argument_parser()
-            arguments = i.parse_arguments()
 
-            config_file_path = arguments.config
-            if (os.path.isfile(config_file_path)):
-                try:
-                    config_file = open(config_file_path)
-                    uconfig = json.load(config_file)
-                    # coerce this dict to ascii for python 2.6
-                    config = {}
-                    for k, v in uconfig.items():
-                        config[k.encode('ascii')]=v.encode('ascii')
-                    i.configuration = i.parse_arguments(defaults=config).__dict__
-                except IOError, e:
-                    i.log.exception(e)
-                    i.configuration = arguments
+            i.configuration = i.__parse_arguments()
 
             cls.instance = i
         elif(len(p) | len(k) > 0):
@@ -107,7 +92,7 @@ class ApplicationConfiguration(object):
 
         return argparser
 
-    def parse_arguments(self, defaults=None):
+    def __parse_args(self, defaults=None):
         if(defaults):
             self.argparser.set_defaults(**defaults)
         if(len(sys.argv) == 1):
@@ -119,3 +104,22 @@ class ApplicationConfiguration(object):
             return self.argparser.parse_args('--image_bucket unittests_images --template_bucket unittests_templates --icicle_bucket unittests_icicles --provider_bucket unittests_provider_images'.split())
         else:
             return self.argparser.parse_args([])
+
+    def __parse_arguments(self):
+        self.configuration = {}
+        self.argparser = self.__new_argument_parser()
+        arguments = self.__parse_args()
+
+        config_file_path = arguments.config
+        if (os.path.isfile(config_file_path)):
+            try:
+                config_file = open(config_file_path)
+                uconfig = json.load(config_file)
+                # coerce this dict to ascii for python 2.6
+                config = {}
+                for k, v in uconfig.items():
+                    config[k.encode('ascii')]=v.encode('ascii')
+                return self.__parse_args(defaults=config).__dict__
+            except IOError, e:
+                i.log.exception(e)
+                return arguments
