@@ -25,7 +25,7 @@ import signal
 import logging
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 from imagefactory.qmfagent.ImageFactoryAgent import *
-from imagefactory.BuildDispatcher import BuildDispatcher
+from imagefactory.BuildDispatcher import BaseAdaptor
 from imagefactory.ImageWarehouse import ImageWarehouse
 
 class Application(object):
@@ -156,9 +156,9 @@ class Application(object):
             self.setup_logging()
 
             if (self.app_config['template'] and self.app_config['target']):
-                self.builder = BuildDispatcher.builder_for_target_with_template(self.app_config['target'], self.app_config['template'])
-                self.builder_thread = BuildDispatcher.builder_thread_with_method(self.builder, 'build_image')
-                print("Image created with id: %s" % (self.builder.image_id, ))
+                self.adaptor = BaseAdaptor(self.app_config['target'], self.app_config['template'])
+                self.adaptor.build_image()
+                print("Image created with id: %s" % (self.adaptor.image_id, ))
 
             elif (self.app_config['image'] and self.app_config['provider'] and self.app_config['credentials']):
                 credentials = self.app_config['credentials']
@@ -174,10 +174,10 @@ class Application(object):
 
                 warehouse = ImageWarehouse(self.app_config['warehouse'])
                 metadata = warehouse.metadata_for_id_of_type(('template', 'target'), self.app_config['image'], object_type='image')
-                self.builder = BuildDispatcher.builder_for_target_with_template(metadata['target'], metadata['template'])
-                kwargs = dict(image_id=self.app_config['image'], provider=self.app_config['provider'], credentials=credentials)
-                self.builder_thread = BuildDispatcher.builder_thread_with_method(self.builder, 'push_image', kwargs)
-                print("Image instance created with id: %s" % (self.builder.image_id, ))
+
+                self.adaptor = BaseAdaptor(metadata['target'], metadata['template'])
+                self.adaptor.push_image(self.app_config['image'], self.app_config['provider'], credentials)
+                print("Image instance created with id: %s" % (self.adaptor.image_id, ))
 
 
 if __name__ == "__main__":
