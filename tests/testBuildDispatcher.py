@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
 # Copyright (C) 2010-2011 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -15,28 +18,24 @@
 # MA  02110-1301, USA.  A copy of the GNU General Public License is
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
-
 import unittest
 import logging
-from imagefactory.qmfagent.BuildAdaptor import BuildAdaptor
+from imagefactory import BuildDispatcher
+from imagefactory.builders import MockBuilder
 
-class TestBuildAdaptor(unittest.TestCase):
+class testBuildDispatcher(unittest.TestCase):
     def setUp(self):
         logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/tmp/imagefactory-unittests.log')
 
     def tearDown(self):
         pass
 
-    def testQMFSchemaDefinition(self):
-        expected_schema_properties = ("status", "percent_complete", "image_id")
-        expected_schema_methods = dict(abort=(), instance_states=("class_name", "states"))
-        for schema_property in BuildAdaptor.qmf_schema.getProperties():
-            self.assertIn(schema_property.getName(), expected_schema_properties)
-        for schema_method in BuildAdaptor.qmf_schema.getMethods():
-            self.assertIn(schema_method.getName(), expected_schema_methods)
-            arguments = expected_schema_methods[schema_method.getName()]
-            for schema_property in schema_method.getArguments():
-                self.assertIn(schema_property.getName(), arguments)
+    def testInstantiateMockBuilder(self):
+        template_xml = "<template><name>f14jeos</name><os><name>Fedora</name></os></template>"
+        dispatcher = BuildDispatcher.BuildDispatcher(template_xml, "mock")
+        self.assertIsInstance(dispatcher._builder, MockBuilder.MockBuilder)
+        self.assertEqual(dispatcher.template, template_xml)
+        self.assertEqual(dispatcher.target, "mock")
 
 if __name__ == '__main__':
-	unittest.main()
+    unittest.main()

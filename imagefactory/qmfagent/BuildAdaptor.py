@@ -23,9 +23,9 @@ from qmf2 import *
 from threading import Thread, Lock
 from imagefactory import props
 from imagefactory.builders import *
-from imagefactory.BuildDispatcher import BaseAdaptor
+from imagefactory.BuildDispatcher import BuildDispatcher
 
-class BuildAdaptor(BaseAdaptor):
+class BuildAdaptor(BuildDispatcher):
     # QMF schema for BuildAdaptor
     qmf_schema = Schema(SCHEMA_TYPE_DATA, "com.redhat.imagefactory", "BuildAdaptor")
     qmf_schema.addProperty(SchemaProperty("status", SCHEMA_DATA_STRING, desc="string representing the status (see instance_states() on ImageFactory)"))
