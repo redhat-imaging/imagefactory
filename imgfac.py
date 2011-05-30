@@ -156,9 +156,9 @@ class Application(object):
             self.setup_logging()
 
             if (self.app_config['template'] and self.app_config['target']):
-                self.dispatcher = BuildDispatcher(self.app_config['target'], self.app_config['template'])
-                self.dispatcher.build_image()
-                print("Image created with id: %s" % (self.dispatcher.image_id, ))
+                dispatchers = BuildDispatcher.build_image_for_targets(self.app_config['image'], None, self.app_config['template'], self.app_config['target'])
+                for dispatcher in dispatchers:
+                    print("Building build %s of image %s to target %s" % (dispatcher.build_id, dispatcher.image_id, dispatcher.target))
 
             elif (self.app_config['image'] and self.app_config['provider'] and self.app_config['credentials']):
                 credentials = self.app_config['credentials']
@@ -172,13 +172,9 @@ class Application(object):
                     print("Unexpected content or formatting of credentials...")
                     sys.exit(1)
 
-                warehouse = ImageWarehouse(self.app_config['warehouse'])
-                metadata = warehouse.metadata_for_id_of_type(('template', 'target'), self.app_config['image'], object_type='image')
-
-                self.dispatcher = BuildDispatcher(metadata['target'], metadata['template'])
-                self.dispatcher.push_image(self.app_config['image'], self.app_config['provider'], credentials)
-                print("Image instance created with id: %s" % (self.dispatcher.image_id, ))
-
+                dispatchers = BuildDispatcher.push_image_to_providers(self.app_config['image'], None, self.app_config['provider'], credentials)
+                for dispatcher in dispatchers:
+                    print("Pushing build %s of image %s to provider %s" % (dispatcher.build_id, dispatcher.image_id, dispatcher.provider))
 
 if __name__ == "__main__":
     application = Application()

@@ -100,7 +100,31 @@ class testImageWarehouse(unittest.TestCase):
         self.assertTrue(self.warehouse.remove_icicle_with_id(icicle_id2))
 
         os.remove(file_path)
-    
+
+    def testImageAndBuildMethods(self):
+        """Tests CRUD operations on images, builds and metadata on those objects..."""
+        image_xml = '<image/>'
+
+        image_id = self.warehouse.store_image(None, image_xml, self.metadata)
+
+        self.assertIsNotNone(image_id)
+
+        image_body, metadata = self.warehouse.object_with_id_of_type(image_id, 'image', self.metadata.keys())
+
+        self.assertEqual(image_xml, image_body)
+        self.assertEqual(self.metadata, metadata)
+
+        build_id = self.warehouse.store_build(None, self.metadata)
+
+        build_body, metadata = self.warehouse.object_with_id_of_type(build_id, 'build', self.metadata.keys())
+
+        self.assertEqual('', build_body)
+        self.assertEqual(self.metadata, metadata)
+
+        ids = self.warehouse.query('build', '$object_type == "build" && $key1 == "value1"')
+
+        self.assertIn(build_id, ids)
+
     def testBucketCreation(self):
         # self.assert_(self.warehouse.create_bucket_at_url("%s/unittests-create_bucket/%s" % (self.warehouse.url, str(uuid.uuid4()))))
         self.warehouse.create_bucket_at_url("%s/unittests-create_bucket" % (self.warehouse.url, ))

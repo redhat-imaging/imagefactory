@@ -2,9 +2,9 @@
 
 	usage: imgfac [-h] [--version] [-v] [--debug] [--foreground] [--config CONFIG]
 	              [imgdir IMGDIR] [--warehouse WAREHOUSE] [--timeout TIMEOUT]
-	              [--qmf] [--broker BROKER] [--template TEMPLATE]
-	              [--target TARGET] [--image IMAGE] [--provider PROVIDER]
-	              [--credentials CREDENTIALS]
+	              [--qmf] [--broker BROKER] [--image IMAGE]
+                      [--template TEMPLATE] [--target TARGET]
+                      [--provider PROVIDER] [--credentials CREDENTIALS]
 	
 	System image creation tool...
 	
@@ -17,6 +17,7 @@
 	                        (default: False)
 	  --config CONFIG       Configuration file to use. (default:
 	                        /etc/imagefactory.conf)
+	  --image IMAGE         The UUID of the image to build or push
 	  --imgdir IMGDIR       Build image files in location specified. (default:
 	                        /tmp)
 	  --warehouse WAREHOUSE
@@ -34,16 +35,15 @@
 	  Build specified system and exit.
 	
 	  --template TEMPLATE   Template XML file to build from.
-	  --target TARGET       Cloud service to target
+	  --target TARGET       List of cloud services to target
 	
-	Image instantiation:
-	  Instantiate an image and exit.
+	Image pushing:
+	  Push an image and exit.
 	
-	  --image IMAGE         Image to instantiate
-	  --provider PROVIDER   Cloud service provider upon which to instantiate the
-	                        image
+	  --provider PROVIDER   List of cloud service providers to which the image
+	                        should be pushed
 	  --credentials CREDENTIALS
-	                        Cloud provider credentials	
+	                        Cloud provider credentials XML
 	
 ## Dependencies: ##
 

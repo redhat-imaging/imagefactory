@@ -10,9 +10,13 @@ Currently supported private cloud services: RHEV-M, KVM.
 .SH SYNOPSIS
 .B imgfac [-h] [--version] [-v] [--debug] [--foreground] [--config CONFIG]
 .B          [imgdir IMGDIR] [--timeout TIMEOUT] [--qmf] [--qpidd QPIDD]
-.B          [--template TEMPLATE] [--target TARGET] [--image IMAGE]
-.B          [--provider PROVIDER] [--credentials CREDENTIALS]
-.B          [--warehouse WAREHOUSE] [--target_bucket TARGET_BUCKET]
+.B          [--image IMAGE]
+.B          [--template TEMPLATE] [--target TARGET] [--target TARGET]...
+.B          [--credentials CREDENTIALS] [--provider PROVIDER] [--provider PROVIDER]...
+.B          [--warehouse WAREHOUSE]
+.B          [--image_bucket IMAGE_BUCKET]
+.B          [--build_bucket BUILD_BUCKET]
+.B          [--target_bucket TARGET_BUCKET]
 .B          [--template_bucket TEMPLATE_BUCKET]
 .B          [--icicle_bucket ICICLE_BUCKET]
 .B          [--provider_bucket PROVIDER_BUCKET]
@@ -37,6 +41,9 @@ Image factory configuration file to use.  (default: /etc/imagefactory.conf)
 .B --imgdir IMGDIR
 Build image files in location specified. After the image is finished it will be saved in this location.  (default: /tmp)
 
+.B --image IMAGE
+The UUID of the image to build or push. This is a UUID of an object in IWHD's image bucket.
+
 .B --timeout TIMEOUT
 Set the timeout period for image building in seconds.  (default: 3600)
 
@@ -59,27 +66,24 @@ URL of qpidd to connect to.  (default: localhost)
   Build specified system and exit.
 
 .B --template TEMPLATE
-Template to build from. Template can be passed as URL,UUID or XML. Please reffer to the 
+Template to build from. Template can be passed as URL, PATH, UUID or XML. Please refer to the 
 .BR XML
 .BR EXAMPLES
 section at the bottom.
 
 .B --target TARGET
-Cloud service to target. This parameter is intended to specify the location as a target for cloud providers that use regions, eg. US-West is a region of Amazon EC2.
+The list of cloud services to target. Examples include ec2, rhev-m, vmware, rackspace, condorcloud and gogrid.
 
 
-.SS Image instantiation:
-  Instantiate an image and exit.
+.SS Image pushing:
+  Push an image and exit.
 
-
-.B --image IMAGE
-Image UUID to instantiate. The UUID is stored in Image Warehouse.
 
 .B --provider PROVIDER
-Cloud service provider upon which to instantiate the image, eg. rackspace
+The list of cloud service providers to push the emacs. Examples include ec2-us-east-1, ec2-us-west-1, rackspace.
 
 .B --credentials CREDENTIALS
-Cloud provider credentials. Credentials must be passed as XML file. Please reffer to the 
+Cloud provider credentials. Credentials must be passed as XML file. Please refer to the 
 .BR XML 
 .BR EXAMPLES 
 section at the bottom.
@@ -89,6 +93,12 @@ section at the bottom.
 
 .B --warehouse WAREHOUSE
 URL of the warehouse location to store images.  (default: http://localhost:9090/)
+
+.B --image_bucket IMAGE_BUCKET
+Name of warehouse bucket to look in for images.  (default: None)
+
+.B --build_bucket BUILD_BUCKET
+Name of warehouse bucket to look in for builds.  (default: None)
 
 .B --target_bucket TARGET_BUCKET
 Name of warehouse bucket to look in for target images.  (default: None)

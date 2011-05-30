@@ -40,7 +40,7 @@ class MockBuilder(BaseBuilder):
         self.app_config = ApplicationConfiguration().configuration
 
     # Image actions
-    def build_image(self):
+    def build_image(self, build_id=None):
         if(self.template.xml == "<template>FAIL</template>"):
             self.log.debug("build_image() failed for MockBuilder...")
             failing_thread = FailureThread(target=self, kwargs=dict(message="Testing failure conditions via mock target builder..."))
@@ -83,7 +83,7 @@ class MockBuilder(BaseBuilder):
             self.status = "COMPLETED"
             self.log.debug("Completed mock image build...")
 
-            self.store_image()
+            self.store_image(build_id)
 
     def push_image(self, target_image_id, provider, credentials):
         self.status = "INITIALIZING"

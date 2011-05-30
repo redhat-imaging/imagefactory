@@ -60,7 +60,7 @@ class IBuilder(Interface):
     output_descriptor = Attribute("""ICICLE document describing what was actually installed in the image.""")
     delegate = Attribute("""Object conforming to the BuilderDelegate interface.""")
     # methods
-    def build_image():
+    def build_image(build_id=None):
         """Tell the builder to start building the image."""
 
     def abort():

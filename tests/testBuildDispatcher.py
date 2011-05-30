@@ -34,7 +34,7 @@ class testBuildDispatcher(unittest.TestCase):
         template_xml = "<template><name>f14jeos</name><os><name>Fedora</name></os></template>"
         dispatcher = BuildDispatcher.BuildDispatcher(template_xml, "mock")
         self.assertIsInstance(dispatcher._builder, MockBuilder.MockBuilder)
-        self.assertEqual(dispatcher.template, template_xml)
+        self.assertEqual(dispatcher.template.xml, template_xml)
         self.assertEqual(dispatcher.target, "mock")
 
 if __name__ == '__main__':

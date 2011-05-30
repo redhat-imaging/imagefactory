@@ -125,7 +125,7 @@ class BaseBuilder(object):
         getattr(self, str().join(args))(**kwargs)
 
     # Image actions
-    def build_image(self):
+    def build_image(self, build_id=None):
         """Build the image file.  This method is implemented by subclasses of BaseBuilder to handle
         OS specific build mechanics."""
         raise NotImplementedError
@@ -135,10 +135,12 @@ class BaseBuilder(object):
         OS specific build mechanics."""
         raise NotImplementedError
 
-    def store_image(self, target_parameters=None):
+    def store_image(self, build_id, target_parameters=None):
         template_id = self.warehouse.store_template(self.template.xml, self.template.identifier)
         icicle_id = self.warehouse.store_icicle(self.output_descriptor)
         metadata = dict(template=template_id, target=self.target, icicle=icicle_id, target_parameters=target_parameters)
+        if build_id:
+            metadata['build'] = build_id
         self.warehouse.store_target_image(self.new_image_id, self.image, metadata=metadata)
 
     def push_image(self, target_image_id, provider, credentials):

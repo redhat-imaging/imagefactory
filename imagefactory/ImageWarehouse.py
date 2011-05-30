@@ -24,6 +24,7 @@ import httplib2
 import urllib
 import uuid
 import os
+import libxml2
 import props
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 
@@ -31,6 +32,8 @@ from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 class ImageWarehouse(object):
 
     url = props.prop("_url", "The url property.")
+    image_bucket = props.prop("_image_bucket", "The image_bucket property.")
+    build_bucket = props.prop("_build_bucket", "The build_bucket property.")
     target_image_bucket = props.prop("_target_image_bucket", "The target_image_bucket property.")
     template_bucket = props.prop("_template_bucket", "The template_bucket property.")
     icicle_bucket = props.prop("_icicle_bucket", "The icicle_bucket property.")
@@ -51,6 +54,8 @@ class ImageWarehouse(object):
             url = ApplicationConfiguration().configuration['warehouse']
             self.log.debug("Property (url) not specified.  Pulling from application configuration: %s" % (url, ))
 
+        self.image_bucket = ApplicationConfiguration().configuration['image_bucket']
+        self.build_bucket = ApplicationConfiguration().configuration['build_bucket']
         self.target_image_bucket = ApplicationConfiguration().configuration['target_bucket']
         self.template_bucket = ApplicationConfiguration().configuration['template_bucket']
         self.icicle_bucket = ApplicationConfiguration().configuration['icicle_bucket']
@@ -98,6 +103,14 @@ class ImageWarehouse(object):
             object_url ="%s/%s" % (self.url, object_id)
 
         return object_url
+
+    def query(self, object_type, expression):
+        object_url = self.__url_for_id_of_type("_query", object_type, create=False)
+        self.log.debug("Querying (%s) with expression (%s)" % (object_url, expression))
+        xml = self._http_post(object_url, expression, 'application/x-www-form-urlencoded')
+        if not xml:
+            return []
+        return map(lambda n: n.content, libxml2.parseDoc(xml).xpathEval("/objects/object/key"))
 
     def post_on_object_with_id_of_type(self, object_id, object_type, post_data):
         object_url = self.__url_for_id_of_type(object_id, object_type, create=False)
@@ -151,6 +164,34 @@ class ImageWarehouse(object):
         for item in metadata_keys:
             metadata.update( { item : self._http_get("%s/%s" % (object_url, item)) } )
         return metadata
+
+    def store_image(self, image_id, image_xml, metadata=None):
+        if(not image_id):
+            image_id = str(uuid.uuid4())
+        object_url = self.__url_for_id_of_type(image_id, object_type="image")
+
+        self._http_put(object_url, image_xml)
+
+        meta_data = dict(uuid=str(image_id), object_type="image")
+        if(metadata):
+            meta_data.update(metadata)
+        self.set_metadata_for_object_at_url(meta_data, object_url)
+
+        return image_id
+
+    def store_build(self, build_id, metadata=None):
+        if(not build_id):
+            build_id = str(uuid.uuid4())
+        object_url = self.__url_for_id_of_type(build_id, object_type="build")
+
+        self._http_put(object_url)
+
+        meta_data = dict(uuid=str(build_id), object_type="build")
+        if(metadata):
+            meta_data.update(metadata)
+        self.set_metadata_for_object_at_url(meta_data, object_url)
+
+        return build_id
 
     def store_target_image(self, target_image_id, image_file_path, metadata=None):
         object_url = self.__url_for_id_of_type(target_image_id, "target_image")

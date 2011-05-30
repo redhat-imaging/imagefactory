@@ -104,14 +104,14 @@ class FedoraBuilder(BaseBuilder):
         # We don't really care about the name so just force uniqueness
         self.guest.name = self.guest.name + "-" + self.new_image_id
 
-    def build_image(self):
+    def build_image(self, build_id=None):
         try:
             if  self.target in self.upload_clouds or (self.target == "ec2" and self.app_config["ec2_build_style"] == "upload"):
                 self.init_guest("local")
-                self.build_upload()
+                self.build_upload(build_id)
             elif self.target in self.nonul_clouds or (self.target == "ec2" and self.app_config["ec2_build_style"] == "snapshot"):
                 # No actual need to have a guest object here so don't bother
-                self.build_snapshot()
+                self.build_snapshot(build_id)
             else:
                 raise ImageFactoryException("Invalid build target (%s) passed to build_image()" % (self.target))
         except:
@@ -121,7 +121,7 @@ class FedoraBuilder(BaseBuilder):
             self.status="FAILED"
             raise
 
-    def build_snapshot(self):
+    def build_snapshot(self, build_id):
         # All we need do here is store the relevant bits in the Warehouse
         self.log.debug("Building Linux for non-upload cloud (%s)" % (self.target))
         self.image = "%s/placeholder-linux-image-%s" % (self.app_config['imgdir'], self.new_image_id)
@@ -129,13 +129,13 @@ class FedoraBuilder(BaseBuilder):
         image_file.write("Placeholder for non upload cloud Linux image")
         image_file.close()
         self.log.debug("Storing placeholder object for non upload cloud image")
-        self.store_image()
+        self.store_image(build_id)
         self.percent_complete = 100
         self.status = "COMPLETED"
         self.log.debug("Completed placeholder warehouse object for linux non-upload image...")
         sleep(5)
 
-    def build_upload(self):
+    def build_upload(self, build_id):
         self.log.debug("build_upload() called on FedoraBuilder...")
         self.log.debug("Building for target %s with warehouse config %s" % (self.target, self.app_config['warehouse']))
         self.status="BUILDING"
@@ -202,7 +202,7 @@ class FedoraBuilder(BaseBuilder):
             else:
                 target_parameters="No target parameters for cloud type %s" % (self.target)
 
-            self.store_image(target_parameters)
+            self.store_image(build_id, target_parameters)
             self.log.debug("Image warehouse storage complete")
         self.percent_complete=100
         self.status="COMPLETED"

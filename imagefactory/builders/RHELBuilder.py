@@ -30,7 +30,7 @@ class RHELBuilder(BaseBuilder):
 		super(RHELBuilder, self).__init__(template, target)
 
 # Image actions
-	def build_image(self):
+	def build_image(self, build_id=None):
 		pass
 
 	def abort(self):
