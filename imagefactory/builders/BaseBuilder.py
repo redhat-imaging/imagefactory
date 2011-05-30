@@ -191,7 +191,7 @@ class BaseBuilder(object):
     def __init__(self, template, target):
         super(BaseBuilder, self).__init__()
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        self.image_id = uuid.uuid4()
+        self.image_id = str(uuid.uuid4())
         if(type(template) == Template):
             self.template = template
         elif(type(template) == str):

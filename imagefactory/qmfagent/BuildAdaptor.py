@@ -149,7 +149,7 @@ class BuildAdaptor(object):
         self.builder = BuildDispatcher.builder_for_target_with_template(template=template, target=target)
         # Register as a delegate to the builder
         self.builder.delegate = self
-        self.image = str(self.builder.image_id)
+        self.image = self.builder.image_id
 
     def build_image(self):
         BuildDispatcher.builder_thread_with_method(builder=self.builder, method_name="build_image")

@@ -21,7 +21,6 @@
 import logging
 import httplib2
 import re
-import uuid
 import os.path
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 from imagefactory.ImageWarehouse import ImageWarehouse
@@ -130,12 +129,12 @@ class Template(object):
     def __fetch_template_for_uuid(self, uuid_string):
         xml_string, metadata = self.warehouse.template_with_id(uuid_string)
         if(xml_string and self.__string_is_xml_template(xml_string)):
-            return uuid.UUID(uuid_string), xml_string
+            return uuid_string, xml_string
         else:
             self.log.debug("Unable to fetch a valid template given template id %s:\n%s\nWill try fetching template id from an image with this id..." % (uuid_string, self.__abbreviated_template(xml_string)))
             template_id, xml_string, metadata = self.warehouse.template_for_image_id(uuid_string)
             if(template_id and xml_string and self.__string_is_xml_template(xml_string)):
-                return uuid.UUID(template_id), xml_string
+                return template_id, xml_string
             else:
                 self.log.debug("Unable to fetch a valid template given an image id %s:\n%s\n" % (uuid_string, self.__abbreviated_template(xml_string)))
                 return None, None
@@ -149,7 +148,7 @@ class Template(object):
         match = regex.search(url)
 
         if (match):
-            template_id = uuid.UUID(match.group())
+            template_id = match.group()
 
         response_headers, response = httplib2.Http().request(url, "GET", headers={'content-type':'text/plain'})
         if(response and self.__string_is_xml_template(response)):

@@ -222,7 +222,7 @@ class ImageWarehouse(object):
         except Exception, e:
             raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
 
-        meta_data = dict(uuid=str(image_id), object_type="image")
+        meta_data = dict(uuid=image_id, object_type="image")
         if(metadata):
             meta_data.update(metadata)
         self.set_metadata_for_object_at_url(meta_data, object_url)
@@ -237,19 +237,19 @@ class ImageWarehouse(object):
 
         self._http_put(object_url, txt)
 
-        meta_data = dict(uuid=str(image_id), object_type="provider_image")
+        meta_data = dict(uuid=image_id, object_type="provider_image")
         if(metadata):
             meta_data.update(metadata)
         self.set_metadata_for_object_at_url(meta_data, object_url)
 
     def store_template(self, template, template_id=None, metadata=None):
         if(not template_id):
-            template_id = uuid.uuid4()
+            template_id = str(uuid.uuid4())
         object_url = self.__url_for_id_of_type(template_id, object_type="template")
 
         self._http_put(object_url, template)
 
-        meta_data = dict(uuid=str(template_id), object_type="template")
+        meta_data = dict(uuid=template_id, object_type="template")
         if(metadata):
             meta_data.update(metadata)
         self.set_metadata_for_object_at_url(meta_data, object_url)
@@ -258,12 +258,12 @@ class ImageWarehouse(object):
 
     def store_icicle(self, icicle, icicle_id=None, metadata=None):
         if(not icicle_id):
-            icicle_id = uuid.uuid4()
+            icicle_id = str(uuid.uuid4())
         object_url = self.__url_for_id_of_type(icicle_id, object_type="icicle")
 
         self._http_put(object_url, icicle)
 
-        meta_data = dict(uuid=str(icicle_id), object_type="icicle")
+        meta_data = dict(uuid=icicle_id, object_type="icicle")
         if(metadata):
             meta_data.update(metadata)
         self.set_metadata_for_object_at_url(meta_data, object_url)

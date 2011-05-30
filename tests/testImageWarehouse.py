@@ -40,7 +40,7 @@ class testImageWarehouse(unittest.TestCase):
         """Tests CRUD operations on images, templates, icicles, and metadata on those objects..."""
         # IMAGE
         # store an image
-        image_id = uuid.uuid4()
+        image_id = str(uuid.uuid4())
         file_content = "This is just to test storing an image in warehouse.  There is not much to see here."
         file_path = "/tmp/testImageWarehouse_testStoreAndFetchImage.%s" % (image_id, )
         with open(file_path, 'w') as test_file:
@@ -59,7 +59,7 @@ class testImageWarehouse(unittest.TestCase):
         template_id = self.warehouse.store_template(template_content)
         self.assertIsNotNone(template_id)
         # store the template with a specified id
-        template_id_known = uuid.uuid4()
+        template_id_known = str(uuid.uuid4())
         template_id2 = self.warehouse.store_template(template_content, template_id_known)
         self.assertEqual(template_id_known, template_id2)
         # fetch the templates
@@ -70,7 +70,7 @@ class testImageWarehouse(unittest.TestCase):
         # set the template id for an image and fetch it back
         self.warehouse.set_metadata_for_id_of_type(dict(template=template_id), image_id, "image")
         template_id3, fetched_template_content3, template_metadata3 = self.warehouse.template_for_image_id(image_id)
-        self.assertEqual(str(template_id), template_id3)
+        self.assertEqual(template_id, template_id3)
         self.assertEqual(template_content, fetched_template_content3)
 
         # ICICLE
@@ -79,7 +79,7 @@ class testImageWarehouse(unittest.TestCase):
         icicle_id = self.warehouse.store_icicle(icicle_content)
         self.assertIsNotNone(icicle_id)
         # store the icicle with a specified id
-        icicle_id_known = uuid.uuid4()
+        icicle_id_known = str(uuid.uuid4())
         icicle_id2 = self.warehouse.store_icicle(icicle_content, icicle_id_known)
         self.assertEqual(icicle_id_known, icicle_id2)
         # fetch the icicles
@@ -90,7 +90,7 @@ class testImageWarehouse(unittest.TestCase):
         # set the icicle id for an image and fetch it back
         self.warehouse.set_metadata_for_id_of_type(dict(icicle=icicle_id), image_id, "image")
         icicle_id3, fetched_icicle_content3, icicle_metadata3 = self.warehouse.icicle_for_image_id(image_id)
-        self.assertEqual(str(icicle_id), icicle_id3)
+        self.assertEqual(icicle_id, icicle_id3)
         self.assertEqual(icicle_content, fetched_icicle_content3)
 
         self.assertTrue(self.warehouse.remove_image_with_id(image_id))
@@ -102,7 +102,7 @@ class testImageWarehouse(unittest.TestCase):
         os.remove(file_path)
     
     def testBucketCreation(self):
-        # self.assert_(self.warehouse.create_bucket_at_url("%s/unittests-create_bucket/%s" % (self.warehouse.url, uuid.uuid4())))
+        # self.assert_(self.warehouse.create_bucket_at_url("%s/unittests-create_bucket/%s" % (self.warehouse.url, str(uuid.uuid4()))))
         self.warehouse.create_bucket_at_url("%s/unittests-create_bucket" % (self.warehouse.url, ))
         self.assert_(self.warehouse.create_bucket_at_url("%s/unittests-create_bucket/%s" % (self.warehouse.url, time.asctime().replace(' ', '-'))))
 

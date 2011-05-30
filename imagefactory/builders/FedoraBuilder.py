@@ -84,8 +84,6 @@ class FedoraBuilder(BaseBuilder):
         super(FedoraBuilder, self).__init__(template, target)
         self.app_config = ApplicationConfiguration().configuration
         self.warehouse_url = self.app_config['warehouse']
-        # TODO: Should this be in base?  Does image_id ever need to be an actual UUID object?
-        self.image_id = str(self.image_id)
         # May not be necessary to do both of these
         self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml)
 
@@ -104,7 +102,7 @@ class FedoraBuilder(BaseBuilder):
         self.guest.diskimage = self.app_config["imgdir"] + "/base-image-" + self.image_id + ".dsk"
         # Oz assumes unique names - TDL built for multiple backends guarantees they are not unique
         # We don't really care about the name so just force uniqueness
-        self.guest.name = self.guest.name + "-" + str(self.image_id)
+        self.guest.name = self.guest.name + "-" + self.image_id
 
     def build_image(self):
         try:
@@ -524,7 +522,7 @@ class FedoraBuilder(BaseBuilder):
 	mypub = open("/etc/oz/id_rsa-icicle-gen.pub")
 	server_files = { "/root/.ssh/authorized_keys":mypub }
 
-        instance_name = "factory-build-%s" % (str(self.image_id))
+        instance_name = "factory-build-%s" % (self.image_id, )
 	jeos_instance = cloudservers.servers.create(instance_name,jeos_image, onegig_flavor, files=server_files)
 
 	for i in range(30):
@@ -576,7 +574,7 @@ class FedoraBuilder(BaseBuilder):
 	    self.guest.do_customize(guestaddr)
 	    self.log.debug("Done!")
 
-            image_name = "factory-image-%s" % (str(self.image_id))
+            image_name = "factory-image-%s" % (self.image_id, )
 	    snap_image = cloudservers.images.create(image_name, jeos_instance)
 
 	    self.log.debug("New Rackspace image created with ID: %s" % (snap_image.id))
@@ -696,7 +694,7 @@ chmod 600 /root/.ssh/authorized_keys
         conn = ec2region.connect(aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key)
 
         # Create a use-once SSH-able security group
-        factory_security_group_name = "imagefactory-%s" % (str(self.image_id))
+        factory_security_group_name = "imagefactory-%s" % (self.image_id, )
         factory_security_group_desc = "Temporary ImageFactory generated security group with SSH access"
 	self.log.debug("Creating temporary security group (%s)" % (factory_security_group_name))
 	factory_security_group = conn.create_security_group(factory_security_group_name, factory_security_group_desc)
@@ -844,7 +842,7 @@ chmod 600 /root/.ssh/authorized_keys
             instance.stop()
             factory_security_group.delete()
 
-        self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), str(image_id), str(self.image_id), str(metadata)))
+        self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), image_id, self.image_id, str(metadata)))
         self.percent_complete=100
         self.status="COMPLETED"
 
@@ -866,7 +864,7 @@ chmod 600 /root/.ssh/authorized_keys
         if not os.path.isdir(staging):
             raise ImageFactoryException("Staging dir (%s) for condorcloud is not present" % (staging))
 
-        image_base = "/condorimage-" + str(self.image_id) + ".img"
+        image_base = "/condorimage-" + self.image_id + ".img"
         staging_image = staging + image_base
 
         # Copy to staging location
@@ -876,7 +874,7 @@ chmod 600 /root/.ssh/authorized_keys
             raise ImageFactoryException("Copy of condorcloud image to staging location (%s) failed" % (staging_image))
 
         # Retrieve original XML and write it out to the final dir
-        image_xml_base="/condorimage-" + str(self.image_id) + ".xml"
+        image_xml_base="/condorimage-" + self.image_id + ".xml"
         image_xml_file= storage + image_xml_base
 
         image_metadata = self.warehouse.metadata_for_id_of_type(("target_parameters",), image_id, "image")
@@ -919,7 +917,7 @@ chmod 600 /root/.ssh/authorized_keys
         # {"westford_esx": {"api-url": "https://vsphere.virt.bos.redhat.com/sdk", "username": "Administrator", "password": "changeme",
         #       "datastore": "datastore1", "network_name": "VM Network" } }
 
-        vm_name = "factory-image-" + str(self.image_id)
+        vm_name = "factory-image-" + self.image_id
         vm_import = VMImport(provider_data['api-url'], provider_data['username'], provider_data['password'])
         vm_import.import_vm(datastore=provider_data['datastore'], network_name = provider_data['network_name'],
                        name=vm_name, disksize_kb = (10*1024*1024 + 2 ), memory=512, num_cpus=1,
@@ -1166,7 +1164,7 @@ chmod 600 /root/.ssh/authorized_keys
 
         #self.output_descriptor="unknown"
         #metadata = dict(uuid=self.image_id, type="provider_image", template=self.template, target=self.target, icicle=self.output_descriptor, image=image_id, provider=provider, target_identifier=ami_id)
-        self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), str(image_id), str(self.image_id), str(metadata)))
+        self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), image_id, self.image_id, str(metadata)))
         self.percent_complete=100
 
     def abort(self):
