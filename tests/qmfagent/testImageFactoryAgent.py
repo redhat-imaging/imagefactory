@@ -126,8 +126,8 @@ class MockConsole(ConsoleHandler):
         if(str(self.agent_addr).startswith(agent.getName())):
             self.agent = agent
             self.factory = agent.query("{class:ImageFactory, package:'com.redhat.imagefactory'}")[0]
-            self.build_adaptor_addr_success = self.factory.image("<template></template>", "mock")["build_adaptor"]
-            self.build_adaptor_addr_fail = self.factory.image("<template>FAIL</template>", "mock")["build_adaptor"]
+            self.build_adaptor_addr_success = self.factory.build_image("", "", "<template></template>", ["mock"])["build_adaptors"][0]
+            self.build_adaptor_addr_fail = self.factory.build_image("", "", "<template>FAIL</template>", ["mock"])["build_adaptors"][0]
 
             self.image_factory_states = self.factory.instance_states("ImageFactory")
             self.build_adaptor_states = self.factory.instance_states("BuildAdaptor")
@@ -148,8 +148,8 @@ class MockConsole(ConsoleHandler):
                 self.build_status_events.append(dict(agent=agent, data=data.getProperties(), timestamp=timestamp, severity=severity))
                 if(data.getProperties()["new_status"] == "COMPLETED"):
                     time.sleep(2)
-                    image_id = self.build_adaptor_addr_success["_object_name"].split(":")[2]
-                    self.build_adaptor_addr_push = self.factory.provider_image(image_id, "mock-provider1", "None")["build_adaptor"]
+                    ba = self.agent.query(Query(DataAddr(self.build_adaptor_addr_success)))[0]
+                    self.build_adaptor_addr_push = self.factory.push_image(ba.image, ba.build, ["mock-provider1"], "None")["build_adaptors"][0]
             elif(data.getProperties()["addr"] == self.build_adaptor_addr_push):
                 self.push_status_events.append(dict(agent=agent, data=data.getProperties(), timestamp=timestamp, severity=severity))
         elif(data.getProperties()["event"] == "FAILURE"):

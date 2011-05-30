@@ -79,11 +79,7 @@ class ImageFactoryAgent(AgentHandler):
 
             result = getattr(target_obj, methodName)(**args)
 
-            if ((addr == self.image_factory_addr) and (methodName in ("image", "provider_image"))):
-                build_adaptor_instance_name = "build_adaptor:%s:%s" %  (methodName, result.new_image_id)
-                qmf_object_addr = self.session.addData(result.qmf_object, build_adaptor_instance_name, persistent=True)
-                self.managedObjects[repr(qmf_object_addr)] = result
-                handle.addReturnArgument("build_adaptor", qmf_object_addr.asMap())
+            if (self._handle_image_factory_result(handle, methodName, addr, result)):
                 self.session.methodSuccess(handle)
             elif(result and isinstance(result, dict)):
                 for key in result:
@@ -100,6 +96,25 @@ class ImageFactoryAgent(AgentHandler):
         except Exception, e:
             self.log.exception(str(e))
             self.session.raiseException(handle, str(e))
+
+    def _handle_image_factory_result(self, handle, method_name, addr, result):
+        if not addr == self.image_factory_addr:
+            return False
+
+        if method_name in ("image", "provider_image"):
+            handle.addReturnArgument("build_adaptor", self._add_adaptor(result, method_name))
+        elif method_name in ("build_image", "push_image"):
+            handle.addReturnArgument("build_adaptors", map(lambda ba: self._add_adaptor(ba, method_name), result))
+        else:
+            return False
+
+        return True
+
+    def _add_adaptor(self, build_adaptor, prefix):
+        build_adaptor_instance_name = "build_adaptor:%s:%s" %  (prefix, build_adaptor.new_image_id)
+        qmf_object_addr = self.session.addData(build_adaptor.qmf_object, build_adaptor_instance_name, persistent=True)
+        self.managedObjects[repr(qmf_object_addr)] = build_adaptor
+        return qmf_object_addr.asMap()
 
     def shutdown(self):
         """

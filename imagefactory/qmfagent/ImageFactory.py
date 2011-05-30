@@ -19,8 +19,8 @@
 import sys
 import cqpid
 from qmf2 import *
-import BuildAdaptor
 import httplib2
+from BuildAdaptor import BuildAdaptor
 from imagefactory import props
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 from imagefactory.ImageWarehouse import ImageWarehouse
@@ -34,12 +34,20 @@ class ImageFactory(object):
 
     # QMF schema for ImageFactory
     qmf_schema = Schema(SCHEMA_TYPE_DATA, "com.redhat.imagefactory", "ImageFactory")
-    # method for building images
-    _build_image_method = SchemaMethod("image", desc="Build a new image")
+    # method for building an image
+    _build_image_method = SchemaMethod("image", desc="Build a new image for a given target cloud")
     _build_image_method.addArgument(SchemaProperty("template", SCHEMA_DATA_STRING, direction=DIR_IN, desc="string of xml, uuid, or url"))
     _build_image_method.addArgument(SchemaProperty("target", SCHEMA_DATA_STRING, direction=DIR_IN, desc="name of the cloud to target"))
     _build_image_method.addArgument(SchemaProperty("build_adaptor", SCHEMA_DATA_MAP, direction=DIR_OUT, desc="the QMF address of the build_adaptor instantiated"))
     qmf_schema.addMethod(_build_image_method)
+    # method for building images
+    _build_images_method = SchemaMethod("build_image", desc="Build an image for the given target clouds")
+    _build_images_method.addArgument(SchemaProperty("image", SCHEMA_DATA_STRING, direction=DIR_IN, desc="the UUID of an image previously built"))
+    _build_images_method.addArgument(SchemaProperty("build", SCHEMA_DATA_STRING, direction=DIR_IN, desc="the UUID of a previous build of the image"))
+    _build_images_method.addArgument(SchemaProperty("template", SCHEMA_DATA_STRING, direction=DIR_IN, desc="string of xml, uuid, or url"))
+    _build_images_method.addArgument(SchemaProperty("targets", SCHEMA_DATA_LIST, direction=DIR_IN, desc="names of the clouds to target"))
+    _build_images_method.addArgument(SchemaProperty("build_adaptors", SCHEMA_DATA_LIST, direction=DIR_OUT, desc="the QMF addresses of the build_adaptors instantiated"))
+    qmf_schema.addMethod(_build_images_method)
     # method for creating a provider_image from an image
     _push_image_method = SchemaMethod("provider_image", desc="Push an image to a provider.")
     _push_image_method.addArgument(SchemaProperty("image_id", SCHEMA_DATA_STRING, direction=DIR_IN, desc="the uuid of an image previously built"))
@@ -47,6 +55,14 @@ class ImageFactory(object):
     _push_image_method.addArgument(SchemaProperty("credentials", SCHEMA_DATA_STRING, direction=DIR_IN, desc="an xml string representation of the credentials"))
     _push_image_method.addArgument(SchemaProperty("build_adaptor", SCHEMA_DATA_MAP, direction=DIR_OUT, desc="the QMF address of the build_adaptor instantiated"))
     qmf_schema.addMethod(_push_image_method)
+    # method for pushing an image to multiple providers
+    _push_images_method = SchemaMethod("push_image", desc="Push an image to multiple providers.")
+    _push_images_method.addArgument(SchemaProperty("image", SCHEMA_DATA_STRING, direction=DIR_IN, desc="the UUID of an image previously built"))
+    _push_images_method.addArgument(SchemaProperty("build", SCHEMA_DATA_STRING, direction=DIR_IN, desc="the UUID of a previous build of the image"))
+    _push_images_method.addArgument(SchemaProperty("providers", SCHEMA_DATA_LIST, direction=DIR_IN, desc="the names of the cloud providers, often regions"))
+    _push_images_method.addArgument(SchemaProperty("credentials", SCHEMA_DATA_STRING, direction=DIR_IN, desc="an xml string representation of the credentials"))
+    _push_images_method.addArgument(SchemaProperty("build_adaptors", SCHEMA_DATA_LIST, direction=DIR_OUT, desc="the QMF addresses of the build_adaptors instantiated"))
+    qmf_schema.addMethod(_push_images_method)
     # this method will return a representation of the object's finite state machine
     _states_method = SchemaMethod("instance_states", desc = "Returns a dictionary representing the finite state machine for instances.")
     _states_method.addArgument(SchemaProperty("class_name", SCHEMA_DATA_STRING, direction=DIR_IN, desc="the name of the class to query for instance states"))
@@ -79,7 +95,7 @@ class ImageFactory(object):
 
     def image(self,template,target):
         template_object = Template(template=template)
-        build_adaptor = BuildAdaptor.BuildAdaptor(template_object,target,self.agent)
+        build_adaptor = BuildAdaptor(template_object,target,agent=self.agent)
         build_adaptor.build_image()
         return build_adaptor
 
@@ -91,11 +107,17 @@ class ImageFactory(object):
         target = image_metadata["target"]
 
         if (template_id and target):
-            build_adaptor = BuildAdaptor.BuildAdaptor(Template(uuid=template_id),target,self.agent)
+            build_adaptor = BuildAdaptor(Template(uuid=template_id),target,agent=self.agent)
             build_adaptor.push_image(target_image_id, provider, credentials)
             return build_adaptor
         else:
             raise RuntimeError("Could not return build_adaptor!\nimage_metadata: %s\ntemplate_id: %s\ntemplate: %s\n" % (image_metadata, template_id, target))
+
+    def build_image(self, image, build, template, targets):
+        return BuildAdaptor.build_image_for_targets(image, build, template, targets, self.agent)
+
+    def push_image(self, image, build, providers, credentials):
+        return BuildAdaptor.push_image_to_providers(image, build, providers, credentials, self.agent)
 
     def instance_states(self, class_name):
         """Returns a dictionary representing the finite state machine for instances of the class specified."""

@@ -1,6 +1,6 @@
 ## Introduction ##
 
-The script imagefactory.py can be used to start a daemon running a QMF agent.  Using the 'qpidd' option, the host that qpidd is running on can be set.  Currently this defaults to the default qpidd port on localhost.  Future versions will accept an amqp:// URL to fully configure the agent session.
+The script imgfac.py can be used to start a daemon running a QMF agent.  Using the 'qpidd' option, the host that qpidd is running on can be set.  Currently this defaults to the default qpidd port on localhost.  Future versions will accept an amqp:// URL to fully configure the agent session.
 
 	Example usage:
 	
@@ -36,18 +36,18 @@ The imagefactory can then be sent a message to build an image:
 
 	Example 3 - Building an image
 	
-		In [15]: factory.image("<template></template>", "mock")
+		In [15]: factory.build_image("", "", "<template></template>", ["mock"])
 		Out[15]: 
-		{'build_adaptor': {'_agent_epoch': 1L,
-		                   '_agent_name': 'redhat.com:imagefactory:5edbf641-78ba-4375-8ec8-f60f555e173a',
-		                   '_object_name': 'build_adaptor:db21dd5e-b3b6-49d1-a432-07f9f2d1c3c5'}}
+		{'build_adaptors': [{'_agent_epoch': 1L,
+		                     '_agent_name': 'redhat.com:imagefactory:5edbf641-78ba-4375-8ec8-f60f555e173a',
+		                     '_object_name': 'build_adaptor:db21dd5e-b3b6-49d1-a432-07f9f2d1c3c5'}]}
 		
 The console can poll the build_adaptor for build status or receive events listed below.
 
 	Example 4 - Querying for build status
 	
-		In [20]: response = factory.image("<template></template>", "mock")
-		In [21]: build_addr = DataAddr(response['build_adaptor'])
+		In [20]: response = factory.build_image("", "" "<template></template>", ["mock"])
+		In [21]: build_addr = DataAddr(response['build_adaptors'][0])
 		In [22]: query = Query(build_addr)
 		In [23]: agent.query(query)[0].status
 		Out[23]: 'PENDING'
@@ -63,40 +63,49 @@ The console can poll the build_adaptor for build status or receive events listed
     name = "ImageFactory"
     package = "com.redhat.imagefactory"
 #### Methods: ####
-* `image(template, target)`
+* `build_image(image, build, template, targets)`
         
-        method name = "image"
-        desc = "Build a new image"
+        method name = "build_image"
+        desc = "Build an image for the given targets"
         arguments:
+            name = "image"
+                dtype = SCHEMA_DATA_STRING
+                desc = "the uuid of an existing image, or the empty string"
+            name = "build"
+                dtype = SCHEMA_DATA_STRING
+                desc = "the uuid of an existing build, or the empty string"
             name = "template"
                 dtype = SCHEMA_DATA_STRING
                 desc = "string of xml, uuid, or url"
-            name = "target"
-                dtype = SCHEMA_DATA_STRING
-                desc = "name of the cloud to target"
+            name = "targets"
+                dtype = SCHEMA_DATA_LIST
+                desc = "names of the clouds to target"
         return values:
-            name = "build_adaptor"
-                dtype = SCHEMA_DATA_MAP
-                desc = "the QMF address of the build_adaptor instantiated"
+            name = "build_adaptors"
+                dtype = SCHEMA_DATA_LIST
+                desc = "the QMF addresses of the build_adaptors instantiated"
 
-* `provider_image(image_id, provider, credentials)`
+* `provider_image(image, build, providers, credentials)`
         
-        method name = "provider_image"
-        desc = "Push an image to a provider."
+        method name = "push_image"
+        desc = "Push an image to the given providers."
         arguments:
-            name = "image_id"
+            name = "image"
                 dtype = SCHEMA_DATA_STRING
-                desc = "the uuid of an image previously built"
-            name = "provider"
+                desc = "the uuid of an existing image"
+            name = "build"
                 dtype = SCHEMA_DATA_STRING
-                desc = "the name of the cloud provider, often a region"
-            name = credentials"
+                desc = "the uuid of an existing build, or the empty string"
+            name = "providers"
+                dtype = SCHEMA_DATA_LIST
+                desc = "the name of the cloud providers, often target cloud regions"
+            name = "credentials"
                 dtype = SCHEMA_DATA_STRING
                 desc = "an xml string representation of the credentials"
         return values:
-            name = "build_adaptor"
-                dtype = SCHEMA_DATA_MAP
-                desc = "the QMF address of the build_adaptor instantiated"
+            name = "build_adaptors"
+                dtype = SCHEMA_DATA_LIST
+                desc = "the QMF addresses of the build_adaptors instantiated"
 
 * `instance_states(class_name)`
         
@@ -116,6 +125,16 @@ The console can poll the build_adaptor for build status or receive events listed
     package = "com.redhat.imagefactory"
 
 #### Properties: ####
+* Image
+        
+        name = "image"
+            dtype = SCHEMA_DATA_STRING
+            desc = "the uuid of the image being built or pushed"
+* Build
+        
+        name = "build"
+            dtype = SCHEMA_DATA_STRING
+            desc = "the uuid of the image build being built or pushed"
 * Status
         
         name = "status"
@@ -126,11 +145,11 @@ The console can poll the build_adaptor for build status or receive events listed
         name = "percent_complete"
             dtype = SCHEMA_DATA_INT
             desc = "the estimated percentage through an operation"
-* Image ID
+* Target/Provider Image ID
         
         name = "image_id"
             dtype = SCHEMA_DATA_STRING
-            desc = "string representation of the assigned uuid"
+            desc = "the uuid of the newly created target or provider image"
 
 #### Methods: ####
 * `abort()`

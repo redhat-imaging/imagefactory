@@ -110,7 +110,7 @@ class BuildDispatcher(object):
         builder_thread.start()
 
     @classmethod
-    def build_image_for_targets(cls, image_id, build_id, template, targets):
+    def build_image_for_targets(cls, image_id, build_id, template, targets, *args, **kwargs):
         warehouse = cls._get_warehouse()
 
         template = Template(template)
@@ -122,14 +122,14 @@ class BuildDispatcher(object):
 
         dispatchers = []
         for target in targets:
-            dispatcher = BuildDispatcher(template, target, image_id, build_id)
+            dispatcher = cls(template, target, image_id, build_id, *args, **kwargs)
             dispatcher.build_image(watcher)
             dispatchers.append(dispatcher)
 
         return dispatchers
 
     @classmethod
-    def push_image_to_providers(cls, image_id, build_id, providers, credentials):
+    def push_image_to_providers(cls, image_id, build_id, providers, credentials, *args, **kwargs):
         warehouse = cls._get_warehouse()
 
         if not build_id:
@@ -145,7 +145,7 @@ class BuildDispatcher(object):
 
             template = cls._template_for_target_image_id(warehouse, target_image_id)
 
-            dispatcher = BuildDispatcher(template, target, image_id, build_id)
+            dispatcher = cls(template, target, image_id, build_id, *args, **kwargs)
             dispatcher.push_image(target_image_id, provider, credentials, watcher)
             dispatchers.append(dispatcher)
 

@@ -28,9 +28,11 @@ from imagefactory.BuildDispatcher import BuildDispatcher
 class BuildAdaptor(BuildDispatcher):
     # QMF schema for BuildAdaptor
     qmf_schema = Schema(SCHEMA_TYPE_DATA, "com.redhat.imagefactory", "BuildAdaptor")
+    qmf_schema.addProperty(SchemaProperty("image", SCHEMA_DATA_STRING, desc="UUID of the image"))
+    qmf_schema.addProperty(SchemaProperty("build", SCHEMA_DATA_STRING, desc="UUD of the build"))
     qmf_schema.addProperty(SchemaProperty("status", SCHEMA_DATA_STRING, desc="string representing the status (see instance_states() on ImageFactory)"))
     qmf_schema.addProperty(SchemaProperty("percent_complete", SCHEMA_DATA_INT, desc="the estimated percentage through an operation"))
-    qmf_schema.addProperty(SchemaProperty("image_id", SCHEMA_DATA_STRING, desc="string representation of the assigned uuid"))
+    qmf_schema.addProperty(SchemaProperty("image_id", SCHEMA_DATA_STRING, desc="UUID of the newly created target or provider image"))
     qmf_schema.addMethod(SchemaMethod("abort", desc = "If possible, abort running build."))
 
     #QMF schema for status change event
@@ -62,14 +64,16 @@ class BuildAdaptor(BuildDispatcher):
                 "COMPLETED":()
                 }
 
+    image_id = props.subprop("qmf_object", "image", "The UUID of the image.")
+    build_id = props.subprop("qmf_object", "build", "The UUID of the build.")
     status = props.subprop("qmf_object", "status", "The status property.")
     percent_complete = props.subprop("qmf_object", "percent_complete", "The percent_complete property.")
     new_image_id = props.subprop("qmf_object", "image_id", "The image property.")
     qmf_object = props.prop("_qmf_object", "The qmf_object property.")
 
-    def __init__(self, template, target, agent=None):
+    def __init__(self, template, target, image_id='', build_id='', agent=None):
         self.qmf_object = Data(BuildAdaptor.qmf_schema)
-        super(BuildAdaptor, self).__init__(template, target)
+        super(BuildAdaptor, self).__init__(template, target, image_id, build_id)
         self.agent = agent
 
     # Builder delegate methods
