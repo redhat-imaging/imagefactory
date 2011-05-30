@@ -66,7 +66,7 @@ class BuildAdaptor(object):
     target = props.prop("_target", "The target property.")
     status = props.subprop("qmf_object", "status", "The status property.")
     percent_complete = props.subprop("qmf_object", "percent_complete", "The percent_complete property.")
-    image = props.subprop("qmf_object", "image_id", "The image property.")
+    image_id = props.subprop("qmf_object", "image_id", "The image property.")
     qmf_object = props.prop("_qmf_object", "The qmf_object property.")
 
     def __init__(self, template, target, agent=None):
@@ -80,13 +80,13 @@ class BuildAdaptor(object):
         self.target = target
         self.status = "New"
         self.percent_complete = 0
-        self.image = "None"
+        self.image_id = "None"
         self.builder = None
 
         self.builder = BuildDispatcher.builder_for_target_with_template(template=template, target=target)
         # Register as a delegate to the builder
         self.builder.delegate = self
-        self.image = self.builder.image_id
+        self.image_id = self.builder.image_id
 
     def build_image(self):
         BuildDispatcher.builder_thread_with_method(builder=self.builder, method_name="build_image")
