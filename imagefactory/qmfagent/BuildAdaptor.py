@@ -88,36 +88,33 @@ class BuildAdaptor(object):
     def status():
         doc = "The status property."
         def fget(self):
-            return self._status
+            return self.qmf_object.status
         def fset(self, value):
-            self._status = value
             self.qmf_object.status = value
         def fdel(self):
-            del self._status
+            del self.qmf_object.status
         return locals()
     status = property(**status())
 
     def percent_complete():
         doc = "The percent_complete property."
         def fget(self):
-            return self._percent_complete
+            return self.qmf_object.percent_complete
         def fset(self, value):
-            self._percent_complete = value
             self.qmf_object.percent_complete = value
         def fdel(self):
-            del self._percent_complete
+            del self.qmf_object.percent_complete
         return locals()
     percent_complete = property(**percent_complete())
 
     def image_id():
         doc = "The image property."
         def fget(self):
-            return self._image_id
+            return self.qmf_object.image_id
         def fset(self, value):
-            self._image_id = value
             self.qmf_object.image_id = value
         def fdel(self):
-            del self._image_id
+            del self.qmf_object.image_id
         return locals()
     image = property(**image_id())
 
