@@ -37,20 +37,20 @@ class testImageWarehouse(unittest.TestCase):
         del self.metadata
 
     def testImageWarehouseMethods(self):
-        """Tests CRUD operations on images, templates, icicles, and metadata on those objects..."""
-        # IMAGE
-        # store an image
-        image_id = str(uuid.uuid4())
-        file_content = "This is just to test storing an image in warehouse.  There is not much to see here."
-        file_path = "/tmp/testImageWarehouse_testStoreAndFetchImage.%s" % (image_id, )
+        """Tests CRUD operations on target images, templates, icicles, and metadata on those objects..."""
+        # TARGET IMAGE
+        # store a target image
+        target_image_id = str(uuid.uuid4())
+        file_content = "This is just to test storing a target image in warehouse.  There is not much to see here."
+        file_path = "/tmp/testImageWarehouse_testStoreAndFetchTargetImage.%s" % (target_image_id, )
         with open(file_path, 'w') as test_file:
             test_file.write(file_content)
             test_file.close()
-        self.warehouse.store_image(image_id, file_path, metadata=self.metadata)
-        # now fetch that image
-        image, metadata = self.warehouse.image_with_id(image_id, metadata_keys=self.metadata.keys())
+        self.warehouse.store_target_image(target_image_id, file_path, metadata=self.metadata)
+        # now fetch that target image
+        target_image, metadata = self.warehouse.target_image_with_id(target_image_id, metadata_keys=self.metadata.keys())
         # now make the assertions
-        self.assertEqual(file_content, image)
+        self.assertEqual(file_content, target_image)
         self.assertEqual(self.metadata, metadata)
 
         # TEMPLATE
@@ -67,9 +67,9 @@ class testImageWarehouse(unittest.TestCase):
         self.assertEqual(template_content, fetched_template_content)
         fetched_template_content2, template_metadata2 = self.warehouse.template_with_id(template_id_known)
         self.assertEqual(template_content, fetched_template_content2)
-        # set the template id for an image and fetch it back
-        self.warehouse.set_metadata_for_id_of_type(dict(template=template_id), image_id, "image")
-        template_id3, fetched_template_content3, template_metadata3 = self.warehouse.template_for_image_id(image_id)
+        # set the template id for a target image and fetch it back
+        self.warehouse.set_metadata_for_id_of_type(dict(template=template_id), target_image_id, "target_image")
+        template_id3, fetched_template_content3, template_metadata3 = self.warehouse.template_for_target_image_id(target_image_id)
         self.assertEqual(template_id, template_id3)
         self.assertEqual(template_content, fetched_template_content3)
 
@@ -87,13 +87,13 @@ class testImageWarehouse(unittest.TestCase):
         self.assertEqual(icicle_content, fetched_icicle_content)
         fetched_icicle_content2, icicle_metadata2 = self.warehouse.icicle_with_id(icicle_id_known)
         self.assertEqual(icicle_content, fetched_icicle_content2)
-        # set the icicle id for an image and fetch it back
-        self.warehouse.set_metadata_for_id_of_type(dict(icicle=icicle_id), image_id, "image")
-        icicle_id3, fetched_icicle_content3, icicle_metadata3 = self.warehouse.icicle_for_image_id(image_id)
+        # set the icicle id for a target image and fetch it back
+        self.warehouse.set_metadata_for_id_of_type(dict(icicle=icicle_id), target_image_id, "target_image")
+        icicle_id3, fetched_icicle_content3, icicle_metadata3 = self.warehouse.icicle_for_target_image_id(target_image_id)
         self.assertEqual(icicle_id, icicle_id3)
         self.assertEqual(icicle_content, fetched_icicle_content3)
 
-        self.assertTrue(self.warehouse.remove_image_with_id(image_id))
+        self.assertTrue(self.warehouse.remove_target_image_with_id(target_image_id))
         self.assertTrue(self.warehouse.remove_template_with_id(template_id))
         self.assertTrue(self.warehouse.remove_template_with_id(template_id2))
         self.assertTrue(self.warehouse.remove_icicle_with_id(icicle_id))

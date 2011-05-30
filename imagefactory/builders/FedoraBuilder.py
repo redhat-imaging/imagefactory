@@ -467,15 +467,15 @@ class FedoraBuilder(BaseBuilder):
         # TODO: Based on architecture associate one of two XML blocks that contain the correct
         # regional AKIs for pvgrub
 
-    def push_image(self, image_id, provider, credentials):
+    def push_image(self, target_image_id, provider, credentials):
         try:
             if  self.target in self.upload_clouds or (self.target == "ec2" and self.app_config["ec2_build_style"] == "upload"):
                 #No need to have an image object here
                 #self.init_guest("local")
-                self.push_image_upload(image_id, provider, credentials)
+                self.push_image_upload(target_image_id, provider, credentials)
             elif self.target in self.nonul_clouds or (self.target == "ec2" and self.app_config["ec2_build_style"] == "snapshot"):
                 self.init_guest("remote")
-                self.push_image_snapshot(image_id, provider, credentials)
+                self.push_image_snapshot(target_image_id, provider, credentials)
             else:
                 raise ImageFactoryException("Invalid build target (%s) passed to build_image()" % (self.target))
         except:
@@ -486,13 +486,13 @@ class FedoraBuilder(BaseBuilder):
             self.status="FAILED"
 
 
-    def push_image_snapshot(self, image_id, provider, credentials):
+    def push_image_snapshot(self, target_image_id, provider, credentials):
         if provider == "rackspace":
-            self.push_image_snapshot_rackspace(image_id, provider, credentials)
+            self.push_image_snapshot_rackspace(target_image_id, provider, credentials)
         else:
-            self.push_image_snapshot_ec2(image_id, provider, credentials)
+            self.push_image_snapshot_ec2(target_image_id, provider, credentials)
 
-    def push_image_snapshot_rackspace(self,image_id, provider, credentials):
+    def push_image_snapshot_rackspace(self, target_image_id, provider, credentials):
 
         doc = libxml2.parseDoc(credentials)
         ctxt = doc.xpathNewContext()
@@ -589,7 +589,7 @@ class FedoraBuilder(BaseBuilder):
 	        snap_image = cloudservers.images.get(snap_image.id)
 
             self.log.debug("Storing Rackspace image ID (%s) and details in Warehouse" % (snap_image.id))
-	    metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=snap_image.id)
+	    metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=snap_image.id)
 	    self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
 
 	finally:
@@ -599,7 +599,7 @@ class FedoraBuilder(BaseBuilder):
         self.percent_complete=100
         self.status = "COMPLETED"
 
-    def push_image_snapshot_ec2(self, image_id, provider, credentials):
+    def push_image_snapshot_ec2(self, target_image_id, provider, credentials):
         self.log.debug("Being asked to push for provider %s" % (provider))
         self.log.debug("distro: %s - update: %s - arch: %s" % (self.tdlobj.distro, self.tdlobj.update, self.tdlobj.arch))
         self.ec2_decode_credentials(credentials)
@@ -835,26 +835,26 @@ chmod 600 /root/.ssh/authorized_keys
             ami_id = m.group(1)
             self.log.debug("Extracted AMI ID: %s " % (ami_id))
 
-            metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=ami_id)
+            metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=ami_id)
             self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
         finally:
             self.log.debug("Stopping EC2 instance and deleting temp security group")
             instance.stop()
             factory_security_group.delete()
 
-        self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), image_id, self.new_image_id, str(metadata)))
+        self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), target_image_id, self.new_image_id, str(metadata)))
         self.percent_complete=100
         self.status="COMPLETED"
 
-    def condorcloud_push_image_upload(self, image_id, provider, credentials):
+    def condorcloud_push_image_upload(self, target_image_id, provider, credentials):
         # condorcloud is a simple local cloud instance using Condor
         # The push action in this case simply requires that we copy the image to a known
         # location and then move it to another known loacation
 
         # This is where the image should be after a local build
-        input_image = self.app_config["imgdir"] + "/base-image-" + image_id + ".dsk"
+        input_image = self.app_config["imgdir"] + "/base-image-" + target_image_id + ".dsk"
         # Grab from Warehouse if it isn't here
-        self.retrieve_image(image_id, input_image)
+        self.retrieve_image(target_image_id, input_image)
 
         storage = "/home/cloud/images"
         if not os.path.isdir(storage):
@@ -877,7 +877,7 @@ chmod 600 /root/.ssh/authorized_keys
         image_xml_base="/condorimage-" + self.new_image_id + ".xml"
         image_xml_file= storage + image_xml_base
 
-        image_metadata = self.warehouse.metadata_for_id_of_type(("target_parameters",), image_id, "image")
+        image_metadata = self.warehouse.metadata_for_id_of_type(("target_parameters",), target_image_id, "target_image")
         self.log.debug("Got metadata output of: %s", repr(image_metadata))
         libvirt_xml = image_metadata["target_parameters"]
 
@@ -891,11 +891,11 @@ chmod 600 /root/.ssh/authorized_keys
         if subprocess.call(["mv", "-f", staging_image, final_image]):
             raise ImageFactoryException("Move of condorcloud image to final location (%s) failed" % (final_image))
 
-        metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=self.new_image_id)
+        metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=self.new_image_id)
         self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
         self.percent_complete = 100
 
-    def vmware_push_image_upload(self, image_id, provider, credentials):
+    def vmware_push_image_upload(self, target_image_id, provider, credentials):
         # Decode the config file, verify that the provider is in it - err out if not
         # TODO: Make file location CONFIG value
         cfg_file = open("/etc/vmware.json","r")
@@ -909,9 +909,9 @@ chmod 600 /root/.ssh/authorized_keys
             raise ImageFactoryException("VMWare instance (%s) not found in local configuraiton file /etc/vmware.json" % (provider))
 
         # This is where the image should be after a local build
-        input_image = self.app_config['imgdir'] + "/vmware-image-" + image_id + ".vmdk"
+        input_image = self.app_config['imgdir'] + "/vmware-image-" + target_image_id + ".vmdk"
         # Grab from Warehouse if it isn't here
-        self.retrieve_image(image_id, input_image)
+        self.retrieve_image(target_image_id, input_image)
 
         # Example of some JSON for westford_esx
         # {"westford_esx": {"api-url": "https://vsphere.virt.bos.redhat.com/sdk", "username": "Administrator", "password": "changeme",
@@ -924,12 +924,12 @@ chmod 600 /root/.ssh/authorized_keys
                        guest_id='otherLinux64Guest', imagefilename=input_image)
 
         # Create the provdier image
-        metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=vm_name)
+        metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=vm_name)
         self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
         self.percent_complete = 100
 
 
-    def rhevm_push_image_upload(self, image_id, provider, credentials):
+    def rhevm_push_image_upload(self, target_image_id, provider, credentials):
         # Decode the config file, verify that the provider is in it - err out if not
         # TODO: Make file location CONFIG value
 	file = open("/etc/rhevm.json","r")
@@ -949,34 +949,34 @@ chmod 600 /root/.ssh/authorized_keys
         # The RHEV-M UUID is stored as a new piece of metadata with a key of "ami-id"
         # This is not thread-safe
         # TODO: Coordinate with Pete when he changes this to return the AMI ID as the body
-        response = self.warehouse.post_on_object_with_id_of_type(image_id, "image", post_data)
+        response = self.warehouse.post_on_object_with_id_of_type(target_image_id, "target_image", post_data)
 
         # TODO: Remove this when the change mentioned above has been made
-        image_metadata = self.warehouse.metadata_for_id_of_type(("ami-id",), image_id, "image")
+        image_metadata = self.warehouse.metadata_for_id_of_type(("ami-id",), target_image_id, "target_image")
         self.log.debug("Got metadata output of: %s", repr(image_metadata))
 	m = re.match("OK ([a-fA-F0-9-]+)", image_metadata["ami-id"])
 	rhevm_uuid = m.group(1)
 	self.log.debug("Extracted RHEVM UUID: %s " % (rhevm_uuid))
 
         # Create the provdier image
-        metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=rhevm_uuid)
+        metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=rhevm_uuid)
         self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
         self.percent_complete = 100
 
 
-    def push_image_upload(self, image_id, provider, credentials):
+    def push_image_upload(self, target_image_id, provider, credentials):
         # TODO: RHEV-M and VMWare
         self.status="PUSHING"
         self.percent_complete=0
         try:
             if self.target == "ec2":
-                self.ec2_push_image_upload(image_id, provider, credentials)
+                self.ec2_push_image_upload(target_image_id, provider, credentials)
             elif self.target == "condorcloud":
-                self.condorcloud_push_image_upload(image_id, provider, credentials)
+                self.condorcloud_push_image_upload(target_image_id, provider, credentials)
             elif self.target == "rhev-m":
-                self.rhevm_push_image_upload(image_id, provider, credentials)
+                self.rhevm_push_image_upload(target_image_id, provider, credentials)
             elif self.target == "vmware":
-                self.vmware_push_image_upload(image_id, provider, credentials)
+                self.vmware_push_image_upload(target_image_id, provider, credentials)
             else:
                 raise ImageFactoryException("Invalid upload push requested for target (%s) and provider (%s)" % (self.target, provider))
         except:
@@ -1028,13 +1028,13 @@ chmod 600 /root/.ssh/authorized_keys
         self.ec2_key_file_object.flush()
         self.ec2_key_file=self.ec2_key_file_object.name
 
-    def retrieve_image(self, image_id, local_image_file):
-        # Grab image_id from warehouse unless it is already present as local_image_file
+    def retrieve_image(self, target_image_id, local_image_file):
+        # Grab target_image_id from warehouse unless it is already present as local_image_file
         # TODO: Use Warehouse class instead
         if not os.path.isfile(local_image_file):
             if not (self.app_config['warehouse']):
                 raise ImageFactoryException("No warehouse configured - cannot retrieve image")
-            url = "%simages/%s" % (self.app_config['warehouse'], image_id)
+            url = "%simages/%s" % (self.app_config['warehouse'], target_image_id)
             self.log.debug("Image %s not present locally - Fetching from %s" % (local_image_file, url))
             fp = open(local_image_file, "wb")
             curl = pycurl.Curl()
@@ -1047,15 +1047,15 @@ chmod 600 /root/.ssh/authorized_keys
             self.log.debug("Image file %s already present - skipping warehouse download" % (local_image_file))
 
 
-    def ec2_push_image_upload(self, image_id, provider, credentials):
+    def ec2_push_image_upload(self, target_image_id, provider, credentials):
         self.ec2_decode_credentials(credentials)
 
         # if the image is already here, great, otherwise grab it from the warehouse
         input_image_path=self.app_config['imgdir'] + "/"
-        input_image_name="ec2-image-" + image_id + ".dsk"
+        input_image_name="ec2-image-" + target_image_id + ".dsk"
         input_image=input_image_path + input_image_name
 
-        self.retrieve_image(image_id, input_image)
+        self.retrieve_image(target_image_id, input_image)
 
         bundle_destination=self.app_config['imgdir']
 
@@ -1159,12 +1159,12 @@ chmod 600 /root/.ssh/authorized_keys
         # Use new warehouse wrapper to do everything
         # TODO: Generate and store ICICLE
         self.status = "PUSHING"
-        metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=ami_id)
+        metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=ami_id)
         self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
 
         #self.output_descriptor="unknown"
-        #metadata = dict(uuid=self.new_image_id, type="provider_image", template=self.template, target=self.target, icicle=self.output_descriptor, image=image_id, provider=provider, target_identifier=ami_id)
-        self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), image_id, self.new_image_id, str(metadata)))
+        #metadata = dict(uuid=self.new_image_id, type="provider_image", template=self.template, target=self.target, icicle=self.output_descriptor, target_image=target_image_id, provider=provider, target_identifier=ami_id)
+        self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), target_image_id, self.new_image_id, str(metadata)))
         self.percent_complete=100
 
     def abort(self):

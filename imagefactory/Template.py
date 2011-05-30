@@ -102,12 +102,12 @@ class Template(object):
         if(xml_string and self.__string_is_xml_template(xml_string)):
             return uuid_string, xml_string
         else:
-            self.log.debug("Unable to fetch a valid template given template id %s:\n%s\nWill try fetching template id from an image with this id..." % (uuid_string, self.__abbreviated_template(xml_string)))
-            template_id, xml_string, metadata = self.warehouse.template_for_image_id(uuid_string)
+            self.log.debug("Unable to fetch a valid template given template id %s:\n%s\nWill try fetching template id from a target image with this id..." % (uuid_string, self.__abbreviated_template(xml_string)))
+            template_id, xml_string, metadata = self.warehouse.template_for_target_image_id(uuid_string)
             if(template_id and xml_string and self.__string_is_xml_template(xml_string)):
                 return template_id, xml_string
             else:
-                self.log.debug("Unable to fetch a valid template given an image id %s:\n%s\n" % (uuid_string, self.__abbreviated_template(xml_string)))
+                self.log.debug("Unable to fetch a valid template given a target image id %s:\n%s\n" % (uuid_string, self.__abbreviated_template(xml_string)))
                 return None, None
 
     def __string_is_xml_template(self, text):

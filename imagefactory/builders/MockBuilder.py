@@ -85,11 +85,11 @@ class MockBuilder(BaseBuilder):
 
             self.store_image()
 
-    def push_image(self, image_id, provider, credentials):
+    def push_image(self, target_image_id, provider, credentials):
         self.status = "INITIALIZING"
         try:
             self.status = "PENDING"
-            image, image_metadata = self.warehouse.image_with_id(image_id, metadata_keys=("icicle", ))
+            image, image_metadata = self.warehouse.target_image_with_id(target_image_id, metadata_keys=("icicle", ))
             # write the provider image out to the filesystem
             image_path = "%s/deltacloud-%s/%s/images/%s.yml" % (self.app_config['imgdir'], os.getlogin(), provider, self.new_image_id)
             self.log.debug("Storing mock image for %s at path: %s" % (provider, image_path))
@@ -100,10 +100,10 @@ class MockBuilder(BaseBuilder):
                 image_file.write(image)
                 image_file.close()
             # push the provider image up to the warehouse
-            metadata = dict(image=image_id, provider=provider, icicle=image_metadata["icicle"], target_identifier="Mock_%s_%s" % (provider, self.new_image_id))
+            metadata = dict(target_image=target_image_id, provider=provider, icicle=image_metadata["icicle"], target_identifier="Mock_%s_%s" % (provider, self.new_image_id))
             self.warehouse.create_provider_image(self.new_image_id, txt=image, metadata=metadata)
             self.status = "FINISHING"
-            self.log.debug("MockBuilder instance %s pushed image with uuid %s to warehouse (%s/%s) and set metadata: %s" % (id(self), image_id, self.warehouse.url, self.warehouse.provider_image_bucket, metadata))
+            self.log.debug("MockBuilder instance %s pushed image with uuid %s to warehouse (%s/%s) and set metadata: %s" % (id(self), target_image_id, self.warehouse.url, self.warehouse.provider_image_bucket, metadata))
             self.status = "COMPLETED"
         except Exception, e:
             failing_thread = FailureThread(target=self, kwargs=dict(message="%s" % (e, )))

@@ -52,7 +52,7 @@ class testTemplate(unittest.TestCase):
         builder = MockBuilder(self.template_xml, target)
         builder.build_image()
         metadata = dict(template=template_id, target=target, icicle="None", target_parameters="None")
-        self.warehouse.store_image(builder.new_image_id, builder.image, metadata=metadata)
+        self.warehouse.store_target_image(builder.new_image_id, builder.image, metadata=metadata)
         image_template = Template(builder.new_image_id)
         self.assertEqual(template_id, image_template.identifier)
         self.assertEqual(self.template_xml, image_template.xml)

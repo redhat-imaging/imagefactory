@@ -49,8 +49,8 @@ class BuildDispatcher(object):
     def build_image(self):
         self._start_builder_thread("build_image")
 
-    def push_image(self, image_id, provider, credentials):
-        kwargs = dict(image_id=image_id, provider=provider, credentials=credentials)
+    def push_image(self, target_image_id, provider, credentials):
+        kwargs = dict(target_image_id=target_image_id, provider=provider, credentials=credentials)
         self._start_builder_thread("push_image", arg_dict=kwargs)
 
     def abort(self):

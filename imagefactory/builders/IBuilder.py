@@ -66,5 +66,5 @@ class IBuilder(Interface):
     def abort():
         """Tell the builder to stop building the image."""
 
-    def push_image(image_id, provider, credentials):
+    def push_image(target_image_id, provider, credentials):
         """Deploy an image to the cloud provider."""

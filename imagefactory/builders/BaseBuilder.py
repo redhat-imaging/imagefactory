@@ -139,9 +139,9 @@ class BaseBuilder(object):
         template_id = self.warehouse.store_template(self.template.xml, self.template.identifier)
         icicle_id = self.warehouse.store_icicle(self.output_descriptor)
         metadata = dict(template=template_id, target=self.target, icicle=icicle_id, target_parameters=target_parameters)
-        self.warehouse.store_image(self.new_image_id, self.image, metadata=metadata)
+        self.warehouse.store_target_image(self.new_image_id, self.image, metadata=metadata)
 
-    def push_image(self, image_id, provider, credentials):
+    def push_image(self, target_image_id, provider, credentials):
         """Prep the image for the provider and deploy.  This method is implemented by subclasses of the
         BaseBuilder to handle OS/Provider specific mechanics."""
         raise NotImplementedError

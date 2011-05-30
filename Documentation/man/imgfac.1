@@ -12,7 +12,7 @@ Currently supported private cloud services: RHEV-M, KVM.
 .B          [imgdir IMGDIR] [--timeout TIMEOUT] [--qmf] [--qpidd QPIDD]
 .B          [--template TEMPLATE] [--target TARGET] [--image IMAGE]
 .B          [--provider PROVIDER] [--credentials CREDENTIALS]
-.B          [--warehouse WAREHOUSE] [--image_bucket IMAGE_BUCKET]
+.B          [--warehouse WAREHOUSE] [--target_bucket TARGET_BUCKET]
 .B          [--template_bucket TEMPLATE_BUCKET]
 .B          [--icicle_bucket ICICLE_BUCKET]
 .B          [--provider_bucket PROVIDER_BUCKET]
@@ -90,8 +90,8 @@ section at the bottom.
 .B --warehouse WAREHOUSE
 URL of the warehouse location to store images.  (default: http://localhost:9090/)
 
-.B --image_bucket IMAGE_BUCKET
-Name of warehouse bucket to look in for images.  (default: None)
+.B --target_bucket TARGET_BUCKET
+Name of warehouse bucket to look in for target images.  (default: None)
 
 .B --template_bucket TEMPLATE_BUCKET
 Name of warehouse bucket to look in for templates.  (default: None)
