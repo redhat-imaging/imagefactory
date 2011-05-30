@@ -18,10 +18,52 @@
 import sys
 import libxml2
 import logging
+import props
 from threading import Thread, Lock
 from imagefactory.builders import *
 from imagefactory.Template import Template
 
+class BaseAdaptor(object):
+
+    template = props.prop("_template", "The template property.")
+    target = props.prop("_target", "The target property.")
+    status = props.prop("_status", "The status property.")
+    percent_complete = props.prop("_percent_complete", "The percent_complete property.")
+    image_id = props.prop("_image_id" "The image property.")
+
+    def __init__(self, template, target):
+        super(BaseAdaptor, self).__init__()
+
+        self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+
+        self.template = template
+        self.target = target
+        self.status = "New"
+        self.percent_complete = 0
+        self.image_id = "None"
+
+        self.builder = BuildDispatcher.builder_for_target_with_template(template=template, target=target)
+        self.builder.delegate = self
+        self.image_id = self.builder.image_id
+
+    def build_image(self):
+        BuildDispatcher.builder_thread_with_method(builder=self.builder, method_name="build_image")
+
+    def push_image(self, image_id, provider, credentials):
+        kwargs = dict(image_id=image_id, provider=provider, credentials=credentials)
+        BuildDispatcher.builder_thread_with_method(builder=self.builder, method_name="push_image", arg_dict=kwargs)
+
+    def abort(self):
+        self.builder.abort()
+
+    def builder_did_update_status(self, builder, old_status, new_status):
+        self.status = new_status
+
+    def builder_did_update_percentage(self, builder, original_percentage, new_percentage):
+        self.percent_complete = new_percentage
+
+    def builder_did_fail(self, builder, failure_type, failure_info):
+        pass
 
 class BuildDispatcher(object):
 

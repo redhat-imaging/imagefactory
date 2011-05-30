@@ -23,9 +23,9 @@ from qmf2 import *
 from threading import Thread, Lock
 from imagefactory import props
 from imagefactory.builders import *
-from imagefactory.BuildDispatcher import *
+from imagefactory.BuildDispatcher import BaseAdaptor
 
-class BuildAdaptor(object):
+class BuildAdaptor(BaseAdaptor):
     # QMF schema for BuildAdaptor
     qmf_schema = Schema(SCHEMA_TYPE_DATA, "com.redhat.imagefactory", "BuildAdaptor")
     qmf_schema.addProperty(SchemaProperty("status", SCHEMA_DATA_STRING, desc="string representing the status (see instance_states() on ImageFactory)"))
@@ -62,45 +62,19 @@ class BuildAdaptor(object):
                 "COMPLETED":()
                 }
 
-    template = props.prop("_template", "The template property.")
-    target = props.prop("_target", "The target property.")
     status = props.subprop("qmf_object", "status", "The status property.")
     percent_complete = props.subprop("qmf_object", "percent_complete", "The percent_complete property.")
     image_id = props.subprop("qmf_object", "image_id", "The image property.")
     qmf_object = props.prop("_qmf_object", "The qmf_object property.")
 
     def __init__(self, template, target, agent=None):
-        super(BuildAdaptor, self).__init__()
-
-        self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.qmf_object = Data(BuildAdaptor.qmf_schema)
+        super(BuildAdaptor, self).__init__(template, target)
         self.agent = agent
-
-        self.template = template
-        self.target = target
-        self.status = "New"
-        self.percent_complete = 0
-        self.image_id = "None"
-        self.builder = None
-
-        self.builder = BuildDispatcher.builder_for_target_with_template(template=template, target=target)
-        # Register as a delegate to the builder
-        self.builder.delegate = self
-        self.image_id = self.builder.image_id
-
-    def build_image(self):
-        BuildDispatcher.builder_thread_with_method(builder=self.builder, method_name="build_image")
-
-    def push_image(self, image_id, provider, credentials):
-        kwargs = dict(image_id=image_id, provider=provider, credentials=credentials)
-        BuildDispatcher.builder_thread_with_method(builder=self.builder, method_name="push_image", arg_dict=kwargs)
-
-    def abort(self):
-        self.builder.abort()
 
     # Builder delegate methods
     def builder_did_update_status(self, builder, old_status, new_status):
-        self.status = new_status
+        super(BuildAdaptor, self).builder_did_update_status(builder, old_status, new_status)
         self.log.debug("Raising event with agent handler (%s), changed status from %s to %s" % (self.agent, old_status, new_status))
         event = Data(BuildAdaptor.qmf_event_schema_status)
         event.addr = self.qmf_object.getAddr().asMap()
@@ -114,7 +88,7 @@ class BuildAdaptor(object):
 
 
     def builder_did_update_percentage(self, builder, original_percentage, new_percentage):
-        self.percent_complete = new_percentage
+        super(BuildAdaptor, self).builder_did_update_percentage(builder, original_percentage, new_percentage)
         self.log.debug("Raising event with agent handler (%s), changed percent complete from %s to %s" % (self.agent, original_percentage, new_percentage))
         event = Data(BuildAdaptor.qmf_event_schema_percentage)
         event.addr = self.qmf_object.getAddr().asMap()
@@ -123,6 +97,7 @@ class BuildAdaptor(object):
         self.agent.session.raiseEvent(data=event, severity=SEV_NOTICE)
 
     def builder_did_fail(self, builder, failure_type, failure_info):
+        super(BuildAdaptor, self).builder_did_fail(builder, failure_type, failure_info)
         self.log.debug("Raising event with agent handler (%s), BUILD FAILED: %s - %s" % (self.agent, failure_type, failure_info))
         event = Data(BuildAdaptor.qmf_event_schema_build_failed)
         event.addr = self.qmf_object.getAddr().asMap()
