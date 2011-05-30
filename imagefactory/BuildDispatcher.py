@@ -29,7 +29,7 @@ class BuildDispatcher(object):
     target = props.prop("_target", "The target property.")
     status = props.prop("_status", "The status property.")
     percent_complete = props.prop("_percent_complete", "The percent_complete property.")
-    image_id = props.prop("_image_id" "The image property.")
+    new_image_id = props.prop("_new_image_id" "The image property.")
 
     def __init__(self, template, target):
         super(BuildDispatcher, self).__init__()
@@ -40,11 +40,11 @@ class BuildDispatcher(object):
         self.target = target
         self.status = "New"
         self.percent_complete = 0
-        self.image_id = "None"
 
         self._builder = self._get_builder()
         self._builder.delegate = self
-        self.image_id = self._builder.image_id
+
+        self.new_image_id = self._builder.new_image_id
 
     def build_image(self):
         self._start_builder_thread("build_image")
@@ -84,7 +84,7 @@ class BuildDispatcher(object):
         return builder_class(template_object, self.target)
 
     def _start_builder_thread(self, method_name, arg_dict={}):
-        thread_name = "%s.%s()" % (self.image_id, method_name)
+        thread_name = "%s.%s()" % (self.new_image_id, method_name)
         # using args to pass the method we want to call on the target object.
         builder_thread = Thread(target = self._builder, name=thread_name, args=(method_name), kwargs=arg_dict)
         builder_thread.start()

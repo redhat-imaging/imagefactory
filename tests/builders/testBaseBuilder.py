@@ -48,7 +48,7 @@ class TestBaseBuilder(unittest.TestCase):
         self.assert_(callable(self.builder))
 
     def testImageIdSet(self):
-        self.assert_(self.builder.image_id, 'Initilizer failed to set \'image_id\'...')
+        self.assert_(self.builder.new_image_id, 'Initilizer failed to set \'image_id\'...')
 
     def testDelegateAssignment(self):
         self.builder.delegate = self.delegate

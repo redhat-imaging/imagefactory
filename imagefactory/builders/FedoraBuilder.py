@@ -99,10 +99,10 @@ class FedoraBuilder(BaseBuilder):
             self.guest = oz.Fedora.get_class(self.tdlobj, config, None)
         else:
             self.guest = FedoraRemoteGuest(self.tdlobj, config, None, "virtio", True, "virtio", True)
-        self.guest.diskimage = self.app_config["imgdir"] + "/base-image-" + self.image_id + ".dsk"
+        self.guest.diskimage = self.app_config["imgdir"] + "/base-image-" + self.new_image_id + ".dsk"
         # Oz assumes unique names - TDL built for multiple backends guarantees they are not unique
         # We don't really care about the name so just force uniqueness
-        self.guest.name = self.guest.name + "-" + self.image_id
+        self.guest.name = self.guest.name + "-" + self.new_image_id
 
     def build_image(self):
         try:
@@ -124,7 +124,7 @@ class FedoraBuilder(BaseBuilder):
     def build_snapshot(self):
         # All we need do here is store the relevant bits in the Warehouse
         self.log.debug("Building Linux for non-upload cloud (%s)" % (self.target))
-        self.image = "%s/placeholder-linux-image-%s" % (self.app_config['imgdir'], self.image_id)
+        self.image = "%s/placeholder-linux-image-%s" % (self.app_config['imgdir'], self.new_image_id)
         image_file = open(self.image, 'w')
         image_file.write("Placeholder for non upload cloud Linux image")
         image_file.close()
@@ -210,7 +210,7 @@ class FedoraBuilder(BaseBuilder):
     def vmware_transform_image(self):
         # On entry the image points to our generic KVM raw image
         # Convert to stream-optimized VMDK and then update the image property
-        target_image = self.app_config['imgdir'] + "/vmware-image-" + self.image_id + ".vmdk"
+        target_image = self.app_config['imgdir'] + "/vmware-image-" + self.new_image_id + ".vmdk"
         self.log.debug("Converting raw kvm image (%s) to vmware stream-optimized image (%s)" % (self.image, target_image))
         convert_to_stream(self.image, target_image)
         self.log.debug("VMWare stream conversion complete")
@@ -265,7 +265,7 @@ class FedoraBuilder(BaseBuilder):
 
 
     def ec2_copy_filesystem(self, output_dir):
-        target_image=output_dir + "/ec2-image-" + self.image_id + ".dsk"
+        target_image=output_dir + "/ec2-image-" + self.new_image_id + ".dsk"
 
         self.log.debug("init guestfs")
         g = guestfs.GuestFS ()
@@ -283,7 +283,7 @@ class FedoraBuilder(BaseBuilder):
         self.log.debug("creat tmp image")
         # We need a small FS to mount target and dest on - make image file for it
         # TODO: Use Marek's create mount point trick instead of a temp file
-        tmp_image_file = "/tmp/tmp-img-" + self.image_id
+        tmp_image_file = "/tmp/tmp-img-" + self.new_image_id
         f = open (tmp_image_file, "w")
         f.truncate (10 * 1024 * 1024)
         f.close
@@ -522,7 +522,7 @@ class FedoraBuilder(BaseBuilder):
 	mypub = open("/etc/oz/id_rsa-icicle-gen.pub")
 	server_files = { "/root/.ssh/authorized_keys":mypub }
 
-        instance_name = "factory-build-%s" % (self.image_id, )
+        instance_name = "factory-build-%s" % (self.new_image_id, )
 	jeos_instance = cloudservers.servers.create(instance_name,jeos_image, onegig_flavor, files=server_files)
 
 	for i in range(30):
@@ -574,7 +574,7 @@ class FedoraBuilder(BaseBuilder):
 	    self.guest.do_customize(guestaddr)
 	    self.log.debug("Done!")
 
-            image_name = "factory-image-%s" % (self.image_id, )
+            image_name = "factory-image-%s" % (self.new_image_id, )
 	    snap_image = cloudservers.images.create(image_name, jeos_instance)
 
 	    self.log.debug("New Rackspace image created with ID: %s" % (snap_image.id))
@@ -590,7 +590,7 @@ class FedoraBuilder(BaseBuilder):
 
             self.log.debug("Storing Rackspace image ID (%s) and details in Warehouse" % (snap_image.id))
 	    metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=snap_image.id)
-	    self.warehouse.create_provider_image(self.image_id, metadata=metadata)
+	    self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
 
 	finally:
             self.log.debug("Shutting down Rackspace server")
@@ -694,7 +694,7 @@ chmod 600 /root/.ssh/authorized_keys
         conn = ec2region.connect(aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key)
 
         # Create a use-once SSH-able security group
-        factory_security_group_name = "imagefactory-%s" % (self.image_id, )
+        factory_security_group_name = "imagefactory-%s" % (self.new_image_id, )
         factory_security_group_desc = "Temporary ImageFactory generated security group with SSH access"
 	self.log.debug("Creating temporary security group (%s)" % (factory_security_group_name))
 	factory_security_group = conn.create_security_group(factory_security_group_name, factory_security_group_desc)
@@ -794,7 +794,7 @@ chmod 600 /root/.ssh/authorized_keys
             ec2_uid = self.ec2_user_id
             arch = self.tdlobj.arch
             # AKI is set above
-            uuid = self.image_id
+            uuid = self.new_image_id
 
             # We exclude /mnt /tmp and /root/.ssh to avoid embedding our utility key into the image
             command = "euca-bundle-vol -c /tmp/%s -k /tmp/%s -u %s -e /mnt,/tmp,/root/.ssh --arch %s -d /mnt/bundles --kernel %s -p %s -s 10240 --ec2cert /tmp/cert-ec2.pem --fstab /etc/fstab -v /" % (os.path.basename(cert), os.path.basename(key), ec2_uid, arch, aki, uuid)
@@ -836,13 +836,13 @@ chmod 600 /root/.ssh/authorized_keys
             self.log.debug("Extracted AMI ID: %s " % (ami_id))
 
             metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=ami_id)
-            self.warehouse.create_provider_image(self.image_id, metadata=metadata)
+            self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
         finally:
             self.log.debug("Stopping EC2 instance and deleting temp security group")
             instance.stop()
             factory_security_group.delete()
 
-        self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), image_id, self.image_id, str(metadata)))
+        self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), image_id, self.new_image_id, str(metadata)))
         self.percent_complete=100
         self.status="COMPLETED"
 
@@ -864,7 +864,7 @@ chmod 600 /root/.ssh/authorized_keys
         if not os.path.isdir(staging):
             raise ImageFactoryException("Staging dir (%s) for condorcloud is not present" % (staging))
 
-        image_base = "/condorimage-" + self.image_id + ".img"
+        image_base = "/condorimage-" + self.new_image_id + ".img"
         staging_image = staging + image_base
 
         # Copy to staging location
@@ -874,7 +874,7 @@ chmod 600 /root/.ssh/authorized_keys
             raise ImageFactoryException("Copy of condorcloud image to staging location (%s) failed" % (staging_image))
 
         # Retrieve original XML and write it out to the final dir
-        image_xml_base="/condorimage-" + self.image_id + ".xml"
+        image_xml_base="/condorimage-" + self.new_image_id + ".xml"
         image_xml_file= storage + image_xml_base
 
         image_metadata = self.warehouse.metadata_for_id_of_type(("target_parameters",), image_id, "image")
@@ -891,8 +891,8 @@ chmod 600 /root/.ssh/authorized_keys
         if subprocess.call(["mv", "-f", staging_image, final_image]):
             raise ImageFactoryException("Move of condorcloud image to final location (%s) failed" % (final_image))
 
-        metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=self.image_id)
-        self.warehouse.create_provider_image(self.image_id, metadata=metadata)
+        metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=self.new_image_id)
+        self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
         self.percent_complete = 100
 
     def vmware_push_image_upload(self, image_id, provider, credentials):
@@ -917,7 +917,7 @@ chmod 600 /root/.ssh/authorized_keys
         # {"westford_esx": {"api-url": "https://vsphere.virt.bos.redhat.com/sdk", "username": "Administrator", "password": "changeme",
         #       "datastore": "datastore1", "network_name": "VM Network" } }
 
-        vm_name = "factory-image-" + self.image_id
+        vm_name = "factory-image-" + self.new_image_id
         vm_import = VMImport(provider_data['api-url'], provider_data['username'], provider_data['password'])
         vm_import.import_vm(datastore=provider_data['datastore'], network_name = provider_data['network_name'],
                        name=vm_name, disksize_kb = (10*1024*1024 + 2 ), memory=512, num_cpus=1,
@@ -925,7 +925,7 @@ chmod 600 /root/.ssh/authorized_keys
 
         # Create the provdier image
         metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=vm_name)
-        self.warehouse.create_provider_image(self.image_id, metadata=metadata)
+        self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
         self.percent_complete = 100
 
 
@@ -960,7 +960,7 @@ chmod 600 /root/.ssh/authorized_keys
 
         # Create the provdier image
         metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=rhevm_uuid)
-        self.warehouse.create_provider_image(self.image_id, metadata=metadata)
+        self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
         self.percent_complete = 100
 
 
@@ -1160,11 +1160,11 @@ chmod 600 /root/.ssh/authorized_keys
         # TODO: Generate and store ICICLE
         self.status = "PUSHING"
         metadata = dict(image=image_id, provider=provider, icicle="none", target_identifier=ami_id)
-        self.warehouse.create_provider_image(self.image_id, metadata=metadata)
+        self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
 
         #self.output_descriptor="unknown"
-        #metadata = dict(uuid=self.image_id, type="provider_image", template=self.template, target=self.target, icicle=self.output_descriptor, image=image_id, provider=provider, target_identifier=ami_id)
-        self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), image_id, self.image_id, str(metadata)))
+        #metadata = dict(uuid=self.new_image_id, type="provider_image", template=self.template, target=self.target, icicle=self.output_descriptor, image=image_id, provider=provider, target_identifier=ami_id)
+        self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), image_id, self.new_image_id, str(metadata)))
         self.percent_complete=100
 
     def abort(self):

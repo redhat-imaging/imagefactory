@@ -80,7 +80,7 @@ class ImageFactoryAgent(AgentHandler):
             result = getattr(target_obj, methodName)(**args)
 
             if ((addr == self.image_factory_addr) and (methodName in ("image", "provider_image"))):
-                build_adaptor_instance_name = "build_adaptor:%s:%s" %  (methodName, result.image_id)
+                build_adaptor_instance_name = "build_adaptor:%s:%s" %  (methodName, result.new_image_id)
                 qmf_object_addr = self.session.addData(result.qmf_object, build_adaptor_instance_name, persistent=True)
                 self.managedObjects[repr(qmf_object_addr)] = result
                 handle.addReturnArgument("build_adaptor", qmf_object_addr.asMap())

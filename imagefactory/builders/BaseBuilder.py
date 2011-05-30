@@ -37,7 +37,7 @@ class BaseBuilder(object):
     target = props.prop("_target", "The target cloud for which to build this image.")
     target_id = props.prop("_target_id", "The identifier provided by the target.")
     provider = props.prop("_provider", "The a string name of the target region or provider.")
-    image_id = props.prop("_image_id", "The uuid of the image.")
+    new_image_id = props.prop("_new_image_id", "The uuid of the newly created target or provider image.")
     image = props.prop("_image", "The image file path.")
     output_descriptor = props.prop("_output_descriptor", "An XML string describing the completed image, aka: CDL or ICICLE.")
     delegate = props.prop("_delegate", "An object that responds to IBuilderDelegate methods.")
@@ -102,7 +102,7 @@ class BaseBuilder(object):
     def __init__(self, template, target):
         super(BaseBuilder, self).__init__()
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        self.image_id = str(uuid.uuid4())
+        self.new_image_id = str(uuid.uuid4())
         if(type(template) == Template):
             self.template = template
         elif(type(template) == str):
@@ -139,7 +139,7 @@ class BaseBuilder(object):
         template_id = self.warehouse.store_template(self.template.xml, self.template.identifier)
         icicle_id = self.warehouse.store_icicle(self.output_descriptor)
         metadata = dict(template=template_id, target=self.target, icicle=icicle_id, target_parameters=target_parameters)
-        self.warehouse.store_image(self.image_id, self.image, metadata=metadata)
+        self.warehouse.store_image(self.new_image_id, self.image, metadata=metadata)
 
     def push_image(self, image_id, provider, credentials):
         """Prep the image for the provider and deploy.  This method is implemented by subclasses of the

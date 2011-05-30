@@ -47,7 +47,7 @@ class MockBuilder(BaseBuilder):
             failing_thread.start()
         else:
             self.log.debug("build_image() called on MockBuilder...")
-            self.image = "%s/deltacloud-%s/images/%s.yml" % (self.app_config['imgdir'], os.getlogin(), self.image_id)
+            self.image = "%s/deltacloud-%s/images/%s.yml" % (self.app_config['imgdir'], os.getlogin(), self.new_image_id)
             self.log.debug("Setting image build path: %s" % (self.image, ))
             self.status = "INITIALIZING"
             self.log.debug("Initializing mock image...")
@@ -69,7 +69,7 @@ class MockBuilder(BaseBuilder):
                 image_file.write(':architecture: mock_architecture\n')
                 self.percent_complete = 20
                 image_file.write(":object_id: %s\n" % (id(self), ))
-                image_file.write(":uuid: %s\n" % (self.image_id, ))
+                image_file.write(":uuid: %s\n" % (self.new_image_id, ))
                 image_file.write(":created_by: %s\n" % (sys.argv[0].rpartition('/')[2], ))
                 image_file.write(":created_on: %s\n" % (time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()), ))
                 image_file.close()
@@ -91,7 +91,7 @@ class MockBuilder(BaseBuilder):
             self.status = "PENDING"
             image, image_metadata = self.warehouse.image_with_id(image_id, metadata_keys=("icicle", ))
             # write the provider image out to the filesystem
-            image_path = "%s/deltacloud-%s/%s/images/%s.yml" % (self.app_config['imgdir'], os.getlogin(), provider, self.image_id)
+            image_path = "%s/deltacloud-%s/%s/images/%s.yml" % (self.app_config['imgdir'], os.getlogin(), provider, self.new_image_id)
             self.log.debug("Storing mock image for %s at path: %s" % (provider, image_path))
             directory = os.path.dirname(image_path)
             if (not os.path.exists(directory)):
@@ -100,8 +100,8 @@ class MockBuilder(BaseBuilder):
                 image_file.write(image)
                 image_file.close()
             # push the provider image up to the warehouse
-            metadata = dict(image=image_id, provider=provider, icicle=image_metadata["icicle"], target_identifier="Mock_%s_%s" % (provider, self.image_id))
-            self.warehouse.create_provider_image(self.image_id, txt=image, metadata=metadata)
+            metadata = dict(image=image_id, provider=provider, icicle=image_metadata["icicle"], target_identifier="Mock_%s_%s" % (provider, self.new_image_id))
+            self.warehouse.create_provider_image(self.new_image_id, txt=image, metadata=metadata)
             self.status = "FINISHING"
             self.log.debug("MockBuilder instance %s pushed image with uuid %s to warehouse (%s/%s) and set metadata: %s" % (id(self), image_id, self.warehouse.url, self.warehouse.provider_image_bucket, metadata))
             self.status = "COMPLETED"

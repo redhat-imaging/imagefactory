@@ -64,7 +64,7 @@ class BuildAdaptor(BuildDispatcher):
 
     status = props.subprop("qmf_object", "status", "The status property.")
     percent_complete = props.subprop("qmf_object", "percent_complete", "The percent_complete property.")
-    image_id = props.subprop("qmf_object", "image_id", "The image property.")
+    new_image_id = props.subprop("qmf_object", "image_id", "The image property.")
     qmf_object = props.prop("_qmf_object", "The qmf_object property.")
 
     def __init__(self, template, target, agent=None):
