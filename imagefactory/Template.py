@@ -22,45 +22,16 @@ import logging
 import httplib2
 import re
 import os.path
+import props
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 from imagefactory.ImageWarehouse import ImageWarehouse
 
 class Template(object):
     uuid_pattern = '([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})'
 
-    # Properties
-    def identifier():
-        doc = "The identifier property."
-        def fget(self):
-            return self._identifier
-        def fset(self, value):
-            self._identifier = value
-        def fdel(self):
-            del self._identifier
-        return locals()
-    identifier = property(**identifier())
-
-    def url():
-        doc = "The url property."
-        def fget(self):
-            return self._url
-        def fset(self, value):
-            self._url = value
-        def fdel(self):
-            del self._url
-        return locals()
-    url = property(**url())
-
-    def xml():
-        doc = "The xml property."
-        def fget(self):
-            return self._xml
-        def fset(self, value):
-            self._xml = value
-        def fdel(self):
-            del self._xml
-        return locals()
-    xml = property(**xml())
+    identifier = props.prop("_identifier", "The identifier property.")
+    url = props.prop("_url", "The url property.")
+    xml = props.prop("_xml", "The xml property.")
 
 
     def __repr__(self):

@@ -24,68 +24,17 @@ import httplib2
 import urllib
 import uuid
 import os
+import props
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 
 
 class ImageWarehouse(object):
 
-    # Properties
-    def url():
-        doc = "The url property."
-        def fget(self):
-            return self._url
-        def fset(self, value):
-            self._url = value
-        def fdel(self):
-            del self._url
-        return locals()
-    url = property(**url())
-
-    def image_bucket():
-        doc = "The image_bucket property."
-        def fget(self):
-            return self._image_bucket
-        def fset(self, value):
-            self._image_bucket = value
-        def fdel(self):
-            del self._image_bucket
-        return locals()
-    image_bucket = property(**image_bucket())
-
-    def template_bucket():
-        doc = "The template_bucket property."
-        def fget(self):
-            return self._template_bucket
-        def fset(self, value):
-            self._template_bucket = value
-        def fdel(self):
-            del self._template_bucket
-        return locals()
-    template_bucket = property(**template_bucket())
-
-    def icicle_bucket():
-        doc = "The icicle_bucket property."
-        def fget(self):
-            return self._icicle_bucket
-        def fset(self, value):
-            self._icicle_bucket = value
-        def fdel(self):
-            del self._icicle_bucket
-        return locals()
-    icicle_bucket = property(**icicle_bucket())
-
-    def provider_image_bucket():
-        doc = "The provider_image_bucket property."
-        def fget(self):
-            return self._provider_image_bucket
-        def fset(self, value):
-            self._provider_image_bucket = value
-        def fdel(self):
-            del self._provider_image_bucket
-        return locals()
-    provider_image_bucket = property(**provider_image_bucket())
-
-    # Properties end
+    url = props.prop("_url", "The url property.")
+    image_bucket = props.prop("_image_bucket", "The image_bucket property.")
+    template_bucket = props.prop("_template_bucket", "The template_bucket property.")
+    icicle_bucket = props.prop("_icicle_bucket", "The icicle_bucket property.")
+    provider_image_bucket = props.prop("_provider_image_bucket", "The provider_image_bucket property.")
 
     def __repr__(self):
         return "%s - %r" % (super(ImageWarehouse, self).__repr__(), self.__dict__)

@@ -22,6 +22,7 @@ import uuid
 import os
 import httplib2
 from IBuilder import IBuilder
+from imagefactory import props
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 from imagefactory.ImageWarehouse import ImageWarehouse
 from imagefactory.Template import Template
@@ -32,72 +33,15 @@ class BaseBuilder(object):
     deploying images."""
     zope.interface.implements(IBuilder)
 
-    # Properties
-    def template():
-        doc = "An instance of the Template class."
-        def fget(self):
-            return self._template
-        def fset(self, value):
-            self._template = value
-        def fdel(self):
-            del self._template
-        return locals()
-    template = property(**template())
-
-    def target():
-        doc = "The target cloud for which to build this image."
-        def fget(self):
-            return self._target
-        def fset(self, value):
-            self._target = value
-        def fdel(self):
-            del self._target
-        return locals()
-    target = property(**target())
-
-    def target_id():
-        doc = "The identifier provided by the target."
-        def fget(self):
-            return self._target_id
-        def fset(self, value):
-            self._target_id = value
-        def fdel(self):
-            del self._target_id
-        return locals()
-    target_id = property(**target_id())
-
-    def provider():
-        doc = "The a string name of the target region or provider."
-        def fget(self):
-            return self._provider
-        def fset(self, value):
-            self._provider = value
-        def fdel(self):
-            del self._provider
-        return locals()
-    provider = property(**provider())
-
-    def image_id():
-        doc = "The uuid of the image."
-        def fget(self):
-            return self._image_id
-        def fset(self, value):
-            self._image_id = value
-        def fdel(self):
-            del self._image_id
-        return locals()
-    image_id = property(**image_id())
-
-    def image():
-        doc = "The image file path."
-        def fget(self):
-            return self._image
-        def fset(self, value):
-            self._image = value
-        def fdel(self):
-            del self._image
-        return locals()
-    image = property(**image())
+    template = props.prop("_template", "An instance of the Template class.")
+    target = props.prop("_target", "The target cloud for which to build this image.")
+    target_id = props.prop("_target_id", "The identifier provided by the target.")
+    provider = props.prop("_provider", "The a string name of the target region or provider.")
+    image_id = props.prop("_image_id", "The uuid of the image.")
+    image = props.prop("_image", "The image file path.")
+    output_descriptor = props.prop("_output_descriptor", "An XML string describing the completed image, aka: CDL or ICICLE.")
+    delegate = props.prop("_delegate", "An object that responds to IBuilderDelegate methods.")
+    warehouse = props.prop("_warehouse", "A warehouse object used to store/fetch images, templates, icicle, provider_images, etc...")
 
     def status():
         doc = "A string value."
@@ -153,39 +97,6 @@ class BaseBuilder(object):
 
         return locals()
     percent_complete = property(**percent_complete())
-
-    def output_descriptor():
-        doc = "An XML string describing the completed image, aka: CDL or ICICLE."
-        def fget(self):
-            return self._output_descriptor
-        def fset(self, value):
-            self._output_descriptor = value
-        def fdel(self):
-            del self._output_descriptor
-        return locals()
-    output_descriptor = property(**output_descriptor())
-
-    def delegate():
-        doc = "An object that responds to IBuilderDelegate methods."
-        def fget(self):
-            return self._delegate
-        def fset(self, value):
-            self._delegate = value
-        def fdel(self):
-            del self._delegate
-        return locals()
-    delegate = property(**delegate())
-
-    def warehouse():
-        doc = "A warehouse object used to store/fetch images, templates, icicle, provider_images, etc..."
-        def fget(self):
-            return self._warehouse
-        def fset(self, value):
-            self._warehouse = value
-        def fdel(self):
-            del self._warehouse
-        return locals()
-    warehouse = property(**warehouse())
 
     # Initializer
     def __init__(self, template, target):

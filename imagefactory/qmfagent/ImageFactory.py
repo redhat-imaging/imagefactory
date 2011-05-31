@@ -21,6 +21,7 @@ import cqpid
 from qmf2 import *
 import BuildAdaptor
 import httplib2
+from imagefactory import props
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 from imagefactory.ImageWarehouse import ImageWarehouse
 from imagefactory.Template import Template
@@ -57,28 +58,8 @@ class ImageFactory(object):
         """Returns a dictionary representing the finite state machine for instances of this class."""
         return {}
 
-    ## Properties
-    def qmf_object():
-        doc = "The qmf_object property."
-        def fget(self):
-            return self._qmf_object
-        def fset(self, value):
-            self._qmf_object = value
-        def fdel(self):
-            del self._qmf_object
-        return locals()
-    qmf_object = property(**qmf_object())
-
-    def agent():
-        """The property agent"""
-        def fget(self):
-            return self._agent
-        def fset(self, value):
-            self._agent = value
-        def fdel(self):
-            del self._agent
-        return locals()
-    agent = property(**agent())
+    qmf_object = props.prop("_qmf_object", "The qmf_object property.")
+    agent = props.prop("_agent", "The property agent")
 
     def __new__(cls, *p, **k):
         if cls.instance is None:

@@ -21,6 +21,7 @@ import logging
 import cqpid
 from qmf2 import *
 from threading import Thread, Lock
+from imagefactory import props
 from imagefactory.builders import *
 from imagefactory.BuildDispatcher import *
 
@@ -61,73 +62,12 @@ class BuildAdaptor(object):
                 "COMPLETED":()
                 }
 
-
-    ### Properties
-    def template():
-        doc = "The template property."
-        def fget(self):
-            return self._template
-        def fset(self, value):
-            self._template = value
-        def fdel(self):
-            del self._template
-        return locals()
-    template = property(**template())
-
-    def target():
-        doc = "The target property."
-        def fget(self):
-            return self._target
-        def fset(self, value):
-            self._target = value
-        def fdel(self):
-            del self._target
-        return locals()
-    target = property(**target())
-
-    def status():
-        doc = "The status property."
-        def fget(self):
-            return self.qmf_object.status
-        def fset(self, value):
-            self.qmf_object.status = value
-        def fdel(self):
-            del self.qmf_object.status
-        return locals()
-    status = property(**status())
-
-    def percent_complete():
-        doc = "The percent_complete property."
-        def fget(self):
-            return self.qmf_object.percent_complete
-        def fset(self, value):
-            self.qmf_object.percent_complete = value
-        def fdel(self):
-            del self.qmf_object.percent_complete
-        return locals()
-    percent_complete = property(**percent_complete())
-
-    def image_id():
-        doc = "The image property."
-        def fget(self):
-            return self.qmf_object.image_id
-        def fset(self, value):
-            self.qmf_object.image_id = value
-        def fdel(self):
-            del self.qmf_object.image_id
-        return locals()
-    image = property(**image_id())
-
-    def qmf_object():
-        doc = "The qmf_object property."
-        def fget(self):
-            return self._qmf_object
-        def fset(self, value):
-            self._qmf_object = value
-        def fdel(self):
-            del self._qmf_object
-        return locals()
-    qmf_object = property(**qmf_object())
+    template = props.prop("_template", "The template property.")
+    target = props.prop("_target", "The target property.")
+    status = props.subprop("qmf_object", "status", "The status property.")
+    percent_complete = props.subprop("qmf_object", "percent_complete", "The percent_complete property.")
+    image = props.subprop("qmf_object", "image_id", "The image property.")
+    qmf_object = props.prop("_qmf_object", "The qmf_object property.")
 
     def __init__(self, template, target, agent=None):
         super(BuildAdaptor, self).__init__()

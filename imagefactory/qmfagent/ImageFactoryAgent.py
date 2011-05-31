@@ -21,31 +21,18 @@ import cqpid
 from qmf2 import *
 from ImageFactory import ImageFactory
 from BuildAdaptor import BuildAdaptor
+from imagefactory import props
 
 class ImageFactoryAgent(AgentHandler):
-    ## Properties
-    def qmf_object():
-        doc = "The qmf_object property."
-        def fget(self):
-            return self._qmf_object
-        def fset(self, value):
-            self._qmf_object = value
-        def fdel(self):
-            del self._qmf_object
-        return locals()
-    qmf_object = property(**qmf_object())
+
+    qmf_object = props.prop("_qmf_object", "The qmf_object property.")
 
     def managedObjects():
         doc = "The managedObjects property."
         def fget(self):
             return self._managedObjects
-        # def fset(self, value):
-        #     self._managedObjects = value
-        # def fdel(self):
-        #     del self._managedObjects
         return locals()
     managedObjects = property(**managedObjects())
-
 
     def __init__(self, url):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))

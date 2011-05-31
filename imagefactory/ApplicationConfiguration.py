@@ -23,20 +23,12 @@ import os
 import argparse
 import json
 import logging
+import props
 
 class ApplicationConfiguration(object):
     instance = None
 
-    def configuration():
-        doc = "The configuration property."
-        def fget(self):
-            return self._configuration
-        def fset(self, value):
-            self._configuration = value
-        def fdel(self):
-            del self._configuration
-        return locals()
-    configuration = property(**configuration())
+    configuration = props.prop("_configuration", "The configuration property.")
 
     def __new__(cls, *p, **k):
         if cls.instance is None:
