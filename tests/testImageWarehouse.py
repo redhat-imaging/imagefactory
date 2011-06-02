@@ -22,6 +22,7 @@ import unittest
 import logging
 import uuid
 import time
+import os
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 from imagefactory.ImageWarehouse import ImageWarehouse
 
@@ -98,6 +99,8 @@ class testImageWarehouse(unittest.TestCase):
         self.assertTrue(self.warehouse.remove_icicle_with_id(icicle_id))
         self.assertTrue(self.warehouse.remove_icicle_with_id(icicle_id2))
 
+        os.remove(file_path)
+    
     def testBucketCreation(self):
         # self.assert_(self.warehouse.create_bucket_at_url("%s/unittests-create_bucket/%s" % (self.warehouse.url, uuid.uuid4())))
         self.warehouse.create_bucket_at_url("%s/unittests-create_bucket" % (self.warehouse.url, ))
