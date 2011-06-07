@@ -1206,28 +1206,22 @@ chmod 600 /root/.ssh/authorized_keys
             if retcode:
                 raise ImageFactoryException("Unable to attach volume (%s) to instance (%s) aborting" % (volume.id, instance.id))
 
-            # TODO: URGENT - the above doesn't actually return the attachment state - pausing here is a kludge
+            # TODO: This may not be necessary but it helped with some funnies observed during testing
+            #         At some point run a bunch of builds without the delay to see if it breaks anything
             self.log.debug("Waiting 20 seconds for EBS attachment to stabilize")
             sleep(20)
 
             # Decompress image into new EBS volume
             command = "gzip -dc /mnt/%s | dd of=/dev/xvdh bs=4k\n" % (input_image_compressed_name)
-            # Ugh - our execute method in Oz doesn't like to pass along the redirect correctly
-            # Do this tempfile nonsense
-            #command_file_object = NamedTemporaryFile()
-            #command_file_object.write(command)
-            #command_file_object.flush()
-            #self.guest.guest_live_upload(guestaddr,command_file_object.name,"/tmp/copycmd.sh")
-            #command_file_object.close()            
-
             self.log.debug("Decompressing image file into EBS device via command:")
-            self.log.debug("    %s" % (command))
+            self.log.debug("  %s" % (command))
             self.guest.guest_execute_command(guestaddr, command)
 
             # Sync before snapshot
             self.guest.guest_execute_command(guestaddr, "sync")
 
             # Snapshot EBS volume
+            self.log.debug("Taking snapshot of volume (%s)" % (volume.id))
             snapshot = conn.create_snapshot(volume.id, 'Image Factory Snapshot for provider image %s' % self.new_image_id)
 
             # This can take a _long_ time - wait up to 20 minutes
@@ -1245,6 +1239,7 @@ chmod 600 /root/.ssh/authorized_keys
                 raise ImageFactoryException("Unable to snapshot volume (%s) - aborting" % (volume.id))
 
             # register against snapshot
+            self.log.debug("Registering snapshot (%s) as new EBS AMI" % (snapshot.id))
             ebs = EBSBlockDeviceType()
             ebs.snapshot_id = snapshot.id
             block_map = BlockDeviceMapping() 
@@ -1266,10 +1261,10 @@ chmod 600 /root/.ssh/authorized_keys
                 retcode = 1
                 for i in range(24):
                     instance.update()
-                    if instance.status == "terminated":
+                    if instance.state == "terminated":
                         retcode = 0
                         break
-                    self.log.debug("Instance status (%s) - waiting for 'terminated': %d/240" % (instance.status, i*10))
+                    self.log.debug("Instance status (%s) - waiting for 'terminated': %d/240" % (instance.state, i*10))
                     sleep(10)
 
                 if retcode:
