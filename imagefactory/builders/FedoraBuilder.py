@@ -31,7 +31,6 @@ import httplib2
 import traceback
 import pycurl
 import json
-import gzip
 from cloudservers import CloudServers
 import ConfigParser
 import boto.ec2
@@ -1073,11 +1072,12 @@ chmod 600 /root/.ssh/authorized_keys
        
         if not os.path.isfile(input_image_compressed):
             self.log.debug("No compressed version of image file found - compressing now")
-            f_in = open(input_image, 'rb')
-            f_out = gzip.open(input_image_compressed, 'wb')
-            f_out.writelines(f_in)
+            f_out = open(input_image_compressed, 'wb')
+            retcode = subprocess.call(['gzip', '-c', input_image], stdout=f_out)
             f_out.close()
-            f_in.close()
+            if retcode:
+                raise ImageFactoryException("Error while compressing image prior to scp")
+            self.log.debug("Compression complete")
 
         region=provider
         region_conf=self.ec2_region_details[region]
@@ -1092,6 +1092,7 @@ chmod 600 /root/.ssh/authorized_keys
         # i386
         instance_type='m1.small'
 
+        self.log.debug("Initializing connection to ec2 region (%s)" % region_conf['host'])
         ec2region = boto.ec2.get_region(region_conf['host'], aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key)
         conn = ec2region.connect(aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key)
 
