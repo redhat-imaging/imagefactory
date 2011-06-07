@@ -31,6 +31,7 @@ import httplib2
 import traceback
 import pycurl
 import json
+import gzip
 from cloudservers import CloudServers
 import ConfigParser
 import boto.ec2
@@ -44,7 +45,11 @@ from BaseBuilder import BaseBuilder
 from boto.s3.connection import S3Connection
 from boto.s3.connection import Location
 from boto.exception import *
+from boto.ec2.blockdevicemapping import EBSBlockDeviceType, BlockDeviceMapping
 from VMDKstream import convert_to_stream
+
+# Boto is very verbose - shut it up
+logging.getLogger('boto').setLevel(logging.INFO)
 
 def subprocess_check_output(*popenargs, **kwargs):
     if 'stdout' in kwargs:
@@ -607,19 +612,10 @@ class FedoraBuilder(BaseBuilder):
 
         self.status="PUSHING"
         self.percent_complete=0
-        # TODO: This is a cut and paste - should really be a function
-        # TODO: Ideally we should use boto "Location" references when possible - 1.9 contains only DEFAULT and EU
-        #       The rest are hard coded strings for now.
-        ec2_region_details=\
-        {'ec2-us-east-1':      { 'boto_loc': Location.DEFAULT,     'host':'us-east-1',      'i386': 'aki-407d9529', 'x86_64': 'aki-427d952b' },
-         'ec2-us-west-1':      { 'boto_loc': 'us-west-1',          'host':'us-west-1',      'i386': 'aki-99a0f1dc', 'x86_64': 'aki-9ba0f1de' },
-         'ec2-ap-southeast-1': { 'boto_loc': 'ap-southeast-1',     'host':'ap-southeast-1', 'i386': 'aki-13d5aa41', 'x86_64': 'aki-11d5aa43' },
-         'ec2-ap-northeast-1': { 'boto_loc': 'ap-northeast-1',     'host':'ap-northeast-1', 'i386': 'aki-d209a2d3', 'x86_64': 'aki-d409a2d5' },
-         'ec2-eu-west-1':      { 'boto_loc': Location.EU,          'host':'eu-west-1',      'i386': 'aki-4deec439', 'x86_64': 'aki-4feec43b' } }
 
         region=provider
         # These are the region details for the TARGET region for our new AMI
-        region_conf=ec2_region_details[region]
+        region_conf=self.ec2_region_details[region]
         aki = region_conf[self.tdlobj.arch]
         boto_loc = region_conf['boto_loc']
         if region != "ec2-us-east-1":
@@ -630,46 +626,18 @@ class FedoraBuilder(BaseBuilder):
 
         register_url = "http://ec2.%s.amazonaws.com/" % (region_conf['host'])
 
-        # Construct the shell script that will inject our public key
-        pubkey_file=open("/etc/oz/id_rsa-icicle-gen.pub", "r")
-        pubkey = pubkey_file.read()
-
-        user_data_start='''#!/bin/bash
-
-if [ ! -d /root/.ssh ] ; then
-  mkdir /root/.ssh
-  chmod 700 /root/.ssh
-fi
-
-cat << "EOF" >> /root/.ssh/authorized_keys
-'''
-
-        user_data_finish='''EOF
-chmod 600 /root/.ssh/authorized_keys
-'''
-
-        user_data="%s%s%s" % (user_data_start, pubkey, user_data_finish)
-
-        # v0.2 of these AMIs - created week of April 4, 2011
-        # v0.3 for F13 64 bit only - created April 12, 2011
-        ec2_jeos_amis=\
-        {'ec2-us-east-1': {'Fedora': { '14' : { 'x86_64': 'ami-d6b946bf', 'i386': 'ami-6ab94603' },
-                                       '13' : { 'x86_64': 'ami-10bc4379', 'i386': 'ami-06ba456f' } } } ,
-         'ec2-us-west-1': {'Fedora': { '14' : { 'x86_64': 'ami-c9693a8c', 'i386': 'ami-c7693a82' },
-                                       '13' : { 'x86_64': 'ami-33693a76', 'i386': 'ami-23693a66' } } } }
-
         ami_id = "none"
         build_region = provider
 
         try:
-            ami_id = ec2_jeos_amis[provider][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]
+            ami_id = self.ec2_jeos_amis[provider][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]
         except KeyError:
             pass
 
         if ami_id == "none":
 	    try:
 	        # Fallback to modification on us-east and upload cross-region
-	        ami_id = ec2_jeos_amis['ec2-us-east-1'][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]
+	        ami_id = self.ec2_jeos_amis['ec2-us-east-1'][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]
 	        build_region = 'ec2-us-east-1'
 	        self.log.info("WARNING: Building in ec2-us-east-1 for upload to %s" % (provider))
 	        self.log.info(" This may be a bit slow - ask the Factory team to create a region-local JEOS")
@@ -685,7 +653,7 @@ chmod 600 /root/.ssh/authorized_keys
             instance_type='m1.small'
 
         # These are the region details for the region we are building in (which may be different from the target)
-        build_region_conf = ec2_region_details[build_region]
+        build_region_conf = self.ec2_region_details[build_region]
 
         self.log.debug("Starting ami %s with instance_type %s" % (ami_id, instance_type))
 
@@ -699,6 +667,9 @@ chmod 600 /root/.ssh/authorized_keys
 	self.log.debug("Creating temporary security group (%s)" % (factory_security_group_name))
 	factory_security_group = conn.create_security_group(factory_security_group_name, factory_security_group_desc)
 	factory_security_group.authorize('tcp', 22, 22, '0.0.0.0/0')
+
+        # Construct the shell script that will inject our public key
+        user_data = self.gen_ssh_userdata("/etc/oz/id_rsa-icicle-gen.pub")
 
         # Now launch it
         reservation = conn.run_instances(ami_id,instance_type=instance_type,user_data=user_data, security_groups = [ factory_security_group_name ])
@@ -970,7 +941,12 @@ chmod 600 /root/.ssh/authorized_keys
         self.percent_complete=0
         try:
             if self.target == "ec2":
-                self.ec2_push_image_upload(target_image_id, provider, credentials)
+                if self.app_config["ec2_ami_type"] == "s3":
+                    self.ec2_push_image_upload(target_image_id, provider, credentials)
+                elif self.app_config["ec2_ami_type"] == "ebs":
+                    self.ec2_push_image_upload_ebs(target_image_id, provider, credentials)
+                else:
+                    raise ImageFactoryException("Invalid or unspecified EC2 AMI type in config file")
             elif self.target == "condorcloud":
                 self.condorcloud_push_image_upload(target_image_id, provider, credentials)
             elif self.target == "rhev-m":
@@ -1028,6 +1004,7 @@ chmod 600 /root/.ssh/authorized_keys
         self.ec2_key_file_object.flush()
         self.ec2_key_file=self.ec2_key_file_object.name
 
+
     def retrieve_image(self, target_image_id, local_image_file):
         # Grab target_image_id from warehouse unless it is already present as local_image_file
         # TODO: Use Warehouse class instead
@@ -1046,6 +1023,267 @@ chmod 600 /root/.ssh/authorized_keys
         else:
             self.log.debug("Image file %s already present - skipping warehouse download" % (local_image_file))
 
+
+    def gen_ssh_userdata(self, pubkey_filename):
+        # Used in both snapshots and EBS building so it is a function
+        pubkey_file=open(pubkey_filename, "r")
+        pubkey = pubkey_file.read()
+        pubkey_file.close()
+
+        user_data_start='''#!/bin/bash
+
+if [ ! -d /root/.ssh ] ; then
+  mkdir /root/.ssh
+  chmod 700 /root/.ssh
+fi
+
+cat << "EOF" >> /root/.ssh/authorized_keys
+'''
+
+        user_data_finish='''EOF
+chmod 600 /root/.ssh/authorized_keys
+'''
+
+        user_data = "%s%s%s" % (user_data_start, pubkey, user_data_finish)
+        return user_data
+
+
+    def ec2_push_image_upload_ebs(self, target_image_id, provider, credentials):
+        # TODO: Merge with ec2_push_image_upload and/or factor out duplication
+        # In this case we actually do need an Oz object to manipulate a remote guest
+        self.init_guest("remote")
+
+        self.ec2_decode_credentials(credentials)
+        # We don't need the x509 material here so close the temp files right away
+        # TODO: Mod the decode to selectively create the files in the first place
+        #   This is silly and messy
+        self.ec2_cert_file_object.close()
+        self.ec2_key_file_object.close()
+
+
+        # if the image is already here, great, otherwise grab it from the warehouse
+        input_image_path=self.app_config['imgdir'] + "/"
+        input_image_name="ec2-image-" + target_image_id + ".dsk"
+        input_image=input_image_path + input_image_name
+
+        self.retrieve_image(target_image_id, input_image)
+
+        input_image_compressed_name = input_image_name + ".gz"
+        input_image_compressed=input_image + ".gz"
+       
+        if not os.path.isfile(input_image_compressed):
+            self.log.debug("No compressed version of image file found - compressing now")
+            f_in = open(input_image, 'rb')
+            f_out = gzip.open(input_image_compressed, 'wb')
+            f_out.writelines(f_in)
+            f_out.close()
+            f_in.close()
+
+        region=provider
+        region_conf=self.ec2_region_details[region]
+        aki = region_conf[self.tdlobj.arch]
+
+        # For now, use our F14 - 32 bit JEOS image as the utility image for uploading to the EBS volume
+        try:
+            ami_id = self.ec2_jeos_amis[provider]['Fedora']['14']['i386']
+        except KeyError:
+            raise ImageFactoryException("Can only build EBS in us-east and us-west for now - aborting")
+
+        # i386
+        instance_type='m1.small'
+
+        ec2region = boto.ec2.get_region(region_conf['host'], aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key)
+        conn = ec2region.connect(aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key)
+
+        # Create a use-once SSH-able security group
+        factory_security_group_name = "imagefactory-%s" % (str(self.new_image_id))
+        factory_security_group_desc = "Temporary ImageFactory generated security group with SSH access"
+        self.log.debug("Creating temporary security group (%s)" % (factory_security_group_name))
+        factory_security_group = conn.create_security_group(factory_security_group_name, factory_security_group_desc)
+        factory_security_group.authorize('tcp', 22, 22, '0.0.0.0/0')
+
+        # TODO: Ad-hoc key generation
+        # Construct the shell script that will inject our public key
+        user_data = self.gen_ssh_userdata("/etc/oz/id_rsa-icicle-gen.pub")
+
+        # Now launch it
+        reservation = conn.run_instances(ami_id,instance_type=instance_type,user_data=user_data, security_groups = [ factory_security_group_name ])
+
+        if len(reservation.instances) != 1:
+            self.status="FAILED"
+            raise ImageFactoryException("run_instances did not result in the expected single instance - stopping")
+
+        instance = reservation.instances[0]
+
+        # We have occasionally seen issues when you immediately query an instance
+        # Give it 10 seconds to settle
+        sleep(10)
+
+        for i in range(30):
+            self.log.debug("Waiting for EC2 instance to start: %d/300" % (i*10))
+            instance.update()
+            if instance.state == u'running':
+                break
+            sleep(10)
+
+        if instance.state != u'running':
+            self.status="FAILED"
+            raise ImageFactoryException("Instance failed to start after 300 seconds - stopping")
+
+        # From this point on we must be sure to terminate the instance when we are done
+        # so wrap in a try/finally
+        # Accidentally running a 64 bit instance doing nothing costs 56 USD week
+        volume = None
+        try:
+            guestaddr = instance.public_dns_name
+
+            self.guest.sshprivkey = "/etc/oz/id_rsa-icicle-gen"
+
+            # TODO: Make this loop so we can take advantage of early availability
+            # Ugly ATM because failed access always triggers an exception
+            self.log.debug("Waiting up to 300 seconds for ssh to become available on %s" % (guestaddr))
+            retcode = 1
+            for i in range(30):
+                self.log.debug("Waiting for EC2 ssh access: %d/300" % (i*10))
+
+                access=1
+                try:
+                    stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, "/bin/true")
+                except:
+                    access=0
+
+                if access:
+                    break
+
+                sleep(10)
+
+            if retcode:
+                raise ImageFactoryException("Unable to gain ssh access after 300 seconds - aborting")
+
+            # There are a handful of additional boot tasks after SSH starts running
+            # Give them an additional 20 seconds for good measure
+            self.log.debug("Waiting 20 seconds for remaining boot tasks")
+            sleep(20)
+
+            self.log.debug("Creating 10 GiB volume in (%s)" % (instance.placement))
+            volume = conn.create_volume(10, instance.placement)
+
+            # Do the upload before testing to see if the volume has completed
+            # to get a bit of parallel work
+            self.log.debug("Uploading compressed image file")
+            self.guest.guest_live_upload(guestaddr, input_image_compressed, "/mnt")
+
+            # Volumes can sometimes take a very long time to create
+            # Wait up to 10 minutes for now (plus the time taken for the upload above)
+            self.log.debug("Waiting up to 600 seconds for volume (%s) to become available" % (volume.id))
+            retcode = 1
+            for i in range(60):
+                volume.update()
+                if volume.status == "available":
+                    retcode = 0
+                    break
+                self.log.debug("Volume status (%s) - waiting for 'available': %d/600" % (volume.status, i*10)) 
+                sleep(10)
+
+            if retcode:
+                raise ImageFactoryException("Unable to create target volume for EBS AMI - aborting")
+
+            # Volume is now available
+            # Attach it
+            conn.attach_volume(volume.id, instance.id, "/dev/sdh")
+
+            self.log.debug("Waiting up to 120 seconds for volume (%s) to become in-use" % (volume.id))
+            retcode = 1
+            for i in range(12):
+                volume.update()
+                vs = volume.attachment_state()
+                if vs == "attached":
+                    retcode = 0
+                    break
+                self.log.debug("Volume status (%s) - waiting for 'attached': %d/120" % (vs, i*10))
+                sleep(10)
+
+            if retcode:
+                raise ImageFactoryException("Unable to attach volume (%s) to instance (%s) aborting" % (volume.id, instance.id))
+
+            # TODO: URGENT - the above doesn't actually return the attachment state - pausing here is a kludge
+            self.log.debug("Waiting 20 seconds for EBS attachment to stabilize")
+            sleep(20)
+
+            # Decompress image into new EBS volume
+            command = "gzip -dc /mnt/%s | dd of=/dev/xvdh bs=4k\n" % (input_image_compressed_name)
+            # Ugh - our execute method in Oz doesn't like to pass along the redirect correctly
+            # Do this tempfile nonsense
+            #command_file_object = NamedTemporaryFile()
+            #command_file_object.write(command)
+            #command_file_object.flush()
+            #self.guest.guest_live_upload(guestaddr,command_file_object.name,"/tmp/copycmd.sh")
+            #command_file_object.close()            
+
+            self.log.debug("Decompressing image file into EBS device via command:")
+            self.log.debug("    %s" % (command))
+            self.guest.guest_execute_command(guestaddr, command)
+
+            # Sync before snapshot
+            self.guest.guest_execute_command(guestaddr, "sync")
+
+            # Snapshot EBS volume
+            snapshot = conn.create_snapshot(volume.id, 'Image Factory Snapshot for provider image %s' % self.new_image_id)
+
+            # This can take a _long_ time - wait up to 20 minutes
+            self.log.debug("Waiting up to 1200 seconds for snapshot (%s) to become completed" % (snapshot.id))
+            retcode = 1
+            for i in range(120):
+                snapshot.update()
+                if snapshot.status == "completed":
+                    retcode = 0
+                    break
+                self.log.debug("Snapshot progress(%s) -  status (%s) - waiting for 'completed': %d/1200" % (str(snapshot.progress), snapshot.status, i*10))
+                sleep(10)
+
+            if retcode:
+                raise ImageFactoryException("Unable to snapshot volume (%s) - aborting" % (volume.id))
+
+            # register against snapshot
+            ebs = EBSBlockDeviceType()
+            ebs.snapshot_id = snapshot.id
+            block_map = BlockDeviceMapping() 
+            block_map['/dev/sda1'] = ebs 
+            result = conn.register_image(name='ImageFactory created AMI - %s' % (self.new_image_id), 
+                            description='ImageFactory created AMI - %s' % (self.new_image_id),
+                            architecture=self.tdlobj.arch,  kernel_id=aki, 
+                            root_device_name='/dev/sda1', block_device_map=block_map)
+
+            ami_id = str(result)
+            self.log.debug("Extracted AMI ID: %s " % (ami_id))
+        finally:
+            self.log.debug("Stopping EC2 instance and deleting temp security group and volume")
+            instance.stop()
+            factory_security_group.delete()
+            
+            if volume:
+                self.log.debug("Waiting up to 240 seconds for instance (%s) to shut down" % (instance.id))
+                retcode = 1
+                for i in range(24):
+                    instance.update()
+                    if instance.status == "terminated":
+                        retcode = 0
+                        break
+                    self.log.debug("Instance status (%s) - waiting for 'terminated': %d/240" % (instance.status, i*10))
+                    sleep(10)
+
+                if retcode:
+                    self.log.debug("WARNING: Unable to delete volume (%s)" % (volume.id))
+                else:
+                    self.log.debug("Deleting EBS volume (%s)" % (volume.id))
+                    volume.delete()
+
+        # TODO: Add back-reference to ICICLE from base image object
+        metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=ami_id)
+        self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
+
+        self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), target_image_id, self.new_image_id, str(metadata)))
+        self.percent_complete=100
 
     def ec2_push_image_upload(self, target_image_id, provider, credentials):
         self.ec2_decode_credentials(credentials)
@@ -1075,17 +1313,8 @@ chmod 600 /root/.ssh/authorized_keys
 
         self.percent_complete=10
 
-        # TODO: Ideally we should use boto "Location" references when possible - 1.9 contains only DEFAULT and EU
-        #       The rest are hard coded strings for now.
-        ec2_region_details=\
-        {'ec2-us-east-1':      { 'boto_loc': Location.DEFAULT,     'host':'us-east-1',      'i386': 'aki-407d9529', 'x86_64': 'aki-427d952b' },
-         'ec2-us-west-1':      { 'boto_loc': 'us-west-1',          'host':'us-west-1',      'i386': 'aki-99a0f1dc', 'x86_64': 'aki-9ba0f1de' },
-         'ec2-ap-southeast-1': { 'boto_loc': 'ap-southeast-1',     'host':'ap-southeast-1', 'i386': 'aki-13d5aa41', 'x86_64': 'aki-11d5aa43' },
-         'ec2-ap-northeast-1': { 'boto_loc': 'ap-northeast-1',     'host':'ap-northeast-1', 'i386': 'aki-d209a2d3', 'x86_64': 'aki-d409a2d5' },
-         'ec2-eu-west-1':      { 'boto_loc': Location.EU,          'host':'eu-west-1',      'i386': 'aki-4deec439', 'x86_64': 'aki-4feec43b' } }
-
         region=provider
-        region_conf=ec2_region_details[region]
+        region_conf=self.ec2_region_details[region]
         aki = region_conf[arch]
         boto_loc = region_conf['boto_loc']
         if region != "ec2-us-east-1":
@@ -1263,3 +1492,25 @@ none       /dev/shm  tmpfs   defaults         0 0
 none       /proc     proc    defaults         0 0
 none       /sys      sysfs   defaults         0 0
 """
+
+    ############ BEGIN CONFIG-LIKE class variables ###########################
+    ##########################################################################
+    # Perhaps there is a better way to do this but this works for now
+
+    # TODO: Ideally we should use boto "Location" references when possible - 1.9 contains only DEFAULT and EU
+    #       The rest are hard coded strings for now.
+    ec2_region_details={
+         'ec2-us-east-1':      { 'boto_loc': Location.DEFAULT,     'host':'us-east-1',      'i386': 'aki-407d9529', 'x86_64': 'aki-427d952b' },
+         'ec2-us-west-1':      { 'boto_loc': 'us-west-1',          'host':'us-west-1',      'i386': 'aki-99a0f1dc', 'x86_64': 'aki-9ba0f1de' },
+         'ec2-ap-southeast-1': { 'boto_loc': 'ap-southeast-1',     'host':'ap-southeast-1', 'i386': 'aki-13d5aa41', 'x86_64': 'aki-11d5aa43' },
+         'ec2-ap-northeast-1': { 'boto_loc': 'ap-northeast-1',     'host':'ap-northeast-1', 'i386': 'aki-d209a2d3', 'x86_64': 'aki-d409a2d5' },
+         'ec2-eu-west-1':      { 'boto_loc': Location.EU,          'host':'eu-west-1',      'i386': 'aki-4deec439', 'x86_64': 'aki-4feec43b' } }
+
+
+        # v0.2 of these AMIs - created week of April 4, 2011
+        # v0.3 for F13 64 bit only - created April 12, 2011
+    ec2_jeos_amis={
+         'ec2-us-east-1': {'Fedora': { '14' : { 'x86_64': 'ami-d6b946bf', 'i386': 'ami-6ab94603' },
+                                       '13' : { 'x86_64': 'ami-10bc4379', 'i386': 'ami-06ba456f' } } } ,
+         'ec2-us-west-1': {'Fedora': { '14' : { 'x86_64': 'ami-c9693a8c', 'i386': 'ami-c7693a82' },
+                                       '13' : { 'x86_64': 'ami-33693a76', 'i386': 'ami-23693a66' } } } }
