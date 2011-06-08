@@ -23,6 +23,7 @@ Requires: python-psphere
 Requires: VMDKstream
 Requires: python-suds >= 0.4.1
 BuildRequires: python
+BuildRequires: python-setuptools
 
 %description
 imagefactory is a daemon that listens for build requests via QMF.  When
