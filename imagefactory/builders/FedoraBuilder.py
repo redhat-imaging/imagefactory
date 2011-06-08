@@ -108,6 +108,16 @@ class FedoraBuilder(BaseBuilder):
         # We don't really care about the name so just force uniqueness
         self.guest.name = self.guest.name + "-" + self.new_image_id
 
+    def log_exc(self, location = None, message = None):
+        if message:
+            self.log.debug(message)
+        elif location:
+            self.log.debug("Exception encountered in (%s)" % location)
+        else:
+            self.log.debug("Exception caught in ImageFactory")
+        self.log.debug(traceback.format_exc())
+
+
     def build_image(self, build_id=None):
         try:
             if  self.target in self.upload_clouds or (self.target == "ec2" and self.app_config["ec2_build_style"] == "upload"):
@@ -119,9 +129,7 @@ class FedoraBuilder(BaseBuilder):
             else:
                 raise ImageFactoryException("Invalid build target (%s) passed to build_image()" % (self.target))
         except:
-            self.log.debug("Unexpected error: (%s)" % (sys.exc_info()[0]))
-            self.log.debug("             value: (%s)" % (sys.exc_info()[1]))
-            self.log.debug("         traceback: %s" % (repr(traceback.format_tb(sys.exc_info()[2]))))
+            self.log_exc()
             self.status="FAILED"
             raise
 
@@ -148,9 +156,7 @@ class FedoraBuilder(BaseBuilder):
             self.guest.generate_install_media(force_download=False)
             self.percent_complete=10
         except:
-            self.log.debug("Unexpected error: (%s)" % (sys.exc_info()[0]))
-            self.log.debug("             value: (%s)" % (sys.exc_info()[1]))
-            self.log.debug("         traceback: %s" % (repr(traceback.format_tb(sys.exc_info()[2]))))
+            self.log_exc()
             self.status="FAILED"
             raise
 
@@ -170,12 +176,11 @@ class FedoraBuilder(BaseBuilder):
                 self.guest.customize(libvirt_xml)
                 self.log.debug("Customization complete")
                 self.percent_complete=50
+                self.log.debug("Generating ICICLE")
+                self.output_descriptor = self.guest.generate_icicle(libvirt_xml)
+                self.log.debug("ICICLE generation complete")
             except:
-                self.log.debug("Unexpected error: (%s)" % (sys.exc_info()[0]))
-                self.log.debug("             value: (%s)" % (sys.exc_info()[1]))
-                self.log.debug("         traceback:")
-                for tbline in traceback.format_tb(sys.exc_info()[2]):
-                    self.log.debug("   %s" %  (tbline))
+                self.log_exc()
                 self.guest.cleanup_old_guest()
                 self.status="FAILED"
                 raise
@@ -232,10 +237,7 @@ class FedoraBuilder(BaseBuilder):
             self.ec2_copy_filesystem(output_dir)
             self.ec2_modify_filesystem()
         except:
-            self.log.debug("Exception during ec2_transform_image")
-            self.log.debug("Unexpected error: (%s)" % (sys.exc_info()[0]))
-            self.log.debug("             value: (%s)" % (sys.exc_info()[1]))
-            self.log.debug("         traceback: %s" % (repr(traceback.format_tb(sys.exc_info()[2]))))
+            self.log_exc()
             self.status="FAILED"
             raise
 
@@ -483,10 +485,7 @@ class FedoraBuilder(BaseBuilder):
             else:
                 raise ImageFactoryException("Invalid build target (%s) passed to build_image()" % (self.target))
         except:
-            self.log.debug("Exception during push_image")
-            self.log.debug("Unexpected error: (%s)" % (sys.exc_info()[0]))
-            self.log.debug("             value: (%s)" % (sys.exc_info()[1]))
-            self.log.debug("         traceback: %s" % (repr(traceback.format_tb(sys.exc_info()[2]))))
+            self.log_exc()
             self.status="FAILED"
 
 
@@ -955,10 +954,7 @@ class FedoraBuilder(BaseBuilder):
             else:
                 raise ImageFactoryException("Invalid upload push requested for target (%s) and provider (%s)" % (self.target, provider))
         except:
-            self.log.debug("Exception during push_image_upload")
-            self.log.debug("Unexpected error: (%s)" % (sys.exc_info()[0]))
-            self.log.debug("             value: (%s)" % (sys.exc_info()[1]))
-            self.log.debug("         traceback: %s" % (repr(traceback.format_tb(sys.exc_info()[2]))))
+            self.log_exc()
             self.status="FAILED"
             raise
         self.status="COMPLETED"
