@@ -140,6 +140,7 @@ class FedoraBuilder(BaseBuilder):
         image_file = open(self.image, 'w')
         image_file.write("Placeholder for non upload cloud Linux image")
         image_file.close()
+        self.output_descriptor = None
         self.log.debug("Storing placeholder object for non upload cloud image")
         self.store_image(build_id)
         self.percent_complete = 100
@@ -577,6 +578,10 @@ class FedoraBuilder(BaseBuilder):
 	    self.guest.do_customize(guestaddr)
 	    self.log.debug("Done!")
 
+            self.log.debug("Generating ICICLE for Rackspace image")
+            self.output_descriptor = self.guest.do_icicle(guestaddr)
+            self.log.debug("Done!")
+
             image_name = "factory-image-%s" % (self.new_image_id, )
 	    snap_image = cloudservers.images.create(image_name, jeos_instance)
 
@@ -592,7 +597,8 @@ class FedoraBuilder(BaseBuilder):
 	        snap_image = cloudservers.images.get(snap_image.id)
 
             self.log.debug("Storing Rackspace image ID (%s) and details in Warehouse" % (snap_image.id))
-	    metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=snap_image.id)
+            icicle_id = self.warehouse.store_icicle(self.output_descriptor)
+	    metadata = dict(target_image=target_image_id, provider=provider, icicle=icicle_id, target_identifier=snap_image.id)
 	    self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
 
 	finally:
@@ -743,6 +749,10 @@ class FedoraBuilder(BaseBuilder):
             self.guest.do_customize(guestaddr)
             self.log.debug("Customization step complete")
 
+            self.log.debug("Generating ICICLE from customized guest")
+            self.output_descriptor = self.guest.do_icicle(guestaddr)
+            self.log.debug("ICICLE generation complete")
+
             self.log.debug("Re-de-activate firstboot just in case it has been revived during customize")
             self.guest.guest_execute_command(guestaddr, "[ -f /etc/init.d/firstboot ] && /sbin/chkconfig firstboot off || /bin/true")
             self.log.debug("De-activation complete")
@@ -804,7 +814,8 @@ class FedoraBuilder(BaseBuilder):
             ami_id = m.group(1)
             self.log.debug("Extracted AMI ID: %s " % (ami_id))
 
-            metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=ami_id)
+            icicle_id = self.warehouse.store_icicle(self.output_descriptor)
+            metadata = dict(target_image=target_image_id, provider=provider, icicle=icicle_id, target_identifier=ami_id)
             self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
         finally:
             self.log.debug("Stopping EC2 instance and deleting temp security group")

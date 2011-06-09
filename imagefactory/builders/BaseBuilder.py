@@ -137,7 +137,12 @@ class BaseBuilder(object):
 
     def store_image(self, build_id, target_parameters=None):
         template_id = self.warehouse.store_template(self.template.xml, self.template.identifier)
-        icicle_id = self.warehouse.store_icicle(self.output_descriptor)
+        # Snapshot images do not have ICICLE
+        # allow builders to null the descriptor to store a sane indicator in warehouse
+        if self.output_descriptor:
+            icicle_id = self.warehouse.store_icicle(self.output_descriptor)
+        else:
+            icicle_id = "none"
         metadata = dict(template=template_id, target=self.target, icicle=icicle_id, target_parameters=target_parameters)
         if build_id:
             metadata['build'] = build_id
