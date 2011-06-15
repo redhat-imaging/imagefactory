@@ -31,6 +31,9 @@ class BuildDispatcher(Singleton):
         self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration['warehouse'])
 
     def build_image_for_targets(self, image_id, build_id, template, targets, job_cls = BuildJob, *args, **kwargs):
+        if image_id and not targets:
+            targets = self._targets_for_image_id(image_id)
+
         template = self._load_template(image_id, build_id, template)
 
         image_id = self._ensure_image(image_id, template)
@@ -102,6 +105,18 @@ class BuildDispatcher(Singleton):
 
     def _latest_unpushed(self, image_id):
         return self.warehouse.metadata_for_id_of_type(['latest_unpushed'], image_id, 'image')['latest_unpushed']
+
+    def _targets_for_build_id(self, build_id):
+        targets = []
+        for target_image_id in self._target_images_for_build(build_id):
+            targets.append(self.warehouse.metadata_for_id_of_type(['target'], target_image_id, 'target_image')['target'])
+        return targets
+
+    def _targets_for_image_id(self, image_id):
+        build_id = self._latest_build(image_id)
+        if not build_id:
+            build_id = self._latest_unpushed(image_id)
+        return self._targets_for_build_id(build_id) if build_id else []
 
     def _target_images_for_build(self, build_id):
         return self.warehouse.query("target_image", "$build == \"%s\"" % (build_id,))
