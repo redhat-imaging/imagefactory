@@ -19,14 +19,11 @@ import libxml2
 import os.path
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 from imagefactory.BuildJob import BuildJob
+from imagefactory.BuildWatcher import BuildWatcher
 from imagefactory.ImageWarehouse import ImageWarehouse
+from imagefactory.PushWatcher import PushWatcher
 from imagefactory.Singleton import Singleton
 from imagefactory.Template import Template
-
-#
-# TODO:
-#  - Split the watcher code out into separate modules
-#
 
 class BuildDispatcher(Singleton):
 
@@ -139,53 +136,3 @@ class BuildDispatcher(Singleton):
             return 'mock'
         else:
             return 'condorcloud' # condorcloud ignores provider
-
-class Watcher(object):
-    def __init__(self, image_id, build_id, remaining, warehouse):
-        self.remaining = remaining
-        self.warehouse = warehouse
-        self.image_id = image_id
-        self.build_id = build_id
-
-    def completed(self):
-        self.remaining -= 1
-        if self.remaining == 0:
-            self.all_completed()
-
-    def all_completed(self):
-        pass
-
-    def _image_attr(self, attr):
-        return self.warehouse.metadata_for_id_of_type([attr], self.image_id, 'image')[attr]
-
-    def _set_image_attr(self, attr, value):
-        self.warehouse.set_metadata_for_id_of_type({attr : value}, self.image_id, 'image')
-
-    def _latest_build(self):
-        return self._image_attr('latest_build')
-
-    def _set_latest_build(self, build_id):
-        self._set_image_attr('latest_build', build_id)
-
-    def _latest_unpushed(self):
-        return self._image_attr('latest_unpushed')
-
-    def _set_latest_unpushed(self, build_id):
-        self._set_image_attr('latest_unpushed', build_id)
-
-    def _set_build_parent(self, parent_id):
-        self.warehouse.set_metadata_for_id_of_type({'parent' : parent_id}, self.build_id, 'build')
-
-class BuildWatcher(Watcher):
-    def all_completed(self):
-        parent_id = self._latest_unpushed()
-        if not parent_id:
-            parent_id = self._latest_build()
-        self._set_latest_unpushed(self.build_id)
-        if parent_id:
-            self._set_build_parent(parent_id)
-
-class PushWatcher(Watcher):
-    def all_completed(self):
-        self._set_latest_build(self.build_id)
-        self._set_latest_unpushed(None)
