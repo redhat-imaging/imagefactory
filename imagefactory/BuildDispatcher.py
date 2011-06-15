@@ -30,13 +30,24 @@ class BuildDispatcher(Singleton):
     def _singleton_init(self):
         self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration['warehouse'])
 
+    def import_image(self, image_id, build_id, target_identifier, image_desc, target, provider):
+        image_id = self._ensure_image(image_id, image_desc)
+        build_id = self._ensure_build(image_id, build_id)
+
+        target_image_id = self._ensure_target_image(build_id, target)
+        provider_image_id = self._ensure_provider_image(target_image_id, provider, target_identifier)
+
+        self._commit_build(image_id, build_id)
+
+        return (image_id, build_id, target_image_id, provider_image_id)
+
     def build_image_for_targets(self, image_id, build_id, template, targets, job_cls = BuildJob, *args, **kwargs):
         if image_id and not targets:
             targets = self._targets_for_image_id(image_id)
 
         template = self._load_template(image_id, build_id, template)
 
-        image_id = self._ensure_image(image_id, template)
+        image_id = self._ensure_image_with_template(image_id, template)
         build_id = self._ensure_build(image_id, build_id)
 
         watcher = BuildWatcher(image_id, build_id, len(targets), self.warehouse)
@@ -75,22 +86,38 @@ class BuildDispatcher(Singleton):
             return None
         return nodes[0].content
 
-    def _ensure_image(self, image_id, template):
-        if image_id:
-            return image_id
-
+    def _ensure_image_with_template(self, image_id, template):
         name = self._xml_node(template.xml, '/template/name')
         if name:
-            image_xml = '<image><name>%s</name></image>' % name
+            image_desc = '<image><name>%s</name></image>' % name
         else:
-            image_xml = '</image>'
+            image_desc = '</image>'
+        return self._ensure_image(image_id, image_desc)
 
-        return self.warehouse.store_image(None, image_xml)
+    def _ensure_image(self, image_id, image_desc):
+        if image_id:
+            return image_id
+        else:
+            return self.warehouse.store_image(None, image_desc)
 
     def _ensure_build(self, image_id, build_id):
         if build_id:
             return build_id
         return self.warehouse.store_build(None, dict(image = image_id))
+
+    def _ensure_target_image(self, build_id, target):
+        target_image_id = self._target_image_for_build_and_target(build_id, target)
+        if target_image_id:
+            return target_image_id
+        return self.warehouse.store_target_image(None, None, dict(build=build_id, target=target))
+
+    def _ensure_provider_image(self, target_image_id, provider, target_identifier):
+        provider_image_id = self._provider_image_for_target_image_and_provider(target_image_id, provider)
+        if provider_image_id:
+            self._set_provider_image_attr(provider_image_id, 'target_identifier', target_identifier)
+        else:
+            metadata = dict(target_image=target_image_id, provider=provider, target_identifier=target_identifier)
+            return self.warehouse.create_provider_image(None, None, metadata)
 
     def _load_template(self, image_id, build_id, template):
         if not template:
@@ -100,11 +127,23 @@ class BuildDispatcher(Singleton):
                 template = self._template_for_image_id(image_id)
         return Template(template)
 
+    def _commit_build(self, image_id, build_id):
+        parent_id = self._latest_build(image_id)
+        if parent_id:
+            self._set_build_parent(build_id, parent_id)
+        self._set_latest_build(image_id, build_id)
+
     def _latest_build(self, image_id):
         return self.warehouse.metadata_for_id_of_type(['latest_build'], image_id, 'image')['latest_build']
 
     def _latest_unpushed(self, image_id):
         return self.warehouse.metadata_for_id_of_type(['latest_unpushed'], image_id, 'image')['latest_unpushed']
+
+    def _set_latest_build(self, image_id, build_id):
+        self.warehouse.set_metadata_for_id_of_type({'latest_build' : build_id}, image_id, 'image')
+
+    def _set_build_parent(self, build_id, parent_id):
+        self.warehouse.set_metadata_for_id_of_type({'parent' : parent_id}, build_id, 'build')
 
     def _targets_for_build_id(self, build_id):
         targets = []
@@ -122,7 +161,15 @@ class BuildDispatcher(Singleton):
         return self.warehouse.query("target_image", "$build == \"%s\"" % (build_id,))
 
     def _target_image_for_build_and_target(self, build_id, target):
-        return self.warehouse.query("target_image", "$build == \"%s\" && $target == \"%s\"" % (build_id, target))[0]
+        results = self.warehouse.query("target_image", "$build == \"%s\" && $target == \"%s\"" % (build_id, target))
+        return results[0] if results else None
+
+    def _provider_image_for_target_image_and_provider(self, target_image_id, provider):
+        results = self.warehouse.query("provider_image", "$target_image == \"%s\" && $provider == \"%s\"" % (target_image_id, provider))
+        return results[0] if results else None
+
+    def _set_provider_image_attr(provider_image_id, attr, value):
+        self.warehouse.set_metadata_for_id_of_type({attr : value}, provider_image_id, "provider_image")
 
     def _template_for_target_image_id(self, target_image_id):
         return self.warehouse.metadata_for_id_of_type(['template'], target_image_id, 'target_image')['template']

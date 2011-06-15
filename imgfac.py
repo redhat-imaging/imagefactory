@@ -147,7 +147,16 @@ class Application(Singleton):
             self.app_config['foreground'] = True
             self.setup_logging()
 
-            if (self.app_config['template'] and self.app_config['target']) or (self.app_config['image'] and not self.app_config['provider']):
+            if self.app_config['target_image'] and self.app_config['target'] and self.app_config['provider']:
+                if len(self.app_config['target']) != 1:
+                    print("Expect a single target, but '%s' supplied" % (self.app_config['target'],))
+                    sys.exit(1)
+                if len(self.app_config['provider']) != 1:
+                    print("Expect a single provider, but '%s' supplied" % (self.app_config['provider'],))
+                    sys.exit(1)
+                image_ids = BuildDispatcher().import_image(self.app_config['image'], None, self.app_config['target_image'], self.app_config['image_desc'], self.app_config['target'][0], self.app_config['provider'][0])
+                print("Imported target image ID %s as image %s" % (self.app_config['target_image'], image_ids[0]))
+            elif (self.app_config['template'] and self.app_config['target']) or (self.app_config['image'] and not self.app_config['provider']):
                 dispatchers = BuildDispatcher().build_image_for_targets(self.app_config['image'], None, self.app_config['template'], self.app_config['target'])
                 for dispatcher in dispatchers:
                     print("Building build %s of image %s to target %s" % (dispatcher.build_id, dispatcher.image_id, dispatcher.target))

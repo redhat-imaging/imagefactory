@@ -193,8 +193,7 @@ class ImageWarehouse(object):
 
         return build_id
 
-    def store_target_image(self, target_image_id, image_file_path, metadata=None):
-        object_url = self.__url_for_id_of_type(target_image_id, "target_image")
+    def _upload_image_file(self, object_url, image_file_path):
         try:
             image_file = open(image_file_path)
 
@@ -212,12 +211,26 @@ class ImageWarehouse(object):
         except Exception, e:
             raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
 
+    def store_target_image(self, target_image_id, image_file_path, metadata=None):
+        if(not target_image_id):
+            target_image_id = str(uuid.uuid4())
+        object_url = self.__url_for_id_of_type(target_image_id, "target_image")
+
+        if image_file_path:
+            self._upload_image_file(object_url, image_file_path)
+        else:
+            self._http_put(object_url)
+
         meta_data = dict(uuid=target_image_id, object_type="target_image")
         if(metadata):
             meta_data.update(metadata)
         self.set_metadata_for_object_at_url(meta_data, object_url)
 
+        return target_image_id
+
     def create_provider_image(self, image_id, txt=None, metadata=None):
+        if(not image_id):
+            image_id = str(uuid.uuid4())
         object_url = self.__url_for_id_of_type(image_id, object_type="provider_image")
         if(not txt):
             if(metadata):
@@ -231,6 +244,8 @@ class ImageWarehouse(object):
         if(metadata):
             meta_data.update(metadata)
         self.set_metadata_for_object_at_url(meta_data, object_url)
+
+        return image_id
 
     def store_template(self, template, template_id=None, metadata=None):
         if(not template_id):

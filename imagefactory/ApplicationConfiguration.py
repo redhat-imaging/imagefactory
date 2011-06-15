@@ -70,6 +70,10 @@ class ApplicationConfiguration(Singleton):
         group_push.add_argument('--provider', action='append', help='Cloud service providers to push the image (e.g. ec2-us-east-1, rackspace, etc.)')
         group_push.add_argument('--credentials', help='Cloud provider credentials XML (i.e. <provider_credentials/> document)')
 
+        group_build = argparser.add_argument_group(title='Image importing', description=cli_build_description)
+        group_build.add_argument('--target-image', help='Target specific identifier for the image to import.')
+        group_build.add_argument('--image-desc', help='XML document describing the imported image.')
+
         group_warehouse = argparser.add_argument_group(title='Image Warehouse', description=warehouse_description)
         group_warehouse.add_argument('--warehouse', default='http://localhost:9090/', help='URL of the warehouse location to store images. (default: %(default)s)')
         group_warehouse.add_argument('--image_bucket', help='Name of warehouse bucket to look in images. (default: %(default)s)')
