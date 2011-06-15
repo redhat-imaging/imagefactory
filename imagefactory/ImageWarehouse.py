@@ -212,7 +212,7 @@ class ImageWarehouse(object):
         except Exception, e:
             raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
 
-        meta_data = dict(uuid=target_image_id, object_type="image")
+        meta_data = dict(uuid=target_image_id, object_type="target_image")
         if(metadata):
             meta_data.update(metadata)
         self.set_metadata_for_object_at_url(meta_data, object_url)
