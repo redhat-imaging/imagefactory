@@ -31,7 +31,7 @@ class BuildDispatcher(Singleton):
         self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration['warehouse'])
 
     def build_image_for_targets(self, image_id, build_id, template, targets, job_cls = BuildJob, *args, **kwargs):
-        template = Template(template)
+        template = self._load_template(image_id, build_id, template)
 
         image_id = self._ensure_image(image_id, template)
         build_id = self._ensure_build(image_id, build_id)
@@ -89,14 +89,38 @@ class BuildDispatcher(Singleton):
             return build_id
         return self.warehouse.store_build(None, dict(image = image_id))
 
+    def _load_template(self, image_id, build_id, template):
+        if not template:
+            if build_id:
+                template = self._template_for_build_id(build_id)
+            if not template and image_id:
+                template = self._template_for_image_id(image_id)
+        return Template(template)
+
+    def _latest_build(self, image_id):
+        return self.warehouse.metadata_for_id_of_type(['latest_build'], image_id, 'image')['latest_build']
+
     def _latest_unpushed(self, image_id):
         return self.warehouse.metadata_for_id_of_type(['latest_unpushed'], image_id, 'image')['latest_unpushed']
+
+    def _target_images_for_build(self, build_id):
+        return self.warehouse.query("target_image", "$build == \"%s\"" % (build_id,))
 
     def _target_image_for_build_and_target(self, build_id, target):
         return self.warehouse.query("target_image", "$build == \"%s\" && $target == \"%s\"" % (build_id, target))[0]
 
     def _template_for_target_image_id(self, target_image_id):
         return self.warehouse.metadata_for_id_of_type(['template'], target_image_id, 'target_image')['template']
+
+    def _template_for_build_id(self, build_id):
+        target_image_ids = self._target_images_for_build(build_id)
+        return self._template_for_target_image_id(target_image_ids[0]) if target_image_ids else None
+
+    def _template_for_image_id(self, image_id):
+        build_id = self._latest_build(image_id)
+        if not build_id:
+            build_id = self._latest_unpushed(image_id)
+        return self._template_for_build_id(build_id) if build_id else None
 
     def _is_rhevm_provider(self, provider):
         rhevm_json = '/etc/rhevm.json'
