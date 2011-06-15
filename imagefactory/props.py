@@ -16,37 +16,32 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 #
-# TODO:
-#  - add support for read-only properties
-#
-
-#
-# Return a copy of dict d with the specified keys filtered out
-#
-def filter_dict(d, keys):
-    return dict(map(lambda k: [k, d[k]], filter(lambda k: not k in keys, d.keys())))
-
-#
 # Return a property backed by the given attribute
 #
-def prop(attr, doc = None):
+def prop(attr, doc = None, ro = None):
     def fget(self):
         return getattr(self, attr)
     def fset(self, value):
         setattr(self, attr, value)
     def fdel(self):
         delattr(self, attr)
-    return property(**filter_dict(locals().copy(), ['attr']))
+    return property(fget, fset if not ro else None, fdel if not ro else None, doc)
+
+def ro_prop(attr, doc = None):
+    return prop(attr, doc, True)
 
 #
 # A variant of the above where the property is backed by an
 # attribute of an attribute
 #
-def subprop(attr, subattr, doc = None):
+def subprop(attr, subattr, doc = None, ro = False):
     def fget(self):
         return getattr(getattr(self, attr), subattr)
     def fset(self, value):
         setattr(getattr(self, attr), subattr, value)
     def fdel(self):
         delattr(getattr(self, attr), subattr)
-    return property(**filter_dict(locals().copy(), ['attr', 'subattr']))
+    return property(fget, fset if not ro else None, fdel if not ro else None, doc)
+
+def ro_subprop(attr, subattr, doc = None):
+    return prop(attr, subattr, doc, True)

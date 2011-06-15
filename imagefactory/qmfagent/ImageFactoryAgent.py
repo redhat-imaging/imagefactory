@@ -26,13 +26,7 @@ from imagefactory import props
 class ImageFactoryAgent(AgentHandler):
 
     qmf_object = props.prop("_qmf_object", "The qmf_object property.")
-
-    def managedObjects():
-        doc = "The managedObjects property."
-        def fget(self):
-            return self._managedObjects
-        return locals()
-    managedObjects = property(**managedObjects())
+    managedObjects = props.ro_prop("_managedObjects", "The managedObjects property.")
 
     def __init__(self, url):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
