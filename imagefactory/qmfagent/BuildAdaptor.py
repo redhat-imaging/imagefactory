@@ -23,9 +23,9 @@ from qmf2 import *
 from threading import Thread, Lock
 from imagefactory import props
 from imagefactory.builders import *
-from imagefactory.BuildDispatcher import BuildDispatcher
+from imagefactory.BuildJob import BuildJob
 
-class BuildAdaptor(BuildDispatcher):
+class BuildAdaptor(BuildJob):
     # QMF schema for BuildAdaptor
     qmf_schema = Schema(SCHEMA_TYPE_DATA, "com.redhat.imagefactory", "BuildAdaptor")
     qmf_schema.addProperty(SchemaProperty("image", SCHEMA_DATA_STRING, desc="UUID of the image"))

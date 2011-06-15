@@ -15,15 +15,10 @@
 # MA  02110-1301, USA.  A copy of the GNU General Public License is
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
-import sys
 import libxml2
-import logging
 import os.path
-import props
-from threading import Thread, Lock
-from imagefactory.builders import *
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
-from imagefactory.ImageFactoryException import ImageFactoryException
+from imagefactory.BuildJob import BuildJob
 from imagefactory.ImageWarehouse import ImageWarehouse
 from imagefactory.Template import Template
 
@@ -35,82 +30,8 @@ from imagefactory.Template import Template
 
 class BuildDispatcher(object):
 
-    template = props.prop("_template", "The template property.")
-    target = props.prop("_target", "The target property.")
-    image_id = props.prop("_image_id", "The UUID of the image.")
-    build_id = props.prop("_build_id", "The UUID of the build.")
-    provider = props.prop("_provider", "The provider being pushed to.")
-    status = props.prop("_status", "The status property.")
-    percent_complete = props.prop("_percent_complete", "The percent_complete property.")
-    new_image_id = props.prop("_new_image_id" "The image property.")
-
-    def __init__(self, template, target, image_id = '', build_id = ''):
-        super(BuildDispatcher, self).__init__()
-
-        self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-
-        self.template = template if isinstance(template, Template) else Template(template)
-        self.target = target
-        self.image_id = image_id
-        self.build_id = build_id
-        self.provider = None
-        self.status = "New"
-        self.percent_complete = 0
-        self._watcher = None
-
-        self._builder = self._get_builder()
-        self._builder.delegate = self
-
-        self.new_image_id = self._builder.new_image_id
-
-    def build_image(self, watcher=None):
-        self._watcher = watcher
-        kwargs = dict(build_id=self.build_id)
-        self._start_builder_thread("build_image", arg_dict=kwargs)
-
-    def push_image(self, target_image_id, provider, credentials, watcher=None):
-        self._watcher = watcher
-        self.provider = provider
-        kwargs = dict(target_image_id=target_image_id, provider=provider, credentials=credentials)
-        self._start_builder_thread("push_image", arg_dict=kwargs)
-
-    def abort(self):
-        self._builder.abort()
-
-    def builder_did_update_status(self, builder, old_status, new_status):
-        self.status = new_status
-        if self.status == "COMPLETED" and self._watcher:
-            self._watcher.completed()
-            self._watcher = None
-
-    def builder_did_update_percentage(self, builder, original_percentage, new_percentage):
-        self.percent_complete = new_percentage
-
-    def builder_did_fail(self, builder, failure_type, failure_info):
-        pass
-
-    def _get_builder(self):
-        builder_class = MockBuilder.MockBuilder
-        if (self.target != "mock"): # If target is mock always run mock builder regardless of template
-            os_name = self.__class__._xml_node(self.template.xml, '/template/os/name')
-            class_name = "%sBuilder" % (os_name, )
-            try:
-                module_name = "imagefactory.builders.%s" % (class_name, )
-                __import__(module_name)
-                builder_class = getattr(sys.modules[module_name], class_name)
-            except AttributeError, e:
-                self.log.exception("CAUGHT EXCEPTION: %s \n Could not find builder class for %s, returning MockBuilder!", e, os_name)
-
-        return builder_class(self.template, self.target)
-
-    def _start_builder_thread(self, method_name, arg_dict={}):
-        thread_name = "%s.%s()" % (self.new_image_id, method_name)
-        # using args to pass the method we want to call on the target object.
-        builder_thread = Thread(target = self._builder, name=thread_name, args=(method_name), kwargs=arg_dict)
-        builder_thread.start()
-
     @classmethod
-    def build_image_for_targets(cls, image_id, build_id, template, targets, *args, **kwargs):
+    def build_image_for_targets(cls, image_id, build_id, template, targets, job_cls = BuildJob, *args, **kwargs):
         warehouse = cls._get_warehouse()
 
         template = Template(template)
@@ -120,16 +41,16 @@ class BuildDispatcher(object):
 
         watcher = BuildWatcher(image_id, build_id, len(targets), warehouse)
 
-        dispatchers = []
+        jobs = []
         for target in targets:
-            dispatcher = cls(template, target, image_id, build_id, *args, **kwargs)
-            dispatcher.build_image(watcher)
-            dispatchers.append(dispatcher)
+            job = job_cls(template, target, image_id, build_id, *args, **kwargs)
+            job.build_image(watcher)
+            jobs.append(job)
 
-        return dispatchers
+        return jobs
 
     @classmethod
-    def push_image_to_providers(cls, image_id, build_id, providers, credentials, *args, **kwargs):
+    def push_image_to_providers(cls, image_id, build_id, providers, credentials, job_cls = BuildJob, *args, **kwargs):
         warehouse = cls._get_warehouse()
 
         if not build_id:
@@ -137,7 +58,7 @@ class BuildDispatcher(object):
 
         watcher = PushWatcher(image_id, build_id, len(providers), warehouse)
 
-        dispatchers = []
+        jobs = []
         for provider in providers:
             target = cls._map_provider_to_target(provider)
 
@@ -145,11 +66,11 @@ class BuildDispatcher(object):
 
             template = cls._template_for_target_image_id(warehouse, target_image_id)
 
-            dispatcher = cls(template, target, image_id, build_id, *args, **kwargs)
-            dispatcher.push_image(target_image_id, provider, credentials, watcher)
-            dispatchers.append(dispatcher)
+            job = job_cls(template, target, image_id, build_id, *args, **kwargs)
+            job.push_image(target_image_id, provider, credentials, watcher)
+            jobs.append(job)
 
-        return dispatchers
+        return jobs
 
     @classmethod
     def _get_warehouse(cls):

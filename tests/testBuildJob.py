@@ -20,10 +20,10 @@
 
 import unittest
 import logging
-from imagefactory import BuildDispatcher
+from imagefactory import BuildJob
 from imagefactory.builders import MockBuilder
 
-class testBuildDispatcher(unittest.TestCase):
+class testBuildJob(unittest.TestCase):
     def setUp(self):
         logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/tmp/imagefactory-unittests.log')
 
@@ -32,10 +32,10 @@ class testBuildDispatcher(unittest.TestCase):
 
     def testInstantiateMockBuilder(self):
         template_xml = "<template><name>f14jeos</name><os><name>Fedora</name></os></template>"
-        dispatcher = BuildDispatcher.BuildDispatcher(template_xml, "mock")
-        self.assertIsInstance(dispatcher._builder, MockBuilder.MockBuilder)
-        self.assertEqual(dispatcher.template.xml, template_xml)
-        self.assertEqual(dispatcher.target, "mock")
+        job = BuildJob.BuildJob(template_xml, "mock")
+        self.assertIsInstance(job._builder, MockBuilder.MockBuilder)
+        self.assertEqual(job.template.xml, template_xml)
+        self.assertEqual(job.target, "mock")
 
 if __name__ == '__main__':
     unittest.main()

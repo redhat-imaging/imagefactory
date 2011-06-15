@@ -23,6 +23,7 @@ import httplib2
 from BuildAdaptor import BuildAdaptor
 from imagefactory import props
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
+from imagefactory.BuildDispatcher import BuildDispatcher
 from imagefactory.ImageWarehouse import ImageWarehouse
 from imagefactory.Singleton import Singleton
 from imagefactory.Template import Template
@@ -107,10 +108,10 @@ class ImageFactory(Singleton):
             raise RuntimeError("Could not return build_adaptor!\nimage_metadata: %s\ntemplate_id: %s\ntemplate: %s\n" % (image_metadata, template_id, target))
 
     def build_image(self, image, build, template, targets):
-        return BuildAdaptor.build_image_for_targets(image, build, template, targets, self.agent)
+        return BuildDispatcher.build_image_for_targets(image, build, template, targets, BuildAdaptor, self.agent)
 
     def push_image(self, image, build, providers, credentials):
-        return BuildAdaptor.push_image_to_providers(image, build, providers, credentials, self.agent)
+        return BuildDispatcher.push_image_to_providers(image, build, providers, credentials, BuildAdaptor, self.agent)
 
     def instance_states(self, class_name):
         """Returns a dictionary representing the finite state machine for instances of the class specified."""
