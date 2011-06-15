@@ -148,7 +148,7 @@ class Application(Singleton):
             self.setup_logging()
 
             if (self.app_config['template'] and self.app_config['target']):
-                dispatchers = BuildDispatcher.build_image_for_targets(self.app_config['image'], None, self.app_config['template'], self.app_config['target'])
+                dispatchers = BuildDispatcher().build_image_for_targets(self.app_config['image'], None, self.app_config['template'], self.app_config['target'])
                 for dispatcher in dispatchers:
                     print("Building build %s of image %s to target %s" % (dispatcher.build_id, dispatcher.image_id, dispatcher.target))
 
@@ -164,7 +164,7 @@ class Application(Singleton):
                     print("Unexpected content or formatting of credentials...")
                     sys.exit(1)
 
-                dispatchers = BuildDispatcher.push_image_to_providers(self.app_config['image'], None, self.app_config['provider'], credentials)
+                dispatchers = BuildDispatcher().push_image_to_providers(self.app_config['image'], None, self.app_config['provider'], credentials)
                 for dispatcher in dispatchers:
                     print("Pushing build %s of image %s to provider %s" % (dispatcher.build_id, dispatcher.image_id, dispatcher.provider))
 

@@ -20,26 +20,26 @@ import os.path
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 from imagefactory.BuildJob import BuildJob
 from imagefactory.ImageWarehouse import ImageWarehouse
+from imagefactory.Singleton import Singleton
 from imagefactory.Template import Template
 
 #
 # TODO:
 #  - Split the watcher code out into separate modules
-#  - Make use of a singleton instead of class methods
 #
 
-class BuildDispatcher(object):
+class BuildDispatcher(Singleton):
 
-    @classmethod
-    def build_image_for_targets(cls, image_id, build_id, template, targets, job_cls = BuildJob, *args, **kwargs):
-        warehouse = cls._get_warehouse()
+    def _singleton_init(self):
+        self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration['warehouse'])
 
+    def build_image_for_targets(self, image_id, build_id, template, targets, job_cls = BuildJob, *args, **kwargs):
         template = Template(template)
 
-        image_id = cls._ensure_image(warehouse, image_id, template)
-        build_id = cls._ensure_build(warehouse, image_id, build_id)
+        image_id = self._ensure_image(image_id, template)
+        build_id = self._ensure_build(image_id, build_id)
 
-        watcher = BuildWatcher(image_id, build_id, len(targets), warehouse)
+        watcher = BuildWatcher(image_id, build_id, len(targets), self.warehouse)
 
         jobs = []
         for target in targets:
@@ -49,22 +49,19 @@ class BuildDispatcher(object):
 
         return jobs
 
-    @classmethod
-    def push_image_to_providers(cls, image_id, build_id, providers, credentials, job_cls = BuildJob, *args, **kwargs):
-        warehouse = cls._get_warehouse()
-
+    def push_image_to_providers(self, image_id, build_id, providers, credentials, job_cls = BuildJob, *args, **kwargs):
         if not build_id:
-            build_id = cls._latest_unpushed(warehouse, image_id)
+            build_id = self._latest_unpushed(image_id)
 
-        watcher = PushWatcher(image_id, build_id, len(providers), warehouse)
+        watcher = PushWatcher(image_id, build_id, len(providers), self.warehouse)
 
         jobs = []
         for provider in providers:
-            target = cls._map_provider_to_target(provider)
+            target = self._map_provider_to_target(provider)
 
-            target_image_id = cls._target_image_for_build_and_target(warehouse, build_id, target)
+            target_image_id = self._target_image_for_build_and_target(build_id, target)
 
-            template = cls._template_for_target_image_id(warehouse, target_image_id)
+            template = self._template_for_target_image_id(target_image_id)
 
             job = job_cls(template, target, image_id, build_id, *args, **kwargs)
             job.push_image(target_image_id, provider, credentials, watcher)
@@ -72,50 +69,39 @@ class BuildDispatcher(object):
 
         return jobs
 
-    @classmethod
-    def _get_warehouse(cls):
-        return ImageWarehouse(ApplicationConfiguration().configuration['warehouse'])
-
-    @classmethod
-    def _xml_node(cls, xml, xpath):
+    def _xml_node(self, xml, xpath):
         nodes = libxml2.parseDoc(xml).xpathEval(xpath)
         if not nodes:
             return None
         return nodes[0].content
 
-    @classmethod
-    def _ensure_image(cls, warehouse, image_id, template):
+    def _ensure_image(self, image_id, template):
         if image_id:
             return image_id
 
-        name = cls._xml_node(template.xml, '/template/name')
+        name = self._xml_node(template.xml, '/template/name')
         if name:
             image_xml = '<image><name>%s</name></image>' % name
         else:
             image_xml = '</image>'
 
-        return warehouse.store_image(None, image_xml)
+        return self.warehouse.store_image(None, image_xml)
 
-    @classmethod
-    def _ensure_build(cls, warehouse, image_id, build_id):
+    def _ensure_build(self, image_id, build_id):
         if build_id:
             return build_id
-        return warehouse.store_build(None, dict(image = image_id))
+        return self.warehouse.store_build(None, dict(image = image_id))
 
-    @classmethod
-    def _latest_unpushed(cls, warehouse, image_id):
-        return warehouse.metadata_for_id_of_type(['latest_unpushed'], image_id, 'image')['latest_unpushed']
+    def _latest_unpushed(self, image_id):
+        return self.warehouse.metadata_for_id_of_type(['latest_unpushed'], image_id, 'image')['latest_unpushed']
 
-    @classmethod
-    def _target_image_for_build_and_target(cls, warehouse, build_id, target):
-        return warehouse.query("target_image", "$build == \"%s\" && $target == \"%s\"" % (build_id, target))[0]
+    def _target_image_for_build_and_target(self, build_id, target):
+        return self.warehouse.query("target_image", "$build == \"%s\" && $target == \"%s\"" % (build_id, target))[0]
 
-    @classmethod
-    def _template_for_target_image_id(cls, warehouse, target_image_id):
-        return warehouse.metadata_for_id_of_type(['template'], target_image_id, 'target_image')['template']
+    def _template_for_target_image_id(self, target_image_id):
+        return self.warehouse.metadata_for_id_of_type(['template'], target_image_id, 'target_image')['template']
 
-    @classmethod
-    def _is_rhevm_provider(cls, provider):
+    def _is_rhevm_provider(self, provider):
         rhevm_json = '/etc/rhevm.json'
         if not os.path.exists(rhevm_json):
             return False
@@ -142,13 +128,12 @@ class BuildDispatcher(object):
     #  - mock: any provider with 'mock' prefix
     #  - rackspace: provider is rackspace
     #
-    @classmethod
-    def _map_provider_to_target(cls, provider):
+    def _map_provider_to_target(self, provider):
         if provider.startswith('ec2-'):
             return 'ec2'
         elif provider == 'rackspace':
             return 'rackspace'
-        elif cls._is_rhevm_provider(provider):
+        elif self._is_rhevm_provider(provider):
             return 'rhev-m'
         elif provider.startswith('mock'):
             return 'mock'

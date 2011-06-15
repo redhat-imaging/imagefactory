@@ -108,10 +108,10 @@ class ImageFactory(Singleton):
             raise RuntimeError("Could not return build_adaptor!\nimage_metadata: %s\ntemplate_id: %s\ntemplate: %s\n" % (image_metadata, template_id, target))
 
     def build_image(self, image, build, template, targets):
-        return BuildDispatcher.build_image_for_targets(image, build, template, targets, BuildAdaptor, self.agent)
+        return BuildDispatcher().build_image_for_targets(image, build, template, targets, BuildAdaptor, self.agent)
 
     def push_image(self, image, build, providers, credentials):
-        return BuildDispatcher.push_image_to_providers(image, build, providers, credentials, BuildAdaptor, self.agent)
+        return BuildDispatcher().push_image_to_providers(image, build, providers, credentials, BuildAdaptor, self.agent)
 
     def instance_states(self, class_name):
         """Returns a dictionary representing the finite state machine for instances of the class specified."""
