@@ -24,13 +24,13 @@ from BuildAdaptor import BuildAdaptor
 from imagefactory import props
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 from imagefactory.ImageWarehouse import ImageWarehouse
+from imagefactory.Singleton import Singleton
 from imagefactory.Template import Template
 import logging
 
 # Singleton representing the Factory itself
 
-class ImageFactory(object):
-    instance = None
+class ImageFactory(Singleton):
 
     # QMF schema for ImageFactory
     qmf_schema = Schema(SCHEMA_TYPE_DATA, "com.redhat.imagefactory", "ImageFactory")
@@ -77,18 +77,11 @@ class ImageFactory(object):
     qmf_object = props.prop("_qmf_object", "The qmf_object property.")
     agent = props.prop("_agent", "The property agent")
 
-    def __new__(cls, *p, **k):
-        if cls.instance is None:
-            i = super(ImageFactory, cls).__new__(cls, *p, **k)
-            # initialize here, not in __init__()
-            i.log = logging.getLogger('%s.%s' % (__name__, i.__class__.__name__))
-            i.qmf_object = Data(ImageFactory.qmf_schema)
-            #i.agent = k.get('agent', p[0] if (len(p) > 0) else None)
-            i.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
-            cls.instance = i
-        elif(len(p) | len(k) > 0):
-            cls.instance.log.warn('Attempted re-initialize of singleton: %s' % (cls.instance, ))
-        return cls.instance
+    def _singleton_init(self):
+        super(ImageFactory, self)._singleton_init()
+        self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        self.qmf_object = Data(ImageFactory.qmf_schema)
+        self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
 
     def __init__(self):
         pass

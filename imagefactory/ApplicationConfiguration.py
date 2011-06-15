@@ -24,27 +24,18 @@ import argparse
 import json
 import logging
 import props
+from Singleton import Singleton
 
-class ApplicationConfiguration(object):
-    instance = None
-
+class ApplicationConfiguration(Singleton):
     configuration = props.prop("_configuration", "The configuration property.")
 
-    def __new__(cls, *p, **k):
-        if cls.instance is None:
-            i = super(ApplicationConfiguration, cls).__new__(cls, *p, **k)
-            #initialize here, not in __init__()
-            i.log = logging.getLogger('%s.%s' % (__name__, i.__class__.__name__))
-
-            i.configuration = i.__parse_arguments()
-
-            cls.instance = i
-        elif(len(p) | len(k) > 0):
-            cls.instance.log.warn('Attempted re-initialize of singleton: %s' % (cls.instance, ))
-        return cls.instance
+    def _singleton_init(self):
+        super(ApplicationConfiguration, self)._singleton_init()
+        self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        self.configuration = self.__parse_arguments()
 
     def __init__(self):
-            pass
+        pass
 
     def __new_argument_parser(self):
         main_description = """Image Factory is an application for creating system images to run virtual machines in various public and private \

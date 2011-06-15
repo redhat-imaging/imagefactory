@@ -27,9 +27,9 @@ from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 from imagefactory.qmfagent.ImageFactoryAgent import *
 from imagefactory.BuildDispatcher import BuildDispatcher
 from imagefactory.ImageWarehouse import ImageWarehouse
+from imagefactory.Singleton import Singleton
 
-class Application(object):
-    instance = None
+class Application(Singleton):
 
     def qmf_agent():
         doc = "The qmf_agent property."
@@ -42,28 +42,20 @@ class Application(object):
         return locals()
     qmf_agent = property(**qmf_agent())
 
-    def __new__(cls, *p, **k):
-        if cls.instance is None:
-            i = super(Application, cls).__new__(cls, *p, **k)
-            # initialize here, not in __init__()
-            i.log = logging.getLogger('%s.%s' % (__name__, i.__class__.__name__))
-            i.daemon = False
-            i.pid_file_path = "/var/run/imagefactory.pid"
-            signal.signal(signal.SIGTERM, i.signal_handler)
-            i.app_config = ApplicationConfiguration().configuration
+    def _singleton_init(self):
+        super(Application, self)._singleton_init()
+        self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        self.daemon = False
+        self.pid_file_path = "/var/run/imagefactory.pid"
+        signal.signal(signal.SIGTERM, self.signal_handler)
+        self.app_config = ApplicationConfiguration().configuration
 
-            # by setting TMPDIR here we make sure that libguestfs
-            # (imagefactory -> oz -> libguestfs) uses the temporary directory of
-            # the user's choosing
-            os.putenv('TMPDIR', i.app_config['tmpdir'])
-
-            cls.instance = i
-        elif(len(p) | len(k) > 0):
-            cls.instance.log.warn('Attempted re-initialize of singleton: %s' % (cls.instance, ))
-        return cls.instance
+        # by setting TMPDIR here we make sure that libguestfs
+        # (imagefactory -> oz -> libguestfs) uses the temporary directory of
+        # the user's choosing
+        os.putenv('TMPDIR', self.app_config['tmpdir'])
 
     def __init__(self):
-        # logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s')
         pass
 
     def setup_logging(self):
