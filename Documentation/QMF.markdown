@@ -107,6 +107,43 @@ The console can poll the build_adaptor for build status or receive events listed
                 dtype = SCHEMA_DATA_LIST
                 desc = "the QMF addresses of the build_adaptors instantiated"
 
+* `import_image(image, build, target_identifier, image_desc, target, provider)`
+        
+        method name = "import_image"
+        desc = "Import an image using a target specific image identifier"
+        arguments:
+            name = "image"
+                dtype = SCHEMA_DATA_STRING
+                desc = "the uuid of an existing image"
+            name = "build"
+                dtype = SCHEMA_DATA_STRING
+                desc = "the uuid of an existing build, or the empty string"
+            name = "target_identifier"
+                dtype = SCHEMA_DATA_STRING
+                desc = "the target specific image ID"
+            name = "image_desc"
+                dtype = SCHEMA_DATA_STRING
+                desc = "an xml string description of the image"
+            name = "target"
+                dtype = SCHEMA_DATA_STRING
+                desc = "name of the cloud to target"
+            name = "provider"
+                dtype = SCHEMA_DATA_STRING
+                desc = "the name of the cloud provider, often a region"
+        return values:
+            name = "image"
+                dtype = SCHEMA_DATA_STRING
+                desc = "the UUID of an image previously built"
+            name = "build"
+                dtype = SCHEMA_DATA_STRING
+                desc = "the UUID of a previous build of the image"
+            name = "target_image"
+                dtype = SCHEMA_DATA_STRING
+                desc = "the UUID of the target image object"
+            name = "provider_image"
+                dtype = SCHEMA_DATA_STRING
+                desc = "the UUID of the provider image object"
+
 * `instance_states(class_name)`
         
         method name = "instance_states"

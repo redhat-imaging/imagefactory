@@ -34,6 +34,7 @@ class TestImageFactory(unittest.TestCase):
                                        build_image=("image", "build", "template", "targets", "build_adaptors"),
                                        provider_image=("image_id", "provider", "credentials", "build_adaptor"),
                                        push_image=("image", "build", "providers", "credentials", "build_adaptors"),
+                                       import_image=("image", "build", "target_identifier", "image_desc", "target", "provider", "target_image", "provider_image"),
                                        instance_states=("class_name", "states"))
         for schema_method in ImageFactory.qmf_schema.getMethods():
             self.assertIn(schema_method.getName(), expected_schema_methods)

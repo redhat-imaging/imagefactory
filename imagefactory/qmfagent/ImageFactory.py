@@ -64,6 +64,17 @@ class ImageFactory(Singleton):
     _push_images_method.addArgument(SchemaProperty("credentials", SCHEMA_DATA_STRING, direction=DIR_IN, desc="an xml string representation of the credentials"))
     _push_images_method.addArgument(SchemaProperty("build_adaptors", SCHEMA_DATA_LIST, direction=DIR_OUT, desc="the QMF addresses of the build_adaptors instantiated"))
     qmf_schema.addMethod(_push_images_method)
+    # method for importing a provider image
+    _import_image_method = SchemaMethod("import_image", desc="Import an image using a target specific image identifier")
+    _import_image_method.addArgument(SchemaProperty("image", SCHEMA_DATA_STRING, direction=DIR_IN_OUT, desc="the UUID of an image previously built"))
+    _import_image_method.addArgument(SchemaProperty("build", SCHEMA_DATA_STRING, direction=DIR_IN_OUT, desc="the UUID of a previous build of the image"))
+    _import_image_method.addArgument(SchemaProperty("target_identifier", SCHEMA_DATA_STRING, direction=DIR_IN, desc="the target specific image ID"))
+    _import_image_method.addArgument(SchemaProperty("image_desc", SCHEMA_DATA_STRING, direction=DIR_IN, desc="an xml string description of the image"))
+    _import_image_method.addArgument(SchemaProperty("target", SCHEMA_DATA_STRING, direction=DIR_IN, desc="name of the cloud to target"))
+    _import_image_method.addArgument(SchemaProperty("provider", SCHEMA_DATA_STRING, direction=DIR_IN, desc="the name of the cloud provider, often a region"))
+    _import_image_method.addArgument(SchemaProperty("target_image", SCHEMA_DATA_STRING, direction=DIR_OUT, desc="the UUID of the target image object"))
+    _import_image_method.addArgument(SchemaProperty("provider_image", SCHEMA_DATA_STRING, direction=DIR_OUT, desc="the UUID of the provider image object"))
+    qmf_schema.addMethod(_import_image_method)
     # this method will return a representation of the object's finite state machine
     _states_method = SchemaMethod("instance_states", desc = "Returns a dictionary representing the finite state machine for instances.")
     _states_method.addArgument(SchemaProperty("class_name", SCHEMA_DATA_STRING, direction=DIR_IN, desc="the name of the class to query for instance states"))
@@ -112,6 +123,10 @@ class ImageFactory(Singleton):
 
     def push_image(self, image, build, providers, credentials):
         return BuildDispatcher().push_image_to_providers(image, build, providers, credentials, BuildAdaptor, self.agent)
+
+    def import_image(self, image, build, target_identifier, image_desc, target, provider):
+        ids = BuildDispatcher().import_image(image, build, target_identifier, image_desc, target, provider)
+        return {"image" : ids[0], "build" : ids[1], "target_image" : ids[2], "provider_image" : ids[3]}
 
     def instance_states(self, class_name):
         """Returns a dictionary representing the finite state machine for instances of the class specified."""

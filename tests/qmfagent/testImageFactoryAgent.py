@@ -104,6 +104,13 @@ class TestImageFactoryAgent(unittest.TestCase):
         #     self.assertEqual(self.expected_state_transitions[index][0],properties["old_status"])
         #     self.assertEqual(self.expected_state_transitions[index][1],properties["new_status"])
 
+        self.assertIsNotNone(self.console.import_image_ids)
+        self.assertEqual(len(self.console.import_image_ids), 4)
+        self.assertTrue('image' in self.console.import_image_ids)
+        self.assertTrue('build' in self.console.import_image_ids)
+        self.assertTrue('target_image' in self.console.import_image_ids)
+        self.assertTrue('provider_image' in self.console.import_image_ids)
+
         # test instance_states method
         self.assertIsNotNone(self.console.image_factory_states)
         self.assertIsNotNone(self.console.build_adaptor_states)
@@ -118,6 +125,7 @@ class MockConsole(ConsoleHandler):
         self.build_adaptor_addr_push = ""
         self.build_status_events = []
         self.push_status_events =[]
+        self.import_image_ids = None
         self.test_failure_events = []
         self.real_failure_events = []
         self.event_count = 0
@@ -152,6 +160,10 @@ class MockConsole(ConsoleHandler):
                     self.build_adaptor_addr_push = self.factory.push_image(ba.image, ba.build, ["mock-provider1"], "None")["build_adaptors"][0]
             elif(data.getProperties()["addr"] == self.build_adaptor_addr_push):
                 self.push_status_events.append(dict(agent=agent, data=data.getProperties(), timestamp=timestamp, severity=severity))
+                if(data.getProperties()["new_status"] == "COMPLETED"):
+                    time.sleep(1)
+                    ba = self.agent.query(Query(DataAddr(self.build_adaptor_addr_push)))[0]
+                    self.import_image_ids = self.factory.import_image(ba.image, ba.build, "mock-img-id", "<image><name>Mock Image</name></image>", "mock", "mock-provider2")
         elif(data.getProperties()["event"] == "FAILURE"):
             if(data.getProperties()["addr"] == self.build_adaptor_addr_fail):
                 self.test_failure_events.append(dict(agent=agent, data=data.getProperties(), timestamp=timestamp, severity=severity))
