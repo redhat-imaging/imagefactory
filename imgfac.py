@@ -147,7 +147,7 @@ class Application(Singleton):
             self.app_config['foreground'] = True
             self.setup_logging()
 
-            if (self.app_config['template'] and self.app_config['target']):
+            if (self.app_config['template'] and self.app_config['target']) or (self.app_config['image'] and not self.app_config['provider']):
                 dispatchers = BuildDispatcher().build_image_for_targets(self.app_config['image'], None, self.app_config['template'], self.app_config['target'])
                 for dispatcher in dispatchers:
                     print("Building build %s of image %s to target %s" % (dispatcher.build_id, dispatcher.image_id, dispatcher.target))
