@@ -47,18 +47,18 @@
 	
 ## Dependencies: ##
 
-[QMFv2](https://cwiki.apache.org/qpid/qmfv2-project-page.html) Python bindings       
+[QMFv2](https://cwiki.apache.org/qpid/qmfv2-project-page.html) Python bindings - [Download](http://qpid.apache.org/download.cgi)       
 These binding are part of the qpid-cpp package    
-*Note:* You can install qpid-cpp with yum using the Aeolus testing [repository][aeolus_testing_repo].
 
 [Oz](http://aeolusproject.org/oz.html) - [Download](http://aeolusproject.org/oz-download.html)      
 Oz is a set of classes and scripts to do automated installations of various guest operating systems.    
-*Note:* You can install oz with yum using the Aeolus testing [repository][aeolus_testing_repo].
 
-[Image Warehouse](http://git.fedorahosted.org/git/?p=iwhd.git)     
+[Image Warehouse](http://www.aeolusproject.org/imagewarehouse.html) - [Download](http://people.redhat.com/meyering/iwhd/)     
 Provides storage for images and related metadata.       
-*Note:* You can install iwhd with yum using the Aeolus [repository][aeolus_package_repo]
+
+*Note:* You can install these packages via yum using the Aeolus repository.  See
+the [GET AEOLUS][aeolus_getit_page] page for more details on adding this repository
+to your yum setup.
 
 
-[aeolus_testing_repo]: http://repos.fedorapeople.org/repos/aeolus/packages-testing/
-[aeolus_package_repo]: http://repos.fedorapeople.org/repos/aeolus/packages/
+[aeolus_getit_page]: http://www.aeolusproject.org/get_it.html
