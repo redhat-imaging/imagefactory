@@ -888,6 +888,8 @@ class FedoraBuilder(BaseBuilder):
         except KeyError:
             raise ImageFactoryException("VMWare instance (%s) not found in local configuraiton file /etc/vmware.json" % (provider))
 
+        self.generic_decode_credentials(credentials, provider_data)
+
         # This is where the image should be after a local build
         input_image = self.app_config['imgdir'] + "/vmware-image-" + target_image_id + ".vmdk"
         # Grab from Warehouse if it isn't here
@@ -898,7 +900,7 @@ class FedoraBuilder(BaseBuilder):
         #       "datastore": "datastore1", "network_name": "VM Network" } }
 
         vm_name = "factory-image-" + self.new_image_id
-        vm_import = VMImport(provider_data['api-url'], provider_data['username'], provider_data['password'])
+        vm_import = VMImport(provider_data['api-url'], self.username, self.password)
         vm_import.import_vm(datastore=provider_data['datastore'], network_name = provider_data['network_name'],
                        name=vm_name, disksize_kb = (10*1024*1024 + 2 ), memory=512, num_cpus=1,
                        guest_id='otherLinux64Guest', imagefilename=input_image)
@@ -921,6 +923,13 @@ class FedoraBuilder(BaseBuilder):
             post_data = local_rhevm[provider]
         except KeyError:
             raise ImageFactoryException("RHEV-M instance (%s) not found in local configuraiton file /etc/rhevm.json" % (provider))
+
+        self.generic_decode_credentials(credentials, post_data)
+
+        # Deal with case where these are not set in the config file
+        # or are overridden via the credentials argument
+        post_data['username'] = self.username
+        post_data['password'] = self.password
 
         post_data['op'] = "register"
         post_data['site'] = provider
@@ -969,6 +978,38 @@ class FedoraBuilder(BaseBuilder):
             self.status="FAILED"
             raise
         self.status="COMPLETED"
+
+    def generic_decode_credentials(self, credentials, provider_data):
+        # convenience function for simple creds (rhev-m and vmware currently)
+        # TODO: This is just silly-long - surely there's a better, cleaner, faster alternative
+        doc = libxml2.parseDoc(credentials)
+        ctxt = doc.xpathNewContext()
+
+        self.username = None
+        _usernodes = ctxt.xpathEval("//provider_credentials/%s_credentials/username" % (self.target))
+        if len(_usernodes) > 0:
+            self.username = _usernodes[0].content
+        
+        self.password = None
+        _passnodes = ctxt.xpathEval("//provider_credentials/%s_credentials/password" % (self.target))
+        if len(_passnodes) > 0:
+            self.password = _passnodes[0].content
+
+        doc.freeDoc()
+        ctxt.xpathFreeContext()
+
+        if not self.username:
+            try:
+                self.username = provider_data['username']
+            except KeyError:
+                raise ImageFactoryException("No username specified in config file or in push call")
+
+        if not self.password:
+            try:
+                self.password = provider_data['password']
+            except KeyError:
+                raise ImageFactoryException("No password specified in config file or in push call")
+
 
     def ec2_decode_credentials(self, credentials):
         doc = libxml2.parseDoc(credentials)
