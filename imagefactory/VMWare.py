@@ -43,6 +43,7 @@ logging.getLogger('suds').setLevel(logging.INFO)
 
 class VMImport:
     def __init__(self, url, username, password):
+        self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.vim = Vim(url)
         self.vim.login(username, password)
         
@@ -101,7 +102,7 @@ class VMImport:
         try:
             ds = ds_target.find_datastore(name=datastore)
         except ObjectNotFoundError, e:
-            print('Could not find datastore with name %s: %s' % (datastore,
+            self.log.error('Could not find datastore with name %s: %s' % (datastore,
                                                                  e.error))
             sys.exit()
 
@@ -109,7 +110,7 @@ class VMImport:
         # Ensure the datastore is accessible and has enough space
         if (not ds.summary.accessible or
             ds.summary.freeSpace < disksize_kb * 1024):
-            print('Datastore (%s) exists, but is not accessible or'
+            self.log.error('Datastore (%s) exists, but is not accessible or'
                   'does not have sufficient free space.' % ds.summary.name)
             sys.exit()
 
@@ -119,7 +120,7 @@ class VMImport:
         for nic in nics:
             nic_spec = self.create_nic(target, nic)
             if not nic_spec:
-                print('Could not create spec for NIC')
+                self.log.error('Could not create spec for NIC')
                 sys.exit()
 
             # Append the nic spec to the vm_devices list
@@ -140,7 +141,7 @@ class VMImport:
         try:
             dc = target.find_datacenter()
         except ObjectNotFoundError, e:
-            print('Error while trying to find datacenter for %s: %s' %
+            self.log.error('Error while trying to find datacenter for %s: %s' %
                   (target.name, e.error))
             sys.exit()
 
