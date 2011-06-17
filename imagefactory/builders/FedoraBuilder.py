@@ -1442,7 +1442,6 @@ chown $user $home/.ssh/authorized_keys
 
 done
 rm /tmp/my-key
-fi
 
 # This conditionally runs Audrey if it exists
 [ -f /usr/bin/audrey ] && /usr/bin/audrey
