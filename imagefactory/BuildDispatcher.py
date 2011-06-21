@@ -17,6 +17,7 @@
 
 import libxml2
 import os.path
+import json
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 from imagefactory.BuildJob import BuildJob
 from imagefactory.BuildWatcher import BuildWatcher
@@ -184,19 +185,19 @@ class BuildDispatcher(Singleton):
             build_id = self._latest_unpushed(image_id)
         return self._template_for_build_id(build_id) if build_id else None
 
-    def _is_rhevm_provider(self, provider):
-        rhevm_json = '/etc/rhevm.json'
-        if not os.path.exists(rhevm_json):
+    def _is_dynamic_provider(self, provider, filebase):
+        provider_json = '/etc/%s.json' % (filebase)
+        if not os.path.exists(provider_json):
             return False
 
-        rhevm_sites = {}
-        f = open(rhevm_json, 'r')
+        provider_sites = {}
+        f = open(provider_json, 'r')
         try:
-            rhevm_sites = json.loads(f.read())
+            provider_sites = json.loads(f.read())
         finally:
             f.close()
 
-        return provider in rhevm_sites
+        return provider in provider_sites
 
     # FIXME: this is a hack; conductor is the only one who really
     #        knows this mapping, so perhaps it should provide it?
@@ -216,8 +217,10 @@ class BuildDispatcher(Singleton):
             return 'ec2'
         elif provider == 'rackspace':
             return 'rackspace'
-        elif self._is_rhevm_provider(provider):
+        elif self._is_dynamic_provider(provider, 'rhevm'):
             return 'rhev-m'
+        elif self._is_dynamic_provider(provider, 'vmware'):
+            return 'vmware'
         elif provider.startswith('mock'):
             return 'mock'
         else:
