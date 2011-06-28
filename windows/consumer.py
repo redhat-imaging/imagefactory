@@ -22,7 +22,7 @@
 from qpid.messaging import *
 from qpid.util import URL
 import base64
-from System.Diagnostics import Process
+from subprocess import Popen, STDOUT, PIPE
 
 connection = Connection('localhost', username='guest', password='guest')
 connection.open()
@@ -31,24 +31,14 @@ session = connection.session(str(uuid4()))
 receiver = session.receiver('amq.topic')
 
 while True:
-    message = receiver.fetch()  
+    message = receiver.fetch()
+    session.acknowledge()
     sender = session.sender(message.reply_to)
-    proc = Process()
-    proc.StartInfo.FileName = 'cmd.exe'
-    proc.StartInfo.Arguments = "/c %s"  % base64.b64decode(message.content)
-    proc.StartInfo.UseShellExecute = False
-    proc.StartInfo.RedirectStandardOutput = True
-    proc.StartInfo.RedirectStandardError = True
-    proc.Start()
-    proc.WaitForExit()
-    stdout = proc.StandardOutput.ReadToEnd()
-    stderr = proc.StandardError.ReadToEnd()
-    message=Message(base64.b64encode(stdout) )
-    sender.send(message)
+    
+    proc = Popen(base64.b64decode(message.content), shell=True, stderr=STDOUT, stdin=PIPE, stdout=PIPE)
+    output, _ = proc.communicate()
+    result = Message(base64.b64encode(output))
+    result.properties["exit"] = proc.returncode
+    sender.send(result)
 
-
-
-session.acknowledge()
 connection.close()
-
-
