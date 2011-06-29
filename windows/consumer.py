@@ -19,12 +19,20 @@
 # also available at http://www.gnu.org/copyleft/gpl.html.
 
 
+import argparse
 from qpid.messaging import *
 from qpid.util import URL
 import base64
 from subprocess import Popen, STDOUT, PIPE
 
-connection = Connection('localhost', username='guest', password='guest')
+
+parser = argparse.ArgumentParser(description = "Qpid broker with windows command execution")
+parser.add_argument('--broker', action='store', dest='broker', default='localhost', help="Broker's address, default is localhost")
+parser.add_argument('--username', action='store', dest='username', help='Username for broker', required=True)
+parser.add_argument('--password', action='store', dest='password', help='Password for broker', required=True)
+arguments = parser.parse_args()
+
+connection = Connection(arguments.broker, username=arguments.username, password=arguments.password)
 connection.open()
 session = connection.session(str(uuid4()))
 
