@@ -928,8 +928,8 @@ class FedoraBuilder(BaseBuilder):
 
         # Deal with case where these are not set in the config file
         # or are overridden via the credentials argument
-        post_data['username'] = self.username
-        post_data['password'] = self.password
+        post_data['api-key'] = self.username
+        post_data['api-secret'] = self.password
 
         post_data['op'] = "register"
         post_data['site'] = provider
