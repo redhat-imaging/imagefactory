@@ -83,6 +83,8 @@ class BuildJob(object):
         builder_class = MockBuilder.MockBuilder
         if (self.target != "mock"): # If target is mock always run mock builder regardless of template
             os_name = self._xml_node(self.template.xml, '/template/os/name')
+            # Change RHEL-6 to RHEL6, etc.
+            os_name = os_name.translate(None, '-')
             class_name = "%sBuilder" % (os_name, )
             try:
                 module_name = "imagefactory.builders.%s" % (class_name, )
