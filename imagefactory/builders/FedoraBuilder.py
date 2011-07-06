@@ -799,14 +799,16 @@ class FedoraBuilder(BaseBuilder):
             # TODO: We cannot timeout on any of the three commands below - can we fix that?
             manifest = "/mnt/bundles/%s.manifest.xml" % (uuid)
             command = 'euca-upload-bundle -b %s -m %s --ec2cert /tmp/cert-ec2.pem -a "%s" -s "%s" -U %s' % (bucket, manifest, self.ec2_access_key, self.ec2_secret_key, upload_url)
-            self.log.debug("Executing upload bundle command: %s" % (command))
+            command_log = 'euca-upload-bundle -b %s -m %s --ec2cert /tmp/cert-ec2.pem -a "%s" -s "%s" -U %s' % (bucket, manifest, "<access_key>", "<secret_key>", upload_url)
+            self.log.debug("Executing upload bundle command: %s" % (command_log))
             stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, command)
             self.log.debug("Upload output: %s" % (stdout))
 
             manifest_s3_loc = "%s/%s.manifest.xml" % (bucket, uuid)
 
             command = 'euca-register -U %s -A "%s" -S "%s" %s' % (register_url, self.ec2_access_key, self.ec2_secret_key, manifest_s3_loc)
-            self.log.debug("Executing register command: %s" % (command))
+            command_log = 'euca-register -U %s -A "%s" -S "%s" %s' % (register_url, "access_key", "secret_key", manifest_s3_loc)
+            self.log.debug("Executing register command: %s" % (command_log))
             stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, command)
             self.log.debug("Register output: %s" % (stdout))
 
@@ -1392,13 +1394,12 @@ chmod 600 /root/.ssh/authorized_keys
         ec2_service_cert = "/etc/pki/imagefactory/cert-ec2.pem"
 
         bundle_command = [ "euca-bundle-image", "-i", input_image, "--kernel", aki, "-d", bundle_destination, "-a", self.ec2_access_key, "-s", self.ec2_secret_key ]
-        bundle_command.extend( [ "-c", self.ec2_cert_file ] )
-        bundle_command.extend( [ "-k", self.ec2_key_file ] )
-        bundle_command.extend( [ "-u", self.ec2_user_id ] )
-        bundle_command.extend( [ "-r", arch ] )
-        bundle_command.extend( [ "--ec2cert", ec2_service_cert ] )
+        bundle_command.extend( [ "-c", self.ec2_cert_file, "-k", self.ec2_key_file, "-u", self.ec2_user_id, "-r", arch, "--ec2cert", ec2_service_cert ] )
 
-        self.log.debug("Executing bundle command: %s " % (bundle_command))
+        bundle_command_log = [ "euca-bundle-image", "-i", input_image, "--kernel", aki, "-d", bundle_destination, "-a", "<access_key>", "-s", "<secret_key>" ]
+        bundle_command_log.extend( [ "-c", self.ec2_cert_file, "-k", self.ec2_key_file, "-u", self.ec2_user_id, "-r", arch, "--ec2cert", ec2_service_cert ] )
+
+        self.log.debug("Executing bundle command: %s " % (bundle_command_log))
 
         bundle_output = subprocess_check_output(bundle_command)
 
@@ -1409,7 +1410,8 @@ chmod 600 /root/.ssh/authorized_keys
         manifest = bundle_destination + "/" + input_image_name + ".manifest.xml"
 
         upload_command = [ "euca-upload-bundle", "-b", bucket, "-m", manifest, "--ec2cert", ec2_service_cert, "-a", self.ec2_access_key, "-s", self.ec2_secret_key, "-U" , upload_url ]
-        self.log.debug("Executing upload command: %s " % (upload_command))
+        upload_command_log = [ "euca-upload-bundle", "-b", bucket, "-m", manifest, "--ec2cert", ec2_service_cert, "-a", "<access_key>", "-s", "<secret_key>", "-U" , upload_url ]
+        self.log.debug("Executing upload command: %s " % (upload_command_log))
         upload_output = subprocess_check_output(upload_command)
         self.log.debug("Upload command output: %s " % (str(upload_output)))
         self.percent_complete=90
@@ -1418,7 +1420,8 @@ chmod 600 /root/.ssh/authorized_keys
 
         register_env = { 'EC2_URL':register_url }
         register_command = [ "euca-register" , "-A", self.ec2_access_key, "-S", self.ec2_secret_key, s3_path ]
-        self.log.debug("Executing register command: %s with environment %s " % (register_command, repr(register_env)))
+        register_command_log = [ "euca-register" , "-A", "<access_key>", "-S", "<secret_key>", s3_path ]
+        self.log.debug("Executing register command: %s with environment %s " % (register_command_log, repr(register_env)))
         register_output = subprocess_check_output(register_command, env=register_env)
         self.log.debug("Register command output: %s " % (str(register_output)))
         m = re.match(".*(ami-[a-fA-F0-9]+)", register_output[0])
