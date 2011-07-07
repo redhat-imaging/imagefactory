@@ -14,7 +14,7 @@ try:
 except Exception, e:
     raise RuntimeError("ERROR: version.txt could not be found.  Run 'git describe > version.txt' to get the correct version info.")
 
-datafiles=[('/etc', ['imagefactory.conf']), ('/etc/pki/imagefactory', ['cert-ec2.pem']),    ('/etc/rc.d/init.d', ['scripts/imagefactory']), ('', ['version.txt'])]
+datafiles=[('share/man/man1', ['Documentation/man/imgfac.1']), ('/etc', ['imagefactory.conf']), ('/etc/pki/imagefactory', ['cert-ec2.pem']),    ('/etc/rc.d/init.d', ['scripts/imagefactory'])]
 
 class sdist(_sdist):
     """ custom sdist command to prepare imagefactory.spec file """

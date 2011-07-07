@@ -37,13 +37,24 @@ for the requested target.
 python setup.py build
 
 %install
-python setup.py install -O1 --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
+%{__rm} -rf $RPM_BUILD_ROOT
+python setup.py install -O1 --root=$RPM_BUILD_ROOT
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%files -f INSTALLED_FILES
-%defattr(-,root,root)
+%files
+%defattr(-,root,root,-)
+%doc COPYING version.txt
+%{_initrddir}/imagefactory
+%config(noreplace) %{_sysconfdir}/imagefactory.conf
+%dir %attr(0755, root, root) %{_sysconfdir}/pki/imagefactory/
+%{_sysconfdir}/pki/imagefactory/cert-ec2.pem
+%dir %attr(0755, root, root) %{python_sitelib}/imagefactory/
+%{python_sitelib}/imagefactory/*
+%{python_sitelib}/imagefactory-*.egg-info
+%{_bindir}/imgfac.py
+%{_mandir}/man1/*
 
 %changelog
 * Mon Apr 04 2011 Chris Lalancette <clalance@redhat.com> - 0.1.6-1
