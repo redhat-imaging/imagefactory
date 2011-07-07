@@ -60,6 +60,8 @@ class ImageFactoryAgent(AgentHandler):
         """
         Handle incoming method calls.
         """
+        if("credentials" in args):
+            args["credentials"] = "*** REDACTED ***"
         self.log.debug("Method called: name = %s \n args = %s \n handle = %s \n addr = %s \n subtypes = %s \n userId = %s", methodName, args, handle, addr, subtypes, userId)
 
         try:
