@@ -64,7 +64,7 @@ class ApplicationConfiguration(Singleton):
 
         group_build = argparser.add_argument_group(title='Image building', description=cli_build_description)
         group_build.add_argument('--template', help='Template XML file to build from.')
-        group_build.add_argument('--target', action='append', help='Cloud services to target (e.g. ec2, rhev-m, rackspace, condorcloud, etc.)')
+        group_build.add_argument('--target', action='append', help='Cloud services to target (e.g. ec2, rhevm, vsphere, rackspace, condorcloud, etc.)')
 
         group_push = argparser.add_argument_group(title='Image pushing', description=cli_push_description)
         group_push.add_argument('--provider', action='append', help='Cloud service providers to push the image (e.g. ec2-us-east-1, rackspace, etc.)')
