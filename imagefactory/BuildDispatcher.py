@@ -208,7 +208,8 @@ class BuildDispatcher(Singleton):
     # provider semantics, per target:
     #  - ec2: region, one of ec2-us-east-1, ec2-us-west-1, ec2-ap-southeast-1, ec2-ap-northeast-1, ec2-eu-west-1
     #  - condorcloud: ignored
-    #  - rhev-m: a key in /etc/rhevm.json and passed to op=register&site=provider
+    #  - rhevm: a key in /etc/rhevm.json and passed to op=register&site=provider
+    #  - vpshere: a key in /etc/vmware.json
     #  - mock: any provider with 'mock' prefix
     #  - rackspace: provider is rackspace
     #
@@ -218,9 +219,9 @@ class BuildDispatcher(Singleton):
         elif provider == 'rackspace':
             return 'rackspace'
         elif self._is_dynamic_provider(provider, 'rhevm'):
-            return 'rhev-m'
+            return 'rhevm'
         elif self._is_dynamic_provider(provider, 'vmware'):
-            return 'vmware'
+            return 'vsphere'
         elif provider.startswith('mock'):
             return 'mock'
         else:

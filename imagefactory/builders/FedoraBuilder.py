@@ -81,7 +81,7 @@ class FedoraBuilder(BaseBuilder):
 
     # Reference vars - don't change these
     # EC2 is a special case as it can be either and is set in the config file
-    upload_clouds = [ "rhev-m", "vmware", "condorcloud" ]
+    upload_clouds = [ "rhevm", "vsphere", "condorcloud" ]
     nonul_clouds = [ "rackspace", "gogrid" ]
 
     def __init__(self, template, target):
@@ -198,7 +198,7 @@ class FedoraBuilder(BaseBuilder):
         if self.target == "ec2":
             self.log.info("Transforming image for use on EC2")
             self.ec2_transform_image()
-        elif self.target == "vmware":
+        elif self.target == "vsphere":
             self.log.info("Transforming image for use on VMWare")
             self.vmware_transform_image()
 
@@ -206,7 +206,7 @@ class FedoraBuilder(BaseBuilder):
             self.log.debug("Storing Fedora image at %s..." % (self.app_config['warehouse'], ))
             # TODO: Revisit target_parameters for different providers
 
-            if self.target in [ "condorcloud", "rhev-m" ]:
+            if self.target in [ "condorcloud", "rhevm" ]:
                 # TODO: Prune any unneeded elements
                 target_parameters=libvirt_xml
             else:
@@ -969,9 +969,9 @@ class FedoraBuilder(BaseBuilder):
                     raise ImageFactoryException("Invalid or unspecified EC2 AMI type in config file")
             elif self.target == "condorcloud":
                 self.condorcloud_push_image_upload(target_image_id, provider, credentials)
-            elif self.target == "rhev-m":
+            elif self.target == "rhevm":
                 self.rhevm_push_image_upload(target_image_id, provider, credentials)
-            elif self.target == "vmware":
+            elif self.target == "vsphere":
                 self.vmware_push_image_upload(target_image_id, provider, credentials)
             else:
                 raise ImageFactoryException("Invalid upload push requested for target (%s) and provider (%s)" % (self.target, provider))
