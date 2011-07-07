@@ -109,11 +109,6 @@ class BaseBuilder(object):
             self.template = Template(template)
         else:
             raise TypeError("template should be a string representation of UUID, URL, or XML document...")
-        # TODO: Any cleaner way to do this?
-        if target == "rhevm":
-            target="rhev-m"
-        elif target == "vsphere":
-            target="vmware"
         self.target = target
         self.target_id = None
         self.provider = None
