@@ -1,3 +1,17 @@
+#   Copyright 2011 Red Hat, Inc.
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
 from distutils.core import setup, Extension
 from distutils.command.sdist import sdist as _sdist
 import os
@@ -14,7 +28,7 @@ try:
 except Exception, e:
     raise RuntimeError("ERROR: version.txt could not be found.  Run 'git describe > version.txt' to get the correct version info.")
 
-datafiles=[('/etc', ['imagefactory.conf']), ('/etc/pki/imagefactory', ['cert-ec2.pem']),    ('/etc/rc.d/init.d', ['scripts/imagefactory']), ('', ['version.txt'])]
+datafiles=[('share/man/man1', ['Documentation/man/imgfac.1']), ('/etc', ['imagefactory.conf']), ('/etc/pki/imagefactory', ['cert-ec2.pem']),    ('/etc/rc.d/init.d', ['scripts/imagefactory'])]
 
 class sdist(_sdist):
     """ custom sdist command to prepare imagefactory.spec file """

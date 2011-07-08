@@ -1,20 +1,17 @@
 #
-# Copyright (C) 2010-2011 Red Hat, Inc.
+#   Copyright 2011 Red Hat, Inc.
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; version 2 of the License.
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#       http://www.apache.org/licenses/LICENSE-2.0
 #
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA  02110-1301, USA.  A copy of the GNU General Public License is
-# also available at http://www.gnu.org/copyleft/gpl.html.
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
 
 import logging
 import zope
@@ -81,7 +78,7 @@ class FedoraBuilder(BaseBuilder):
 
     # Reference vars - don't change these
     # EC2 is a special case as it can be either and is set in the config file
-    upload_clouds = [ "rhev-m", "vmware", "condorcloud" ]
+    upload_clouds = [ "rhevm", "vsphere", "condorcloud" ]
     nonul_clouds = [ "rackspace", "gogrid" ]
 
     def __init__(self, template, target):
@@ -198,7 +195,7 @@ class FedoraBuilder(BaseBuilder):
         if self.target == "ec2":
             self.log.info("Transforming image for use on EC2")
             self.ec2_transform_image()
-        elif self.target == "vmware":
+        elif self.target == "vsphere":
             self.log.info("Transforming image for use on VMWare")
             self.vmware_transform_image()
 
@@ -206,7 +203,7 @@ class FedoraBuilder(BaseBuilder):
             self.log.debug("Storing Fedora image at %s..." % (self.app_config['warehouse'], ))
             # TODO: Revisit target_parameters for different providers
 
-            if self.target in [ "condorcloud", "rhev-m" ]:
+            if self.target in [ "condorcloud", "rhevm" ]:
                 # TODO: Prune any unneeded elements
                 target_parameters=libvirt_xml
             else:
@@ -969,9 +966,9 @@ class FedoraBuilder(BaseBuilder):
                     raise ImageFactoryException("Invalid or unspecified EC2 AMI type in config file")
             elif self.target == "condorcloud":
                 self.condorcloud_push_image_upload(target_image_id, provider, credentials)
-            elif self.target == "rhev-m":
+            elif self.target == "rhevm":
                 self.rhevm_push_image_upload(target_image_id, provider, credentials)
-            elif self.target == "vmware":
+            elif self.target == "vsphere":
                 self.vmware_push_image_upload(target_image_id, provider, credentials)
             else:
                 raise ImageFactoryException("Invalid upload push requested for target (%s) and provider (%s)" % (self.target, provider))

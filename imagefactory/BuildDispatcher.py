@@ -1,19 +1,16 @@
-# Copyright (C) 2010-2011 Red Hat, Inc.
+#   Copyright 2011 Red Hat, Inc.
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; version 2 of the License.
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#       http://www.apache.org/licenses/LICENSE-2.0
 #
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA  02110-1301, USA.  A copy of the GNU General Public License is
-# also available at http://www.gnu.org/copyleft/gpl.html.
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
 
 import libxml2
 import os.path
@@ -208,7 +205,8 @@ class BuildDispatcher(Singleton):
     # provider semantics, per target:
     #  - ec2: region, one of ec2-us-east-1, ec2-us-west-1, ec2-ap-southeast-1, ec2-ap-northeast-1, ec2-eu-west-1
     #  - condorcloud: ignored
-    #  - rhev-m: a key in /etc/rhevm.json and passed to op=register&site=provider
+    #  - rhevm: a key in /etc/rhevm.json and passed to op=register&site=provider
+    #  - vpshere: a key in /etc/vmware.json
     #  - mock: any provider with 'mock' prefix
     #  - rackspace: provider is rackspace
     #
@@ -218,9 +216,9 @@ class BuildDispatcher(Singleton):
         elif provider == 'rackspace':
             return 'rackspace'
         elif self._is_dynamic_provider(provider, 'rhevm'):
-            return 'rhev-m'
+            return 'rhevm'
         elif self._is_dynamic_provider(provider, 'vmware'):
-            return 'vmware'
+            return 'vsphere'
         elif provider.startswith('mock'):
             return 'mock'
         else:
