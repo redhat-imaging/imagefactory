@@ -88,7 +88,7 @@ class ImageWarehouse(object):
         status = int(response_headers["status"])
         if(399 < status < 600):
             # raise RuntimeError("Could not create bucket: %s" % url)
-            self.log.info("Creating a bucket returned status %s.  If only iwhd would provide a sane way to know if a bucket exists so we wouldn't have to try and create one every time..." % (status, ))
+            self.log.info("Creating a bucket returned status %s." % (status, ))
             return False
         else:
             return True
