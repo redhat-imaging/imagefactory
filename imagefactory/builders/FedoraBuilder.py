@@ -669,11 +669,17 @@ class FedoraBuilder(BaseBuilder):
 	factory_security_group = conn.create_security_group(factory_security_group_name, factory_security_group_desc)
 	factory_security_group.authorize('tcp', 22, 22, '0.0.0.0/0')
 
-        # Construct the shell script that will inject our public key
-        user_data = self.gen_ssh_userdata("/etc/oz/id_rsa-icicle-gen.pub")
+        # Create a use-once SSH key
+        key_name = "fac-tmp-key-%s" % (self.new_image_id)
+        key = conn.create_key_pair(key_name)
+        # Shove into a named temp file
+        key_file_object = NamedTemporaryFile()
+        key_file_object.write(key.material)
+        key_file_object.flush()
+        key_file=key_file_object.name
 
         # Now launch it
-        reservation = conn.run_instances(ami_id,instance_type=instance_type,user_data=user_data, security_groups = [ factory_security_group_name ])
+        reservation = conn.run_instances(ami_id, instance_type=instance_type, key_name=key_name, security_groups = [ factory_security_group_name ])
 
         if len(reservation.instances) != 1:
             self.status="FAILED"
@@ -702,9 +708,8 @@ class FedoraBuilder(BaseBuilder):
         try:
             guestaddr = instance.public_dns_name
 
-            self.guest.sshprivkey = "/etc/oz/id_rsa-icicle-gen"
+            self.guest.sshprivkey = key_file
 
-            # TODO: Make this loop so we can take advantage of early availability
             # Ugly ATM because failed access always triggers an exception
             self.log.debug("Waiting up to 300 seconds for ssh to become available on %s" % (guestaddr))
             retcode = 1
@@ -737,8 +742,8 @@ class FedoraBuilder(BaseBuilder):
             # Removing the util package adds back the mlocate cron job - it cannot be allowed to run
             # so stop cron if it is running
             self.guest.guest_execute_command(guestaddr, "/sbin/service crond stop")
-            self.guest.guest_execute_command(guestaddr, "rpm -e imgfacsnapinit")
-            self.guest.guest_execute_command(guestaddr, "rm -f /etc/yum.repos.d/imgfacsnap.repo")
+            #self.guest.guest_execute_command(guestaddr, "rpm -e imgfacsnapinit")
+            #self.guest.guest_execute_command(guestaddr, "rm -f /etc/yum.repos.d/imgfacsnap.repo")
             self.log.debug("Removal complete")
 
             self.log.debug("Customizing guest: %s" % (guestaddr))
@@ -819,6 +824,8 @@ class FedoraBuilder(BaseBuilder):
         finally:
             self.log.debug("Stopping EC2 instance and deleting temp security group")
             instance.stop()
+            key_file_object.close()
+            conn.delete_key_pair(key_name)
             factory_security_group.delete()
 
         self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), target_image_id, self.new_image_id, str(metadata)))
@@ -1070,30 +1077,6 @@ class FedoraBuilder(BaseBuilder):
             self.log.debug("Image file %s already present - skipping warehouse download" % (local_image_file))
 
 
-    def gen_ssh_userdata(self, pubkey_filename):
-        # Used in both snapshots and EBS building so it is a function
-        pubkey_file=open(pubkey_filename, "r")
-        pubkey = pubkey_file.read()
-        pubkey_file.close()
-
-        user_data_start='''#!/bin/bash
-
-if [ ! -d /root/.ssh ] ; then
-  mkdir /root/.ssh
-  chmod 700 /root/.ssh
-fi
-
-cat << "EOF" >> /root/.ssh/authorized_keys
-'''
-
-        user_data_finish='''EOF
-chmod 600 /root/.ssh/authorized_keys
-'''
-
-        user_data = "%s%s%s" % (user_data_start, pubkey, user_data_finish)
-        return user_data
-
-
     def ec2_push_image_upload_ebs(self, target_image_id, provider, credentials):
         # TODO: Merge with ec2_push_image_upload and/or factor out duplication
         # In this case we actually do need an Oz object to manipulate a remote guest
@@ -1150,12 +1133,17 @@ chmod 600 /root/.ssh/authorized_keys
         factory_security_group = conn.create_security_group(factory_security_group_name, factory_security_group_desc)
         factory_security_group.authorize('tcp', 22, 22, '0.0.0.0/0')
 
-        # TODO: Ad-hoc key generation
-        # Construct the shell script that will inject our public key
-        user_data = self.gen_ssh_userdata("/etc/oz/id_rsa-icicle-gen.pub")
+        # Create a use-once SSH key
+        key_name = "fac-tmp-key-%s" % (self.new_image_id)
+        key = conn.create_key_pair(key_name)
+        # Shove into a named temp file
+        key_file_object = NamedTemporaryFile()
+        key_file_object.write(key.material)
+        key_file_object.flush()
+        key_file=key_file_object.name
 
         # Now launch it
-        reservation = conn.run_instances(ami_id,instance_type=instance_type,user_data=user_data, security_groups = [ factory_security_group_name ])
+        reservation = conn.run_instances(ami_id, instance_type=instance_type, key_name=key_name, security_groups = [ factory_security_group_name ])
 
         if len(reservation.instances) != 1:
             self.status="FAILED"
@@ -1185,7 +1173,7 @@ chmod 600 /root/.ssh/authorized_keys
         try:
             guestaddr = instance.public_dns_name
 
-            self.guest.sshprivkey = "/etc/oz/id_rsa-icicle-gen"
+            self.guest.sshprivkey = key_file
 
             # TODO: Make this loop so we can take advantage of early availability
             # Ugly ATM because failed access always triggers an exception
@@ -1303,6 +1291,8 @@ chmod 600 /root/.ssh/authorized_keys
             self.log.debug("Stopping EC2 instance and deleting temp security group and volume")
             instance.stop()
             factory_security_group.delete()
+            key_file_object.close()  
+            conn.delete_key_pair(key_name)
             
             if volume:
                 self.log.debug("Waiting up to 240 seconds for instance (%s) to shut down" % (instance.id))
