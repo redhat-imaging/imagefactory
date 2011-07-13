@@ -100,7 +100,7 @@ class ReservationManager(object):
                     self.log.warn('No reservation for %s to cancel!' % filepath)
                 else:
                     raise e
-        except KeyError,e:
+        except KeyError, e:
             if(quiet):
                 self.log.warn('No reservations exist on %s!' % mount_path)
             else:
@@ -148,9 +148,9 @@ class ReservationManager(object):
     def available_space_for_path(self, path):
         """
         TODO: Docstring for available_space_for_path
-        
-        @param path TODO 
-    
+
+        @param path TODO
+
         @return TODO
         """
         mount_path = self._mount_for_path(path)

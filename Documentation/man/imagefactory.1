@@ -23,7 +23,7 @@ Currently supported private cloud services: RHEV-M, KVM.
 
 .SH OPTIONS
 
-.B -h, --help 
+.B -h, --help
 Display the help page.
 
 .B --version
@@ -51,7 +51,7 @@ Set the timeout period for image building in seconds.  (default: 3600)
   Provide a QMFv2 agent interface.
 
 .B --foreground
-Stay in the foreground and avoid launching a daemon. 
+Stay in the foreground and avoid launching a daemon.
 Launching in foreground allows the user to see what messages are being passed to QMF. For more detailed output use this parameter together with .B --debug.
 If the parameter is not specified, the QMF agent will be started as a daemon.
 (default: False)
@@ -66,7 +66,7 @@ URL of qpidd to connect to.  (default: localhost)
   Build specified system and exit.
 
 .B --template TEMPLATE
-Template to build from. Template can be passed as URL, PATH, UUID or XML. Please refer to the 
+Template to build from. Template can be passed as URL, PATH, UUID or XML. Please refer to the
 .BR XML
 .BR EXAMPLES
 section at the bottom.
@@ -83,9 +83,9 @@ The list of cloud services to target. Examples include ec2, rhevm, vsphere, rack
 The list of cloud service providers to push the emacs. Examples include ec2-us-east-1, ec2-us-west-1, rackspace.
 
 .B --credentials CREDENTIALS
-Cloud provider credentials. Credentials must be passed as XML file. Please refer to the 
-.BR XML 
-.BR EXAMPLES 
+Cloud provider credentials. Credentials must be passed as XML file. Please refer to the
+.BR XML
+.BR EXAMPLES
 section at the bottom.
 
 .SS Image Warehouse:
@@ -126,7 +126,7 @@ rackspace = "<provider_credentials> \\
         </rackspace_credentials> \\
     </provider_credentials>"
 
-.SS TEMPLATE 
+.SS TEMPLATE
 eg. a Windows 2008 64bit example
 
 <template>
@@ -160,7 +160,3 @@ eg. a Windows 2008 64bit example
     </package>
   </packages>
 </template>
-
-
-
-

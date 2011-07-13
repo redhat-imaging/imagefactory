@@ -1143,7 +1143,7 @@ class FedoraBuilder(BaseBuilder):
 
         input_image_compressed_name = input_image_name + ".gz"
         input_image_compressed=input_image + ".gz"
-       
+
         if not os.path.isfile(input_image_compressed):
             self.log.debug("No compressed version of image file found - compressing now")
             f_out = open(input_image_compressed, 'wb')
@@ -1262,7 +1262,7 @@ class FedoraBuilder(BaseBuilder):
                 if volume.status == "available":
                     retcode = 0
                     break
-                self.log.debug("Volume status (%s) - waiting for 'available': %d/600" % (volume.status, i*10)) 
+                self.log.debug("Volume status (%s) - waiting for 'available': %d/600" % (volume.status, i*10))
                 sleep(10)
 
             if retcode:
@@ -1322,11 +1322,11 @@ class FedoraBuilder(BaseBuilder):
             self.log.debug("Registering snapshot (%s) as new EBS AMI" % (snapshot.id))
             ebs = EBSBlockDeviceType()
             ebs.snapshot_id = snapshot.id
-            block_map = BlockDeviceMapping() 
-            block_map['/dev/sda1'] = ebs 
-            result = conn.register_image(name='ImageFactory created AMI - %s' % (self.new_image_id), 
+            block_map = BlockDeviceMapping()
+            block_map['/dev/sda1'] = ebs
+            result = conn.register_image(name='ImageFactory created AMI - %s' % (self.new_image_id),
                             description='ImageFactory created AMI - %s' % (self.new_image_id),
-                            architecture=self.tdlobj.arch,  kernel_id=aki, 
+                            architecture=self.tdlobj.arch,  kernel_id=aki,
                             root_device_name='/dev/sda1', block_device_map=block_map)
 
             ami_id = str(result)
@@ -1335,9 +1335,9 @@ class FedoraBuilder(BaseBuilder):
             self.log.debug("Stopping EC2 instance and deleting temp security group and volume")
             instance.stop()
             factory_security_group.delete()
-            key_file_object.close()  
+            key_file_object.close()
             conn.delete_key_pair(key_name)
-            
+
             if volume:
                 self.log.debug("Waiting up to 240 seconds for instance (%s) to shut down" % (instance.id))
                 retcode = 1
