@@ -106,7 +106,3 @@ class BuildAdaptor(BuildJob):
         event.type = failure_type
         event.info = failure_info
         self.agent.session.raiseEvent(data=event, severity=SEV_ERROR)
-
-
-# if __name__ == '__main__':
-# 	unittest.main()

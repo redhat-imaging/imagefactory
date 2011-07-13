@@ -45,19 +45,12 @@ class VMImport:
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.vim = Vim(url)
         self.vim.login(username, password)
-        
+
     def curl_progress(self, download_t, download_d, upload_t, upload_d):
-        #print "Total to download", download_t
-        #print "Total downloaded", download_d
-        #print "Total to upload", upload_t
-        #print "Total uploaded", upload_d
         curtime=time()
         # TODO: Make poke frequency variable
         # 5 seconds isn't too much and it makes the status bar in the vSphere GUI look nice :-)
         if  (curtime - self.time_at_last_poke) >= 5:
-            #print "Current time (%s) - time at last poke (%s)" % (curtime, self.time_at_last_poke)
-            #print "Ten or more seconds since last poke"
-            #print "Trying to do a poke with progress of %d" % (int(upload_d*100/upload_t))
             self.vim.invoke('HttpNfcLeaseProgress', _this=self.lease_mo_ref, percent = int(upload_d*100/upload_t))
             self.time_at_last_poke = time()
 
@@ -69,7 +62,6 @@ class VMImport:
         # If the host is not set, use the ComputeResource as the target
         if not host:
             target = self.vim.find_entity_view(view_type='ComputeResource')
-#                                            filter={'name': compute_resource})
             target.update_view_data(['name', 'datastore', 'network', 'parent',
                                      'resourcePool'])
             resource_pool = target.resourcePool
@@ -81,9 +73,6 @@ class VMImport:
             host_cr = self.vim.get_view(mo_ref=target.parent, vim=self.vim)
             host_cr.update_view_data(properties=['resourcePool'])
             resource_pool = host_cr.resourcePool
-
-        # Compute image size in KB rounding up
-        # disksize_kb = int(math.ceil((1.0*os.path.getsize(imagefilename))/(1024.0)))
 
         # A list of devices to be assigned to the VM
         vm_devices = []
@@ -115,7 +104,7 @@ class VMImport:
 
         disk = self.create_disk(datastore=ds, disksize_kb=disksize_kb)
         vm_devices.append(disk)
-        
+
         for nic in nics:
             nic_spec = self.create_nic(target, nic)
             if not nic_spec:
@@ -146,25 +135,10 @@ class VMImport:
 
         dc.update_view_data(properties=['vmFolder'])
 
-        #print "*************************************************"
-        #print "dc pprint"
-        #pprint(dc)
-
-        #print "pool pprint"
-        #pprint(resource_pool)
-
-        #print "Config spec pprint"
-        #pprint(vm_config_spec)
- 
-        #print "*************************************************"
-
         importspec = self.vim.create_object('VirtualMachineImportSpec')
-        
+
         importspec.configSpec = vm_config_spec
         importspec.resPoolEntity = None
-
-        #print "pprint importspec"
-        #pprint(importspec)
 
         lease_mo_ref = self.vim.invoke('ImportVApp', _this=resource_pool, spec = importspec, folder = dc.vmFolder)
 
@@ -173,40 +147,22 @@ class VMImport:
         self.lease_mo_ref = lease_mo_ref
 
         for i in range(1000):
-            lease.update_view_data()        
+            lease.update_view_data()
             if lease.state == "ready":
                 break
             sleep(5)
-            #print "Lease not ready - waiting 5 seconds"
-
-        #print "pprint lease"
-        #pprint(lease)
-
-        #print "Lease error: "
-        #pprint(lease.error)
-
-        #print "Lease info: "
-        #pprint(lease.info)
-
-        #print "Lease progress: %d" % lease.initializeProgress
-
-        #print "Lease state: "
-        #pprint(lease.state)      
 
         url = lease.info.deviceUrl[0]['url']
 
         self.lease_timeout = lease.info.leaseTimeout
         self.time_at_last_poke = time()
 
-        #print "I will now upload (%s) to (%s)" % (imagefilename, url)
-
         image_file = open(imagefilename)
-            
+
         # Upload the image itself
         image_size = os.path.getsize(imagefilename)
         curl = pycurl.Curl()
         curl.setopt(pycurl.URL, str(url))
-        #curl.setopt(pycurl.VERBOSE, 1)
         curl.setopt(pycurl.SSL_VERIFYPEER, 0)
         curl.setopt(pycurl.POST, 1)
         curl.setopt(pycurl.POSTFIELDSIZE, image_size)
@@ -244,7 +200,7 @@ class VMImport:
                 connect_info.connected = False
                 connect_info.startConnected = True
 
-                new_nic = self.vim.create_object(nic['type']) 
+                new_nic = self.vim.create_object(nic['type'])
                 new_nic.backing = backing
                 new_nic.key = 2
                 # TODO: Work out a way to automatically increment this
