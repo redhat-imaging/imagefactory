@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #
 # Copyright 2010 Jonathan Kinred <jonathan.kinred@gmail.com>
 #
@@ -300,14 +299,3 @@ class VMImport:
         disk_spec.operation = operation.add
 
         return disk_spec
-
-def main():
-    vmc = VMImport('https://noswhere.com/sdk', 'Administrator', 'changeme')
-    #nic = {'network_name': 'VM Network', 'type': 'VirtualE1000'}
-    vmc.import_vm(datastore='datastore1', network_name = 'VM Network',
-                       name=sys.argv[1], disksize_kb = (10*1024*1024 + 2 ), memory=512, num_cpus=1,
-                       guest_id='otherLinux64Guest', imagefilename="/var/tmp/vmware-test.vmdk")
-
-if __name__ == '__main__':
-    main()
-
