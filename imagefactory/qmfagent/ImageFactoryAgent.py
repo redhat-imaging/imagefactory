@@ -15,6 +15,7 @@
 import logging
 import uuid
 import cqpid
+from copy import deepcopy
 from qmf2 import *
 from ImageFactory import ImageFactory
 from BuildAdaptor import BuildAdaptor
@@ -57,9 +58,11 @@ class ImageFactoryAgent(AgentHandler):
         """
         Handle incoming method calls.
         """
+        log_args = args
         if("credentials" in args):
-            args["credentials"] = "*** REDACTED ***"
-        self.log.debug("Method called: name = %s \n args = %s \n handle = %s \n addr = %s \n subtypes = %s \n userId = %s", methodName, args, handle, addr, subtypes, userId)
+            log_args = deepcopy(args)
+            log_args["credentials"] = "*** REDACTED ***"
+        self.log.debug("Method called: name = %s \n args = %s \n handle = %s \n addr = %s \n subtypes = %s \n userId = %s", methodName, log_args, handle, addr, subtypes, userId)
 
         try:
 
