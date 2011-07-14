@@ -605,6 +605,15 @@ class FedoraBuilder(BaseBuilder):
         self.percent_complete=100
         self.status = "COMPLETED"
 
+    def install_euca_tools(self, guestaddr):
+        # For F13-F15 we now have a working euca2ools in the default repos
+        self.guest.guest_execute_command(guestaddr, "yum -y install euca2ools")
+
+    def add_factory_cust(self, guestaddr):
+        # We create the Fedora JEOS images so they already contain the needed customization
+        # For child classes we sometimes have to add CLOUD_INFO or rc.local content
+        pass
+
     def push_image_snapshot_ec2(self, target_image_id, provider, credentials):
         self.log.debug("Being asked to push for provider %s" % (provider))
         self.log.debug("distro: %s - update: %s - arch: %s" % (self.tdlobj.distro, self.tdlobj.update, self.tdlobj.arch))
@@ -735,21 +744,22 @@ class FedoraBuilder(BaseBuilder):
             self.log.debug("Waiting 20 seconds for remaining boot tasks")
             sleep(20)
 
-            # remove utility package and repo so that it isn't in the final image
-            # and does not screw up our customize step
-            # Our temporary SSH access key remains in place after this
-            self.log.debug("Removing utility package and repo")
-            # Removing the util package adds back the mlocate cron job - it cannot be allowed to run
-            # so stop cron if it is running
+            self.log.debug("Stopping cron and killing any updatedb process that may be running")
+            # updatedb interacts poorly with the bundle step - make sure it isn't running
             self.guest.guest_execute_command(guestaddr, "/sbin/service crond stop")
-            #self.guest.guest_execute_command(guestaddr, "rpm -e imgfacsnapinit")
-            #self.guest.guest_execute_command(guestaddr, "rm -f /etc/yum.repos.d/imgfacsnap.repo")
-            self.log.debug("Removal complete")
+            self.guest.guest_execute_command(guestaddr, "killall -9 updatedb || /bin/true")
+            self.log.debug("Done")
+
+            # Different OSes need different steps here
+            self.install_euca_tools(guestaddr)
 
             self.log.debug("Customizing guest: %s" % (guestaddr))
             self.guest.mkdir_p(self.guest.icicle_tmp)
             self.guest.do_customize(guestaddr)
             self.log.debug("Customization step complete")
+
+            # If an OS class needs additional image cust do it now
+            self.add_factory_cust(guestaddr)
 
             self.log.debug("Generating ICICLE from customized guest")
             self.output_descriptor = self.guest.do_icicle(guestaddr)
@@ -1539,11 +1549,27 @@ none       /sys      sysfs   defaults         0 0
          'ec2-ap-northeast-1': { 'boto_loc': 'ap-northeast-1',     'host':'ap-northeast-1', 'i386': 'aki-d209a2d3', 'x86_64': 'aki-d409a2d5' },
          'ec2-eu-west-1':      { 'boto_loc': Location.EU,          'host':'eu-west-1',      'i386': 'aki-4deec439', 'x86_64': 'aki-4feec43b' } }
 
-
-        # v0.2 of these AMIs - created week of April 4, 2011
-        # v0.3 for F13 64 bit only - created April 12, 2011
+        # July 13 - new approach - generic JEOS AMIs for Fedora - no userdata and no euca-tools
+        #           ad-hoc ssh keys replace userdata - runtime install of euca tools for bundling
+        # v0.6 of F14 and F15 - dropped F13 for now - also include official public RHEL hourly AMIs for RHEL6
     ec2_jeos_amis={
-         'ec2-us-east-1': {'Fedora': { '14' : { 'x86_64': 'ami-d6b946bf', 'i386': 'ami-6ab94603' },
-                                       '13' : { 'x86_64': 'ami-10bc4379', 'i386': 'ami-06ba456f' } } } ,
+         'ec2-us-east-1': {'Fedora': { '14' : { 'x86_64': 'ami-5b1dd932', 'i386': 'ami-171dd97e' },
+                                       '15' : { 'x86_64': 'ami-c31cd8aa', 'i386': 'ami-b71cd8de' } 
+                                     } ,
+                           'RHEL-6': { '0'  : { 'x86_64': 'ami-80c937e9', 'i386': 'ami-ceb841a7' },
+                                       '1'  : { 'x86_64': 'ami-5e837b37', 'i386': 'ami-0cbb4265' }
+                                     }
+                          } ,
          'ec2-us-west-1': {'Fedora': { '14' : { 'x86_64': 'ami-c9693a8c', 'i386': 'ami-c7693a82' },
-                                       '13' : { 'x86_64': 'ami-33693a76', 'i386': 'ami-23693a66' } } } }
+                                       '15' : { 'x86_64': 'ami-45a9fb00', 'i386': 'ami-65a9fb20' } 
+                                     } ,
+                           'RHEL-6': { '0'  : { 'x86_64': 'ami-a5c695e0', 'i386': 'ami-05e7b440' },
+                                       '1'  : { 'x86_64': 'ami-592d7f1c', 'i386': 'ami-dfe7b49a' } 
+                                     } 
+# TODO: RHEL5 snapshots fail because of block device mapping issues - fix this
+#                           ,
+#                           'RHEL-5': { 'U5' : { 'x86_64': 'ami-6fc99a2a', 'i386': 'ami-89e0b3cc' },
+#                                       'U6' : { 'x86_64': 'ami-edc596a8', 'i386': 'ami-73e7b436' }
+#                                     }
+                          } 
+                  }

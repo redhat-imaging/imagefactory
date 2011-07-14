@@ -44,3 +44,18 @@ class RHEL5Builder(FedoraBuilder):
         # Oz assumes unique names - TDL built for multiple backends guarantees they are not unique
         # We don't really care about the name so just force uniqueness
         self.guest.name = self.guest.name + "-" + self.new_image_id
+
+    def install_euca_tools(self, guestaddr):
+        # For RHEL5 we need to enable EPEL, install, then disable EPEL
+        # TODO: This depends on external infra which is bad, and trusts external SW, which may be bad
+        # For now we also mount up /mnt
+        self.guest.guest_execute_command(guestaddr, "mount /dev/sdf /mnt")
+        self.guest.guest_execute_command(guestaddr, "rpm -ivh http://download.fedora.redhat.com/pub/epel/5/i386/epel-release-5-4.noarch.rpm")
+        self.guest.guest_execute_command(guestaddr, "yum -y install euca2ools")
+        self.guest.guest_execute_command(guestaddr, "rpm -e epel-release")
+
+    def add_factory_cust(self, guestaddr):
+        # For child classes we sometimes have to add CLOUD_INFO or rc.local content
+        self.guest.guest_execute_command(guestaddr, 'echo "CLOUD_TYPE=\\\"ec2\\\"" > /etc/sysconfig/cloud-info')
+        self.guest.guest_execute_command(guestaddr, 'echo "[ -f /usr/bin/audrey ] && /usr/bin/audrey" >> /etc/rc.local')
+
