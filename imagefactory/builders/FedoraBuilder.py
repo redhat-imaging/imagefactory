@@ -930,6 +930,10 @@ class FedoraBuilder(BaseBuilder):
 
 
     def rhevm_push_image_upload(self, target_image_id, provider, credentials):
+        # ****** IMPORTANT NOTE ********
+        # This is currently the only cloud for which we delegate the push function to the Warehouse
+        # This has proven to be a debugging challenge and we may, in future, pull this back into Factory
+
         # Decode the config file, verify that the provider is in it - err out if not
         # TODO: Make file location CONFIG value
 	file = open("/etc/rhevm.json","r")
@@ -952,17 +956,15 @@ class FedoraBuilder(BaseBuilder):
         post_data['op'] = "register"
         post_data['site'] = provider
 
-        # ATM the return is expected to be an empty string
-        # The RHEV-M UUID is stored as a new piece of metadata with a key of "ami-id"
-        # This is not thread-safe
-        # TODO: Coordinate with Pete when he changes this to return the AMI ID as the body
         response = self.warehouse.post_on_object_with_id_of_type(target_image_id, "target_image", post_data)
 
-        # TODO: Remove this when the change mentioned above has been made
-        image_metadata = self.warehouse.metadata_for_id_of_type(("ami-id",), target_image_id, "target_image")
-        self.log.debug("Got metadata output of: %s", repr(image_metadata))
-	m = re.match("OK ([a-fA-F0-9-]+)", image_metadata["ami-id"])
-	rhevm_uuid = m.group(1)
+        m = re.match("^OK ([a-fA-F0-9-]+)", response)
+        rhevm_uuid = None
+        if m:
+            rhevm_uuid = m.group(1)
+        else:
+            raise ImageFactoryException("Failed to extract RHEV-M UUID from warehouse POST reponse: %s" % (response))
+
 	self.log.debug("Extracted RHEVM UUID: %s " % (rhevm_uuid))
 
         # Create the provdier image
