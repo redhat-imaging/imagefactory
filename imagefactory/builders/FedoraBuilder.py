@@ -87,6 +87,11 @@ class FedoraBuilder(BaseBuilder):
         self.warehouse_url = self.app_config['warehouse']
         # May not be necessary to do both of these
         self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml)
+        # Oz assumes unique names - TDL built for multiple backends guarantees they are not unique
+        # We don't really care about the name so just force uniqueness
+        # 18-Jul-2011 - Moved to constructor and modified to change TDL object name itself
+        #   Oz now uses the tdlobject name property directly in several places so we must change it
+        self.tdlobj.name = self.tdlobj.name + "-" + self.new_image_id
 
     def init_guest(self, guesttype):
         # populate a config object to pass to OZ
@@ -101,9 +106,6 @@ class FedoraBuilder(BaseBuilder):
         else:
             self.guest = FedoraRemoteGuest(self.tdlobj, config, None, "virtio", True, "virtio", True)
         self.guest.diskimage = self.app_config["imgdir"] + "/base-image-" + self.new_image_id + ".dsk"
-        # Oz assumes unique names - TDL built for multiple backends guarantees they are not unique
-        # We don't really care about the name so just force uniqueness
-        self.guest.name = self.guest.name + "-" + self.new_image_id
 
     def log_exc(self, location = None, message = None):
         if message:
