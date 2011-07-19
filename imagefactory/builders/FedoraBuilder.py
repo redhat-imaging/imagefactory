@@ -192,7 +192,7 @@ class FedoraBuilder(BaseBuilder):
         # Now we do some target specific transformation
 
         # Add the cloud-info file
-        self.tag_oz_filesystem()
+        self.modify_oz_filesystem()
 
         if self.target == "ec2":
             self.log.info("Transforming image for use on EC2")
@@ -241,8 +241,8 @@ class FedoraBuilder(BaseBuilder):
             self.status="FAILED"
             raise
 
-    def tag_oz_filesystem(self):
-        self.log.debug("Adding cloud-info to local image")
+    def modify_oz_filesystem(self):
+        self.log.debug("Doing further Factory specific modification of Oz image")
 
         self.log.debug("init guestfs")
         g = guestfs.GuestFS ()
@@ -265,6 +265,12 @@ class FedoraBuilder(BaseBuilder):
             self.log.info("Updating rc.local with Audrey conditional")
             g.write("/tmp/rc.local", self.rc_local_all)
             g.sh("cat /tmp/rc.local >> /etc/rc.local")
+
+        # In the cloud context we currently never need or want persistent net device names
+        # This is known to break networking in RHEL/VMWare and could potentially do so elsewhere
+        # Just delete the file to be safe
+        if g.is_file("/etc/udev/rules.d/70-persistent-net.rules"):
+            g.rm("/etc/udev/rules.d/70-persistent-net.rules")
 
         g.sync ()
         g.umount_all ()
