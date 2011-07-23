@@ -272,6 +272,15 @@ class FedoraBuilder(BaseBuilder):
         if g.is_file("/etc/udev/rules.d/70-persistent-net.rules"):
             g.rm("/etc/udev/rules.d/70-persistent-net.rules")
 
+        # Also clear out the MAC address this image was bound to.
+        g.aug_init("/", 1)
+        if g.aug_rm("/files/etc/sysconfig/network-scripts/ifcfg-eth0/HWADDR"):
+            self.log.debug("Removed HWADDR from image's /etc/sysconfig/network-scripts/ifcfg-eth0")
+            g.aug_save()
+        else:
+            self.log.debug("Failed to remove HWADDR from image's /etc/sysconfig/network-scripts/ifcfg-eth0")
+        g.aug_close()
+
         g.sync ()
         g.umount_all ()
 
