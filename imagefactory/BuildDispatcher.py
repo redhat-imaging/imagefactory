@@ -15,6 +15,7 @@
 import libxml2
 import os.path
 import json
+import logging
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
 from imagefactory.BuildJob import BuildJob
 from imagefactory.BuildWatcher import BuildWatcher
@@ -26,6 +27,7 @@ from imagefactory.Template import Template
 class BuildDispatcher(Singleton):
 
     def _singleton_init(self):
+        self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration['warehouse'])
 
     def import_image(self, image_id, build_id, target_identifier, image_desc, target, provider):
@@ -222,4 +224,5 @@ class BuildDispatcher(Singleton):
         elif provider.startswith('mock'):
             return 'mock'
         else:
+            self.log.warn('No matching provider found for %s, using "condorcloud" by default.' % (provider))
             return 'condorcloud' # condorcloud ignores provider
