@@ -15,8 +15,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-
 import argparse
+import socket
+import platform
 from qpid.messaging import *
 from qpid.util import URL
 import base64
@@ -34,16 +35,23 @@ connection.open()
 session = connection.session(str(uuid4()))
 
 receiver = session.receiver('amq.topic')
+local_ip = socket.gethostbyname(socket.gethostname())
+localhost_name = platform.uname()[1]
 
 while True:
     message = receiver.fetch()
     session.acknowledge()
     sender = session.sender(message.reply_to)
-    
-    proc = Popen(base64.b64decode(message.content), shell=True, stderr=STDOUT, stdin=PIPE, stdout=PIPE)
-    output, _ = proc.communicate()
-    result = Message(base64.b64encode(output))
-    result.properties["exit"] = proc.returncode
-    sender.send(result)
+    command = base64.b64decode(message.content)
+    if command.startswith('winrs' or 'winrm') != True or command.find('-r:') == -1 or command.find('localhost') != -1 or command.find(localhost_name) != -1 or command.find(local_ip) != -1:
+        sender.send(Message(base64.b64encode('Commands against the proxy are not accepted')))
+    else:
+        proc = Popen(command, shell=True, stderr=STDOUT, stdin=PIPE, stdout=PIPE)
+        output, _ = proc.communicate()
+        result = Message(base64.b64encode(output))
+        result.properties["exit"] = proc.returncode
+        sender.send(result)
 
 connection.close()
+
+ 

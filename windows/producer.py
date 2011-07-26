@@ -20,13 +20,13 @@ from qpid.util import URL
 import base64
 
 # Create connection and session
-connection = Connection('ec2-50-17-149-29.compute-1.amazonaws.com', username='Administrator', password='DRDqt-qR2?Z')
+connection = Connection('broker_address', username='Username', password='Password')
 connection.open()
 session = connection.session(str(uuid4()))
 
 sender = session.sender("amq.topic")
 receiver = session.receiver('reply-%s; {create:always, delete:always}' % session.name)
-messages = ["netstat", "ipconfig", "dir"]
+messages = ["winrs -r:target -u:Administrator -p:Password dir", "winrs -r:target -u:Administrator -p:Password ipconfig"]
 
 def send_message(command):
     msg = Message(base64.b64encode(command))
