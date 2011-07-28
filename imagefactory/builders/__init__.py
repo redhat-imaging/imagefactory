@@ -13,8 +13,4 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-<<<<<<< HEAD
 __all__ = ["IBuilder", "IBuilderDelegate", "BaseBuilder", "MockBuilder", "RHEL5Builder", "RHEL6Builder", "FedoraBuilder"]
-=======
-__all__ = ["IBuilder", "IBuilderDelegate", "BaseBuilder", "MockBuilder", "RHELBuilder", "FedoraBuilder", "WindowsBuilder"]
->>>>>>> 7faef89002cdba951c2ac8485b84a55079a6737d
