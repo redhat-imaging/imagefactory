@@ -853,7 +853,22 @@ class FedoraBuilder(BaseBuilder):
             instance.stop()
             key_file_object.close()
             conn.delete_key_pair(key_name)
-            factory_security_group.delete()
+            try:
+                timeout = 60
+                interval = 5
+                for i in range(timeout):
+                    instance.update()
+                    if(instance.state == "terminated"):
+                        factory_security_group.delete()
+                        self.log.debug("Removed temporary security group (%s)" % (factory_security_group_name))
+                        break
+                    elif(i < timeout):
+                        self.log.debug("Instance status (%s) - waiting for 'terminated'. [%d of %d seconds elapsed]" % (instance.state, i * interval, timeout * interval))
+                        sleep(interval)
+                    else:
+                        raise Exception("Timeout waiting for instance to terminate.")
+            except Exception, e:
+                self.log.debug("Unable to delete temporary security group (%s) due to exception: %s" % (factory_security_group_name, e))
 
         self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), target_image_id, self.new_image_id, str(metadata)))
         self.percent_complete=100
