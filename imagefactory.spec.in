@@ -50,10 +50,9 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/imagefactory.conf
 %dir %attr(0755, root, root) %{_sysconfdir}/pki/imagefactory/
 %{_sysconfdir}/pki/imagefactory/cert-ec2.pem
-%dir %attr(0755, root, root) %{python_sitelib}/imagefactory/
-%{python_sitelib}/imagefactory/*
+%{python_sitelib}/imgfac
 %{python_sitelib}/imagefactory-*.egg-info
-%{_bindir}/imgfac.py
+%{_bindir}/imagefactory
 %{_mandir}/man1/*
 
 %changelog

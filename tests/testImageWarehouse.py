@@ -20,8 +20,8 @@ import logging
 import uuid
 import time
 import os
-from imagefactory.ApplicationConfiguration import ApplicationConfiguration
-from imagefactory.ImageWarehouse import ImageWarehouse
+from imgfac.ApplicationConfiguration import ApplicationConfiguration
+from imgfac.ImageWarehouse import ImageWarehouse
 
 class testImageWarehouse(unittest.TestCase):
     def setUp(self):

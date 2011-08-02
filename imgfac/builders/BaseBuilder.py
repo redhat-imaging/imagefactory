@@ -19,10 +19,10 @@ import uuid
 import os
 import httplib2
 from IBuilder import IBuilder
-from imagefactory import props
-from imagefactory.ApplicationConfiguration import ApplicationConfiguration
-from imagefactory.ImageWarehouse import ImageWarehouse
-from imagefactory.Template import Template
+from imgfac import props
+from imgfac.ApplicationConfiguration import ApplicationConfiguration
+from imgfac.ImageWarehouse import ImageWarehouse
+from imgfac.Template import Template
 
 class BaseBuilder(object):
     """BaseBuilder provides a starting point for builder classes conforming to the IBuilder interface.

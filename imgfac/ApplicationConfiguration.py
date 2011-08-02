@@ -36,15 +36,15 @@ class ApplicationConfiguration(Singleton):
 
     def __new_argument_parser(self):
         main_description = """Image Factory is an application for creating system images to run virtual machines in various public and private \
-                                clouds.  The imgfac command can be used to start a daemon providing a QMFv2 agent interface, allowing for \
-                                remote interaction.  An alternate method of running imgfac allows for one-off image building and deployment \
+                                clouds.  The imagefactory command can be used to start a daemon providing a QMFv2 agent interface, allowing for \
+                                remote interaction.  An alternate method of running imagefactory allows for one-off image building and deployment \
                                 and does not connect to a qpidd."""
         qmf_description = """Provide a QMFv2 agent interface. (see https://cwiki.apache.org/qpid/qmfv2-project-page.html for more information)"""
         cli_build_description = """Build specified system and exit."""
         cli_push_description = """Push an image and exit."""
         warehouse_description = """Options for specifying Image Warehouse (http://aeolusproject.org/imagewarehouse.html) base URL and bucket names."""
 
-        argparser = argparse.ArgumentParser(description=main_description, prog='imgfac')
+        argparser = argparse.ArgumentParser(description=main_description, prog='imagefactory')
         argparser.add_argument('--version', action='version', version='%(prog)s 0.1', help='Version info')
         argparser.add_argument('-v', '--verbose', action='store_true', default=False, help='Set verbose logging.')
         argparser.add_argument('--debug', action='store_true', default=False, help='Set really verbose logging for debugging.')
@@ -88,7 +88,7 @@ class ApplicationConfiguration(Singleton):
         if(len(sys.argv) == 1):
             self.argparser.print_help()
             sys.exit()
-        elif(sys.argv[0].endswith("imgfac.py")):
+        elif(sys.argv[0].endswith("imagefactory")):
             return self.argparser.parse_args()
         elif(sys.argv[0].endswith("unittest")):
             return self.argparser.parse_args('--image_bucket unittests_images --build_bucket unittests_builds --target_bucket unittests_target_images --template_bucket unittests_templates --icicle_bucket unittests_icicles --provider_bucket unittests_provider_images'.split())

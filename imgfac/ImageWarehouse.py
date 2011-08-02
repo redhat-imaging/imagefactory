@@ -23,7 +23,7 @@ import uuid
 import os
 import libxml2
 import props
-from imagefactory.ApplicationConfiguration import ApplicationConfiguration
+from imgfac.ApplicationConfiguration import ApplicationConfiguration
 
 
 class ImageWarehouse(object):

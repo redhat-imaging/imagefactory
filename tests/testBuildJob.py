@@ -17,8 +17,8 @@
 
 import unittest
 import logging
-from imagefactory import BuildJob
-from imagefactory.builders import MockBuilder
+from imgfac import BuildJob
+from imgfac.builders import MockBuilder
 
 class testBuildJob(unittest.TestCase):
     def setUp(self):

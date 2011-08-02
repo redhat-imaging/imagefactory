@@ -17,8 +17,8 @@ import logging
 import props
 import sys
 import threading
-from imagefactory.builders import *
-from imagefactory.Template import Template
+from imgfac.builders import *
+from imgfac.Template import Template
 
 class BuildJob(object):
 
@@ -84,7 +84,7 @@ class BuildJob(object):
             os_name = os_name.translate(None, '-')
             class_name = "%sBuilder" % (os_name, )
             try:
-                module_name = "imagefactory.builders.%s" % (class_name, )
+                module_name = "imgfac.builders.%s" % (class_name, )
                 __import__(module_name)
                 builder_class = getattr(sys.modules[module_name], class_name)
             except AttributeError, e:

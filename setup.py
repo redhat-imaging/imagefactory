@@ -28,7 +28,7 @@ try:
 except Exception, e:
     raise RuntimeError("ERROR: version.txt could not be found.  Run 'git describe > version.txt' to get the correct version info.")
 
-datafiles=[('share/man/man1', ['Documentation/man/imgfac.1']), ('/etc', ['imagefactory.conf']), ('/etc/pki/imagefactory', ['cert-ec2.pem']),    ('/etc/rc.d/init.d', ['scripts/imagefactory'])]
+datafiles=[('share/man/man1', ['Documentation/man/imagefactory.1']), ('/etc', ['imagefactory.conf']), ('/etc/pki/imagefactory', ['cert-ec2.pem']),    ('/etc/rc.d/init.d', ['scripts/imagefactory'])]
 
 class sdist(_sdist):
     """ custom sdist command to prepare imagefactory.spec file """
@@ -47,8 +47,8 @@ setup(name='imagefactory',
       author_email='imcleod@redhat.com',
       license='GPLv2',
       url='http://www.aeolusproject.org/imagefactory.html',
-      packages=['imagefactory', 'imagefactory.builders', 'imagefactory.qmfagent'],
-      scripts=['imgfac.py'],
+      packages=['imgfac', 'imgfac.builders', 'imgfac.qmfagent'],
+      scripts=['imagefactory'],
       data_files = datafiles,
       cmdclass = {'sdist': sdist}
       )

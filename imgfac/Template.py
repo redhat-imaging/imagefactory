@@ -20,8 +20,8 @@ import httplib2
 import re
 import os.path
 import props
-from imagefactory.ApplicationConfiguration import ApplicationConfiguration
-from imagefactory.ImageWarehouse import ImageWarehouse
+from imgfac.ApplicationConfiguration import ApplicationConfiguration
+from imgfac.ImageWarehouse import ImageWarehouse
 
 class Template(object):
     uuid_pattern = '([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})'

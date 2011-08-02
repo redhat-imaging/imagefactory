@@ -16,13 +16,13 @@ import libxml2
 import os.path
 import json
 import logging
-from imagefactory.ApplicationConfiguration import ApplicationConfiguration
-from imagefactory.BuildJob import BuildJob
-from imagefactory.BuildWatcher import BuildWatcher
-from imagefactory.ImageWarehouse import ImageWarehouse
-from imagefactory.PushWatcher import PushWatcher
-from imagefactory.Singleton import Singleton
-from imagefactory.Template import Template
+from imgfac.ApplicationConfiguration import ApplicationConfiguration
+from imgfac.BuildJob import BuildJob
+from imgfac.BuildWatcher import BuildWatcher
+from imgfac.ImageWarehouse import ImageWarehouse
+from imgfac.PushWatcher import PushWatcher
+from imgfac.Singleton import Singleton
+from imgfac.Template import Template
 
 class BuildDispatcher(Singleton):
 

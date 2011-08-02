@@ -15,7 +15,7 @@
 import unittest
 import logging
 import os
-from imagefactory.ReservationManager import ReservationManager
+from imgfac.ReservationManager import ReservationManager
 
 
 class testReservationManager(unittest.TestCase):

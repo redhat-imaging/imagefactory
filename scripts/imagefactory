@@ -19,7 +19,7 @@
 # chkconfig: - 99 1
 # description: Image Factory tool
 #
-# processname: /usr/bin/imgfac.py
+# processname: /usr/bin/imagefactory
 # pidfile: /var/run/imagefactory.pid
 
 ### BEGIN INIT INFO
@@ -44,8 +44,8 @@ if [ -e /etc/sysconfig/imagefactory ]; then
 fi
 
 RETVAL=0
-prog="imgfac.py"
-binary=/usr/bin/imgfac.py
+prog="imagefactory"
+binary=/usr/bin/imagefactory
 pidfile=/var/run/imagefactory.pid
 
 start() {
@@ -59,7 +59,7 @@ start() {
                 RETVAL=$?
                 [ $RETVAL -eq 0 ] && touch /var/lock/subsys/imagefactory
         fi;
-        echo 
+        echo
         return $RETVAL
 }
 

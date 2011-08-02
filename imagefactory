@@ -20,11 +20,11 @@ import os
 import os.path
 import signal
 import logging
-from imagefactory.ApplicationConfiguration import ApplicationConfiguration
-from imagefactory.qmfagent.ImageFactoryAgent import *
-from imagefactory.BuildDispatcher import BuildDispatcher
-from imagefactory.ImageWarehouse import ImageWarehouse
-from imagefactory.Singleton import Singleton
+from imgfac.ApplicationConfiguration import ApplicationConfiguration
+from imgfac.qmfagent.ImageFactoryAgent import *
+from imgfac.BuildDispatcher import BuildDispatcher
+from imgfac.ImageWarehouse import ImageWarehouse
+from imgfac.Singleton import Singleton
 
 class Application(Singleton):
 

@@ -17,9 +17,9 @@ import unittest
 import logging
 import zope
 import os.path
-from imagefactory.builders.IBuilder import IBuilder
-from imagefactory.builders.MockBuilder import MockBuilder
-from imagefactory.Template import Template
+from imgfac.builders.IBuilder import IBuilder
+from imgfac.builders.MockBuilder import MockBuilder
+from imgfac.Template import Template
 
 
 class TestMockBuilder(unittest.TestCase):

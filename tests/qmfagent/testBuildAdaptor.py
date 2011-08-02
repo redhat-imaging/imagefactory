@@ -15,7 +15,7 @@
 
 import unittest
 import logging
-from imagefactory.qmfagent.BuildAdaptor import BuildAdaptor
+from imgfac.qmfagent.BuildAdaptor import BuildAdaptor
 
 class TestBuildAdaptor(unittest.TestCase):
     def setUp(self):

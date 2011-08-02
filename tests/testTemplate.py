@@ -19,10 +19,10 @@ import os
 import unittest
 import logging
 import tempfile
-from imagefactory.Template import Template
-from imagefactory.ImageWarehouse import ImageWarehouse
-from imagefactory.ApplicationConfiguration import ApplicationConfiguration
-from imagefactory.builders.MockBuilder import MockBuilder
+from imgfac.Template import Template
+from imgfac.ImageWarehouse import ImageWarehouse
+from imgfac.ApplicationConfiguration import ApplicationConfiguration
+from imgfac.builders.MockBuilder import MockBuilder
 
 
 class testTemplate(unittest.TestCase):

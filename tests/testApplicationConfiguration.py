@@ -19,7 +19,7 @@ import unittest
 import logging
 import os
 import json
-from imagefactory.ApplicationConfiguration import ApplicationConfiguration
+from imgfac.ApplicationConfiguration import ApplicationConfiguration
 
 
 class TestApplicationConfiguration(unittest.TestCase):

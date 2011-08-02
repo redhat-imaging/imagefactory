@@ -1,1 +1,2 @@
-include COPYING Documentation/man/imgfac.1 cert-ec2.pem imagefactory.conf scripts/imagefactory
+include COPYING Documentation/man/imagefactory.1 cert-ec2.pem imagefactory.conf
+include scripts/imagefactory

@@ -23,7 +23,7 @@
     A: Run `service imagefactory start`
 
 2.  Q: How do I run Image Factory in debug mode?        
-    A: Shut the service down with `service imagefactory stop`.  Then run `imgfac.py --qmf --debug` as root.
+    A: Shut the service down with `service imagefactory stop`.  Then run `imagefactory --qmf --debug` as root.
 
 3.  Q: How do I interact with the Image Factory daemon?     
     A: Please read through the QMF guide in the Documentation directory for some examples.

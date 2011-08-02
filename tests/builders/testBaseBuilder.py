@@ -17,9 +17,9 @@ import unittest
 import logging
 import zope
 from zope.interface import Invalid
-from imagefactory.builders.IBuilder import IBuilder
-from imagefactory.builders.IBuilderDelegate import IBuilderDelegate
-from imagefactory.builders.BaseBuilder import BaseBuilder
+from imgfac.builders.IBuilder import IBuilder
+from imgfac.builders.IBuilderDelegate import IBuilderDelegate
+from imgfac.builders.BaseBuilder import BaseBuilder
 
 
 class TestBaseBuilder(unittest.TestCase):

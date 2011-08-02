@@ -1,6 +1,6 @@
 ## Usage: ##
 
-	usage: imgfac [-h] [--version] [-v] [--debug] [--foreground] [--config CONFIG]
+	usage: imagefactory [-h] [--version] [-v] [--debug] [--foreground] [--config CONFIG]
 	              [imgdir IMGDIR] [--warehouse WAREHOUSE] [--timeout TIMEOUT]
 	              [--qmf] [--broker BROKER] [--image IMAGE]
                       [--template TEMPLATE] [--target TARGET]

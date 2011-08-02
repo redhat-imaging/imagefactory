@@ -1,10 +1,10 @@
 ## Introduction ##
 
-The script imgfac.py can be used to start a daemon running a QMF agent.  Using the 'qpidd' option, the host that qpidd is running on can be set.  Currently this defaults to the default qpidd port on localhost.  Future versions will accept an amqp:// URL to fully configure the agent session.
+The script imagefactory can be used to start a daemon running a QMF agent.  Using the 'qpidd' option, the host that qpidd is running on can be set.  Currently this defaults to the default qpidd port on localhost.  Future versions will accept an amqp:// URL to fully configure the agent session.
 
 	Example usage:
 	
-		./imgfac.py --verbose --qmf --qpidd localhost
+		./imagefactory --verbose --qmf --qpidd localhost
 
 Once the agent has opened a session, QMF consoles can send messages to the agent start image builds, get status on builds, etc.
 

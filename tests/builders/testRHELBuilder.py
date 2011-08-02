@@ -15,8 +15,8 @@
 
 # import unittest
 # import logging
-# from imagefactory.builders.IBuilder import IBuilder
-# from imagefactory.builders.RHELBuilder import RHELBuilder
+# from imgfac.builders.IBuilder import IBuilder
+# from imgfac.builders.RHELBuilder import RHELBuilder
 #
 #
 # class TestRHELBuilder(unittest.TestCase):

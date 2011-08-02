@@ -19,7 +19,7 @@ from copy import deepcopy
 from qmf2 import *
 from ImageFactory import ImageFactory
 from BuildAdaptor import BuildAdaptor
-from imagefactory import props
+from imgfac import props
 
 class ImageFactoryAgent(AgentHandler):
 

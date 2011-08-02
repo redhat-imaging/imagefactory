@@ -24,7 +24,7 @@ import pwd
 from threading import Thread
 from IBuilder import IBuilder
 from BaseBuilder import BaseBuilder
-from imagefactory.ApplicationConfiguration import ApplicationConfiguration
+from imgfac.ApplicationConfiguration import ApplicationConfiguration
 
 
 class MockBuilder(BaseBuilder):

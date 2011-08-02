@@ -18,12 +18,12 @@ import cqpid
 from qmf2 import *
 import httplib2
 from BuildAdaptor import BuildAdaptor
-from imagefactory import props
-from imagefactory.ApplicationConfiguration import ApplicationConfiguration
-from imagefactory.BuildDispatcher import BuildDispatcher
-from imagefactory.ImageWarehouse import ImageWarehouse
-from imagefactory.Singleton import Singleton
-from imagefactory.Template import Template
+from imgfac import props
+from imgfac.ApplicationConfiguration import ApplicationConfiguration
+from imgfac.BuildDispatcher import BuildDispatcher
+from imgfac.ImageWarehouse import ImageWarehouse
+from imgfac.Singleton import Singleton
+from imgfac.Template import Template
 import logging
 
 # Singleton representing the Factory itself
@@ -127,6 +127,6 @@ class ImageFactory(Singleton):
 
     def instance_states(self, class_name):
         """Returns a dictionary representing the finite state machine for instances of the class specified."""
-        module_name = "imagefactory.qmfagent.%s" % (class_name, )
+        module_name = "imgfac.qmfagent.%s" % (class_name, )
         __import__(module_name)
         return dict(states=str(getattr(sys.modules[module_name], class_name).object_states()))

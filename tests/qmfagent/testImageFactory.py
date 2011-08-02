@@ -15,8 +15,8 @@
 
 import unittest
 import logging
-from imagefactory.builders import *
-from imagefactory.qmfagent.ImageFactory import ImageFactory
+from imgfac.builders import *
+from imgfac.qmfagent.ImageFactory import ImageFactory
 
 class TestImageFactory(unittest.TestCase):
     def setUp(self):

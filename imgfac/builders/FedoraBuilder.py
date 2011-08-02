@@ -33,9 +33,9 @@ import ConfigParser
 import boto.ec2
 from time import *
 from tempfile import *
-from imagefactory.ApplicationConfiguration import ApplicationConfiguration
-from imagefactory.ImageFactoryException import ImageFactoryException
-from imagefactory.VMWare import VMImport
+from imgfac.ApplicationConfiguration import ApplicationConfiguration
+from imgfac.ImageFactoryException import ImageFactoryException
+from imgfac.VMWare import VMImport
 from IBuilder import IBuilder
 from BaseBuilder import BaseBuilder
 from boto.s3.connection import S3Connection

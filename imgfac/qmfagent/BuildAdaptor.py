@@ -18,9 +18,9 @@ import logging
 import cqpid
 from qmf2 import *
 from threading import Thread, Lock
-from imagefactory import props
-from imagefactory.builders import *
-from imagefactory.BuildJob import BuildJob
+from imgfac import props
+from imgfac.builders import *
+from imgfac.BuildJob import BuildJob
 
 class BuildAdaptor(BuildJob):
     # QMF schema for BuildAdaptor
