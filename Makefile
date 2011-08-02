@@ -14,5 +14,8 @@ rpm: sdist version
 srpm: sdist version
 	rpmbuild -bs imagefactory.spec --define "_sourcedir `pwd`/dist"
 
+pylint:
+	pylint --rcfile=pylint.conf imagefactory imgfac
+
 clean:
 	rm -rf MANIFEST build dist imagefactory.spec version.txt
