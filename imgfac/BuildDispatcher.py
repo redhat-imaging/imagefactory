@@ -168,8 +168,10 @@ class BuildDispatcher(Singleton):
         results = self.warehouse.query("provider_image", "$target_image == \"%s\" && $provider == \"%s\"" % (target_image_id, provider))
         return results[0] if results else None
 
-    def _set_provider_image_attr(provider_image_id, attr, value):
-        self.warehouse.set_metadata_for_id_of_type({attr : value}, provider_image_id, "provider_image")
+    def _set_provider_image_attr(self, provider_image_id, attr, value):
+        self.warehouse.set_metadata_for_id_of_type({attr : value},
+                                                   provider_image_id,
+                                                   "provider_image")
 
     def _template_for_target_image_id(self, target_image_id):
         return self.warehouse.metadata_for_id_of_type(['template'], target_image_id, 'target_image')['template']
