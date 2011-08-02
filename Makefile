@@ -6,7 +6,7 @@ sdist:
 	python setup.py sdist
 
 signed-rpm: sdist version
-	rpmbuild -ba imagefactory.spec --sign --define "_sourcedir `pwd`/dist"i
+	rpmbuild -ba imagefactory.spec --sign --define "_sourcedir `pwd`/dist"
 
 rpm: sdist version
 	rpmbuild -ba imagefactory.spec --define "_sourcedir `pwd`/dist"
