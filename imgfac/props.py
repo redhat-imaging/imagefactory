@@ -41,4 +41,4 @@ def subprop(attr, subattr, doc = None, ro = False):
     return property(fget, fset if not ro else None, fdel if not ro else None, doc)
 
 def ro_subprop(attr, subattr, doc = None):
-    return prop(attr, subattr, doc, True)
+    return subprop(attr, subattr, doc, True)
