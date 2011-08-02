@@ -16,8 +16,6 @@
 import logging
 import zope
 import uuid
-import os
-import httplib2
 from IBuilder import IBuilder
 from imgfac import props
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
