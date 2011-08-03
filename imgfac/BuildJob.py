@@ -92,7 +92,7 @@ class BuildJob(object):
 
         return builder_class(self.template, self.target)
 
-    def _start_builder_thread(self, method_name, arg_dict={}):
+    def _start_builder_thread(self, method_name, arg_dict):
         thread_name = "%s.%s()" % (self.new_image_id, method_name)
         # using args to pass the method we want to call on the target object.
         builder_thread = threading.Thread(target = self._builder, name=thread_name, args=(method_name), kwargs=arg_dict)
