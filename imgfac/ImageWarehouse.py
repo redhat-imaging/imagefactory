@@ -58,7 +58,7 @@ class ImageWarehouse(object):
         self.provider_image_bucket = ApplicationConfiguration().configuration['provider_bucket']
 
         if (url.endswith('/')):
-             self.url = url[0:len(url)-1]
+            self.url = url[0:len(url)-1]
         else:
             self.url = url
 
