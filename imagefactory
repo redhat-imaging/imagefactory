@@ -175,5 +175,4 @@ class Application(Singleton):
                     print("Pushing build %s of image %s to provider %s" % (dispatcher.build_id, dispatcher.image_id, dispatcher.provider))
 
 if __name__ == "__main__":
-    application = Application()
-    sys.exit(application.main())
+    sys.exit(Application().main())
