@@ -1014,35 +1014,28 @@ class FedoraBuilder(BaseBuilder):
 
     def generic_decode_credentials(self, credentials, provider_data):
         # convenience function for simple creds (rhev-m and vmware currently)
-        # TODO: This is just silly-long - surely there's a better, cleaner, faster alternative
         doc = libxml2.parseDoc(credentials)
-        ctxt = doc.xpathNewContext()
 
         self.username = None
-        _usernodes = ctxt.xpathEval("//provider_credentials/%s_credentials/username" % (self.target))
+        _usernodes = doc.xpathEval("//provider_credentials/%s_credentials/username" % (self.target))
         if len(_usernodes) > 0:
             self.username = _usernodes[0].content
-
-        self.password = None
-        _passnodes = ctxt.xpathEval("//provider_credentials/%s_credentials/password" % (self.target))
-        if len(_passnodes) > 0:
-            self.password = _passnodes[0].content
-
-        doc.freeDoc()
-        ctxt.xpathFreeContext()
-
-        if not self.username:
+        else:
             try:
                 self.username = provider_data['username']
             except KeyError:
                 raise ImageFactoryException("No username specified in config file or in push call")
 
-        if not self.password:
+        _passnodes = doc.xpathEval("//provider_credentials/%s_credentials/password" % (self.target))
+        if len(_passnodes) > 0:
+            self.password = _passnodes[0].content
+        else:
             try:
                 self.password = provider_data['password']
             except KeyError:
                 raise ImageFactoryException("No password specified in config file or in push call")
 
+        doc.freeDoc()
 
     def ec2_decode_credentials(self, credentials):
         doc = libxml2.parseDoc(credentials)
