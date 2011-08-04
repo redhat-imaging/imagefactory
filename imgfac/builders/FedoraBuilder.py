@@ -391,14 +391,7 @@ class FedoraBuilder(BaseBuilder):
 
         # BG - Upload one of two templated fstabs
         # Input - root device name
-        # PREFIX is xv unless we are dealing with RHEL5, which is interesting - must mean we hack
-        # the pv kernel for RHEL5 to present PV block devices as sd*.  Is this true?
-        # UPDATE: clalance indicates that this works but is not advisable
-        # the xv devices are present in RHEL5, work, and should be used
-        # Filesystem type - ext3 for now everywhere
         # TODO: Match OS default behavior and/or what is found in the existing image
-        prefix="xv"
-        fstype="ext3"
 
         self.log.info("Modifying and uploading fstab")
         # Make arch conditional
@@ -407,8 +400,6 @@ class FedoraBuilder(BaseBuilder):
         else:
             tmpl=self.fstab_32bit
 
-        tmpl = string.replace(tmpl, "#DISK_DEVICE_PREFIX#", prefix)
-        tmpl = string.replace(tmpl, "#FILESYSTEM_TYPE#", fstype)
         g.write("/etc/fstab", tmpl)
 
         # BG - Enable networking
@@ -1540,18 +1531,18 @@ title #TITLE#
     initrd /boot/#KERNEL_IMAGE_NAME#-#KERNEL_VERSION#.img
 """
 
-    fstab_32bit="""LABEL=/    /         #FILESYSTEM_TYPE#    defaults         1 1
-/dev/#DISK_DEVICE_PREFIX#da2  /mnt      ext3    defaults         1 2
-/dev/#DISK_DEVICE_PREFIX#da3  swap      swap    defaults         0 0
+    fstab_32bit="""LABEL=/    /         ext3    defaults         1 1
+/dev/xvda2  /mnt      ext3    defaults         1 2
+/dev/xvda3  swap      swap    defaults         0 0
 none       /dev/pts  devpts  gid=5,mode=620   0 0
 none       /dev/shm  tmpfs   defaults         0 0
 none       /proc     proc    defaults         0 0
 none       /sys      sysfs   defaults         0 0
 """
 
-    fstab_64bit="""LABEL=/    /         #FILESYSTEM_TYPE#    defaults         1 1
-/dev/#DISK_DEVICE_PREFIX#db   /mnt      ext3    defaults         0 0
-/dev/#DISK_DEVICE_PREFIX#dc   /data     ext3    defaults         0 0
+    fstab_64bit="""LABEL=/    /         ext3    defaults         1 1
+/dev/xvdb   /mnt      ext3    defaults         0 0
+/dev/xvdc   /data     ext3    defaults         0 0
 none       /dev/pts  devpts  gid=5,mode=620   0 0
 none       /dev/shm  tmpfs   defaults         0 0
 none       /proc     proc    defaults         0 0
@@ -1559,7 +1550,7 @@ none       /sys      sysfs   defaults         0 0
 """
 
     # Dont attempt to be clever with ephemeral devices - leave it to users
-    fstab_generic="""LABEL=/    /         #FILESYSTEM_TYPE#    defaults         1 1
+    fstab_generic="""LABEL=/    /         ext3    defaults         1 1
 none       /dev/pts  devpts  gid=5,mode=620   0 0
 none       /dev/shm  tmpfs   defaults         0 0
 none       /proc     proc    defaults         0 0
