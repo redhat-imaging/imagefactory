@@ -481,8 +481,6 @@ class FedoraBuilder(BaseBuilder):
     def push_image(self, target_image_id, provider, credentials):
         try:
             if  self.target in self.upload_clouds or (self.target == "ec2" and self.app_config["ec2_build_style"] == "upload"):
-                #No need to have an image object here
-                #self.init_guest("local")
                 self.push_image_upload(target_image_id, provider, credentials)
             elif self.target in self.nonul_clouds or (self.target == "ec2" and self.app_config["ec2_build_style"] == "snapshot"):
                 self.init_guest("remote")
@@ -541,9 +539,6 @@ class FedoraBuilder(BaseBuilder):
 	  sleep(10)
 	  # There is no query or update method, we simply recreate
 	  jeos_instance = cloudservers.servers.get(jeos_instance.id)
-
-	#print "Public ip: " , jeos_instance.public_ip
-	#print "ID: " , jeos_instance.id
 
         # As with EC2 put this all in a try block and then terminate at the end to avoid long running
         # instances which cost users money
