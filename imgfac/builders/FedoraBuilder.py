@@ -1549,14 +1549,6 @@ none       /proc     proc    defaults         0 0
 none       /sys      sysfs   defaults         0 0
 """
 
-    # Dont attempt to be clever with ephemeral devices - leave it to users
-    fstab_generic="""LABEL=/    /         ext3    defaults         1 1
-none       /dev/pts  devpts  gid=5,mode=620   0 0
-none       /dev/shm  tmpfs   defaults         0 0
-none       /proc     proc    defaults         0 0
-none       /sys      sysfs   defaults         0 0
-"""
-
     ############ BEGIN CONFIG-LIKE class variables ###########################
     ##########################################################################
     # Perhaps there is a better way to do this but this works for now
