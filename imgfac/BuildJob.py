@@ -17,7 +17,6 @@ import logging
 import props
 import sys
 import threading
-from imgfac.builders import *
 from imgfac.Template import Template
 
 class BuildJob(object):
@@ -77,18 +76,22 @@ class BuildJob(object):
         pass
 
     def _get_builder(self):
-        builder_class = MockBuilder.MockBuilder
-        if (self.target != "mock"): # If target is mock always run mock builder regardless of template
-            os_name = self._xml_node(self.template.xml, '/template/os/name')
+        if self.target == "mock":
+            # If target is mock always run mock builder regardless of template
+            os_name = "Mock"
+        else:
+            nodes = libxml2.parseDoc(self.template.xml).xpathEval('/template/os/name')
+            if len(nodes) == 0:
+                raise Exception, "No OS name defined in the template"
+            elif len(nodes) > 1:
+                raise Exception, "Multiple OS names defined in the template"
             # Change RHEL-6 to RHEL6, etc.
-            os_name = os_name.translate(None, '-')
-            class_name = "%sBuilder" % (os_name, )
-            try:
-                module_name = "imgfac.builders.%s" % (class_name, )
-                __import__(module_name)
-                builder_class = getattr(sys.modules[module_name], class_name)
-            except AttributeError, e:
-                self.log.exception("CAUGHT EXCEPTION: %s \n Could not find builder class for %s, returning MockBuilder!", e, os_name)
+            os_name = nodes[0].content.translate(None, '-')
+
+        class_name = "%sBuilder" % (os_name, )
+        module_name = "imgfac.builders.%s" % (class_name, )
+        __import__(module_name)
+        builder_class = getattr(sys.modules[module_name], class_name)
 
         return builder_class(self.template, self.target)
 
@@ -97,9 +100,3 @@ class BuildJob(object):
         # using args to pass the method we want to call on the target object.
         builder_thread = threading.Thread(target = self._builder, name=thread_name, args=(method_name), kwargs=arg_dict)
         builder_thread.start()
-
-    def _xml_node(self, xml, xpath):
-        nodes = libxml2.parseDoc(xml).xpathEval(xpath)
-        if not nodes:
-            return None
-        return nodes[0].content
