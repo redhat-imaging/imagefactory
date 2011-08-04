@@ -1027,7 +1027,7 @@ class FedoraBuilder(BaseBuilder):
         _usernodes = ctxt.xpathEval("//provider_credentials/%s_credentials/username" % (self.target))
         if len(_usernodes) > 0:
             self.username = _usernodes[0].content
-        
+
         self.password = None
         _passnodes = ctxt.xpathEval("//provider_credentials/%s_credentials/password" % (self.target))
         if len(_passnodes) > 0:
@@ -1575,22 +1575,22 @@ none       /sys      sysfs   defaults         0 0
         # v0.6 of F14 and F15 - dropped F13 for now - also include official public RHEL hourly AMIs for RHEL6
     ec2_jeos_amis={
          'ec2-us-east-1': {'Fedora': { '14' : { 'x86_64': 'ami-5b1dd932', 'i386': 'ami-171dd97e' },
-                                       '15' : { 'x86_64': 'ami-c31cd8aa', 'i386': 'ami-b71cd8de' } 
+                                       '15' : { 'x86_64': 'ami-c31cd8aa', 'i386': 'ami-b71cd8de' }
                                      } ,
                            'RHEL-6': { '0'  : { 'x86_64': 'ami-80c937e9', 'i386': 'ami-ceb841a7' },
                                        '1'  : { 'x86_64': 'ami-5e837b37', 'i386': 'ami-0cbb4265' }
                                      }
                           } ,
          'ec2-us-west-1': {'Fedora': { '14' : { 'x86_64': 'ami-c9693a8c', 'i386': 'ami-c7693a82' },
-                                       '15' : { 'x86_64': 'ami-45a9fb00', 'i386': 'ami-65a9fb20' } 
+                                       '15' : { 'x86_64': 'ami-45a9fb00', 'i386': 'ami-65a9fb20' }
                                      } ,
                            'RHEL-6': { '0'  : { 'x86_64': 'ami-a5c695e0', 'i386': 'ami-05e7b440' },
-                                       '1'  : { 'x86_64': 'ami-592d7f1c', 'i386': 'ami-dfe7b49a' } 
-                                     } 
+                                       '1'  : { 'x86_64': 'ami-592d7f1c', 'i386': 'ami-dfe7b49a' }
+                                     }
 # TODO: RHEL5 snapshots fail because of block device mapping issues - fix this
 #                           ,
 #                           'RHEL-5': { 'U5' : { 'x86_64': 'ami-6fc99a2a', 'i386': 'ami-89e0b3cc' },
 #                                       'U6' : { 'x86_64': 'ami-edc596a8', 'i386': 'ami-73e7b436' }
 #                                     }
-                          } 
+                          }
                   }
