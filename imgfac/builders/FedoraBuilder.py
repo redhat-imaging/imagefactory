@@ -21,6 +21,7 @@ import subprocess
 import os
 import re
 import sys
+import shutil
 import guestfs
 import string
 import libxml2
@@ -898,8 +899,7 @@ class FedoraBuilder(BaseBuilder):
         # Copy to staging location
         # The os-native cp command in Fedora and RHEL does sparse file detection which is good
         self.log.debug("Copying (%s) to (%s)" % (input_image, staging_image))
-        if subprocess.call(["cp", "-f", input_image, staging_image]):
-            raise ImageFactoryException("Copy of condorcloud image to staging location (%s) failed" % (staging_image))
+        shutil.copyfile(input_image, staging_image)
 
         # Retrieve original XML and write it out to the final dir
         image_xml_base="/condorimage-" + self.new_image_id + ".xml"
@@ -916,8 +916,7 @@ class FedoraBuilder(BaseBuilder):
         # Now move the image file to the final location
         final_image = storage + image_base
         self.log.debug("Moving (%s) to (%s)" % (staging_image, final_image))
-        if subprocess.call(["mv", "-f", staging_image, final_image]):
-            raise ImageFactoryException("Move of condorcloud image to final location (%s) failed" % (final_image))
+        shutil.move(staging_image, final_image)
 
         metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=self.new_image_id)
         self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
