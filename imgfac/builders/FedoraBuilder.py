@@ -173,14 +173,11 @@ class FedoraBuilder(BaseBuilder):
                 self.log.debug("Doing base install via Oz")
                 libvirt_xml = self.guest.install(self.app_config["timeout"])
                 self.image = self.guest.diskimage
-                self.log.debug("Base install complete - Doing customization")
-                self.percent_complete=30
-                self.guest.customize(libvirt_xml)
-                self.log.debug("Customization complete")
-                self.percent_complete=50
-                self.log.debug("Generating ICICLE")
-                self.output_descriptor = self.guest.generate_icicle(libvirt_xml)
-                self.log.debug("ICICLE generation complete")
+                self.log.debug("Base install complete - Doing customization and ICICLE generation")
+                self.percent_complete = 30
+                self.output_descriptor = self.guest.customize_and_generate_icicle(libvirt_xml)
+                self.log.debug("Customization and ICICLE generation complete")
+                self.percent_complete = 50
             except:
                 self.log_exc()
                 self.guest.cleanup_old_guest()
