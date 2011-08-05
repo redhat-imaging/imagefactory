@@ -109,15 +109,9 @@ class FedoraBuilder(BaseBuilder):
             self.guest = FedoraRemoteGuest(self.tdlobj, config, None, "virtio", True, "virtio", True)
         self.guest.diskimage = self.app_config["imgdir"] + "/base-image-" + self.new_image_id + ".dsk"
 
-    def log_exc(self, location = None, message = None):
-        if message:
-            self.log.debug(message)
-        elif location:
-            self.log.debug("Exception encountered in (%s)" % location)
-        else:
-            self.log.debug("Exception caught in ImageFactory")
+    def log_exc(self):
+        self.log.debug("Exception caught in ImageFactory")
         self.log.debug(traceback.format_exc())
-
 
     def build_image(self, build_id=None):
         try:
