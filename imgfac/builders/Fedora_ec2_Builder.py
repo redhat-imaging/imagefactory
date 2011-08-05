@@ -20,31 +20,25 @@ import oz.TDL
 import subprocess
 import os
 import re
-import sys
-import shutil
 import guestfs
 import string
 import libxml2
 import httplib2
 import traceback
 import pycurl
-import json
 import gzip
-from cloudservers import CloudServers
 import ConfigParser
 import boto.ec2
 from time import *
 from tempfile import *
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
-from imgfac.VMWare import VMImport
 from IBuilder import IBuilder
 from BaseBuilder import BaseBuilder
 from boto.s3.connection import S3Connection
 from boto.s3.connection import Location
 from boto.exception import *
 from boto.ec2.blockdevicemapping import EBSBlockDeviceType, BlockDeviceMapping
-from VMDKstream import convert_to_stream
 
 # Boto is very verbose - shut it up
 logging.getLogger('boto').setLevel(logging.INFO)
@@ -74,17 +68,12 @@ class FedoraRemoteGuest(oz.Fedora.FedoraGuest):
         pass
 
 
-class FedoraBuilder(BaseBuilder):
-    """docstring for FedoraBuilder"""
+class Fedora_ec2_Builder(BaseBuilder):
+    """docstring for Fedora_ec2_Builder"""
     zope.interface.implements(IBuilder)
 
-    # Reference vars - don't change these
-    # EC2 is a special case as it can be either and is set in the config file
-    upload_clouds = [ "rhevm", "vsphere", "condorcloud" ]
-    nonul_clouds = [ "rackspace", "gogrid" ]
-
     def __init__(self, template, target):
-        super(FedoraBuilder, self).__init__(template, target)
+        super(Fedora_ec2_Builder, self).__init__(template, target)
         self.app_config = ApplicationConfiguration().configuration
         self.warehouse_url = self.app_config['warehouse']
         # May not be necessary to do both of these
@@ -115,14 +104,14 @@ class FedoraBuilder(BaseBuilder):
 
     def build_image(self, build_id=None):
         try:
-            if  self.target in self.upload_clouds or (self.target == "ec2" and self.app_config["ec2_build_style"] == "upload"):
+            if self.app_config["ec2_build_style"] == "upload":
                 self.init_guest("local")
                 self.build_upload(build_id)
-            elif self.target in self.nonul_clouds or (self.target == "ec2" and self.app_config["ec2_build_style"] == "snapshot"):
+            elif self.app_config["ec2_build_style"] == "snapshot":
                 # No actual need to have a guest object here so don't bother
                 self.build_snapshot(build_id)
             else:
-                raise ImageFactoryException("Invalid build target (%s) passed to build_image()" % (self.target))
+                raise ImageFactoryException("Invalid ec2_build_style (%s) passed to build_image()" % (self.app_config["ec2_build_style"]))
         except:
             self.log_exc()
             self.status="FAILED"
@@ -144,24 +133,18 @@ class FedoraBuilder(BaseBuilder):
         sleep(5)
 
     def build_upload(self, build_id):
-        self.log.debug("build_upload() called on FedoraBuilder...")
-        self.log.debug("Building for target %s with warehouse config %s" % (self.target, self.app_config['warehouse']))
+        self.log.debug("Fedora_ec2_Builder: build_upload() called for target %s with warehouse config %s" % (self.target, self.app_config['warehouse']))
         self.status="BUILDING"
         try:
             self.guest.cleanup_old_guest()
             self.guest.generate_install_media(force_download=False)
             self.percent_complete=10
-        except:
-            self.log_exc()
-            self.status="FAILED"
-            raise
 
-        # We want to save this later for use by RHEV-M and Condor clouds
-        libvirt_xml=""
+            # We want to save this later for use by RHEV-M and Condor clouds
+            libvirt_xml=""
 
-        try:
-            self.guest.generate_diskimage()
             try:
+                self.guest.generate_diskimage()
                 # TODO: If we already have a base install reuse it
                 #  subject to some rules about updates to underlying repo
                 self.log.debug("Doing base install via Oz")
@@ -172,67 +155,33 @@ class FedoraBuilder(BaseBuilder):
                 self.output_descriptor = self.guest.customize_and_generate_icicle(libvirt_xml)
                 self.log.debug("Customization and ICICLE generation complete")
                 self.percent_complete = 50
-            except:
-                self.log_exc()
-                self.guest.cleanup_old_guest()
-                self.status="FAILED"
-                raise
-        finally:
-            self.guest.cleanup_install()
+            finally:
+                self.guest.cleanup_install()
 
-        self.log.debug("Generated disk image (%s)" % (self.guest.diskimage))
-        # OK great, we now have a customized KVM image
-        # Now we do some target specific transformation
+            self.log.debug("Generated disk image (%s)" % (self.guest.diskimage))
+            # OK great, we now have a customized KVM image
+            # Now we do some target specific transformation
 
-        # Add the cloud-info file
-        self.modify_oz_filesystem()
+            # Add the cloud-info file
+            self.modify_oz_filesystem()
 
-        if self.target == "ec2":
             self.log.info("Transforming image for use on EC2")
-            self.ec2_transform_image()
-        elif self.target == "vsphere":
-            self.log.info("Transforming image for use on VMWare")
-            self.vmware_transform_image()
+            self.ec2_copy_filesystem(self.app_config['imgdir'])
+            self.ec2_modify_filesystem()
 
-        if (self.app_config['warehouse']):
-            self.log.debug("Storing Fedora image at %s..." % (self.app_config['warehouse'], ))
-            # TODO: Revisit target_parameters for different providers
-
-            if self.target in [ "condorcloud", "rhevm" ]:
-                # TODO: Prune any unneeded elements
-                target_parameters=libvirt_xml
-            else:
+            if (self.app_config['warehouse']):
+                self.log.debug("Storing Fedora image at %s..." % (self.app_config['warehouse'], ))
                 target_parameters="No target parameters for cloud type %s" % (self.target)
 
-            self.store_image(build_id, target_parameters)
-            self.log.debug("Image warehouse storage complete")
-        self.percent_complete=100
-        self.status="COMPLETED"
-
-    def vmware_transform_image(self):
-        # On entry the image points to our generic KVM raw image
-        # Convert to stream-optimized VMDK and then update the image property
-        target_image = self.app_config['imgdir'] + "/vmware-image-" + self.new_image_id + ".vmdk"
-        self.log.debug("Converting raw kvm image (%s) to vmware stream-optimized image (%s)" % (self.image, target_image))
-        convert_to_stream(self.image, target_image)
-        self.log.debug("VMWare stream conversion complete")
-        # Save the original image file name but update our property to point to new VMWare image
-        # TODO: Delete the original image?
-        self.original_image = self.image
-        self.image = target_image
-
-    def ec2_transform_image(self):
-        # On entry the image points to our generic KVM image - we transform image
-        #  and then update the image property to point to our new image and update
-        #  the metadata
-        try:
-            output_dir=self.app_config['imgdir']
-            self.ec2_copy_filesystem(output_dir)
-            self.ec2_modify_filesystem()
+                self.store_image(build_id, target_parameters)
+                self.log.debug("Image warehouse storage complete")
         except:
             self.log_exc()
             self.status="FAILED"
             raise
+
+        self.percent_complete=100
+        self.status="COMPLETED"
 
     def modify_oz_filesystem(self):
         self.log.debug("Doing further Factory specific modification of Oz image")
@@ -337,9 +286,7 @@ class FedoraBuilder(BaseBuilder):
         g.umount_all ()
         os.unlink(tmp_image_file)
 
-        # Save the original image file name but update our property to point to new EC2 image
-        # TODO: Delete the original image?
-        self.original_image = self.image
+        # TODO: We lost the original filename here; delete the original image?
         self.image = target_image
 
     def ec2_modify_filesystem(self):
@@ -357,9 +304,8 @@ class FedoraBuilder(BaseBuilder):
         g.launch ()
 
         # Do inspection here, as libguestfs prefers we do it before mounting anything
-        inspection = g.inspect_os()
         # This should always be /dev/vda or /dev/sda but we do it anyway to be safe
-        osroot = inspection[0]
+        osroot = g.inspect_os()[0]
 
         # eg "fedora"
         distro = g.inspect_get_distro(osroot)
@@ -414,6 +360,7 @@ class FedoraBuilder(BaseBuilder):
         self.log.info("Updating rc.local for key injection")
         g.write("/tmp/rc.local", self.rc_local)
         g.sh("cat /tmp/rc.local >> /etc/rc.local")
+        g.rm("/tmp/rc.local")
 
         # Install menu list
         # Derive the kernel version from the last element of ls /lib/modules and some
@@ -474,143 +421,21 @@ class FedoraBuilder(BaseBuilder):
 
     def push_image(self, target_image_id, provider, credentials):
         try:
-            if  self.target in self.upload_clouds or (self.target == "ec2" and self.app_config["ec2_build_style"] == "upload"):
+            if self.app_config["ec2_build_style"] == "upload":
                 self.push_image_upload(target_image_id, provider, credentials)
-            elif self.target in self.nonul_clouds or (self.target == "ec2" and self.app_config["ec2_build_style"] == "snapshot"):
+            elif self.app_config["ec2_build_style"] == "snapshot":
                 self.init_guest("remote")
-                self.push_image_snapshot(target_image_id, provider, credentials)
+                self.push_image_snapshot_ec2(target_image_id, provider,
+                                             credentials)
             else:
                 raise ImageFactoryException("Invalid build target (%s) passed to build_image()" % (self.target))
         except:
             self.log_exc()
             self.status="FAILED"
 
-
-    def push_image_snapshot(self, target_image_id, provider, credentials):
-        if provider == "rackspace":
-            self.push_image_snapshot_rackspace(target_image_id, provider, credentials)
-        else:
-            self.push_image_snapshot_ec2(target_image_id, provider, credentials)
-
-    def push_image_snapshot_rackspace(self, target_image_id, provider, credentials):
-
-        doc = libxml2.parseDoc(credentials)
-        ctxt = doc.xpathNewContext()
-
-        rack_username = ctxt.xpathEval("//provider_credentials/rackspace_credentials/username")[0].content
-        rack_access_key = ctxt.xpathEval("//provider_credentials/rackspace_credentials/access_key")[0].content
-
-        cloudservers = CloudServers(rack_username, rack_access_key)
-	cloudservers.authenticate()
-
-        # TODO: Config file
-        rack_jeos = {'Fedora': { '14' : { 'x86_64': 71},
-                                 '13' : { 'x86_64': 53} } }
-
-        jeos_id = None
-        try:
-            jeos_id = rack_jeos[self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]
-        except KeyError:
-            raise ImageFactoryException("Unable to find Rackspace JEOS for desired distro - ask Rackspace")
-
-
-	jeos_image = cloudservers.images.get(jeos_id)
-        # Hardcode to use a modest sized server
-	onegig_flavor = cloudservers.flavors.get(3)
-
-        # This is the Rackspace version of key injection
-	mypub = open("/etc/oz/id_rsa-icicle-gen.pub")
-	server_files = { "/root/.ssh/authorized_keys":mypub }
-
-        instance_name = "factory-build-%s" % (self.new_image_id, )
-        jeos_instance = cloudservers.servers.create(instance_name, jeos_image,
-                                                    onegig_flavor,
-                                                    files=server_files)
-
-        for i in range(300):
-            if jeos_instance.status == "ACTIVE":
-                self.log.debug("JEOS instance now active - moving to customize")
-                break
-            if i % 10 == 0:
-                self.log.debug("Waiting for Rackspace instance to start access: %d/300" % (i))
-            sleep(1)
-            # There is no query or update method, we simply recreate
-            jeos_instance = cloudservers.servers.get(jeos_instance.id)
-
-        # As with EC2 put this all in a try block and then terminate at the end to avoid long running
-        # instances which cost users money
-        try:
-            self.guest.sshprivkey = "/etc/oz/id_rsa-icicle-gen"
-            guestaddr = jeos_instance.public_ip
-
-            # TODO: Make this loop so we can take advantage of early availability
-            # Ugly ATM because failed access always triggers an exception
-            self.log.debug("Waiting up to 300 seconds for ssh to become available on %s" % (guestaddr))
-            retcode = 1
-            for i in range(300):
-                if i % 10 == 0:
-                    self.log.debug("Waiting for Rackspace ssh access: %d/300" % (i))
-
-                try:
-                    stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, "/bin/true")
-                    break
-                except:
-                    pass
-
-                sleep(1)
-
-            if retcode:
-                raise ImageFactoryException("Unable to gain ssh access after 300 seconds - aborting")
-
-            # There are a handful of additional boot tasks after SSH starts running
-            # Give them an additional 20 seconds for good measure
-            self.log.debug("Waiting 20 seconds for remaining boot tasks")
-            sleep(20)
-
-	    self.log.debug("Doing Rackspace Customize")
-	    self.guest.mkdir_p(self.guest.icicle_tmp)
-	    self.guest.do_customize(guestaddr)
-	    self.log.debug("Done!")
-
-            self.log.debug("Generating ICICLE for Rackspace image")
-            self.output_descriptor = self.guest.do_icicle(guestaddr)
-            self.log.debug("Done!")
-
-            image_name = "factory-image-%s" % (self.new_image_id, )
-	    snap_image = cloudservers.images.create(image_name, jeos_instance)
-
-	    self.log.debug("New Rackspace image created with ID: %s" % (snap_image.id))
-
-            for i in range(300):
-                if snap_image.status == "ACTIVE":
-                    self.log.debug("Snapshot Completed")
-                    break
-                if i % 10 == 0:
-                    self.log.debug("Image status: %s - Waiting for completion: %d/300" % (snap_image.status, i))
-                sleep(1)
-                # There is no query or update method, we simply recreate
-                snap_image = cloudservers.images.get(snap_image.id)
-
-            self.log.debug("Storing Rackspace image ID (%s) and details in Warehouse" % (snap_image.id))
-            icicle_id = self.warehouse.store_icicle(self.output_descriptor)
-            metadata = dict(target_image=target_image_id, provider=provider, icicle=icicle_id, target_identifier=snap_image.id)
-            self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
-
-        finally:
-            self.log.debug("Shutting down Rackspace server")
-            cloudservers.servers.delete(jeos_instance.id)
-
-        self.percent_complete=100
-        self.status = "COMPLETED"
-
     def install_euca_tools(self, guestaddr):
         # For F13-F15 we now have a working euca2ools in the default repos
         self.guest.guest_execute_command(guestaddr, "yum -y install euca2ools")
-
-    def add_factory_cust(self, guestaddr):
-        # We create the Fedora JEOS images so they already contain the needed customization
-        # For child classes we sometimes have to add CLOUD_INFO or rc.local content
-        pass
 
     def push_image_snapshot_ec2(self, target_image_id, provider, credentials):
         self.log.debug("Being asked to push for provider %s" % (provider))
@@ -698,13 +523,12 @@ class FedoraBuilder(BaseBuilder):
         # Give it 10 seconds to settle
         sleep(10)
 
-        for i in range(300):
-            if i % 10 == 0:
-                self.log.debug("Waiting for EC2 instance to start: %d/300" % (i*10))
+        for i in range(30):
+            self.log.debug("Waiting for EC2 instance to start: %d/300" % (i*10))
             instance.update()
             if instance.state == u'running':
                 break
-            sleep(1)
+            sleep(10)
 
         if instance.state != u'running':
             self.status="FAILED"
@@ -721,17 +545,19 @@ class FedoraBuilder(BaseBuilder):
             # Ugly ATM because failed access always triggers an exception
             self.log.debug("Waiting up to 300 seconds for ssh to become available on %s" % (guestaddr))
             retcode = 1
-            for i in range(300):
-                if i % 10 == 0:
-                    self.log.debug("Waiting for EC2 ssh access: %d/300" % (i))
+            for i in range(30):
+                self.log.debug("Waiting for EC2 ssh access: %d/300" % (i*10))
 
+                access=1
                 try:
                     stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, "/bin/true")
-                    break
                 except:
-                    pass
+                    access=0
 
-                sleep(1)
+                if access:
+                    break
+
+                sleep(10)
 
             if retcode:
                 raise ImageFactoryException("Unable to gain ssh access after 300 seconds - aborting")
@@ -748,15 +574,12 @@ class FedoraBuilder(BaseBuilder):
             self.log.debug("Done")
 
             # Different OSes need different steps here
-            self.install_euca_tools(guestaddr)
+            self.guest.guest_execute_command(guestaddr, "yum -y install euca2ools")
 
             self.log.debug("Customizing guest: %s" % (guestaddr))
             self.guest.mkdir_p(self.guest.icicle_tmp)
             self.guest.do_customize(guestaddr)
             self.log.debug("Customization step complete")
-
-            # If an OS class needs additional image cust do it now
-            self.add_factory_cust(guestaddr)
 
             self.log.debug("Generating ICICLE from customized guest")
             self.output_descriptor = self.guest.do_icicle(guestaddr)
@@ -835,6 +658,7 @@ class FedoraBuilder(BaseBuilder):
             conn.delete_key_pair(key_name)
             try:
                 timeout = 60
+                interval = 5
                 for i in range(timeout):
                     instance.update()
                     if(instance.state == "terminated"):
@@ -843,193 +667,33 @@ class FedoraBuilder(BaseBuilder):
                         break
                     elif(i < timeout):
                         self.log.debug("Instance status (%s) - waiting for 'terminated'. [%d of %d seconds elapsed]" % (instance.state, i * interval, timeout * interval))
-                        sleep(5)
+                        sleep(interval)
                     else:
                         raise Exception("Timeout waiting for instance to terminate.")
             except Exception, e:
                 self.log.debug("Unable to delete temporary security group (%s) due to exception: %s" % (factory_security_group_name, e))
 
-        self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), target_image_id, self.new_image_id, str(metadata)))
+        self.log.debug("Fedora_ec2_Builder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), target_image_id, self.new_image_id, str(metadata)))
         self.percent_complete=100
         self.status="COMPLETED"
 
-    def condorcloud_push_image_upload(self, target_image_id, provider, credentials):
-        # condorcloud is a simple local cloud instance using Condor
-        # The push action in this case simply requires that we copy the image to a known
-        # location and then move it to another known loacation
-
-        # This is where the image should be after a local build
-        input_image = self.app_config["imgdir"] + "/base-image-" + target_image_id + ".dsk"
-        # Grab from Warehouse if it isn't here
-        self.retrieve_image(target_image_id, input_image)
-
-        storage = "/home/cloud/images"
-        if not os.path.isdir(storage):
-            raise ImageFactoryException("Storage dir (%s) for condorcloud is not present" % (storage))
-
-        staging = storage + "/staging"
-        if not os.path.isdir(staging):
-            raise ImageFactoryException("Staging dir (%s) for condorcloud is not present" % (staging))
-
-        image_base = "/condorimage-" + self.new_image_id + ".img"
-        staging_image = staging + image_base
-
-        # Copy to staging location
-        # The os-native cp command in Fedora and RHEL does sparse file detection which is good
-        self.log.debug("Copying (%s) to (%s)" % (input_image, staging_image))
-        shutil.copyfile(input_image, staging_image)
-
-        # Retrieve original XML and write it out to the final dir
-        image_xml_base="/condorimage-" + self.new_image_id + ".xml"
-        image_xml_file= storage + image_xml_base
-
-        image_metadata = self.warehouse.metadata_for_id_of_type(("target_parameters",), target_image_id, "target_image")
-        self.log.debug("Got metadata output of: %s", repr(image_metadata))
-        libvirt_xml = image_metadata["target_parameters"]
-
-        f = open(image_xml_file, 'w')
-        f.write(libvirt_xml)
-        f.close()
-
-        # Now move the image file to the final location
-        final_image = storage + image_base
-        self.log.debug("Moving (%s) to (%s)" % (staging_image, final_image))
-        shutil.move(staging_image, final_image)
-
-        metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=self.new_image_id)
-        self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
-        self.percent_complete = 100
-
-    def vmware_push_image_upload(self, target_image_id, provider, credentials):
-        # Decode the config file, verify that the provider is in it - err out if not
-        # TODO: Make file location CONFIG value
-        cfg_file = open("/etc/vmware.json","r")
-        vmware_json = cfg_file.read()
-        local_vmware=json.loads(vmware_json)
-
-        provider_data = None
-        try:
-            provider_data = local_vmware[provider]
-        except KeyError:
-            raise ImageFactoryException("VMWare instance (%s) not found in local configuraiton file /etc/vmware.json" % (provider))
-
-        self.generic_decode_credentials(credentials, provider_data)
-
-        # This is where the image should be after a local build
-        input_image = self.app_config['imgdir'] + "/vmware-image-" + target_image_id + ".vmdk"
-        # Grab from Warehouse if it isn't here
-        self.retrieve_image(target_image_id, input_image)
-
-        # Example of some JSON for westford_esx
-        # {"westford_esx": {"api-url": "https://vsphere.virt.bos.redhat.com/sdk", "username": "Administrator", "password": "changeme",
-        #       "datastore": "datastore1", "network_name": "VM Network" } }
-
-        vm_name = "factory-image-" + self.new_image_id
-        vm_import = VMImport(provider_data['api-url'], self.username, self.password)
-        vm_import.import_vm(datastore=provider_data['datastore'], network_name = provider_data['network_name'],
-                       name=vm_name, disksize_kb = (10*1024*1024 + 2 ), memory=512, num_cpus=1,
-                       guest_id='otherLinux64Guest', imagefilename=input_image)
-
-        # Create the provdier image
-        metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=vm_name)
-        self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
-        self.percent_complete = 100
-
-
-    def rhevm_push_image_upload(self, target_image_id, provider, credentials):
-        # ****** IMPORTANT NOTE ********
-        # This is currently the only cloud for which we delegate the push function to the Warehouse
-        # This has proven to be a debugging challenge and we may, in future, pull this back into Factory
-
-        # Decode the config file, verify that the provider is in it - err out if not
-        # TODO: Make file location CONFIG value
-	file = open("/etc/rhevm.json","r")
-	rhevm_json = file.read()
-	local_rhevm=json.loads(rhevm_json)
-
-        post_data = None
-        try:
-            post_data = local_rhevm[provider]
-        except KeyError:
-            raise ImageFactoryException("RHEV-M instance (%s) not found in local configuraiton file /etc/rhevm.json" % (provider))
-
-        self.generic_decode_credentials(credentials, post_data)
-
-        # Deal with case where these are not set in the config file
-        # or are overridden via the credentials argument
-        post_data['api-key'] = self.username
-        post_data['api-secret'] = self.password
-
-        post_data['op'] = "register"
-        post_data['site'] = provider
-
-        response = self.warehouse.post_on_object_with_id_of_type(target_image_id, "target_image", post_data)
-
-        m = re.match("^OK ([a-fA-F0-9-]+)", response)
-        rhevm_uuid = None
-        if m:
-            rhevm_uuid = m.group(1)
-        else:
-            raise ImageFactoryException("Failed to extract RHEV-M UUID from warehouse POST reponse: %s" % (response))
-
-	self.log.debug("Extracted RHEVM UUID: %s " % (rhevm_uuid))
-
-        # Create the provdier image
-        metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=rhevm_uuid)
-        self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
-        self.percent_complete = 100
-
-
     def push_image_upload(self, target_image_id, provider, credentials):
-        # TODO: RHEV-M and VMWare
         self.status="PUSHING"
         self.percent_complete=0
         try:
-            if self.target == "ec2":
-                if self.app_config["ec2_ami_type"] == "s3":
-                    self.ec2_push_image_upload(target_image_id, provider, credentials)
-                elif self.app_config["ec2_ami_type"] == "ebs":
-                    self.ec2_push_image_upload_ebs(target_image_id, provider, credentials)
-                else:
-                    raise ImageFactoryException("Invalid or unspecified EC2 AMI type in config file")
-            elif self.target == "condorcloud":
-                self.condorcloud_push_image_upload(target_image_id, provider, credentials)
-            elif self.target == "rhevm":
-                self.rhevm_push_image_upload(target_image_id, provider, credentials)
-            elif self.target == "vsphere":
-                self.vmware_push_image_upload(target_image_id, provider, credentials)
+            if self.app_config["ec2_ami_type"] == "s3":
+                self.ec2_push_image_upload(target_image_id, provider,
+                                           credentials)
+            elif self.app_config["ec2_ami_type"] == "ebs":
+                self.ec2_push_image_upload_ebs(target_image_id, provider,
+                                               credentials)
             else:
-                raise ImageFactoryException("Invalid upload push requested for target (%s) and provider (%s)" % (self.target, provider))
+                raise ImageFactoryException("Invalid or unspecified EC2 AMI type in config file")
         except:
             self.log_exc()
             self.status="FAILED"
             raise
         self.status="COMPLETED"
-
-    def generic_decode_credentials(self, credentials, provider_data):
-        # convenience function for simple creds (rhev-m and vmware currently)
-        doc = libxml2.parseDoc(credentials)
-
-        self.username = None
-        _usernodes = doc.xpathEval("//provider_credentials/%s_credentials/username" % (self.target))
-        if len(_usernodes) > 0:
-            self.username = _usernodes[0].content
-        else:
-            try:
-                self.username = provider_data['username']
-            except KeyError:
-                raise ImageFactoryException("No username specified in config file or in push call")
-
-        _passnodes = doc.xpathEval("//provider_credentials/%s_credentials/password" % (self.target))
-        if len(_passnodes) > 0:
-            self.password = _passnodes[0].content
-        else:
-            try:
-                self.password = provider_data['password']
-            except KeyError:
-                raise ImageFactoryException("No password specified in config file or in push call")
-
-        doc.freeDoc()
 
     def _ec2_get_xml_node(self, doc, credtype):
         nodes = doc.xpathEval("//provider_credentials/ec2_credentials/%s" % (credtype))
@@ -1171,13 +835,12 @@ class FedoraBuilder(BaseBuilder):
         # Give it 10 seconds to settle
         sleep(10)
 
-        for i in range(300):
-            if i % 10 == 0:
-                self.log.debug("Waiting for EC2 instance to start: %d/300" % (i))
+        for i in range(30):
+            self.log.debug("Waiting for EC2 instance to start: %d/300" % (i*10))
             instance.update()
             if instance.state == u'running':
                 break
-            sleep(1)
+            sleep(10)
 
         if instance.state != u'running':
             self.status="FAILED"
@@ -1196,15 +859,17 @@ class FedoraBuilder(BaseBuilder):
             # Ugly ATM because failed access always triggers an exception
             self.log.debug("Waiting up to 300 seconds for ssh to become available on %s" % (guestaddr))
             retcode = 1
-            for i in range(300):
-                if i % 10 == 0:
-                self.log.debug("Waiting for EC2 ssh access: %d/300" % (i))
+            for i in range(30):
+                self.log.debug("Waiting for EC2 ssh access: %d/300" % (i*10))
 
+                access=1
                 try:
                     stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, "/bin/true")
-                    break
                 except:
-                    pass
+                    access=0
+
+                if access:
+                    break
 
                 sleep(10)
 
@@ -1228,14 +893,13 @@ class FedoraBuilder(BaseBuilder):
             # Wait up to 10 minutes for now (plus the time taken for the upload above)
             self.log.debug("Waiting up to 600 seconds for volume (%s) to become available" % (volume.id))
             retcode = 1
-            for i in range(600):
+            for i in range(60):
                 volume.update()
                 if volume.status == "available":
                     retcode = 0
                     break
-                if i % 10 == 0:
-                    self.log.debug("Volume status (%s) - waiting for 'available': %d/600" % (volume.status, i))
-                sleep(1)
+                self.log.debug("Volume status (%s) - waiting for 'available': %d/600" % (volume.status, i*10))
+                sleep(10)
 
             if retcode:
                 raise ImageFactoryException("Unable to create target volume for EBS AMI - aborting")
@@ -1246,15 +910,14 @@ class FedoraBuilder(BaseBuilder):
 
             self.log.debug("Waiting up to 120 seconds for volume (%s) to become in-use" % (volume.id))
             retcode = 1
-            for i in range(120):
+            for i in range(12):
                 volume.update()
                 vs = volume.attachment_state()
                 if vs == "attached":
                     retcode = 0
                     break
-                if i % 10 == 0:
-                    self.log.debug("Volume status (%s) - waiting for 'attached': %d/120" % (vs, i))
-                sleep(1)
+                self.log.debug("Volume status (%s) - waiting for 'attached': %d/120" % (vs, i*10))
+                sleep(10)
 
             if retcode:
                 raise ImageFactoryException("Unable to attach volume (%s) to instance (%s) aborting" % (volume.id, instance.id))
@@ -1280,14 +943,13 @@ class FedoraBuilder(BaseBuilder):
             # This can take a _long_ time - wait up to 20 minutes
             self.log.debug("Waiting up to 1200 seconds for snapshot (%s) to become completed" % (snapshot.id))
             retcode = 1
-            for i in range(1200):
+            for i in range(120):
                 snapshot.update()
                 if snapshot.status == "completed":
                     retcode = 0
                     break
-                if i % 10 == 0:
-                    self.log.debug("Snapshot progress(%s) -  status (%s) - waiting for 'completed': %d/1200" % (str(snapshot.progress), snapshot.status, i))
-                sleep(1)
+                self.log.debug("Snapshot progress(%s) -  status (%s) - waiting for 'completed': %d/1200" % (str(snapshot.progress), snapshot.status, i*10))
+                sleep(10)
 
             if retcode:
                 raise ImageFactoryException("Unable to snapshot volume (%s) - aborting" % (volume.id))
@@ -1315,14 +977,13 @@ class FedoraBuilder(BaseBuilder):
             if volume:
                 self.log.debug("Waiting up to 240 seconds for instance (%s) to shut down" % (instance.id))
                 retcode = 1
-                for i in range(240):
+                for i in range(24):
                     instance.update()
                     if instance.state == "terminated":
                         retcode = 0
                         break
-                    if i % 10 == 0:
-                        self.log.debug("Instance status (%s) - waiting for 'terminated': %d/240" % (instance.state, i))
-                    sleep(1)
+                    self.log.debug("Instance status (%s) - waiting for 'terminated': %d/240" % (instance.state, i*10))
+                    sleep(10)
 
                 if retcode:
                     self.log.debug("WARNING: Unable to delete volume (%s)" % (volume.id))
@@ -1334,16 +995,15 @@ class FedoraBuilder(BaseBuilder):
         metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=ami_id)
         self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
 
-        self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), target_image_id, self.new_image_id, str(metadata)))
+        self.log.debug("Fedora_ec2_Builder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), target_image_id, self.new_image_id, str(metadata)))
         self.percent_complete=100
 
     def ec2_push_image_upload(self, target_image_id, provider, credentials):
         self.ec2_decode_credentials(credentials)
 
         # if the image is already here, great, otherwise grab it from the warehouse
-        input_image_path=self.app_config['imgdir'] + "/"
         input_image_name="ec2-image-" + target_image_id + ".dsk"
-        input_image=input_image_path + input_image_name
+        input_image=self.app_config['imgdir'] + "/" + input_image_name
 
         self.retrieve_image(target_image_id, input_image)
 
@@ -1444,9 +1104,7 @@ class FedoraBuilder(BaseBuilder):
         metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=ami_id)
         self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
 
-        #self.output_descriptor="unknown"
-        #metadata = dict(uuid=self.new_image_id, type="provider_image", template=self.template, target=self.target, icicle=self.output_descriptor, target_image=target_image_id, provider=provider, target_identifier=ami_id)
-        self.log.debug("FedoraBuilder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), target_image_id, self.new_image_id, str(metadata)))
+        self.log.debug("Fedora_ec2_Builder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), target_image_id, self.new_image_id, str(metadata)))
         self.percent_complete=100
 
     def abort(self):

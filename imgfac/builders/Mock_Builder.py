@@ -27,24 +27,24 @@ from BaseBuilder import BaseBuilder
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 
 
-class MockBuilder(BaseBuilder):
-    """docstring for MockBuilder"""
+class Mock_Builder(BaseBuilder):
+    """docstring for Mock_Builder"""
     zope.interface.implements(IBuilder)
 
     # Initializer
     def __init__(self, template="<template><name>Mock</name></template>", target='mock'):
-        super(MockBuilder, self).__init__(template, target)
+        super(Mock_Builder, self).__init__(template, target)
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.app_config = ApplicationConfiguration().configuration
 
     # Image actions
     def build_image(self, build_id=None):
         if(self.template.xml == "<template>FAIL</template>"):
-            self.log.debug("build_image() failed for MockBuilder...")
+            self.log.debug("build_image() failed for Mock_Builder...")
             failing_thread = FailureThread(target=self, kwargs=dict(message="Testing failure conditions via mock target builder..."))
             failing_thread.start()
         else:
-            self.log.debug("build_image() called on MockBuilder...")
+            self.log.debug("build_image() called on Mock_Builder...")
             self.image = "%s/deltacloud-%s/images/%s.yml" % (self.app_config['imgdir'], pwd.getpwuid(os.getuid())[0], self.new_image_id)
             self.log.debug("Setting image build path: %s" % (self.image, ))
             self.status = "INITIALIZING"
@@ -101,14 +101,14 @@ class MockBuilder(BaseBuilder):
             metadata = dict(target_image=target_image_id, provider=provider, icicle=image_metadata["icicle"], target_identifier="Mock_%s_%s" % (provider, self.new_image_id))
             self.warehouse.create_provider_image(self.new_image_id, txt=image, metadata=metadata)
             self.status = "FINISHING"
-            self.log.debug("MockBuilder instance %s pushed image with uuid %s to warehouse (%s/%s) and set metadata: %s" % (id(self), target_image_id, self.warehouse.url, self.warehouse.provider_image_bucket, metadata))
+            self.log.debug("Mock_Builder instance %s pushed image with uuid %s to warehouse (%s/%s) and set metadata: %s" % (id(self), target_image_id, self.warehouse.url, self.warehouse.provider_image_bucket, metadata))
             self.status = "COMPLETED"
         except Exception, e:
             failing_thread = FailureThread(target=self, kwargs=dict(message="%s" % (e, )))
             failing_thread.start()
 
     def abort(self):
-        self.log.debug("Method abort() called on MockBuilder instance %s" % (id(self), ))
+        self.log.debug("Method abort() called on Mock_Builder instance %s" % (id(self), ))
 
 
 class FailureThread(Thread):

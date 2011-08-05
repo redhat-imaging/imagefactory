@@ -18,7 +18,7 @@
 import unittest
 import logging
 from imgfac import BuildJob
-from imgfac.builders import MockBuilder
+from imgfac.builders import Mock_Builder
 
 class testBuildJob(unittest.TestCase):
     def setUp(self):
@@ -27,10 +27,10 @@ class testBuildJob(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testInstantiateMockBuilder(self):
+    def testInstantiateMock_Builder(self):
         template_xml = "<template><name>f14jeos</name><os><name>Fedora</name></os></template>"
         job = BuildJob.BuildJob(template_xml, "mock")
-        self.assertIsInstance(job._builder, MockBuilder.MockBuilder)
+        self.assertIsInstance(job._builder, Mock_Builder.Mock_Builder)
         self.assertEqual(job.template.xml, template_xml)
         self.assertEqual(job.target, "mock")
 

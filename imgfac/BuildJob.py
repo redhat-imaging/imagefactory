@@ -79,6 +79,7 @@ class BuildJob(object):
         if self.target == "mock":
             # If target is mock always run mock builder regardless of template
             os_name = "Mock"
+            target_name = ""
         else:
             nodes = libxml2.parseDoc(self.template.xml).xpathEval('/template/os/name')
             if len(nodes) == 0:
@@ -87,8 +88,9 @@ class BuildJob(object):
                 raise Exception, "Multiple OS names defined in the template"
             # Change RHEL-6 to RHEL6, etc.
             os_name = nodes[0].content.translate(None, '-')
+            target_name = self.target + "_"
 
-        class_name = "%sBuilder" % (os_name, )
+        class_name = "%s_%sBuilder" % (os_name, target_name)
         module_name = "imgfac.builders.%s" % (class_name, )
         __import__(module_name)
         builder_class = getattr(sys.modules[module_name], class_name)

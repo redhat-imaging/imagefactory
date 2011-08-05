@@ -14,8 +14,7 @@
 
 import oz.RHEL_6
 import ConfigParser
-from FedoraBuilder import FedoraBuilder
-
+from Fedora_ec2_Builder import Fedora_ec2_Builder
 
 class RHEL6RemoteGuest(oz.RHEL_6.RHEL6Guest):
     def __init__(self, tdl, config, auto):
@@ -26,7 +25,7 @@ class RHEL6RemoteGuest(oz.RHEL_6.RHEL6Guest):
     def connect_to_libvirt(self):
         pass
 
-class RHEL6Builder(FedoraBuilder):
+class RHEL6_ec2_Builder(Fedora_ec2_Builder):
     def init_guest(self, guesttype):
         # populate a config object to pass to OZ
         # This allows us to specify our own output dir but inherit other Oz behavior
@@ -52,8 +51,3 @@ class RHEL6Builder(FedoraBuilder):
         self.guest.guest_execute_command(guestaddr, "rpm -ivh http://download.fedora.redhat.com/pub/epel/6/i386/epel-release-6-5.noarch.rpm")
         self.guest.guest_execute_command(guestaddr, "yum -y install euca2ools")
         self.guest.guest_execute_command(guestaddr, "rpm -e epel-release")
-
-    def add_factory_cust(self, guestaddr):
-        # For child classes we sometimes have to add CLOUD_INFO or rc.local content
-        self.guest.guest_execute_command(guestaddr, 'echo "CLOUD_TYPE=\\\"ec2\\\"" > /etc/sysconfig/cloud-info')
-        self.guest.guest_execute_command(guestaddr, 'echo "[ -f /usr/bin/audrey ] && /usr/bin/audrey" >> /etc/rc.local')
