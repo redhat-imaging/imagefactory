@@ -527,14 +527,15 @@ class FedoraBuilder(BaseBuilder):
                                                     onegig_flavor,
                                                     files=server_files)
 
-	for i in range(30):
-	  if jeos_instance.status == "ACTIVE":
-	    self.log.debug("JEOS instance now active - moving to customize")
-	    break
-          self.log.debug("Waiting for Rackspace instance to start access: %d/300" % (i*10))
-	  sleep(10)
-	  # There is no query or update method, we simply recreate
-	  jeos_instance = cloudservers.servers.get(jeos_instance.id)
+        for i in range(300):
+            if jeos_instance.status == "ACTIVE":
+                self.log.debug("JEOS instance now active - moving to customize")
+                break
+            if i % 10 == 0:
+                self.log.debug("Waiting for Rackspace instance to start access: %d/300" % (i))
+            sleep(1)
+            # There is no query or update method, we simply recreate
+            jeos_instance = cloudservers.servers.get(jeos_instance.id)
 
         # As with EC2 put this all in a try block and then terminate at the end to avoid long running
         # instances which cost users money
@@ -546,19 +547,17 @@ class FedoraBuilder(BaseBuilder):
             # Ugly ATM because failed access always triggers an exception
             self.log.debug("Waiting up to 300 seconds for ssh to become available on %s" % (guestaddr))
             retcode = 1
-            for i in range(30):
-                self.log.debug("Waiting for Rackspace ssh access: %d/300" % (i*10))
+            for i in range(300):
+                if i % 10 == 0:
+                    self.log.debug("Waiting for Rackspace ssh access: %d/300" % (i))
 
-                access=1
                 try:
                     stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, "/bin/true")
-                except:
-                    access=0
-
-                if access:
                     break
+                except:
+                    pass
 
-                sleep(10)
+                sleep(1)
 
             if retcode:
                 raise ImageFactoryException("Unable to gain ssh access after 300 seconds - aborting")
@@ -582,21 +581,22 @@ class FedoraBuilder(BaseBuilder):
 
 	    self.log.debug("New Rackspace image created with ID: %s" % (snap_image.id))
 
-	    for i in range(30):
-	        if snap_image.status == "ACTIVE":
+            for i in range(300):
+                if snap_image.status == "ACTIVE":
                     self.log.debug("Snapshot Completed")
                     break
-                self.log.debug("Image status: %s - Waiting for completion: %d/300" % (snap_image.status, i*10))
-                sleep(10)
-	        # There is no query or update method, we simply recreate
-	        snap_image = cloudservers.images.get(snap_image.id)
+                if i % 10 == 0:
+                    self.log.debug("Image status: %s - Waiting for completion: %d/300" % (snap_image.status, i))
+                sleep(1)
+                # There is no query or update method, we simply recreate
+                snap_image = cloudservers.images.get(snap_image.id)
 
             self.log.debug("Storing Rackspace image ID (%s) and details in Warehouse" % (snap_image.id))
             icicle_id = self.warehouse.store_icicle(self.output_descriptor)
-	    metadata = dict(target_image=target_image_id, provider=provider, icicle=icicle_id, target_identifier=snap_image.id)
-	    self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
+            metadata = dict(target_image=target_image_id, provider=provider, icicle=icicle_id, target_identifier=snap_image.id)
+            self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
 
-	finally:
+        finally:
             self.log.debug("Shutting down Rackspace server")
             cloudservers.servers.delete(jeos_instance.id)
 
@@ -698,12 +698,13 @@ class FedoraBuilder(BaseBuilder):
         # Give it 10 seconds to settle
         sleep(10)
 
-        for i in range(30):
-            self.log.debug("Waiting for EC2 instance to start: %d/300" % (i*10))
+        for i in range(300):
+            if i % 10 == 0:
+                self.log.debug("Waiting for EC2 instance to start: %d/300" % (i*10))
             instance.update()
             if instance.state == u'running':
                 break
-            sleep(10)
+            sleep(1)
 
         if instance.state != u'running':
             self.status="FAILED"
@@ -720,19 +721,17 @@ class FedoraBuilder(BaseBuilder):
             # Ugly ATM because failed access always triggers an exception
             self.log.debug("Waiting up to 300 seconds for ssh to become available on %s" % (guestaddr))
             retcode = 1
-            for i in range(30):
-                self.log.debug("Waiting for EC2 ssh access: %d/300" % (i*10))
+            for i in range(300):
+                if i % 10 == 0:
+                    self.log.debug("Waiting for EC2 ssh access: %d/300" % (i))
 
-                access=1
                 try:
                     stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, "/bin/true")
-                except:
-                    access=0
-
-                if access:
                     break
+                except:
+                    pass
 
-                sleep(10)
+                sleep(1)
 
             if retcode:
                 raise ImageFactoryException("Unable to gain ssh access after 300 seconds - aborting")
@@ -836,7 +835,6 @@ class FedoraBuilder(BaseBuilder):
             conn.delete_key_pair(key_name)
             try:
                 timeout = 60
-                interval = 5
                 for i in range(timeout):
                     instance.update()
                     if(instance.state == "terminated"):
@@ -845,7 +843,7 @@ class FedoraBuilder(BaseBuilder):
                         break
                     elif(i < timeout):
                         self.log.debug("Instance status (%s) - waiting for 'terminated'. [%d of %d seconds elapsed]" % (instance.state, i * interval, timeout * interval))
-                        sleep(interval)
+                        sleep(5)
                     else:
                         raise Exception("Timeout waiting for instance to terminate.")
             except Exception, e:
@@ -1173,12 +1171,13 @@ class FedoraBuilder(BaseBuilder):
         # Give it 10 seconds to settle
         sleep(10)
 
-        for i in range(30):
-            self.log.debug("Waiting for EC2 instance to start: %d/300" % (i*10))
+        for i in range(300):
+            if i % 10 == 0:
+                self.log.debug("Waiting for EC2 instance to start: %d/300" % (i))
             instance.update()
             if instance.state == u'running':
                 break
-            sleep(10)
+            sleep(1)
 
         if instance.state != u'running':
             self.status="FAILED"
@@ -1197,17 +1196,15 @@ class FedoraBuilder(BaseBuilder):
             # Ugly ATM because failed access always triggers an exception
             self.log.debug("Waiting up to 300 seconds for ssh to become available on %s" % (guestaddr))
             retcode = 1
-            for i in range(30):
-                self.log.debug("Waiting for EC2 ssh access: %d/300" % (i*10))
+            for i in range(300):
+                if i % 10 == 0:
+                self.log.debug("Waiting for EC2 ssh access: %d/300" % (i))
 
-                access=1
                 try:
                     stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, "/bin/true")
-                except:
-                    access=0
-
-                if access:
                     break
+                except:
+                    pass
 
                 sleep(10)
 
@@ -1231,13 +1228,14 @@ class FedoraBuilder(BaseBuilder):
             # Wait up to 10 minutes for now (plus the time taken for the upload above)
             self.log.debug("Waiting up to 600 seconds for volume (%s) to become available" % (volume.id))
             retcode = 1
-            for i in range(60):
+            for i in range(600):
                 volume.update()
                 if volume.status == "available":
                     retcode = 0
                     break
-                self.log.debug("Volume status (%s) - waiting for 'available': %d/600" % (volume.status, i*10))
-                sleep(10)
+                if i % 10 == 0:
+                    self.log.debug("Volume status (%s) - waiting for 'available': %d/600" % (volume.status, i))
+                sleep(1)
 
             if retcode:
                 raise ImageFactoryException("Unable to create target volume for EBS AMI - aborting")
@@ -1248,14 +1246,15 @@ class FedoraBuilder(BaseBuilder):
 
             self.log.debug("Waiting up to 120 seconds for volume (%s) to become in-use" % (volume.id))
             retcode = 1
-            for i in range(12):
+            for i in range(120):
                 volume.update()
                 vs = volume.attachment_state()
                 if vs == "attached":
                     retcode = 0
                     break
-                self.log.debug("Volume status (%s) - waiting for 'attached': %d/120" % (vs, i*10))
-                sleep(10)
+                if i % 10 == 0:
+                    self.log.debug("Volume status (%s) - waiting for 'attached': %d/120" % (vs, i))
+                sleep(1)
 
             if retcode:
                 raise ImageFactoryException("Unable to attach volume (%s) to instance (%s) aborting" % (volume.id, instance.id))
@@ -1281,13 +1280,14 @@ class FedoraBuilder(BaseBuilder):
             # This can take a _long_ time - wait up to 20 minutes
             self.log.debug("Waiting up to 1200 seconds for snapshot (%s) to become completed" % (snapshot.id))
             retcode = 1
-            for i in range(120):
+            for i in range(1200):
                 snapshot.update()
                 if snapshot.status == "completed":
                     retcode = 0
                     break
-                self.log.debug("Snapshot progress(%s) -  status (%s) - waiting for 'completed': %d/1200" % (str(snapshot.progress), snapshot.status, i*10))
-                sleep(10)
+                if i % 10 == 0:
+                    self.log.debug("Snapshot progress(%s) -  status (%s) - waiting for 'completed': %d/1200" % (str(snapshot.progress), snapshot.status, i))
+                sleep(1)
 
             if retcode:
                 raise ImageFactoryException("Unable to snapshot volume (%s) - aborting" % (volume.id))
@@ -1315,13 +1315,14 @@ class FedoraBuilder(BaseBuilder):
             if volume:
                 self.log.debug("Waiting up to 240 seconds for instance (%s) to shut down" % (instance.id))
                 retcode = 1
-                for i in range(24):
+                for i in range(240):
                     instance.update()
                     if instance.state == "terminated":
                         retcode = 0
                         break
-                    self.log.debug("Instance status (%s) - waiting for 'terminated': %d/240" % (instance.state, i*10))
-                    sleep(10)
+                    if i % 10 == 0:
+                        self.log.debug("Instance status (%s) - waiting for 'terminated': %d/240" % (instance.state, i))
+                    sleep(1)
 
                 if retcode:
                     self.log.debug("WARNING: Unable to delete volume (%s)" % (volume.id))
