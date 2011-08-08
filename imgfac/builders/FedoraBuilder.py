@@ -523,7 +523,9 @@ class FedoraBuilder(BaseBuilder):
 	server_files = { "/root/.ssh/authorized_keys":mypub }
 
         instance_name = "factory-build-%s" % (self.new_image_id, )
-	jeos_instance = cloudservers.servers.create(instance_name,jeos_image, onegig_flavor, files=server_files)
+        jeos_instance = cloudservers.servers.create(instance_name, jeos_image,
+                                                    onegig_flavor,
+                                                    files=server_files)
 
 	for i in range(30):
 	  if jeos_instance.status == "ACTIVE":
@@ -538,7 +540,7 @@ class FedoraBuilder(BaseBuilder):
         # instances which cost users money
         try:
             self.guest.sshprivkey = "/etc/oz/id_rsa-icicle-gen"
-	    guestaddr = jeos_instance.public_ip
+            guestaddr = jeos_instance.public_ip
 
             # TODO: Make this loop so we can take advantage of early availability
             # Ugly ATM because failed access always triggers an exception
