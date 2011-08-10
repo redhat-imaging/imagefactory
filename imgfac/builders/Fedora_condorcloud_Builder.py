@@ -135,11 +135,9 @@ class Fedora_condorcloud_Builder(BaseBuilder):
         tmpl = 'CLOUD_TYPE="%s"\n' % (self.target)
         g.write("/etc/sysconfig/cloud-info", tmpl)
 
-        # EC2 does this in its modify step - all other upload clouds get it here
-        if self.target != "ec2":
-            self.log.info("Updating rc.local with Audrey conditional")
-            g.write("/tmp/rc.local", self.rc_local_all)
-            g.sh("cat /tmp/rc.local >> /etc/rc.local")
+        self.log.info("Updating rc.local with Audrey conditional")
+        g.write("/tmp/rc.local", self.rc_local_all)
+        g.sh("cat /tmp/rc.local >> /etc/rc.local")
 
         # In the cloud context we currently never need or want persistent net device names
         # This is known to break networking in RHEL/VMWare and could potentially do so elsewhere
