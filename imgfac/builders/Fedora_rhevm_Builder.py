@@ -73,14 +73,10 @@ class Fedora_rhevm_Builder(BaseBuilder):
         self.log.debug("build_upload() called on Fedora_rhevm_Builder...")
         self.log.debug("Building for target %s with warehouse config %s" % (self.target, self.app_config['warehouse']))
         self.status="BUILDING"
-        try:
-            self.guest.cleanup_old_guest()
-            self.guest.generate_install_media(force_download=False)
-            self.percent_complete=10
-        except:
-            self.log_exc()
-            self.status="FAILED"
-            raise
+
+        self.guest.cleanup_old_guest()
+        self.guest.generate_install_media(force_download=False)
+        self.percent_complete=10
 
         # We want to save this later for use by RHEV-M and Condor clouds
         libvirt_xml=""
@@ -99,9 +95,7 @@ class Fedora_rhevm_Builder(BaseBuilder):
                 self.log.debug("Customization and ICICLE generation complete")
                 self.percent_complete = 50
             except:
-                self.log_exc()
                 self.guest.cleanup_old_guest()
-                self.status="FAILED"
                 raise
         finally:
             self.guest.cleanup_install()
