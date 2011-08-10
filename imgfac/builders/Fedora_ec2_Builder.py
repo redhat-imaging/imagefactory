@@ -940,8 +940,7 @@ class Fedora_ec2_Builder(BaseBuilder):
 
             # Decompress image into new EBS volume
             command = "gzip -dc /mnt/%s | dd of=/dev/xvdh bs=4k\n" % (input_image_compressed_name)
-            self.log.debug("Decompressing image file into EBS device via command:")
-            self.log.debug("  %s" % (command))
+            self.log.debug("Decompressing image file into EBS device via command: %s" % (command))
             self.guest.guest_execute_command(guestaddr, command)
 
             # Sync before snapshot
