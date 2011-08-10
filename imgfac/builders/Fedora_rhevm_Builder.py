@@ -36,13 +36,6 @@ class Fedora_rhevm_Builder(BaseBuilder):
         super(Fedora_rhevm_Builder, self).__init__(template, target)
         self.app_config = ApplicationConfiguration().configuration
         self.warehouse_url = self.app_config['warehouse']
-        # May not be necessary to do both of these
-        self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml)
-        # Oz assumes unique names - TDL built for multiple backends guarantees they are not unique
-        # We don't really care about the name so just force uniqueness
-        # 18-Jul-2011 - Moved to constructor and modified to change TDL object name itself
-        #   Oz now uses the tdlobject name property directly in several places so we must change it
-        self.tdlobj.name = self.tdlobj.name + "-" + self.new_image_id
 
     def log_exc(self):
         self.log.debug("Exception caught in ImageFactory")
@@ -61,13 +54,21 @@ class Fedora_rhevm_Builder(BaseBuilder):
         self.log.debug("Building for target %s with warehouse config %s" % (self.target, self.app_config['warehouse']))
         self.status="BUILDING"
 
+        tdlobj = oz.TDL.TDL(xmlstring=self.template.xml)
+        # Oz assumes unique names - TDL built for multiple backends guarantees
+        # they are not unique.  We don't really care about the name so just
+        # force uniqueness
+        #  Oz now uses the tdlobject name property directly in several places
+        # so we must change it
+        tdlobj.name = tdlobj.name + "-" + self.new_image_id
+
         # populate a config object to pass to OZ; this allows us to specify our
         # own output dir but inherit other Oz behavior
         oz_config = ConfigParser.SafeConfigParser()
         oz_config.read("/etc/oz/oz.cfg")
         oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
 
-        guest = oz.GuestFactory.guest_factory(self.tdlobj, oz_config, None)
+        guest = oz.GuestFactory.guest_factory(tdlobj, oz_config, None)
         guest.diskimage = self.app_config["imgdir"] + "/base-image-" + self.new_image_id + ".dsk"
         # Oz assumes unique names - TDL built for multiple backends guarantees
         # they are not unique.  We don't really care about the name so just
@@ -202,6 +203,8 @@ class Fedora_rhevm_Builder(BaseBuilder):
         post_data['site'] = provider
 
         response = self.warehouse.post_on_object_with_id_of_type(target_image_id, "target_image", post_data)
+
+        self.log.debug("Response was %s" % (response))
 
         m = re.match("^OK ([a-fA-F0-9-]+)", response)
         rhevm_uuid = None
