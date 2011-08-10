@@ -594,15 +594,13 @@ class Fedora_ec2_Builder(BaseBuilder):
             self.guest.guest_execute_command(guestaddr, "[ -f /etc/init.d/firstboot ] && /sbin/chkconfig firstboot off || /bin/true")
             self.log.debug("De-activation complete")
 
-            cert = self.ec2_cert_file
-            key = self.ec2_key_file
             ec2cert =  "/etc/pki/imagefactory/cert-ec2.pem"
 
             # This is needed for uploading and registration
             # Note that it is excluded from the final image
             self.log.debug("Uploading cert material")
-            self.guest.guest_live_upload(guestaddr, cert, "/tmp")
-            self.guest.guest_live_upload(guestaddr, key, "/tmp")
+            self.guest.guest_live_upload(guestaddr, self.ec2_cert_file, "/tmp")
+            self.guest.guest_live_upload(guestaddr, self.ec2_key_file, "/tmp")
             self.guest.guest_live_upload(guestaddr, ec2cert, "/tmp")
             self.log.debug("Cert upload complete")
 
@@ -613,7 +611,7 @@ class Fedora_ec2_Builder(BaseBuilder):
             uuid = self.new_image_id
 
             # We exclude /mnt /tmp and /root/.ssh to avoid embedding our utility key into the image
-            command = "euca-bundle-vol -c /tmp/%s -k /tmp/%s -u %s -e /mnt,/tmp,/root/.ssh --arch %s -d /mnt/bundles --kernel %s -p %s -s 10240 --ec2cert /tmp/cert-ec2.pem --fstab /etc/fstab -v /" % (os.path.basename(cert), os.path.basename(key), ec2_uid, arch, aki, uuid)
+            command = "euca-bundle-vol -c /tmp/%s -k /tmp/%s -u %s -e /mnt,/tmp,/root/.ssh --arch %s -d /mnt/bundles --kernel %s -p %s -s 10240 --ec2cert /tmp/cert-ec2.pem --fstab /etc/fstab -v /" % (os.path.basename(self.ec2_cert_file), os.path.basename(self.ec2_key_file), ec2_uid, arch, aki, uuid)
             self.log.debug("Executing bundle vol command: %s" % (command))
             stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, command)
             self.log.debug("Bundle output: %s" % (stdout))
