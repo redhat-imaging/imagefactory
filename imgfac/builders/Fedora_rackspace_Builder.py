@@ -55,7 +55,7 @@ class Fedora_rackspace_Builder(BaseBuilder):
         #   Oz now uses the tdlobject name property directly in several places so we must change it
         self.tdlobj.name = self.tdlobj.name + "-" + self.new_image_id
 
-    def init_guest(self, guesttype):
+    def init_guest(self):
         # populate a config object to pass to OZ
         # This allows us to specify our own output dir but inherit other Oz behavior
         # TODO: Messy?
@@ -96,7 +96,7 @@ class Fedora_rackspace_Builder(BaseBuilder):
 
     def push_image(self, target_image_id, provider, credentials):
         try:
-            self.init_guest("remote")
+            self.init_guest()
             self.push_image_snapshot_rackspace(target_image_id, provider,
                                                credentials)
         except:

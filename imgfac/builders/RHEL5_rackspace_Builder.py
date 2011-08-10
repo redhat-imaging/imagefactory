@@ -27,7 +27,7 @@ class RHEL5RemoteGuest(oz.RHEL_5.RHEL5Guest):
         pass
 
 class RHEL5_rackspace_Builder(Fedora_rackspace_Builder):
-    def init_guest(self, guesttype):
+    def init_guest(self):
         # populate a config object to pass to OZ
         # This allows us to specify our own output dir but inherit other Oz behavior
         # TODO: Messy?

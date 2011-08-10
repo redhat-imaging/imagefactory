@@ -17,7 +17,7 @@ import ConfigParser
 from Fedora_condorcloud_Builder import Fedora_condorcloud_Builder
 
 class RHEL6_condorcloud_Builder(Fedora_condorcloud_Builder):
-    def init_guest(self, guesttype):
+    def init_guest(self):
         # populate a config object to pass to OZ
         # This allows us to specify our own output dir but inherit other Oz behavior
         # TODO: Messy?

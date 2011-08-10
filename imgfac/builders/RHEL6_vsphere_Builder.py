@@ -17,7 +17,7 @@ import ConfigParser
 from Fedora_vsphere_Builder import Fedora_vsphere_Builder
 
 class RHEL6_vsphere_Builder(Fedora_vsphere_Builder):
-    def init_guest(self, guesttype):
+    def init_guest(self):
         # populate a config object to pass to OZ
         # This allows us to specify our own output dir but inherit other Oz behavior
         # TODO: Messy?

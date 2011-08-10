@@ -17,7 +17,7 @@ import ConfigParser
 from Fedora_rhevm_Builder import Fedora_rhevm_Builder
 
 class RHEL6_rhevm_Builder(Fedora_rhevm_Builder):
-    def init_guest(self, guesttype):
+    def init_guest(self):
         # populate a config object to pass to OZ
         # This allows us to specify our own output dir but inherit other Oz behavior
         # TODO: Messy?
