@@ -438,6 +438,11 @@ class Fedora_ec2_Builder(BaseBuilder):
         self.guest.guest_execute_command(guestaddr, "yum -y install euca2ools")
 
     def push_image_snapshot_ec2(self, target_image_id, provider, credentials):
+        def replace(item):
+            if item in [self.ec2_access_key, self.ec2_secret_key]:
+                return "REDACTED"
+            return item
+
         self.log.debug("Being asked to push for provider %s" % (provider))
         self.log.debug("distro: %s - update: %s - arch: %s" % (self.tdlobj.distro, self.tdlobj.update, self.tdlobj.arch))
         self.ec2_decode_credentials(credentials)
@@ -630,18 +635,24 @@ class Fedora_ec2_Builder(BaseBuilder):
 
             # TODO: We cannot timeout on any of the three commands below - can we fix that?
             manifest = "/mnt/bundles/%s.manifest.xml" % (uuid)
-            command = 'euca-upload-bundle -b %s -m %s --ec2cert /tmp/cert-ec2.pem -a "%s" -s "%s" -U %s' % (bucket, manifest, self.ec2_access_key, self.ec2_secret_key, upload_url)
-            command_log = 'euca-upload-bundle -b %s -m %s --ec2cert /tmp/cert-ec2.pem -a "%s" -s "%s" -U %s' % (bucket, manifest, "<access_key>", "<secret_key>", upload_url)
+            command = ['euca-upload-bundle', '-b', bucket, '-m', manifest,
+                       '--ec2cert', '/tmp/cert-ec2.pem',
+                       '-a', self.ec2_access_key, '-s', self.ec2_secret_key,
+                       '-U', upload_url]
+            command_log = map(replace, command)
             self.log.debug("Executing upload bundle command: %s" % (command_log))
-            stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, command)
+            stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, ' '.join(command))
             self.log.debug("Upload output: %s" % (stdout))
 
             manifest_s3_loc = "%s/%s.manifest.xml" % (bucket, uuid)
 
-            command = 'euca-register -U %s -A "%s" -S "%s" %s' % (register_url, self.ec2_access_key, self.ec2_secret_key, manifest_s3_loc)
-            command_log = 'euca-register -U %s -A "%s" -S "%s" %s' % (register_url, "access_key", "secret_key", manifest_s3_loc)
+            command = ['euca-register', '-U', register_url,
+                       '-A', self.ec2_access_key, '-S', self.ec2_secret_key,
+                       manifest_s3_loc]
+            command_log = map(replace, command)
             self.log.debug("Executing register command: %s" % (command_log))
-            stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, command)
+            stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr,
+                                                                       ' '.join(command))
             self.log.debug("Register output: %s" % (stdout))
 
             m = re.match(".*(ami-[a-fA-F0-9]+)", stdout)
@@ -999,6 +1010,11 @@ class Fedora_ec2_Builder(BaseBuilder):
         self.percent_complete=100
 
     def ec2_push_image_upload(self, target_image_id, provider, credentials):
+        def replace(item):
+            if item in [self.ec2_access_key, self.ec2_secret_key]:
+                return "REDACTED"
+            return item
+
         self.ec2_decode_credentials(credentials)
 
         # if the image is already here, great, otherwise grab it from the warehouse
@@ -1059,11 +1075,14 @@ class Fedora_ec2_Builder(BaseBuilder):
         # TODO: Make configurable?
         ec2_service_cert = "/etc/pki/imagefactory/cert-ec2.pem"
 
-        bundle_command = [ "euca-bundle-image", "-i", input_image, "--kernel", aki, "-d", bundle_destination, "-a", self.ec2_access_key, "-s", self.ec2_secret_key ]
-        bundle_command.extend( [ "-c", self.ec2_cert_file, "-k", self.ec2_key_file, "-u", self.ec2_user_id, "-r", arch, "--ec2cert", ec2_service_cert ] )
+        bundle_command = [ "euca-bundle-image", "-i", input_image,
+                           "--kernel", aki, "-d", bundle_destination,
+                           "-a", self.ec2_access_key, "-s", self.ec2_secret_key,
+                           "-c", self.ec2_cert_file, "-k", self.ec2_key_file,
+                           "-u", self.ec2_user_id, "-r", arch,
+                           "--ec2cert", ec2_service_cert ]
 
-        bundle_command_log = [ "euca-bundle-image", "-i", input_image, "--kernel", aki, "-d", bundle_destination, "-a", "<access_key>", "-s", "<secret_key>" ]
-        bundle_command_log.extend( [ "-c", self.ec2_cert_file, "-k", self.ec2_key_file, "-u", self.ec2_user_id, "-r", arch, "--ec2cert", ec2_service_cert ] )
+        bundle_command_log = map(replace, bundle_command)
 
         self.log.debug("Executing bundle command: %s " % (bundle_command_log))
 
@@ -1075,8 +1094,13 @@ class Fedora_ec2_Builder(BaseBuilder):
 
         manifest = bundle_destination + "/" + input_image_name + ".manifest.xml"
 
-        upload_command = [ "euca-upload-bundle", "-b", bucket, "-m", manifest, "--ec2cert", ec2_service_cert, "-a", self.ec2_access_key, "-s", self.ec2_secret_key, "-U" , upload_url ]
-        upload_command_log = [ "euca-upload-bundle", "-b", bucket, "-m", manifest, "--ec2cert", ec2_service_cert, "-a", "<access_key>", "-s", "<secret_key>", "-U" , upload_url ]
+        upload_command = [ "euca-upload-bundle", "-b", bucket, "-m", manifest,
+                           "--ec2cert", ec2_service_cert,
+                           "-a", self.ec2_access_key, "-s", self.ec2_secret_key,
+                           "-U" , upload_url ]
+
+        upload_command_log = map(replace, upload_command)
+
         self.log.debug("Executing upload command: %s " % (upload_command_log))
         upload_output = subprocess_check_output(upload_command)
         self.log.debug("Upload command output: %s " % (str(upload_output)))
@@ -1085,8 +1109,9 @@ class Fedora_ec2_Builder(BaseBuilder):
         s3_path = bucket + "/" + input_image_name + ".manifest.xml"
 
         register_env = { 'EC2_URL':register_url }
-        register_command = [ "euca-register" , "-A", self.ec2_access_key, "-S", self.ec2_secret_key, s3_path ]
-        register_command_log = [ "euca-register" , "-A", "<access_key>", "-S", "<secret_key>", s3_path ]
+        register_command = [ "euca-register" , "-A", self.ec2_access_key,
+                             "-S", self.ec2_secret_key, s3_path ]
+        register_command_log = map(replace, register_command)
         self.log.debug("Executing register command: %s with environment %s " % (register_command_log, repr(register_env)))
         register_output = subprocess_check_output(register_command, env=register_env)
         self.log.debug("Register command output: %s " % (str(register_output)))
