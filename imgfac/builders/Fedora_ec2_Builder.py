@@ -1024,25 +1024,11 @@ class Fedora_ec2_Builder(BaseBuilder):
 
         bundle_destination=self.app_config['imgdir']
 
-        # TODO: Cross check against template XML and warn if they do not match
-        g = guestfs.GuestFS ()
-        g.add_drive(input_image)
-        g.launch ()
-        inspection = g.inspect_os()
-        if len(inspection) >  0:
-            # This should always be /dev/vda or /dev/sda but we do it anyway to be safe
-            osroot = inspection[0]
-            arch = g.inspect_get_arch(osroot)
-        else:
-            self.log.debug("Warning - unable to inspect EC2 image file - assuming x86_64 arch")
-            arch = "x86_64"
-        g.umount_all()
-
         self.percent_complete=10
 
         region=provider
         region_conf=self.ec2_region_details[region]
-        aki = region_conf[arch]
+        aki = region_conf[self.tdlobj.arch]
         boto_loc = region_conf['boto_loc']
         if region != "ec2-us-east-1":
             upload_url = "http://s3-%s.amazonaws.com/" % (region_conf['host'])
@@ -1078,7 +1064,7 @@ class Fedora_ec2_Builder(BaseBuilder):
                            "--kernel", aki, "-d", bundle_destination,
                            "-a", self.ec2_access_key, "-s", self.ec2_secret_key,
                            "-c", self.ec2_cert_file, "-k", self.ec2_key_file,
-                           "-u", self.ec2_user_id, "-r", arch,
+                           "-u", self.ec2_user_id, "-r", self.tdlobj.arch,
                            "--ec2cert", ec2_service_cert ]
 
         bundle_command_log = map(replace, bundle_command)
