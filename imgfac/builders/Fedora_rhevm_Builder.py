@@ -163,10 +163,14 @@ class Fedora_rhevm_Builder(BaseBuilder):
 
     def push_image(self, target_image_id, provider, credentials):
         try:
-            self.push_image_upload(target_image_id, provider, credentials)
+            self.status = "PUSHING"
+            self.percent_complete = 0
+            self.rhevm_push_image_upload(target_image_id, provider, credentials)
         except:
             self.log_exc()
             self.status="FAILED"
+            raise
+        self.status = "COMPLETED"
 
     def rhevm_push_image_upload(self, target_image_id, provider, credentials):
         # ****** IMPORTANT NOTE ********
@@ -212,18 +216,6 @@ class Fedora_rhevm_Builder(BaseBuilder):
         metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=rhevm_uuid)
         self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
         self.percent_complete = 100
-
-
-    def push_image_upload(self, target_image_id, provider, credentials):
-        self.status="PUSHING"
-        self.percent_complete=0
-        try:
-            self.rhevm_push_image_upload(target_image_id, provider, credentials)
-        except:
-            self.log_exc()
-            self.status="FAILED"
-            raise
-        self.status="COMPLETED"
 
     def generic_decode_credentials(self, credentials, provider_data):
         # convenience function for simple creds (rhev-m and vmware currently)
