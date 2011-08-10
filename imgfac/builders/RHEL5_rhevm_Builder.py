@@ -18,14 +18,7 @@ from Fedora_rhevm_Builder import Fedora_rhevm_Builder
 
 class RHEL5_rhevm_Builder(Fedora_rhevm_Builder):
     def init_guest(self):
-        # populate a config object to pass to OZ
-        # This allows us to specify our own output dir but inherit other Oz behavior
-        # TODO: Messy?
-        config_file = "/etc/oz/oz.cfg"
-        config = ConfigParser.SafeConfigParser()
-        config.read(config_file)
-        config.set('paths', 'output_dir', self.app_config["imgdir"])
-        self.guest = oz.RHEL_5.get_class(self.tdlobj, config, None)
+        self.guest = oz.RHEL_5.get_class(self.tdlobj, self.oz_config, None)
         self.guest.diskimage = self.app_config["imgdir"] + "/base-image-" + self.new_image_id + ".dsk"
         # Oz assumes unique names - TDL built for multiple backends guarantees they are not unique
         # We don't really care about the name so just force uniqueness

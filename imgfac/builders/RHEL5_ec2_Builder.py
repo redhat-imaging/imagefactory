@@ -29,17 +29,10 @@ class RHEL5RemoteGuest(oz.RHEL_5.RHEL5Guest):
 
 class RHEL5_ec2_Builder(Fedora_ec2_Builder):
     def init_guest(self, guesttype):
-        # populate a config object to pass to OZ
-        # This allows us to specify our own output dir but inherit other Oz behavior
-        # TODO: Messy?
-        config_file = "/etc/oz/oz.cfg"
-        config = ConfigParser.SafeConfigParser()
-        config.read(config_file)
-        config.set('paths', 'output_dir', self.app_config["imgdir"])
         if guesttype == "local":
-            self.guest = oz.RHEL_5.get_class(self.tdlobj, config, None)
+            self.guest = oz.RHEL_5.get_class(self.tdlobj, self.oz_config, None)
         else:
-            self.guest = RHEL5RemoteGuest(self.tdlobj, config, None)
+            self.guest = RHEL5RemoteGuest(self.tdlobj, self.oz_config, None)
         self.guest.diskimage = self.app_config["imgdir"] + "/base-image-" + self.new_image_id + ".dsk"
         # Oz assumes unique names - TDL built for multiple backends guarantees they are not unique
         # We don't really care about the name so just force uniqueness

@@ -46,14 +46,13 @@ class Fedora_vsphere_Builder(BaseBuilder):
         #   Oz now uses the tdlobject name property directly in several places so we must change it
         self.tdlobj.name = self.tdlobj.name + "-" + self.new_image_id
 
+        # populate a config object to pass to OZ; this allows us to specify our
+        # own output dir but inherit other Oz behavior
+        self.oz_config = ConfigParser.SafeConfigParser()
+        self.oz_config.read("/etc/oz/oz.cfg")
+        self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
+
     def init_guest(self):
-        # populate a config object to pass to OZ
-        # This allows us to specify our own output dir but inherit other Oz behavior
-        # TODO: Messy?
-        config_file = "/etc/oz/oz.cfg"
-        config = ConfigParser.SafeConfigParser()
-        config.read(config_file)
-        config.set('paths', 'output_dir', self.app_config["imgdir"])
         self.guest = oz.Fedora.get_class(self.tdlobj, config, None)
         self.guest.diskimage = self.app_config["imgdir"] + "/base-image-" + self.new_image_id + ".dsk"
 
