@@ -14,7 +14,7 @@
 #   limitations under the License.
 
 import zope
-import oz.Fedora
+import oz.GuestFactory
 import oz.TDL
 import re
 import guestfs
@@ -46,13 +46,16 @@ class Fedora_rhevm_Builder(BaseBuilder):
 
         # populate a config object to pass to OZ; this allows us to specify our
         # own output dir but inherit other Oz behavior
-        self.oz_config = ConfigParser.SafeConfigParser()
-        self.oz_config.read("/etc/oz/oz.cfg")
-        self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
+        oz_config = ConfigParser.SafeConfigParser()
+        oz_config.read("/etc/oz/oz.cfg")
+        oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
 
-    def init_guest(self):
-        self.guest = oz.Fedora.get_class(self.tdlobj, self.oz_config, None)
+        self.guest = oz.GuestFactory.guest_factory(self.tdlobj, oz_config, None)
         self.guest.diskimage = self.app_config["imgdir"] + "/base-image-" + self.new_image_id + ".dsk"
+        # Oz assumes unique names - TDL built for multiple backends guarantees
+        # they are not unique.  We don't really care about the name so just
+        # force uniqueness
+        self.guest.name = self.guest.name + "-" + self.new_image_id
 
     def log_exc(self):
         self.log.debug("Exception caught in ImageFactory")
@@ -60,7 +63,6 @@ class Fedora_rhevm_Builder(BaseBuilder):
 
     def build_image(self, build_id=None):
         try:
-            self.init_guest()
             self.build_upload(build_id)
         except:
             self.log_exc()

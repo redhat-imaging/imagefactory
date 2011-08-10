@@ -12,14 +12,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import oz.RHEL_6
-import ConfigParser
 from Fedora_rhevm_Builder import Fedora_rhevm_Builder
 
 class RHEL6_rhevm_Builder(Fedora_rhevm_Builder):
-    def init_guest(self):
-        self.guest = oz.RHEL_6.get_class(self.tdlobj, self.oz_config, None)
-        self.guest.diskimage = self.app_config["imgdir"] + "/base-image-" + self.new_image_id + ".dsk"
-        # Oz assumes unique names - TDL built for multiple backends guarantees they are not unique
-        # We don't really care about the name so just force uniqueness
-        self.guest.name = self.guest.name + "-" + self.new_image_id
+    def __init__(self, template, target):
+        super(RHEL6_rhevm_Builder, self).__init__(template, target)
