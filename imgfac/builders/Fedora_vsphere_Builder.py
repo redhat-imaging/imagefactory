@@ -14,7 +14,7 @@
 #   limitations under the License.
 
 import zope
-import oz.Fedora
+import oz.GuestFactory
 import oz.TDL
 import os
 import guestfs
@@ -46,23 +46,12 @@ class Fedora_vsphere_Builder(BaseBuilder):
         #   Oz now uses the tdlobject name property directly in several places so we must change it
         self.tdlobj.name = self.tdlobj.name + "-" + self.new_image_id
 
-        # populate a config object to pass to OZ; this allows us to specify our
-        # own output dir but inherit other Oz behavior
-        self.oz_config = ConfigParser.SafeConfigParser()
-        self.oz_config.read("/etc/oz/oz.cfg")
-        self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
-
-    def init_guest(self):
-        self.guest = oz.Fedora.get_class(self.tdlobj, config, None)
-        self.guest.diskimage = self.app_config["imgdir"] + "/base-image-" + self.new_image_id + ".dsk"
-
     def log_exc(self):
         self.log.debug("Exception caught in ImageFactory")
         self.log.debug(traceback.format_exc())
 
     def build_image(self, build_id=None):
         try:
-            self.init_guest()
             self.build_upload(build_id)
         except:
             self.log_exc()
@@ -73,9 +62,23 @@ class Fedora_vsphere_Builder(BaseBuilder):
         self.log.debug("build_upload() called on Fedora_vsphere_Builder...")
         self.log.debug("Building for target %s with warehouse config %s" % (self.target, self.app_config['warehouse']))
         self.status="BUILDING"
+
+        # populate a config object to pass to OZ; this allows us to specify our
+        # own output dir but inherit other Oz behavior
+        oz_config = ConfigParser.SafeConfigParser()
+        oz_config.read("/etc/oz/oz.cfg")
+        oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
+
+        guest = oz.GuestFactory.guest_factory(self.tdlobj, oz_config, None)
+        guest.diskimage = self.app_config["imgdir"] + "/base-image-" + self.new_image_id + ".dsk"
+        # Oz assumes unique names - TDL built for multiple backends guarantees
+        # they are not unique.  We don't really care about the name so just
+        # force uniqueness
+        guest.name = guest.name + "-" + self.new_image_id
+
         try:
-            self.guest.cleanup_old_guest()
-            self.guest.generate_install_media(force_download=False)
+            guest.cleanup_old_guest()
+            guest.generate_install_media(force_download=False)
             self.percent_complete=10
         except:
             self.log_exc()
@@ -86,27 +89,27 @@ class Fedora_vsphere_Builder(BaseBuilder):
         libvirt_xml=""
 
         try:
-            self.guest.generate_diskimage()
+            guest.generate_diskimage()
             try:
                 # TODO: If we already have a base install reuse it
                 #  subject to some rules about updates to underlying repo
                 self.log.debug("Doing base install via Oz")
-                libvirt_xml = self.guest.install(self.app_config["timeout"])
-                self.image = self.guest.diskimage
+                libvirt_xml = guest.install(self.app_config["timeout"])
+                self.image = guest.diskimage
                 self.log.debug("Base install complete - Doing customization and ICICLE generation")
                 self.percent_complete = 30
-                self.output_descriptor = self.guest.customize_and_generate_icicle(libvirt_xml)
+                self.output_descriptor = guest.customize_and_generate_icicle(libvirt_xml)
                 self.log.debug("Customization and ICICLE generation complete")
                 self.percent_complete = 50
             except:
                 self.log_exc()
-                self.guest.cleanup_old_guest()
+                guest.cleanup_old_guest()
                 self.status="FAILED"
                 raise
         finally:
-            self.guest.cleanup_install()
+            guest.cleanup_install()
 
-        self.log.debug("Generated disk image (%s)" % (self.guest.diskimage))
+        self.log.debug("Generated disk image (%s)" % (guest.diskimage))
         # OK great, we now have a customized KVM image
         # Now we do some target specific transformation
 

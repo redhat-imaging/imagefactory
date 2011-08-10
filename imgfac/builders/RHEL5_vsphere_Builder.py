@@ -12,14 +12,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import oz.RHEL_5
-import ConfigParser
 from Fedora_vsphere_Builder import Fedora_vsphere_Builder
 
 class RHEL5_vsphere_Builder(Fedora_vsphere_Builder):
-    def init_guest(self):
-        self.guest = oz.RHEL_5.get_class(self.tdlobj, self.oz_config, None)
-        self.guest.diskimage = self.app_config["imgdir"] + "/base-image-" + self.new_image_id + ".dsk"
-        # Oz assumes unique names - TDL built for multiple backends guarantees they are not unique
-        # We don't really care about the name so just force uniqueness
-        self.guest.name = self.guest.name + "-" + self.new_image_id
+    def __init__(self, template, target):
+        super(RHEL5_vsphere_Builder, self).__init__(template, target)
