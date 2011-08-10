@@ -437,6 +437,35 @@ class Fedora_ec2_Builder(BaseBuilder):
         # For F13-F15 we now have a working euca2ools in the default repos
         self.guest.guest_execute_command(guestaddr, "yum -y install euca2ools")
 
+    def wait_for_ec2_ssh_access(self, guestaddr):
+        for i in range(300):
+            if i % 10 == 0:
+                self.log.debug("Waiting for EC2 ssh access: %d/300" % (i))
+
+            try:
+                stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, "/bin/true")
+                break
+            except:
+                pass
+
+            sleep(1)
+
+        if i == 299:
+            raise ImageFactoryException("Unable to gain ssh access after 300 seconds - aborting")
+
+    def wait_for_ec2_instance_start(self, instance):
+        for i in range(300):
+            if i % 10 == 0:
+                self.log.debug("Waiting for EC2 instance to start: %d/300" % (i))
+            instance.update()
+            if instance.state == u'running':
+                break
+            sleep(1)
+
+        if instance.state != u'running':
+            self.status="FAILED"
+            raise ImageFactoryException("Instance failed to start after 300 seconds - stopping")
+
     def push_image_snapshot_ec2(self, target_image_id, provider, credentials):
         def replace(item):
             if item in [self.ec2_access_key, self.ec2_secret_key]:
@@ -528,16 +557,7 @@ class Fedora_ec2_Builder(BaseBuilder):
         # Give it 10 seconds to settle
         sleep(10)
 
-        for i in range(30):
-            self.log.debug("Waiting for EC2 instance to start: %d/300" % (i*10))
-            instance.update()
-            if instance.state == u'running':
-                break
-            sleep(10)
-
-        if instance.state != u'running':
-            self.status="FAILED"
-            raise ImageFactoryException("Instance failed to start after 300 seconds - stopping")
+        self.wait_for_ec2_instance_start(instance)
 
         # From this point on we must be sure to terminate the instance when we are done
         # so wrap in a try/finally
@@ -548,24 +568,7 @@ class Fedora_ec2_Builder(BaseBuilder):
             self.guest.sshprivkey = key_file
 
             # Ugly ATM because failed access always triggers an exception
-            self.log.debug("Waiting up to 300 seconds for ssh to become available on %s" % (guestaddr))
-            retcode = 1
-            for i in range(30):
-                self.log.debug("Waiting for EC2 ssh access: %d/300" % (i*10))
-
-                access=1
-                try:
-                    stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, "/bin/true")
-                except:
-                    access=0
-
-                if access:
-                    break
-
-                sleep(10)
-
-            if retcode:
-                raise ImageFactoryException("Unable to gain ssh access after 300 seconds - aborting")
+            self.wait_for_ec2_ssh_access(guestaddr)
 
             # There are a handful of additional boot tasks after SSH starts running
             # Give them an additional 20 seconds for good measure
@@ -844,16 +847,7 @@ class Fedora_ec2_Builder(BaseBuilder):
         # Give it 10 seconds to settle
         sleep(10)
 
-        for i in range(30):
-            self.log.debug("Waiting for EC2 instance to start: %d/300" % (i*10))
-            instance.update()
-            if instance.state == u'running':
-                break
-            sleep(10)
-
-        if instance.state != u'running':
-            self.status="FAILED"
-            raise ImageFactoryException("Instance failed to start after 300 seconds - stopping")
+        self.wait_for_ec2_instance_start(instance)
 
         # From this point on we must be sure to terminate the instance when we are done
         # so wrap in a try/finally
@@ -864,26 +858,8 @@ class Fedora_ec2_Builder(BaseBuilder):
 
             self.guest.sshprivkey = key_file
 
-            # TODO: Make this loop so we can take advantage of early availability
             # Ugly ATM because failed access always triggers an exception
-            self.log.debug("Waiting up to 300 seconds for ssh to become available on %s" % (guestaddr))
-            retcode = 1
-            for i in range(30):
-                self.log.debug("Waiting for EC2 ssh access: %d/300" % (i*10))
-
-                access=1
-                try:
-                    stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, "/bin/true")
-                except:
-                    access=0
-
-                if access:
-                    break
-
-                sleep(10)
-
-            if retcode:
-                raise ImageFactoryException("Unable to gain ssh access after 300 seconds - aborting")
+            self.wait_for_ec2_ssh_access(guestaddr)
 
             # There are a handful of additional boot tasks after SSH starts running
             # Give them an additional 20 seconds for good measure
