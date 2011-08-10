@@ -1051,10 +1051,8 @@ class Fedora_ec2_Builder(BaseBuilder):
         try:
             conn.create_bucket(bucket, location=boto_loc)
         except S3CreateError as buckerr:
-            if buckerr.error_code == "BucketAlreadyOwnedByYou":
-                # Expected behavior after first push - not an error
-                pass
-            else:
+            # if the bucket already exists, it is not an error
+            if buckerr.error_code != "BucketAlreadyOwnedByYou":
                 raise
 
         # TODO: Make configurable?
