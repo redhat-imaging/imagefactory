@@ -576,7 +576,7 @@ class Fedora_ec2_Builder(BaseBuilder):
             self.log.debug("Done")
 
             # Different OSes need different steps here
-            self.guest.guest_execute_command(guestaddr, "yum -y install euca2ools")
+            self.install_euca_tools(guestaddr)
 
             self.log.debug("Customizing guest: %s" % (guestaddr))
             self.guest.mkdir_p(self.guest.icicle_tmp)
