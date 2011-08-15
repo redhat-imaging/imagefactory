@@ -19,7 +19,6 @@ import cqpid
 from qmf2 import *
 from threading import Thread, Lock
 from imgfac import props
-from imgfac.builders import *
 from imgfac.BuildJob import BuildJob
 
 class BuildAdaptor(BuildJob):
