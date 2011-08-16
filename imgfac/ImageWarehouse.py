@@ -190,6 +190,16 @@ class ImageWarehouse(object):
         return build_id
 
     def _upload_image_file(self, object_url, image_file_path):
+        self.last_mb = -1
+        def _progress(down_total, down_current, up_total, up_current):
+            if up_total == 0:
+                return
+            current_mb = int(up_current) / 10485760
+            if current_mb > self.last_mb or up_current == up_total:
+                self.last_mb = current_mb
+                self.log.debug("%dkB of %dkB" % (up_current/1024,
+                                                 up_total/1024))
+
         try:
             image_file = open(image_file_path)
 
@@ -201,6 +211,8 @@ class ImageWarehouse(object):
             curl.setopt(pycurl.PUT, 1)
             curl.setopt(pycurl.INFILE, image_file)
             curl.setopt(pycurl.INFILESIZE, image_size)
+            curl.setopt(curl.NOPROGRESS, 0)
+            curl.setopt(curl.PROGRESSFUNCTION, _progress)
             curl.perform()
             curl.close()
             image_file.close()
