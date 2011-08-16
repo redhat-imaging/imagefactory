@@ -22,7 +22,7 @@ import tempfile
 from imgfac.Template import Template
 from imgfac.ImageWarehouse import ImageWarehouse
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
-from imgfac.builders.MockBuilder import MockBuilder
+from imgfac.builders.Mock_Builder import Mock_Builder
 
 
 class testTemplate(unittest.TestCase):
@@ -46,7 +46,7 @@ class testTemplate(unittest.TestCase):
         template_id = self.warehouse.store_template(self.template_xml)
         template = Template(template_id)
         target = "mock"
-        builder = MockBuilder(self.template_xml, target)
+        builder = Mock_Builder(self.template_xml, target)
         builder.build_image()
         metadata = dict(template=template_id, target=target, icicle="None", target_parameters="None")
         self.warehouse.store_target_image(builder.new_image_id, builder.image, metadata=metadata)

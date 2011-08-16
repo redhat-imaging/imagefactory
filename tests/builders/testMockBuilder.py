@@ -18,7 +18,7 @@ import logging
 import zope
 import os.path
 from imgfac.builders.IBuilder import IBuilder
-from imgfac.builders.MockBuilder import MockBuilder
+from imgfac.builders.Mock_Builder import Mock_Builder
 from imgfac.Template import Template
 
 
@@ -27,7 +27,7 @@ class TestMockBuilder(unittest.TestCase):
         logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/tmp/imagefactory-unittests.log')
         self.template = Template("<template></template>")
         self.target = "mock"
-        self.builder = MockBuilder(self.template, self.target)
+        self.builder = Mock_Builder(self.template, self.target)
 
     def tearDown(self):
         del self.builder
@@ -35,7 +35,7 @@ class TestMockBuilder(unittest.TestCase):
         del self.target
 
     def testImplementsIBuilder(self):
-        self.assert_(IBuilder.implementedBy(MockBuilder), 'MockBuilder does not implement the ImageBuilder interface...')
+        self.assert_(IBuilder.implementedBy(Mock_Builder), 'Mock_Builder does not implement the ImageBuilder interface...')
 
     def testInit(self):
         self.assertIn(self.builder.template, (self.template, self.builder.new_image_id))
