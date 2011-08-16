@@ -17,5 +17,8 @@ srpm: sdist version
 pylint:
 	pylint --rcfile=pylint.conf imagefactory imgfac
 
+unittests:
+	python -m unittest discover -v
+
 clean:
 	rm -rf MANIFEST build dist imagefactory.spec version.txt
