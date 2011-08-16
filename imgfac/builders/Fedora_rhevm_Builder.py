@@ -180,9 +180,9 @@ class Fedora_rhevm_Builder(BaseBuilder):
 
         # Decode the config file, verify that the provider is in it - err out if not
         # TODO: Make file location CONFIG value
-	file = open("/etc/rhevm.json","r")
-	rhevm_json = file.read()
-	local_rhevm=json.loads(rhevm_json)
+        file = open("/etc/rhevm.json","r")
+        rhevm_json = file.read()
+        local_rhevm=json.loads(rhevm_json)
 
         post_data = None
         try:
@@ -211,7 +211,7 @@ class Fedora_rhevm_Builder(BaseBuilder):
         else:
             raise ImageFactoryException("Failed to extract RHEV-M UUID from warehouse POST reponse: %s" % (response))
 
-	self.log.debug("Extracted RHEVM UUID: %s " % (rhevm_uuid))
+        self.log.debug("Extracted RHEVM UUID: %s " % (rhevm_uuid))
 
         # Create the provdier image
         metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=rhevm_uuid)

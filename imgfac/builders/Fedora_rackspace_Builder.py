@@ -109,7 +109,7 @@ class Fedora_rackspace_Builder(BaseBuilder):
         rack_access_key = doc.xpathEval("//provider_credentials/rackspace_credentials/access_key")[0].content
 
         cloudservers = CloudServers(rack_username, rack_access_key)
-	cloudservers.authenticate()
+        cloudservers.authenticate()
 
         # TODO: Config file
         rack_jeos = {'Fedora': { '14' : { 'x86_64': 71},
@@ -122,13 +122,13 @@ class Fedora_rackspace_Builder(BaseBuilder):
             raise ImageFactoryException("Unable to find Rackspace JEOS for desired distro - ask Rackspace")
 
 
-	jeos_image = cloudservers.images.get(jeos_id)
+        jeos_image = cloudservers.images.get(jeos_id)
         # Hardcode to use a modest sized server
-	onegig_flavor = cloudservers.flavors.get(3)
+        onegig_flavor = cloudservers.flavors.get(3)
 
         # This is the Rackspace version of key injection
-	mypub = open("/etc/oz/id_rsa-icicle-gen.pub")
-	server_files = { "/root/.ssh/authorized_keys":mypub }
+        mypub = open("/etc/oz/id_rsa-icicle-gen.pub")
+        server_files = { "/root/.ssh/authorized_keys":mypub }
 
         instance_name = "factory-build-%s" % (self.new_image_id, )
         jeos_instance = cloudservers.servers.create(instance_name, jeos_image,
@@ -175,19 +175,19 @@ class Fedora_rackspace_Builder(BaseBuilder):
             self.log.debug("Waiting 20 seconds for remaining boot tasks")
             sleep(20)
 
-	    self.log.debug("Doing Rackspace Customize")
-	    self.guest.mkdir_p(self.guest.icicle_tmp)
-	    self.guest.do_customize(guestaddr)
-	    self.log.debug("Done!")
+            self.log.debug("Doing Rackspace Customize")
+            self.guest.mkdir_p(self.guest.icicle_tmp)
+            self.guest.do_customize(guestaddr)
+            self.log.debug("Done!")
 
             self.log.debug("Generating ICICLE for Rackspace image")
             self.output_descriptor = self.guest.do_icicle(guestaddr)
             self.log.debug("Done!")
 
             image_name = "factory-image-%s" % (self.new_image_id, )
-	    snap_image = cloudservers.images.create(image_name, jeos_instance)
+            snap_image = cloudservers.images.create(image_name, jeos_instance)
 
-	    self.log.debug("New Rackspace image created with ID: %s" % (snap_image.id))
+            self.log.debug("New Rackspace image created with ID: %s" % (snap_image.id))
 
             for i in range(300):
                 if snap_image.status == "ACTIVE":

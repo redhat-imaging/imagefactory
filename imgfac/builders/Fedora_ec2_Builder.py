@@ -496,14 +496,14 @@ class Fedora_ec2_Builder(BaseBuilder):
             pass
 
         if ami_id == "none":
-	    try:
-	        # Fallback to modification on us-east and upload cross-region
-	        ami_id = self.ec2_jeos_amis['ec2-us-east-1'][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]
-	        build_region = 'ec2-us-east-1'
-	        self.log.info("WARNING: Building in ec2-us-east-1 for upload to %s" % (provider))
-	        self.log.info(" This may be a bit slow - ask the Factory team to create a region-local JEOS")
-	    except KeyError:
-	        pass
+            try:
+                # Fallback to modification on us-east and upload cross-region
+                ami_id = self.ec2_jeos_amis['ec2-us-east-1'][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]
+                build_region = 'ec2-us-east-1'
+                self.log.info("WARNING: Building in ec2-us-east-1 for upload to %s" % (provider))
+                self.log.info(" This may be a bit slow - ask the Factory team to create a region-local JEOS")
+            except KeyError:
+                pass
 
         if ami_id == "none":
             self.status="FAILED"
@@ -525,9 +525,9 @@ class Fedora_ec2_Builder(BaseBuilder):
         # Create a use-once SSH-able security group
         factory_security_group_name = "imagefactory-%s" % (self.new_image_id, )
         factory_security_group_desc = "Temporary ImageFactory generated security group with SSH access"
-	self.log.debug("Creating temporary security group (%s)" % (factory_security_group_name))
-	factory_security_group = conn.create_security_group(factory_security_group_name, factory_security_group_desc)
-	factory_security_group.authorize('tcp', 22, 22, '0.0.0.0/0')
+        self.log.debug("Creating temporary security group (%s)" % (factory_security_group_name))
+        factory_security_group = conn.create_security_group(factory_security_group_name, factory_security_group_desc)
+        factory_security_group.authorize('tcp', 22, 22, '0.0.0.0/0')
 
         # Create a use-once SSH key
         key_name = "fac-tmp-key-%s" % (self.new_image_id)
