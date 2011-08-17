@@ -57,10 +57,7 @@ class ImageWarehouse(object):
         self.icicle_bucket = ApplicationConfiguration().configuration['icicle_bucket']
         self.provider_image_bucket = ApplicationConfiguration().configuration['provider_bucket']
 
-        if (url.endswith('/')):
-            self.url = url[0:len(url)-1]
-        else:
-            self.url = url
+        self.url = url.rstrip('/')
 
         self.log.debug("Created Image Warehouse instance %s" % (self, ))
 
