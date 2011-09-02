@@ -13,7 +13,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from bottle import route, get, put, post, delete, request, abort
+from bottle import *
 
 @get('/targets')
 def list_targets():
@@ -76,7 +76,7 @@ def delete_target_images(target_id):
     # 401 Unauthorized: exception
     # 404 Not Found: exception
     # 500 Internal Server Error: exception
-    pass
+    raise HTTPResponse(output='Method implemented for %s' % request.fullpath, status=501)
 
 @get('/targets/:target_id/images/:image_id')
 def target_image_detail(target_id, image_id):
@@ -105,7 +105,7 @@ def delete_target_image(target_id, image_id):
     # 204 No Content
     # 401 Unauthorized: exception
     # 404 Not Found: exception
-    pass
+    raise HTTPResponse(output='Method implemented for %s' % request.fullpath, status=501)
 
 @get('/targets/:target_id/providers')
 def list_providers(target_id):
@@ -132,7 +132,7 @@ def create_provider(target_id):
     # 200 OK: new provider detail
     # 400 Bad Request: exception
     # 404 Not Found: exception
-    pass
+    raise HTTPResponse(output='Method implemented for %s' % request.fullpath, status=501)
 
 @delete('/targets/:target_id/providers')
 def delete_providers(target_id):
@@ -148,7 +148,7 @@ def delete_providers(target_id):
     # 401 Unauthorized: exception
     # 404 Not Found: exception
     # 500 Internal Server Error: exception
-    pass
+    raise HTTPResponse(output='Method implemented for %s' % request.fullpath, status=501)
 
 @get('/targets/:target_id/providers/:provider_id')
 def provider_detail(target_id, provider_id):
@@ -177,7 +177,7 @@ def delete_provider(target_id, provider_id):
     # 200 OK: deleted item
     # 401 Unauthorized: exception
     # 404 Not Found: exception
-    pass
+    raise HTTPResponse(output='Method implemented for %s' % request.fullpath, status=501)
 
 @get('/targets/:target_id/providers/:provider_id/images')
 def list_provider_images(target_id, provider_id):
@@ -223,7 +223,7 @@ def delete_provider_images(target_id, provider_id, image_id=None):
     # 200 OK: deleted list
     # 401 Unauthorized: exception
     # 404 Not Found: exception
-    pass
+    raise HTTPResponse(output='Method implemented for %s' % request.fullpath, status=501)
 
 @get('/targets/:target_id/providers/:provider_id/images/:image_id')
 def provider_image_detail(target_id, provider_id, image_id):
@@ -279,7 +279,7 @@ def stop_builder(target_id, builder_id):
     # 200 OK: status
     # 401 Unauthorized: exception
     # 404 Not Found: exception
-    pass
+    raise HTTPResponse(output='Method implemented for %s' % request.fullpath, status=501)
 
 @get('/targets/:target_id/builders/:builder_id/status')
 def builder_status(target_id, builder_id):
@@ -312,4 +312,5 @@ def method_not_allowed():
 
     @return 405 Method Not Allowed
     """
-    pass
+    raise HTTPResponse(output='Method not allowed for %s' % request.fullpath, status=405)
+

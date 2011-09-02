@@ -20,11 +20,14 @@ import os
 import os.path
 import signal
 import logging
+from bottle import run, debug
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.qmfagent.ImageFactoryAgent import ImageFactoryAgent
 from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.ImageWarehouse import ImageWarehouse
 from imgfac.Singleton import Singleton
+from imgfac.RESTinterface.images import *
+from imgfac.RESTinterface.targets import *
 
 class Application(Singleton):
 
@@ -119,6 +122,8 @@ class Application(Singleton):
         return(True)
 
     def main(self):
+        # TODO: Put the QMF and REST listeners in separate threads and move the
+        # CLI to a seperate script that uses either API.
         if (self.app_config['qmf']):
             if (not self.app_config['foreground']):
                 self.daemon = self.daemonize()
@@ -139,7 +144,9 @@ class Application(Singleton):
 
             self.qmf_agent = ImageFactoryAgent(self.app_config['qpidd'])
             self.qmf_agent.run()
-
+        elif(self.app_config['rest']):
+            debug(self.app_config['debug'])
+            run(host=self.app_config['address'], port=self.app_config['port'], reloader=self.app_config['debug'])
         else:
             self.app_config['foreground'] = True
             self.setup_logging()
