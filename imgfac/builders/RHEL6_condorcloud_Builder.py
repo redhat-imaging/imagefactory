@@ -15,5 +15,5 @@
 from Fedora_condorcloud_Builder import Fedora_condorcloud_Builder
 
 class RHEL6_condorcloud_Builder(Fedora_condorcloud_Builder):
-    def __init__(self, template, target):
-        super(RHEL6_condorcloud_Builder, self).__init__(template, target)
+    def __init__(self, template, target, config_block = None):
+        super(RHEL6_condorcloud_Builder, self).__init__(template, target, config_block)

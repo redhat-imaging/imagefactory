@@ -16,6 +16,8 @@
 import logging
 import zope
 import uuid
+import libxml2
+from os.path import isfile
 from IBuilder import IBuilder
 from imgfac import props
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
@@ -94,7 +96,7 @@ class BaseBuilder(object):
     percent_complete = property(**percent_complete())
 
     # Initializer
-    def __init__(self, template, target):
+    def __init__(self, template, target, config_block = None):
         super(BaseBuilder, self).__init__()
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.new_image_id = str(uuid.uuid4())
@@ -113,6 +115,7 @@ class BaseBuilder(object):
         self.output_descriptor = "<icicle></icicle>"
         self.delegate = None
         self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
+        self.config_block = config_block
 
     # Make instances callable for passing to thread objects
     def __call__(self, *args, **kwargs):
@@ -147,3 +150,56 @@ class BaseBuilder(object):
         """Prep the image for the provider and deploy.  This method is implemented by subclasses of the
         BaseBuilder to handle OS/Provider specific mechanics."""
         raise NotImplementedError
+
+    # Utility methods of use to multiple subclasses
+    def add_target_content(self):
+        """Merge in target specific package and repo content.
+        TDL object must already exist as self.tdlobj"""
+        doc = None
+        if self.config_block:
+            doc = libxml2.parseDoc(self.config_block)
+        elif isfile("/etc/imagefactory/target_content.xml"):
+            doc = libxml2.parseFile("/etc/imagefactory/target_content.xml")
+        else:
+            self.log.debug("Found neither a call-time config nor a config file - doing nothing")
+            return
+
+        # Purely to make the xpath statements below a tiny bit shorter
+        target = self.target
+        os=self.tdlobj.distro
+        version=self.tdlobj.update
+        arch=self.tdlobj.arch
+
+        # We go from most to least specific in this order:
+        #   arch -> version -> os-> target
+        # Note that at the moment we even allow an include statment that covers absolutely everything.
+        # That is, one that doesn't even specify a target - this is to support a very simple call-time syntax
+	include = doc.xpathEval("/template_includes/include[@target='%s' and @os='%s' and @version='%s' and @arch='%s']" %
+				(target, os, version, arch))
+	if len(include) == 0:
+	    include = doc.xpathEval("/template_includes/include[@target='%s' and @os='%s' and @version='%s' and not(@arch)]" %
+				    (target, os, version))
+	if len(include) == 0:
+	    include = doc.xpathEval("/template_includes/include[@target='%s' and @os='%s' and not(@version) and not(@arch)]" %
+					(target, os))
+	if len(include) == 0:
+	    include = doc.xpathEval("/template_includes/include[@target='%s' and not(@os) and not(@version) and not(@arch)]" %
+					    (target))
+	if len(include) == 0:
+	    include = doc.xpathEval("/template_includes/include[not(@target) and not(@os) and not(@version) and not(@arch)]")
+	if len(include) == 0:
+            self.log.debug("cannot find a config section that matches our build details - doing nothing")
+	    return
+
+        # OK - We have at least one config block that matches our build - take the first one, merge it and be done
+        # TODO: Merge all of them?  Err out if there is more than one?  Warn?
+        include = include[0]        
+
+        packages = include.xpathEval("packages")
+        if len(packages) > 0:
+            self.tdlobj.merge_packages(str(packages[0]))
+
+        repositories = include.xpathEval("repositories")
+        if len(repositories) > 0:
+            self.tdlobj.merge_repositories(str(repositories[0]))
+
