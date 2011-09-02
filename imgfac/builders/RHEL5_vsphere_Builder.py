@@ -15,5 +15,5 @@
 from Fedora_vsphere_Builder import Fedora_vsphere_Builder
 
 class RHEL5_vsphere_Builder(Fedora_vsphere_Builder):
-    def __init__(self, template, target):
-        super(RHEL5_vsphere_Builder, self).__init__(template, target)
+    def __init__(self, template, target, config_block = None):
+        super(RHEL5_vsphere_Builder, self).__init__(template, target, config_block)

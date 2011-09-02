@@ -34,8 +34,8 @@ class Fedora_vsphere_Builder(BaseBuilder):
     """docstring for Fedora_vsphere_Builder"""
     zope.interface.implements(IBuilder)
 
-    def __init__(self, template, target):
-        super(Fedora_vsphere_Builder, self).__init__(template, target)
+    def __init__(self, template, target, config_block = None):
+        super(Fedora_vsphere_Builder, self).__init__(template, target, config_block)
         self.app_config = ApplicationConfiguration().configuration
         self.warehouse_url = self.app_config['warehouse']
 
@@ -57,6 +57,8 @@ class Fedora_vsphere_Builder(BaseBuilder):
         self.status="BUILDING"
 
         tdlobj = oz.TDL.TDL(xmlstring=self.template.xml)
+        # Add in target specific content
+        self.add_target_content()
         # Oz assumes unique names - TDL built for multiple backends guarantees
         # they are not unique.  We don't really care about the name so just
         # force uniqueness

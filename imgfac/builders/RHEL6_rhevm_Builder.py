@@ -15,5 +15,5 @@
 from Fedora_rhevm_Builder import Fedora_rhevm_Builder
 
 class RHEL6_rhevm_Builder(Fedora_rhevm_Builder):
-    def __init__(self, template, target):
-        super(RHEL6_rhevm_Builder, self).__init__(template, target)
+    def __init__(self, template, target, config_block = None):
+        super(RHEL6_rhevm_Builder, self).__init__(template, target, config_block)
