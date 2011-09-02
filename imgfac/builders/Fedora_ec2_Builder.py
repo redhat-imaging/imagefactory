@@ -1189,6 +1189,7 @@ none       /sys      sysfs   defaults         0 0
         # July 13 - new approach - generic JEOS AMIs for Fedora - no userdata and no euca-tools
         #           ad-hoc ssh keys replace userdata - runtime install of euca tools for bundling
         # v0.6 of F14 and F15 - dropped F13 for now - also include official public RHEL hourly AMIs for RHEL6
+        # Sept 1 - 2011 - updated us-west Fedora JEOSes to 0.6
     ec2_jeos_amis={
          'ec2-us-east-1': {'Fedora': { '14' : { 'x86_64': 'ami-5b1dd932', 'i386': 'ami-171dd97e' },
                                        '15' : { 'x86_64': 'ami-c31cd8aa', 'i386': 'ami-b71cd8de' }
@@ -1197,7 +1198,7 @@ none       /sys      sysfs   defaults         0 0
                                        '1'  : { 'x86_64': 'ami-5e837b37', 'i386': 'ami-0cbb4265' }
                                      }
                           } ,
-         'ec2-us-west-1': {'Fedora': { '14' : { 'x86_64': 'ami-c9693a8c', 'i386': 'ami-c7693a82' },
+         'ec2-us-west-1': {'Fedora': { '14' : { 'x86_64': 'ami-75a9fb30', 'i386': 'ami-73a9fb36' },
                                        '15' : { 'x86_64': 'ami-45a9fb00', 'i386': 'ami-65a9fb20' }
                                      } ,
                            'RHEL-6': { '0'  : { 'x86_64': 'ami-a5c695e0', 'i386': 'ami-05e7b440' },
