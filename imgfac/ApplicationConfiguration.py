@@ -42,6 +42,7 @@ class ApplicationConfiguration(Singleton):
         cli_build_description = """Build specified system and exit."""
         cli_push_description = """Push an image and exit."""
         warehouse_description = """Options for specifying Image Warehouse (http://aeolusproject.org/imagewarehouse.html) base URL and bucket names."""
+        rest_description = """Enable the RESTful interface."""
 
         argparser = argparse.ArgumentParser(description=main_description, prog='imagefactory')
         argparser.add_argument('--version', action='version', version='%(prog)s 0.1', help='Version info')
@@ -53,6 +54,11 @@ class ApplicationConfiguration(Singleton):
         argparser.add_argument('--imgdir', default='/tmp', help='Build image files in location specified. (default: %(default)s)')
         argparser.add_argument('--timeout', type=int, default=3600, help='Set the timeout period for image building in seconds. (default: %(default)s)')
         argparser.add_argument('--tmpdir', default='/tmp', help='Use the specified location for temporary files.  (default: %(default)s)')
+
+        group_rest = argparser.add_argument_group(title='RESTful Interface', description=rest_description)
+        group_rest.add_argument('--rest', action='store_true', default=False, help='Turn on the RESTful http interface. (default: %(default)s)')
+        group_rest.add_argument('--port', type=int, default=8075, help='Port to attach the RESTful http interface to. (defaul: %(default)s)')
+        group_rest.add_argument('--address', default='0.0.0.0', help='Interface address to listen to. (defaul: %(default)s)')
 
         group_qmf = argparser.add_argument_group(title='QMF agent', description=qmf_description)
         group_qmf.add_argument('--qmf', action='store_true', default=False, help='Turn on QMF agent interface. (default: %(default)s)')

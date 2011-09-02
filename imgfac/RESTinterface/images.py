@@ -13,7 +13,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from bottle import route, get, put, post, delete, request, abort
+from bottle import *
 
 
 @get('/images')
@@ -61,7 +61,7 @@ def delete_images(image_id):
     # 401 Not Authorized: exception
     # 404 Not Found: exception
     # 500 Internal Server Error: exception
-    pass
+    raise HTTPResponse(output='Method implemented for %s' % request.fullpath, status=501)
 
 @post('/images/import')
 @post('/images/:image_id/import')
@@ -122,7 +122,7 @@ def delete_builds(image_id, build_id=None):
     # 401 Not Authorized: exception
     # 404 Not Found: exception
     # 500 Internal Server Error: exception
-    pass
+    raise HTTPResponse(output='Method implemented for %s' % request.fullpath, status=501)
 
 # Things that are not allowed
 @put('/images')
@@ -137,4 +137,4 @@ def method_not_allowed():
 
     @return 405 Method Not Allowed
     """
-    pass
+    raise HTTPResponse(output='Method not allowed for %s' % request.fullpath, status=405)
