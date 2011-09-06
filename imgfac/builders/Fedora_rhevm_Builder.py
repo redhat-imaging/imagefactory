@@ -54,7 +54,7 @@ class Fedora_rhevm_Builder(BaseBuilder):
         self.log.debug("Building for target %s with warehouse config %s" % (self.target, self.app_config['warehouse']))
         self.status="BUILDING"
 
-        tdlobj = oz.TDL.TDL(xmlstring=self.template.xml)
+        self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml)
         # Add in target specific content
         self.add_target_content()
         # Oz assumes unique names - TDL built for multiple backends guarantees
@@ -62,7 +62,7 @@ class Fedora_rhevm_Builder(BaseBuilder):
         # force uniqueness
         #  Oz now uses the tdlobject name property directly in several places
         # so we must change it
-        tdlobj.name = tdlobj.name + "-" + self.new_image_id
+        self.tdlobj.name = self.tdlobj.name + "-" + self.new_image_id
 
         # populate a config object to pass to OZ; this allows us to specify our
         # own output dir but inherit other Oz behavior
@@ -70,7 +70,7 @@ class Fedora_rhevm_Builder(BaseBuilder):
         oz_config.read("/etc/oz/oz.cfg")
         oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
 
-        guest = oz.GuestFactory.guest_factory(tdlobj, oz_config, None)
+        guest = oz.GuestFactory.guest_factory(self.tdlobj, oz_config, None)
         guest.diskimage = self.app_config["imgdir"] + "/base-image-" + self.new_image_id + ".dsk"
         # Oz assumes unique names - TDL built for multiple backends guarantees
         # they are not unique.  We don't really care about the name so just
