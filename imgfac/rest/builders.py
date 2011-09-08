@@ -16,11 +16,39 @@
 from bottle import *
 
 
+@get('/builders')
+def list_builders():
+    """
+    TODO: Docstring for list_builders 
+
+    @return TODO
+    """
+    raise HTTPResponse(output='Method not implemented for %s' % request.fullpath, status=501)
+
+@get('/builders/:builder_id')
+def builder_detail(builder_id):
+    """
+    TODO: Docstring for builder_detail
+    
+    @param builder_id TODO 
+
+    @return TODO
+    """
+    raise HTTPResponse(output='Method not implemented for %s' % request.fullpath, status=501)
+
+@get('/builders/:builder_id/status')
+def builder_status(builder_id):
+    """
+    TODO: Docstring for builder_status
+    
+    @param builder_id TODO 
+
+    @return TODO
+    """
+    raise HTTPResponse(output='Method not implemented for %s' % request.fullpath, status=501)
+
 # Things we have not yet implemented
-@route('/images', method=('GET','DELETE'))
-@route('/images/:image_id', method=('GET','DELETE'))
-@route('/images/:image_id/builds', method=('GET','DELETE'))
-@route('/images/:image_id/builds/:build_id', method=('GET','DELETE'))
+@delete('/builders/:builder_id')
 def method_not_implemented(**kw):
     """
     @return 501 Not Implemented
@@ -28,9 +56,9 @@ def method_not_implemented(**kw):
     raise HTTPResponse(output='Method not implemented for %s' % request.fullpath, status=501)
 
 # Things we don't plan to implement
-@route('/images', method=('PUT'))
-@route('/images/:image_id', method=('POST'))
-@route('/images/:image_id/builds', method=('PUT'))
+@route('/builders', method=('PUT','POST','DELETE'))
+@route('/builders/:builder_id', method=('PUT','POST'))
+@route('/builders/:builder_id/status', method=('PUT','POST','DELETE'))
 def method_not_allowed(**kw):
     """
     @return 405 Method Not Allowed
