@@ -16,13 +16,13 @@
 from bottle import *
 
 
-@post('/targets/:target_id/providers/:provider_id/images')
-def import_image(target_id, provider_id):
+@post('/targets/:target_name/providers/:provider_name/images')
+def import_image(target_name, provider_name):
     """
     TODO: Docstring for import_image
     
-    @param target_id TODO
-    @param provider_id TODO 
+    @param target_name TODO
+    @param provider_name TODO 
 
     @return TODO
     """
@@ -30,13 +30,9 @@ def import_image(target_id, provider_id):
 
 # Things we have not yet implemented
 @route('/targets', method=('GET'))
-@route('/targets/:target_id', method=('GET'))
-@route('/targets/:target_id/images', method=('GET','DELETE'))
-@route('/targets/:target_id/images/:target_image_id', method=('GET','DELETE'))
-@route('/targets/:target_id/providers', method=('GET','POST','DELETE'))
-@route('/targets/:target_id/providers/:provider_id', method=('GET','PUT','DELETE'))
-@route('/targets/:target_id/providers/:provider_id/images', method=('GET','DELETE'))
-@route('/targets/:target_id/providers/:provider_id/images/:provider_image_id', method=('GET','DELETE'))
+@route('/targets/:target_name', method=('GET'))
+@route('/targets/:target_name/providers', method=('GET','POST','DELETE'))
+@route('/targets/:target_name/providers/:provider_name', method=('GET','PUT','DELETE'))
 def method_not_implemented(**kw):
     """
     @return 501 Not Implemented
@@ -45,13 +41,9 @@ def method_not_implemented(**kw):
 
 # Things we don't plan to implement
 @route('/targets', method=('PUT','POST','DELETE'))
-@route('/targets/:target_id', method=('PUT','POST','DELETE'))
-@route('/targets/:target_id/images', method=('PUT','POST'))
-@route('/targets/:target_id/images/:target_image_id', method=('PUT','POST'))
-@route('/targets/:target_id/providers', method=('PUT'))
-@route('/targets/:target_id/providers/:provider_id', method=('POST'))
-@route('/targets/:target_id/providers/:provider_id/images', method=('PUT'))
-@route('/targets/:target_id/providers/:provider_id/images/:provider_image_id', method=('PUT','POST'))
+@route('/targets/:target_name', method=('PUT','POST','DELETE'))
+@route('/targets/:target_name/providers', method=('PUT'))
+@route('/targets/:target_name/providers/:provider_name', method=('POST'))
 def method_not_allowed(**kw):
     """
     @return 405 Method Not Allowed
