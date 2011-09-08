@@ -16,33 +16,6 @@
 from bottle import *
 
 
-@post('/images')
-@put('/images/:image_id')
-@put('/images/:image_id/builds/:build_id')
-def build_image(image_id=None, build_id=None):
-    """
-    TODO: Docstring for build_image
-    
-    @param image_id TODO
-    @param build_id TODO
-
-    @return TODO
-    """
-    raise HTTPResponse(output='Method not implemented for %s' % request.fullpath, status=501)
-
-@post('/images/:image_id/builds')
-@post('/images/:image_id/builds/:build_id')
-def push_image(image_id, build_id=None):
-    """
-    TODO: Docstring for push_image
-    
-    @param image_id TODO
-    @param build_id TODO
-
-    @return TODO
-    """
-    raise HTTPResponse(output='Method not implemented for %s' % request.fullpath, status=501)
-
 # Things we have not yet implemented
 @route('/images', method=('GET','DELETE'))
 @route('/images/:image_id', method=('GET','DELETE'))
