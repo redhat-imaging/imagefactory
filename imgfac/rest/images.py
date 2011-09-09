@@ -5,9 +5,9 @@
 #   you may not use this file except in compliance with the License.
 #   You may obtain a copy of the License at
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#       http:/www.apache.org/licenses/LICENSE-2.0
 #
-#   Unless required by applicable law or agreed to in writing, software
+#   Unless required by icable law or agreed to in writing, software
 #   distributed under the License is distributed on an "AS IS" BASIS,
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
@@ -19,7 +19,7 @@ from bottle import *
 from imgfac.BuildDispatcher import BuildDispatcher
 
 
-@post('/images')
+@post('/imagefactory/images')
 def new_image():
     """
     TODO: Docstring for new_image 
@@ -65,8 +65,8 @@ To import an image, supply target_name, provider_name, target_identifier, and im
         response.status = 400
         return help_txt
 
-@put('/images/:image_id')
-@put('/images/:image_id/builds/:build_id')
+@put('/imagefactory/images/:image_id')
+@put('/imagefactory/images/:image_id/builds/:build_id')
 def build_image(image_id=None, build_id=None):
     """
     TODO: Docstring for build_image
@@ -87,8 +87,8 @@ def build_image(image_id=None, build_id=None):
         response.status = 500
         return {'exception':e, 'traceback':format_tb(sys.exc_info()[2])}
 
-@post('/images/:image_id/builds')
-@post('/images/:image_id/builds/:build_id')
+@post('/imagefactory/images/:image_id/builds')
+@post('/imagefactory/images/:image_id/builds/:build_id')
 def push_image(image_id, build_id=None):
     """
     TODO: Docstring for push_image
@@ -130,26 +130,26 @@ def _response_body_for_jobs(jobs):
     return response_body
 
 # Things we have not yet implemented
-@route('/images', method=('GET','DELETE'))
-@route('/images/:image_id', method=('GET','DELETE'))
-@route('/images/:image_id/builds', method=('GET','DELETE'))
-@route('/images/:image_id/builds/:build_id', method=('GET','DELETE'))
-@route('/images/:image_id/builds/:build_id/target_images', method=('GET','PUT','POST','DELETE'))
-@route('/images/:image_id/builds/:build_id/target_images/:target_image_id', method=('GET','PUT','POST','DELETE'))
-@route('/images/:image_id/builds/:build_id/target_images/:target_image_id/provider_images', method=('GET','PUT','POST','DELETE'))
-@route('/images/:image_id/builds/:build_id/target_images/:target_image_id/provider_images/:provider_image_id', method=('GET','PUT','POST','DELETE'))
+@route('/imagefactory/images', method=('GET','DELETE'))
+@route('/imagefactory/images/:image_id', method=('GET','DELETE'))
+@route('/imagefactory/images/:image_id/builds', method=('GET','DELETE'))
+@route('/imagefactory/images/:image_id/builds/:build_id', method=('GET','DELETE'))
+@route('/imagefactory/images/:image_id/builds/:build_id/target_', method=('GET','PUT','POST','DELETE'))
+@route('/imagefactory/images/:image_id/builds/:build_id/target_/:target_image_id', method=('GET','PUT','POST','DELETE'))
+@route('/imagefactory/images/:image_id/builds/:build_id/target_/:target_image_id/provider_', method=('GET','PUT','POST','DELETE'))
+@route('/imagefactory/images/:image_id/builds/:build_id/target_/:target_image_id/provider_/:provider_image_id', method=('GET','PUT','POST','DELETE'))
 def method_not_implemented(**kw):
     """
     @return 501 Not Implemented
     """
-    raise HTTPResponse(output='Method not implemented for %s' % request.fullpath, status=501)
+    raise HTTPResponse(status=501)
 
 # Things we don't plan to implement
-@route('/images', method=('PUT'))
-@route('/images/:image_id', method=('POST'))
-@route('/images/:image_id/builds', method=('PUT'))
+@route('/imagefactory/images', method=('PUT'))
+@route('/imagefactory/images/:image_id', method=('POST'))
+@route('/imagefactory/images/:image_id/builds', method=('PUT'))
 def method_not_allowed(**kw):
     """
     @return 405 Method Not Allowed
     """
-    raise HTTPResponse(output='Method not allowed for %s' % request.fullpath, status=405)
+    raise HTTPResponse(status=405)
