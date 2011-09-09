@@ -137,12 +137,14 @@ def _response_body_for_jobs(jobs):
     builders = []
     for job in jobs:
         builder_id = job.new_image_id
-        builder_url = rest_api.get_url('builder_detail')
+        builder_url = '%s://%s%s/%s' % (request.urlparts[0], request.urlparts[1], builders_route, builder_id)
         builders.append({'target':job.target, 'id':builder_id, 'href':builder_url})
     response_body.update({'builders':builders})
     return response_body
 
-@rest_api.get('/imagefactory/builders')
+# using this var for now since I cannot get Bottle.get_url() to work -sloranz 20110909
+builders_route = '/imagefactory/builders'
+@rest_api.get(builders_route)
 def list_():
     """
     TODO: Docstring for list_ 
