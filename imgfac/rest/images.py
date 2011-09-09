@@ -13,6 +13,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import sys
+from traceback import *
 from bottle import *
 from imgfac.BuildDispatcher import BuildDispatcher
 
@@ -39,14 +41,18 @@ def new_image():
 
     if(template and targets):
         try:
-            raise HTTPResponse(output='Method not implemented for %s' % request.fullpath, status=501)
+            jobs = BuildDispatcher().build_image_for_targets(None, None, template, targets.split(','))
+            builders = {}
+            for job in jobs:
+                builders.update({job.target:job.image_id})
+            return builders
         except Exception as e:
-            raise HTTPError(exception=e)
+            raise HTTPError(exception=e, traceback=format_tb(sys.exc_info()[2]))
     elif(target_name and provider_name and target_identifier and image_descriptor):
         try:
             raise HTTPResponse(output='Method not implemented for %s' % request.fullpath, status=501)
         except Exception as e:
-            raise HTTPError(exception=e)
+            raise HTTPError(exception=e, traceback=format_tb(sys.exc_info()[2]))
     else:
         raise HTTPError(code=400, output=help_txt)
 
@@ -65,9 +71,9 @@ def build_image(image_id=None, build_id=None):
     targets = request.forms.get('targets')
 
     try:
-        raise HTTPResponse(output='Method not implemented for %s' % request.fullpath, status=501)
+        return BuildDispatcher().build_image_for_targets(image_id, build_id, template, targets)
     except Exception as e:
-        raise HTTPError(exception=e)
+        raise HTTPError(exception=e, traceback=format_tb(sys.exc_info()[2]))
 
 @post('/images/:image_id/builds')
 @post('/images/:image_id/builds/:build_id')
@@ -83,10 +89,13 @@ def push_image(image_id, build_id=None):
     providers = request.forms.get('providers')
     credentials = request.forms.get('credentials')
 
-    try:
-        raise HTTPResponse(output='Method not implemented for %s' % request.fullpath, status=501)
-    except Exception as e:
-        raise HTTPError(exception=e)
+    if(providers and credentials):
+        try:
+            return BuildDispatcher().push_image_to_providers(image_id, build_id, providers, credentials)
+        except Exception as e:
+            raise HTTPError(exception=e, traceback=format_tb(sys.exc_info()[2]))
+    else:
+        raise HTTPError(code=400, output='To push an image, a list of providers and credentials must be supplied.')
 
 # Things we have not yet implemented
 @route('/images', method=('GET','DELETE'))
