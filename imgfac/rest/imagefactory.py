@@ -13,13 +13,24 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from bottle import *
 import sys
 from traceback import *
-from bottle import *
 from imgfac.BuildDispatcher import BuildDispatcher
 
 
-@post('/imagefactory/images')
+rest_api = Bottle()
+
+@rest_api.get('/imagefactory')
+def api_info():
+    """
+    TODO: Docstring for api_info 
+
+    @return TODO
+    """
+    return {'name':'imagefactory', 'version':'0.1'}
+
+@rest_api.post('/imagefactory/images')
 def new_image():
     """
     TODO: Docstring for new_image 
@@ -65,8 +76,8 @@ To import an image, supply target_name, provider_name, target_identifier, and im
         response.status = 400
         return help_txt
 
-@put('/imagefactory/images/:image_id')
-@put('/imagefactory/images/:image_id/builds/:build_id')
+@rest_api.put('/imagefactory/images/:image_id')
+@rest_api.put('/imagefactory/images/:image_id/builds/:build_id')
 def build_image(image_id=None, build_id=None):
     """
     TODO: Docstring for build_image
@@ -87,8 +98,8 @@ def build_image(image_id=None, build_id=None):
         response.status = 500
         return {'exception':e, 'traceback':format_tb(sys.exc_info()[2])}
 
-@post('/imagefactory/images/:image_id/builds')
-@post('/imagefactory/images/:image_id/builds/:build_id')
+@rest_api.post('/imagefactory/images/:image_id/builds')
+@rest_api.post('/imagefactory/images/:image_id/builds/:build_id')
 def push_image(image_id, build_id=None):
     """
     TODO: Docstring for push_image
@@ -123,21 +134,59 @@ def _response_body_for_jobs(jobs):
     """
     response_body = {}
     response_body.update({'image_id':jobs[0].image_id,'build_id':jobs[0].build_id})
-    builders = {}
+    builders = []
     for job in jobs:
-        builders.update({job.target:job.new_image_id})
+        builder_id = job.new_image_id
+        builder_url = rest_api.get_url('builder_detail')
+        builders.append({'target':job.target, 'id':builder_id, 'href':builder_url})
     response_body.update({'builders':builders})
     return response_body
 
+@rest_api.get('/imagefactory/builders')
+def list_():
+    """
+    TODO: Docstring for list_ 
+
+    @return TODO
+    """
+    raise HTTPResponse(status=501)
+
+@rest_api.route('/imagefactory/builders/:builder_id', name='builder_detail')
+def builder_detail(builder_id):
+    """
+    TODO: Docstring for builder_detail
+    
+    @param builder_id TODO 
+
+    @return TODO
+    """
+    raise HTTPResponse(status=501)
+
+@rest_api.route('/imagefactory/builders/:builder_id/status', name='builder_status')
+def builder_status(builder_id):
+    """
+    TODO: Docstring for builder_status
+    
+    @param builder_id TODO 
+
+    @return TODO
+    """
+    raise HTTPResponse(status=501)
+
 # Things we have not yet implemented
-@route('/imagefactory/images', method=('GET','DELETE'))
-@route('/imagefactory/images/:image_id', method=('GET','DELETE'))
-@route('/imagefactory/images/:image_id/builds', method=('GET','DELETE'))
-@route('/imagefactory/images/:image_id/builds/:build_id', method=('GET','DELETE'))
-@route('/imagefactory/images/:image_id/builds/:build_id/target_', method=('GET','PUT','POST','DELETE'))
-@route('/imagefactory/images/:image_id/builds/:build_id/target_/:target_image_id', method=('GET','PUT','POST','DELETE'))
-@route('/imagefactory/images/:image_id/builds/:build_id/target_/:target_image_id/provider_', method=('GET','PUT','POST','DELETE'))
-@route('/imagefactory/images/:image_id/builds/:build_id/target_/:target_image_id/provider_/:provider_image_id', method=('GET','PUT','POST','DELETE'))
+@rest_api.route('/imagefactory/images', method=('GET','DELETE'))
+@rest_api.route('/imagefactory/images/:image_id', method=('GET','DELETE'))
+@rest_api.route('/imagefactory/images/:image_id/builds', method=('GET','DELETE'))
+@rest_api.route('/imagefactory/images/:image_id/builds/:build_id', method=('GET','DELETE'))
+@rest_api.route('/imagefactory/images/:image_id/builds/:build_id/target_image', method=('GET','PUT','POST','DELETE'))
+@rest_api.route('/imagefactory/images/:image_id/builds/:build_id/target_image/:target_image_id', method=('GET','PUT','POST','DELETE'))
+@rest_api.route('/imagefactory/images/:image_id/builds/:build_id/target_image/:target_image_id/provider_image', method=('GET','PUT','POST','DELETE'))
+@rest_api.route('/imagefactory/images/:image_id/builds/:build_id/target_image/:target_image_id/provider_image/:provider_image_id', method=('GET','PUT','POST','DELETE'))
+@rest_api.route('/imagefactory/targets', method=('GET'))
+@rest_api.route('/imagefactory/targets/:target_name', method=('GET'))
+@rest_api.route('/imagefactory/targets/:target_name/providers', method=('GET','POST','DELETE'))
+@rest_api.route('/imagefactory/targets/:target_name/providers/:provider_name', method=('GET','PUT','DELETE'))
+@rest_api.delete('/imagefactory/builders/:builder_id')
 def method_not_implemented(**kw):
     """
     @return 501 Not Implemented
@@ -145,9 +194,16 @@ def method_not_implemented(**kw):
     raise HTTPResponse(status=501)
 
 # Things we don't plan to implement
-@route('/imagefactory/images', method=('PUT'))
-@route('/imagefactory/images/:image_id', method=('POST'))
-@route('/imagefactory/images/:image_id/builds', method=('PUT'))
+@rest_api.route('/imagefactory/images', method=('PUT'))
+@rest_api.route('/imagefactory/images/:image_id', method=('POST'))
+@rest_api.route('/imagefactory/images/:image_id/builds', method=('PUT'))
+@rest_api.route('/imagefactory/targets', method=('PUT','POST','DELETE'))
+@rest_api.route('/imagefactory/targets/:target_name', method=('PUT','POST','DELETE'))
+@rest_api.route('/imagefactory/targets/:target_name/providers', method=('PUT'))
+@rest_api.route('/imagefactory/targets/:target_name/providers/:provider_name', method=('POST'))
+@rest_api.route('/imagefactory/builders', method=('PUT','POST','DELETE'))
+@rest_api.route('/imagefactory/builders/:builder_id', method=('PUT','POST'))
+@rest_api.route('/imagefactory/builders/:builder_id/status', method=('PUT','POST','DELETE'))
 def method_not_allowed(**kw):
     """
     @return 405 Method Not Allowed
