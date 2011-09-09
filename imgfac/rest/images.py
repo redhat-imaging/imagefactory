@@ -27,7 +27,7 @@ def new_image():
     @return TODO
     """
     help_txt = """To build a new target image, supply a template and list of targets to build for.
-    To import an image, supply target_name, provider_name, target_identifier, and image_descriptor."""
+To import an image, supply target_name, provider_name, target_identifier, and image_descriptor."""
     # build image arguments
     template = request.forms.get('template')
     targets = request.forms.get('targets')
@@ -41,20 +41,29 @@ def new_image():
 
     if(template and targets):
         try:
-            jobs = BuildDispatcher().build_image_for_targets(None, None, template, targets.split(','))
-            builders = {}
-            for job in jobs:
-                builders.update({job.target:job.image_id})
-            return builders
+            return build_image()
         except Exception as e:
-            raise HTTPError(exception=e, traceback=format_tb(sys.exc_info()[2]))
+            response.status = 500
+            return {'exception':e, 'traceback':format_tb(sys.exc_info()[2])}
     elif(target_name and provider_name and target_identifier and image_descriptor):
         try:
-            raise HTTPResponse(output='Method not implemented for %s' % request.fullpath, status=501)
+            import_result = BuildDispatcher().import_image(image_id,
+                                                            build_id,
+                                                            target_identifier,
+                                                            image_descriptor,
+                                                            target_name,
+                                                            provider_name)
+            response_body = {'image_id':import_result[0],
+                                'build_id':import_result[1],
+                                'target_image_id':import_result[2],
+                                'provider_image_id':import_result[3]}
+            return response_body
         except Exception as e:
-            raise HTTPError(exception=e, traceback=format_tb(sys.exc_info()[2]))
+            response.status = 500
+            return {'exception':e, 'traceback':format_tb(sys.exc_info()[2])}
     else:
-        raise HTTPError(code=400, output=help_txt)
+        response.status = 400
+        return help_txt
 
 @put('/images/:image_id')
 @put('/images/:image_id/builds/:build_id')
@@ -71,9 +80,12 @@ def build_image(image_id=None, build_id=None):
     targets = request.forms.get('targets')
 
     try:
-        return BuildDispatcher().build_image_for_targets(image_id, build_id, template, targets)
+        jobs = BuildDispatcher().build_image_for_targets(image_id, build_id, template, targets.split(','))
+        response.status = 202
+        return _response_body_for_jobs(jobs)
     except Exception as e:
-        raise HTTPError(exception=e, traceback=format_tb(sys.exc_info()[2]))
+        response.status = 500
+        return {'exception':e, 'traceback':format_tb(sys.exc_info()[2])}
 
 @post('/images/:image_id/builds')
 @post('/images/:image_id/builds/:build_id')
@@ -91,11 +103,31 @@ def push_image(image_id, build_id=None):
 
     if(providers and credentials):
         try:
-            return BuildDispatcher().push_image_to_providers(image_id, build_id, providers, credentials)
+            jobs = BuildDispatcher().push_image_to_providers(image_id, build_id, providers, credentials)
+            response.status = 202
+            return _response_body_for_jobs(jobs)
         except Exception as e:
-            raise HTTPError(exception=e, traceback=format_tb(sys.exc_info()[2]))
+            response.status = 500
+            return {'exception':e, 'traceback':format_tb(sys.exc_info()[2])}
     else:
-        raise HTTPError(code=400, output='To push an image, a list of providers and credentials must be supplied.')
+        response.status = 400
+        return 'To push an image, a list of providers and credentials must be supplied.'
+
+def _response_body_for_jobs(jobs):
+    """
+    TODO: Docstring for _response_body_for_jobs
+    
+    @param jobs List of BuildJob objects
+
+    @return Dict with keys 'image_id', 'build_id', and 'builders'
+    """
+    response_body = {}
+    response_body.update({'image_id':jobs[0].image_id,'build_id':jobs[0].build_id})
+    builders = {}
+    for job in jobs:
+        builders.update({job.target:job.new_image_id})
+    response_body.update({'builders':builders})
+    return response_body
 
 # Things we have not yet implemented
 @route('/images', method=('GET','DELETE'))
