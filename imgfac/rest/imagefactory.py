@@ -17,6 +17,7 @@ from bottle import *
 import sys
 from traceback import *
 from imgfac.BuildDispatcher import BuildDispatcher
+from imgfac.JobRegistry import JobRegistry
 
 
 rest_api = Bottle()
@@ -151,7 +152,14 @@ def list_():
 
     @return TODO
     """
-    raise HTTPResponse(status=501)
+    response_body = {}
+    jobs = JobRegistry().jobs
+
+    for key in jobs.keys():
+        job = jobs[key]
+        response_body.update({key:{'completed':job.percent_complete, 'status':job.status, 'type':job.operation, 'target':job.target}})
+
+    return response_body
 
 @rest_api.route('/imagefactory/builders/:builder_id', name='builder_detail')
 def builder_detail(builder_id):
@@ -162,7 +170,8 @@ def builder_detail(builder_id):
 
     @return TODO
     """
-    raise HTTPResponse(status=501)
+    job = JobRegistry().jobs[builder_id]
+    return {'completed':job.percent_complete, 'status':job.status, 'type':job.operation, 'target':job.target}
 
 @rest_api.route('/imagefactory/builders/:builder_id/status', name='builder_status')
 def builder_status(builder_id):
@@ -173,7 +182,8 @@ def builder_status(builder_id):
 
     @return TODO
     """
-    raise HTTPResponse(status=501)
+    job = JobRegistry().jobs[builder_id]
+    return job.status
 
 # Things we have not yet implemented
 @rest_api.route('/imagefactory/images', method=('GET','DELETE'))

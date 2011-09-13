@@ -29,6 +29,7 @@ class BuildJob(object):
     status = props.prop("_status", "The status property.")
     percent_complete = props.prop("_percent_complete", "The percent_complete property.")
     new_image_id = props.prop("_new_image_id" "The image property.")
+    operation = props.prop("_operation", "Operation of the builder. ie 'build' or 'push'")
 
     def __init__(self, template, target, image_id = '', build_id = ''):
         super(BuildJob, self).__init__()
