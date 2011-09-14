@@ -1,20 +1,17 @@
 #
-# Copyright (C) 2010-2011 Red Hat, Inc.
+#   Copyright 2011 Red Hat, Inc.
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; version 2 of the License.
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#       http://www.apache.org/licenses/LICENSE-2.0
 #
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-# MA  02110-1301, USA.  A copy of the GNU General Public License is
-# also available at http://www.gnu.org/copyleft/gpl.html.
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
 
 import zope
 import sys
@@ -31,7 +28,7 @@ from IBuilder import IBuilder
 from BaseBuilder import BaseBuilder
 from WindowsBuilderWorker import WindowsBuilderWorker
 from imagefactory.ApplicationConfiguration import ApplicationConfiguration
-#import WindowsBuilderWorker
+from imagefactory.ImageFactoryException import ImageFactoryException
 
 class WindowsBuilder(BaseBuilder):
     """docstring for WindowsBuilder"""
@@ -47,6 +44,15 @@ class WindowsBuilder(BaseBuilder):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.app_config = ApplicationConfiguration().configuration
         self.warehouse_url = self.app_config['warehouse']
+        try:
+            self.windows_proxy_address = self.app_config['windows_proxy_address']
+        except:
+            raise ImageFactoryException("Windows Proxy address is missing from imagefactory.conf")
+        try:
+            self.windows_proxy_password = self.app_config['windows_proxy_password']
+        except:
+            raise ImageFactoryException("Windows Proxy password is missing from imagefactory.conf")
+
 
     # Image actions
     def build_image(self):
@@ -77,21 +83,28 @@ class WindowsBuilder(BaseBuilder):
         doc = libxml2.parseDoc(credentials)
         ctxt = doc.xpathNewContext()
 
-        rackspace_user_id = ctxt.xpathEval("//provider_credentials/rackspace_credentials/username")[0].content
-        rackspace_key = ctxt.xpathEval("//provider_credentials/rackspace_credentials/api_key")[0].content
+        ec2_user_id = ctxt.xpathEval("//provider_credentials/ec2_credentials/userid")[0].content
+        ec2_api_key = ctxt.xpathEval("//provider_credentials/ec2_credentials/api_key")[0].content
 
         doc.freeDoc()
         ctxt.xpathFreeContext()
 
-        creds = {'userid':rackspace_user_id, 'api-key':rackspace_key}
+        creds = {'userid':ec2_user_id, 'api-key':ec2_api_key}
 
         # By this point the original image placeholder has been read and the template and target retrieved
         if self.target in self.nonul_clouds:
             # This is where we do the real work of a build
-            new_object = WindowsBuilderWorker(self.template, creds, provider)
+            new_object = WindowsBuilderWorker(self.template, creds, ec2_region_details[provider], self.windows_proxy_address, self.windows_proxy_password)
             self.log.status = "BUILDING"
-            icicle, provider_image_id = new_object.create_provider_image()
-            metadata = dict(image=image_id, provider=provider, target_identifier=provider_image_id, icicle=icicle)
+            icicle, provider_image_id, ami_id = new_object.create_provider_image()
+            metadata = dict(image=provider_image_id, provider=provider, target_identifier=ami_id, icicle=icicle)
             self.warehouse.create_provider_image(self.image_id, txt="This is a placeholder provider_image for Windows", metadata=metadata)
             self.percent_complete=100
             self.status = "COMPLETED"
+
+ec2_region_details={
+         'ec2-us-east-1':      { 'host':'us-east-1',      'x86_64': 'ami-1cbd4475' },
+         'ec2-us-west-1':      { 'host':'us-west-1',      'x86_64': 'ami-ade2b2e8' },
+         'ec2-ap-southeast-1': { 'host':'ap-southeast-1', 'x86_64': 'ami-4edca21c' },
+         'ec2-ap-northeast-1': { 'host':'ap-northeast-1', 'x86_64': 'ami-c01cb7c1' },
+         'ec2-eu-west-1':      { 'host':'eu-west-1',      'x86_64': 'ami-f8c9ff8c' } }
