@@ -49,17 +49,20 @@ class BuildJob(object):
         self._builder.delegate = self
 
         self.new_image_id = self._builder.new_image_id
+        self.operation = None
 
     def build_image(self, watcher=None):
         self._watcher = watcher
         kwargs = dict(build_id=self.build_id)
         self._start_builder_thread("build_image", arg_dict=kwargs)
+        self.operation = 'build'
 
     def push_image(self, target_image_id, provider, credentials, watcher=None):
         self._watcher = watcher
         self.provider = provider
         kwargs = dict(target_image_id=target_image_id, provider=provider, credentials=credentials)
         self._start_builder_thread("push_image", arg_dict=kwargs)
+        self.operation = 'push'
 
     def abort(self):
         self._builder.abort()

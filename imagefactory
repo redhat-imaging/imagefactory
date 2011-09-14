@@ -145,7 +145,8 @@ class Application(Singleton):
         elif(self.app_config['rest']):
             self.setup_logging()
             debug(self.app_config['debug'])
-            run(app=rest_api, host=self.app_config['address'], port=self.app_config['port'], reloader=self.app_config['debug'])
+            # Don't set reloader to True or you will lose state.  You have been warned.
+            run(server='paste', app=rest_api, host=self.app_config['address'], port=self.app_config['port'], reloader=False, quiet=True)
         else:
             self.app_config['foreground'] = True
             self.setup_logging()
