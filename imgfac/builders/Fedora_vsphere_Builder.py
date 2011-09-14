@@ -26,6 +26,7 @@ import ConfigParser
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.VMWare import VMImport
+from imgfac.BuildDispatcher import BuildDispatcher
 from IBuilder import IBuilder
 from BaseBuilder import BaseBuilder
 from VMDKstream import convert_to_stream
@@ -194,17 +195,13 @@ class Fedora_vsphere_Builder(BaseBuilder):
             self.status="FAILED"
 
     def vmware_push_image_upload(self, target_image_id, provider, credentials):
-        # Decode the config file, verify that the provider is in it - err out if not
-        # TODO: Make file location CONFIG value
-        cfg_file = open("/etc/vmware.json","r")
-        vmware_json = cfg_file.read()
-        local_vmware=json.loads(vmware_json)
+        # BuildDispatcher is now the only location for the logic to map a provider to its data and target
+        provider_data = BuildDispatcher().get_dynamic_provider_data(provider)
+        if provider_data is None:
+            raise ImageFactoryException("VMWare instance not found in local configuration file /etc/imagefactory/vsphere.json or as XML or JSON")
 
-        provider_data = None
-        try:
-            provider_data = local_vmware[provider]
-        except KeyError:
-            raise ImageFactoryException("VMWare instance (%s) not found in local configuraiton file /etc/vmware.json" % (provider))
+        if provider_data['target'] != 'vsphere':
+            raise ImageFactoryException("Got a non-vsphere target in the vsphere builder.  This should never happen.")
 
         self.generic_decode_credentials(credentials, provider_data)
 
@@ -224,7 +221,7 @@ class Fedora_vsphere_Builder(BaseBuilder):
                        guest_id='otherLinux64Guest', imagefilename=input_image)
 
         # Create the provdier image
-        metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=vm_name)
+        metadata = dict(target_image=target_image_id, provider=provider_data['name'], icicle="none", target_identifier=vm_name)
         self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
         self.percent_complete = 100
 
