@@ -180,29 +180,29 @@ class Fedora_rhevm_Builder(BaseBuilder):
         # This has proven to be a debugging challenge and we may, in future,
         # pull this back into Factory
 
-        # Decode the config file, verify that the provider is in it - err out if not
-        # TODO: Make file location CONFIG value
-        file = open("/etc/rhevm.json","r")
-        rhevm_json = file.read()
-        local_rhevm=json.loads(rhevm_json)
+        # BuildDispatcher is now the only location for the logic to map a provider to its data and target
+        provider_data = BuildDispatcher().get_dynamic_provider_data(provider)
+        if provider_data is None:
+            raise ImageFactoryException("RHEV-M instance not found in local configuration file /etc/imagefactory/rhevm.json or as XML or JSON")
 
-        post_data = None
-        try:
-            post_data = local_rhevm[provider]
-        except KeyError:
-            raise ImageFactoryException("RHEV-M instance (%s) not found in local configuraiton file /etc/rhevm.json" % (provider))
+        if provider_data['target'] != 'rhevm':
+            raise ImageFactoryException("Got a non-rhevm target in the vsphere builder.  This should never happen.")
 
-        self.generic_decode_credentials(credentials, post_data)
+        self.generic_decode_credentials(credentials, provider_data)
 
         # Deal with case where these are not set in the config file
         # or are overridden via the credentials argument
-        post_data['api-key'] = self.username
-        post_data['api-secret'] = self.password
+        provider_data['api-key'] = self.username
+        provider_data['api-secret'] = self.password
 
-        post_data['op'] = "register"
-        post_data['site'] = provider
+        provider_data['op'] = "register"
+        provider_data['site'] = provider_data['name']
 
-        response = self.warehouse.post_on_object_with_id_of_type(target_image_id, "target_image", post_data)
+        # We no longer need the name or target values in this dict and they may confuse the POST
+        del provider_data['name']
+        del provider_data['target']
+
+        response = self.warehouse.post_on_object_with_id_of_type(target_image_id, "target_image", provider_data)
 
         self.log.debug("Response was %s" % (response))
 
@@ -216,7 +216,7 @@ class Fedora_rhevm_Builder(BaseBuilder):
         self.log.debug("Extracted RHEVM UUID: %s " % (rhevm_uuid))
 
         # Create the provdier image
-        metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=rhevm_uuid)
+        metadata = dict(target_image=target_image_id, provider=provider_data['name'], icicle="none", target_identifier=rhevm_uuid)
         self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
         self.percent_complete = 100
 

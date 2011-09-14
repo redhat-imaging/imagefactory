@@ -23,6 +23,8 @@ from imgfac.ImageWarehouse import ImageWarehouse
 from imgfac.PushWatcher import PushWatcher
 from imgfac.Singleton import Singleton
 from imgfac.Template import Template
+# Yes - we already import libxml2 - xml is built in - there is no harm here and I like the API
+from xml.etree.ElementTree import fromstring, ParseError
 
 class BuildDispatcher(Singleton):
 
@@ -79,6 +81,40 @@ class BuildDispatcher(Singleton):
             jobs.append(job)
 
         return jobs
+
+    def get_dynamic_provider_data(self, provider):
+        # Get provider details for RHEV-M or VSphere
+        # First try to interpret this as an ad-hoc/dynamic provider def
+        # If this fails, try to find it in one or the other of the config files
+        # If this all fails return None
+        # We use this in the builders as well so I have made it "public"
+
+        try:
+            xml_et = fromstring(provider)
+            return xml_et.attrib
+        except ParseError:
+            pass
+
+        try:
+            jload = json.loads(provider)
+            return jload
+        except ValueError:
+            pass
+
+        rhevm_data = self._return_dynamic_provider_data(provider, "rhevm")
+        if rhevm_data:
+            rhevm_data['target'] = "rhevm"
+            rhevm_data['name'] = provider
+            return rhevm_data
+
+        vsphere_data = self._return_dynamic_provider_data(provider, "vsphere")
+        if vsphere_data:
+            vsphere_data['target'] = "vsphere"
+            vsphere_data['name'] = provider
+            return vsphere_data
+        
+        # It is not there
+        return None
 
     def _xml_node(self, xml, xpath):
         nodes = libxml2.parseDoc(xml).xpathEval(xpath)
@@ -186,8 +222,8 @@ class BuildDispatcher(Singleton):
             build_id = self._latest_unpushed(image_id)
         return self._template_for_build_id(build_id) if build_id else None
 
-    def _is_dynamic_provider(self, provider, filebase):
-        provider_json = '/etc/%s.json' % (filebase)
+    def _return_dynamic_provider_data(self, provider, filebase):
+        provider_json = '/etc/imagefactory/%s.json' % (filebase)
         if not os.path.exists(provider_json):
             return False
 
@@ -198,7 +234,10 @@ class BuildDispatcher(Singleton):
         finally:
             f.close()
 
-        return provider in provider_sites
+        if provider in provider_sites:
+            return provider_sites[provider]
+        else:
+            return None
 
     # FIXME: this is a hack; conductor is the only one who really
     #        knows this mapping, so perhaps it should provide it?
@@ -209,20 +248,21 @@ class BuildDispatcher(Singleton):
     # provider semantics, per target:
     #  - ec2: region, one of ec2-us-east-1, ec2-us-west-1, ec2-ap-southeast-1, ec2-ap-northeast-1, ec2-eu-west-1
     #  - condorcloud: ignored
-    #  - rhevm: a key in /etc/rhevm.json and passed to op=register&site=provider
-    #  - vpshere: a key in /etc/vmware.json
     #  - mock: any provider with 'mock' prefix
     #  - rackspace: provider is rackspace
+    # UPDATE - Sept 13, 2011 for dynamic providers
+    #  - vpshere: encoded in provider string or a key in /etc/vmware.json
+    #  - rhevm: encoded in provider string or a key in /etc/rhevm.json
     #
     def _map_provider_to_target(self, provider):
-        if provider.startswith('ec2-'):
+        # Check for dynamic providers first
+        provider_data = self.get_dynamic_provider_data(provider)
+        if provider_data:
+            return provider_data['target']
+        elif provider.startswith('ec2-'):
             return 'ec2'
         elif provider == 'rackspace':
             return 'rackspace'
-        elif self._is_dynamic_provider(provider, 'rhevm'):
-            return 'rhevm'
-        elif self._is_dynamic_provider(provider, 'vmware'):
-            return 'vsphere'
         elif provider.startswith('mock'):
             return 'mock'
         else:
