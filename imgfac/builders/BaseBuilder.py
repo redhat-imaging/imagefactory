@@ -17,6 +17,7 @@ import logging
 import zope
 import uuid
 import libxml2
+import pycurl
 from os.path import isfile
 from IBuilder import IBuilder
 from imgfac import props
@@ -202,4 +203,23 @@ class BaseBuilder(object):
         repositories = include.xpathEval("repositories")
         if len(repositories) > 0:
             self.tdlobj.merge_repositories(str(repositories[0]))
+
+    # TODO: Remove this from the other builders - it is generally useful and need not be duped
+    def retrieve_image(self, target_image_id, local_image_file):
+        # Grab target_image_id from warehouse unless it is already present as local_image_file
+        # TODO: Use Warehouse class instead
+        if not isfile(local_image_file):
+            if not (self.app_config['warehouse']):
+                raise ImageFactoryException("No warehouse configured - cannot retrieve image")
+            url = "%simages/%s" % (self.app_config['warehouse'], target_image_id)
+            self.log.debug("Image %s not present locally - Fetching from %s" % (local_image_file, url))
+            fp = open(local_image_file, "wb")
+            curl = pycurl.Curl()
+            curl.setopt(pycurl.URL, url)
+            curl.setopt(pycurl.WRITEDATA, fp)
+            curl.perform()
+            curl.close()
+            fp.close()
+        else:
+            self.log.debug("Image file %s already present - skipping warehouse download" % (local_image_file))
 
