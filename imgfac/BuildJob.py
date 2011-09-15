@@ -29,6 +29,7 @@ class BuildJob(object):
     status = props.prop("_status", "The status property.")
     percent_complete = props.prop("_percent_complete", "The percent_complete property.")
     new_image_id = props.prop("_new_image_id" "The image property.")
+    operation = props.prop("_operation", "Operation of the builder. ie 'build' or 'push'")
 
     def __init__(self, template, target, image_id = '', build_id = ''):
         super(BuildJob, self).__init__()
@@ -48,17 +49,20 @@ class BuildJob(object):
         self._builder.delegate = self
 
         self.new_image_id = self._builder.new_image_id
+        self.operation = None
 
     def build_image(self, watcher=None):
         self._watcher = watcher
         kwargs = dict(build_id=self.build_id)
         self._start_builder_thread("build_image", arg_dict=kwargs)
+        self.operation = 'build'
 
     def push_image(self, target_image_id, provider, credentials, watcher=None):
         self._watcher = watcher
         self.provider = provider
         kwargs = dict(target_image_id=target_image_id, provider=provider, credentials=credentials)
         self._start_builder_thread("push_image", arg_dict=kwargs)
+        self.operation = 'push'
 
     def abort(self):
         self._builder.abort()

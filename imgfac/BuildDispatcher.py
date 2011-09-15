@@ -23,12 +23,14 @@ from imgfac.ImageWarehouse import ImageWarehouse
 from imgfac.PushWatcher import PushWatcher
 from imgfac.Singleton import Singleton
 from imgfac.Template import Template
+from imgfac.JobRegistry import JobRegistry
 
 class BuildDispatcher(Singleton):
 
     def _singleton_init(self):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration['warehouse'])
+        self.job_registry = JobRegistry()
 
     def import_image(self, image_id, build_id, target_identifier, image_desc, target, provider):
         image_id = self._ensure_image(image_id, image_desc)
@@ -58,6 +60,8 @@ class BuildDispatcher(Singleton):
             job.build_image(watcher)
             jobs.append(job)
 
+        self.job_registry.register(jobs)
+
         return jobs
 
     def push_image_to_providers(self, image_id, build_id, providers, credentials, job_cls = BuildJob, *args, **kwargs):
@@ -77,6 +81,8 @@ class BuildDispatcher(Singleton):
             job = job_cls(template, target, image_id, build_id, *args, **kwargs)
             job.push_image(target_image_id, provider, credentials, watcher)
             jobs.append(job)
+
+        self.job_registry.register(jobs)
 
         return jobs
 
