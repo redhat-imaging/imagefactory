@@ -8,7 +8,7 @@ Group: Development/Libraries
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 Url: http://www.aeolusproject.org/imagefactory.html
 BuildArch: noarch
-Requires: oz >= 0.2.0
+Requires: oz >= 0.7.0
 Requires: euca2ools
 Requires: python-qmf
 Requires: python-pycurl
@@ -43,6 +43,9 @@ python setup.py install -O1 --root=$RPM_BUILD_ROOT
 %clean
 rm -rf $RPM_BUILD_ROOT
 
+%postun
+/sbin/service imagefactory condrestart > /dev/null 2>&1 || :
+
 %files
 %defattr(-,root,root,-)
 %doc COPYING version.txt
@@ -56,5 +59,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Thu Sep 15 2011 Ian McLeod <imcleod@redhat.com> - 0.6.1
+- Update Oz requirement to 0.7.0 or later for new target-specific package config
+- Update SPEC file to restart service after an install 
+
 * Mon Apr 04 2011 Chris Lalancette <clalance@redhat.com> - 0.1.6-1
 - Initial spec file.
