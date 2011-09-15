@@ -13,6 +13,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import os
 import zope
 import oz.GuestFactory
 import oz.TDL
@@ -22,11 +23,29 @@ import libxml2
 import traceback
 import json
 import ConfigParser
+import subprocess
+from string import split
 from time import *
+from tempfile import *
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
+from imgfac.BuildDispatcher import BuildDispatcher
 from IBuilder import IBuilder
 from BaseBuilder import BaseBuilder
+
+
+def subprocess_check_output(*popenargs, **kwargs):
+    if 'stdout' in kwargs:
+        raise ValueError('stdout argument not allowed, it will be overridden.')
+
+    process = subprocess.Popen(stdout=subprocess.PIPE, stderr=subprocess.STDOUT, *popenargs, **kwargs)
+    stdout, stderr = process.communicate()
+    retcode = process.poll()
+    if retcode:
+        cmd = ' '.join(*popenargs)
+        raise ImageFactoryException("'%s' failed(%d): %s\nstdout: %s" % (cmd, retcode, stderr, stdout))
+    return (stdout, stderr, retcode)
+
 
 class Fedora_rhevm_Builder(BaseBuilder):
     """docstring for Fedora_rhevm_Builder"""
@@ -71,7 +90,7 @@ class Fedora_rhevm_Builder(BaseBuilder):
         oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
 
         guest = oz.GuestFactory.guest_factory(self.tdlobj, oz_config, None)
-        guest.diskimage = self.app_config["imgdir"] + "/base-image-" + self.new_image_id + ".dsk"
+        guest.diskimage = self.app_config["imgdir"] + "/rhevm-image-" + self.new_image_id + ".dsk"
         # Oz assumes unique names - TDL built for multiple backends guarantees
         # they are not unique.  We don't really care about the name so just
         # force uniqueness
@@ -174,11 +193,7 @@ class Fedora_rhevm_Builder(BaseBuilder):
         self.status = "COMPLETED"
 
     def rhevm_push_image_upload(self, target_image_id, provider, credentials):
-        # ****** IMPORTANT NOTE ********
-        # This is currently the only cloud for which we delegate the push
-        # function to the Warehouse
-        # This has proven to be a debugging challenge and we may, in future,
-        # pull this back into Factory
+        # We now call the RHEVM push command from iwhd directly without making a REST call
 
         # BuildDispatcher is now the only location for the logic to map a provider to its data and target
         provider_data = BuildDispatcher().get_dynamic_provider_data(provider)
@@ -192,26 +207,73 @@ class Fedora_rhevm_Builder(BaseBuilder):
 
         # Deal with case where these are not set in the config file
         # or are overridden via the credentials argument
-        provider_data['api-key'] = self.username
-        provider_data['api-secret'] = self.password
+        # note - rhevm external util wants no dashes
+        provider_data['apiuser'] = self.username
+        provider_data['apipass'] = self.password
 
-        provider_data['op'] = "register"
-        provider_data['site'] = provider_data['name']
+        # Fix some additional dashes
+        # This is silly but I don't want to change the format at this point
+        provider_data['nfsdir'] = provider_data['nfs-dir']
+        provider_data['nfshost'] = provider_data['nfs-host']
+        provider_data['nfspath'] = provider_data['nfs-path']
+        provider_data['apiurl'] = provider_data['api-url']
+
+        del provider_data['nfs-dir']
+        del provider_data['nfs-host']
+        del provider_data['nfs-path']
+        del provider_data['api-url']
+
+        #provider_data['site'] = provider_data['name']
 
         # We no longer need the name or target values in this dict and they may confuse the POST
-        del provider_data['name']
-        del provider_data['target']
+        #del provider_data['name']
+        #del provider_data['target']
 
-        response = self.warehouse.post_on_object_with_id_of_type(target_image_id, "target_image", provider_data)
+        # This is where the image should be after a local build
+        input_image = self.app_config['imgdir'] + "/rhevm-image-" + target_image_id + ".dsk"
+        # Grab from Warehouse if it isn't here
+        self.retrieve_image(target_image_id, input_image)
 
-        self.log.debug("Response was %s" % (response))
+        # This, it turns out, is the easiest way to give our newly created template the correct name
+        image_link = "/tmp/" + str(self.new_image_id)
+        os.symlink(input_image, image_link)
 
-        m = re.match("^OK ([a-fA-F0-9-]+)", response)
+        # Populate the last field we need in our JSON command file
+        provider_data['image'] = image_link
+
+        provider_json = json.dumps(provider_data, sort_keys=True, indent=4)
+        self.log.debug("Produced provider json: \n%s" % (provider_json))
+
+        # Shove into a named temporary file
+        json_file_object = NamedTemporaryFile()
+        json_file_object.write(provider_json)
+        json_file_object.flush()
+
+        # TODO: Test for presence of this at the very start and fail right away if it is not there
+        rhevm_push_cname = "/usr/bin/dc-rhev-image"
+        rhevm_push_command = [ rhevm_push_cname, json_file_object.name ]
+        self.log.debug("Executing external RHEV-M push command (%s)" % (str(rhevm_push_command)))
+
+        (stdout, stderr, retcode) = subprocess_check_output(rhevm_push_command)
+        json_file_object.close()
+        os.unlink(image_link)
+
+        self.log.debug("Command retcode %s" % (retcode))
+        self.log.debug("Command stdout: (%s)" % (stdout))
+        self.log.debug("Command stderr: (%s)" % (stderr))
+
+        m = re.match("^IMAGE ([a-fA-F0-9-]+)", stdout)
+
         rhevm_uuid = None
-        if m:
-            rhevm_uuid = m.group(1)
-        else:
-            raise ImageFactoryException("Failed to extract RHEV-M UUID from warehouse POST reponse: %s" % (response))
+        # I had no luck getting re.MULTILINE to work - so we loop
+        for line in split(stdout, "\n"):
+            m = re.match(r"IMAGE ([a-fA-F0-9-]+)", line)
+            if m:
+                rhevm_uuid =  m.group(1)
+                break
+
+        if rhevm_uuid is None:
+            raise ImageFactoryException("Failed to extract RHEV-M UUID from command stdout: %s" % (stdout))
 
         self.log.debug("Extracted RHEVM UUID: %s " % (rhevm_uuid))
 
