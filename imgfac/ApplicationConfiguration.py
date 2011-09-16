@@ -59,6 +59,7 @@ class ApplicationConfiguration(Singleton):
         group_rest.add_argument('--rest', action='store_true', default=False, help='Turn on the RESTful http interface. (default: %(default)s)')
         group_rest.add_argument('--port', type=int, default=8075, help='Port to attach the RESTful http interface to. (defaul: %(default)s)')
         group_rest.add_argument('--address', default='0.0.0.0', help='Interface address to listen to. (defaul: %(default)s)')
+        group_rest.add_argument('--ssl_pem', default='*', help='PEM certificate file to use for HTTPS access to the REST interface. (default: A transient certificate is generated at runtime.)')
 
         group_qmf = argparser.add_argument_group(title='QMF agent', description=qmf_description)
         group_qmf.add_argument('--qmf', action='store_true', default=False, help='Turn on QMF agent interface. (default: %(default)s)')
