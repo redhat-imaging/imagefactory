@@ -16,7 +16,7 @@
 	  --foreground          Stay in the foreground and avoid launching a daemon.
 	                        (default: False)
 	  --config CONFIG       Configuration file to use. (default:
-	                        /etc/imagefactory.conf)
+	                        /etc/imagefactory/imagefactory.conf)
 	  --image IMAGE         The UUID of the image to build or push
 	  --imgdir IMGDIR       Build image files in location specified. (default:
 	                        /tmp)

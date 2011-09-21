@@ -26,7 +26,7 @@ class TestApplicationConfiguration(unittest.TestCase):
     def setUp(self):
         logging.basicConfig(level=logging.NOTSET, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) Message: %(message)s', filename='/tmp/imagefactory-unittests.log')
 
-        self.defaults = dict(verbose=False, debug=False, foreground=False, config="/etc/imagefactory.conf", imgdir="/tmp", qmf=False, qpidd="localhost", warehouse=None, template=None)
+        self.defaults = dict(verbose=False, debug=False, foreground=False, config="/etc/imagefactory/imagefactory.conf", imgdir="/tmp", qmf=False, qpidd="localhost", warehouse=None, template=None)
 
         config_file_path = self.defaults["config"]
         if (os.path.isfile(config_file_path)):

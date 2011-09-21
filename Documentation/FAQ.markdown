@@ -6,7 +6,7 @@
 
 ## Configuration ##
 1.  Q: Where does the configuration live?       
-    A: `/etc/imagefactory.conf`
+    A: `/etc/imagefactory/imagefactory.conf`
 
 2.  Q: Where does imagefactory log by default?      
     A: `/var/log/imagefactory.log`

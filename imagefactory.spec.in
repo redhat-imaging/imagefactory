@@ -50,7 +50,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %doc COPYING version.txt
 %{_initrddir}/imagefactory
-%config(noreplace) %{_sysconfdir}/imagefactory.conf
+%config(noreplace) %{_sysconfdir}/imagefactory/imagefactory.conf
 %dir %attr(0755, root, root) %{_sysconfdir}/pki/imagefactory/
 %{_sysconfdir}/pki/imagefactory/cert-ec2.pem
 %{python_sitelib}/imgfac
