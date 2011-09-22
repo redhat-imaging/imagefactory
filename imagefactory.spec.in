@@ -22,6 +22,7 @@ Requires: python-cloudservers
 Requires: python-psphere
 Requires: VMDKstream
 Requires: python-suds >= 0.4.1
+Requires: python-paste-deploy
 BuildRequires: python
 BuildRequires: python-setuptools
 
