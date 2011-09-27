@@ -15,13 +15,27 @@
 
 from bottle import *
 import sys
+import logging
 from traceback import *
 from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.JobRegistry import JobRegistry
 
+log = logging.getLogger(__name__)
+
 sys.path.append('%s/imgfac/rest' % sys.path[0])
 
 rest_api = Bottle()
+
+def _request_data_for_content_type(content_type):
+    log.info("Request recieved with Content-Type (%s)" % content_type)
+    if(content_type == 'application/json'):
+        _request_data = request.json
+    else:
+        _request_data = request.forms
+
+    log.debug('returning %s' % _request_data)
+    return _request_data
+
 
 @rest_api.get('/imagefactory')
 def api_info():
@@ -32,16 +46,19 @@ def api_info():
 def build_image(image_id=None):
     help_txt = """To build a new target image, supply a template and list of targets to build for.
 To import an image, supply target_name, provider_name, target_identifier, and image_descriptor."""
+
+    _request_data = _request_data_for_content_type(request.headers.get('Content-Type'))
     # build image arguments
-    template = request.forms.get('template')
-    targets = request.forms.get('targets')
+    template = _request_data.get('template')
+    targets = _request_data.get('targets')
     # import image arguments
-    target_name = request.forms.get('target_name')
-    provider_name = request.forms.get('provider_name')
-    target_identifier = request.forms.get('target_identifier')
-    image_descriptor = request.forms.get('image_descriptor')
+    target_name = _request_data.get('target_name')
+    provider_name = _request_data.get('provider_name')
+    target_identifier = _request_data.get('target_identifier')
+    image_descriptor = _request_data.get('image_descriptor')
 
     if(template and targets):
+        log.debug("Starting 'build' process...")
         try:
             jobs = BuildDispatcher().build_image_for_targets(image_id, None, template, targets.split(','))
             if(image_id):
@@ -70,8 +87,9 @@ To import an image, supply target_name, provider_name, target_identifier, and im
             return _response_for_exception(e)
 
     elif(target_name and provider_name and target_identifier and image_descriptor):
-        image_id = request.forms.get('image_id')
-        build_id = request.forms.get('build_id')
+        log.debug("Starting 'import' process...")
+        image_id = _request_data.get('image_id')
+        build_id = _request_data.get('build_id')
         try:
             import_result = BuildDispatcher().import_image(image_id,
                                                             build_id,
@@ -109,8 +127,10 @@ To import an image, supply target_name, provider_name, target_identifier, and im
 
 @rest_api.post('/imagefactory/images/:image_id/builds/:build_id/target_image/:target_image_id/provider_images')
 def push_image(image_id, build_id, target_image_id):
-    provider = request.forms.get('provider')
-    credentials = request.forms.get('credentials')
+    log.debug("Starting 'push' process...")
+    _request_data = _request_data_for_content_type(request.headers.get('Content-Type'))
+    provider = _request_data.get('provider')
+    credentials = _request_data.get('credentials')
 
     if(provider and credentials and (len(provider.split(',')) == 1)):
         try:
