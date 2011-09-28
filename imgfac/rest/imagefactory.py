@@ -29,12 +29,16 @@ rest_api = Bottle()
 def _request_data_for_content_type(content_type):
     log.info("Request recieved with Content-Type (%s)" % content_type)
     if(content_type == 'application/json'):
-        _request_data = request.json
+        keys = request.json.keys()
+        if(len(keys) == 1):
+            request_data = request.json[keys[0]]
+        else:
+            request_data = request.json
     else:
-        _request_data = request.forms
+        request_data = request.forms
 
-    log.debug('returning %s' % _request_data)
-    return _request_data
+    log.debug('returning %s' % request_data)
+    return request_data
 
 
 @rest_api.get('/imagefactory')
