@@ -140,7 +140,6 @@ def push_image(image_id, build_id, target_image_id):
 
     if(provider and credentials):
         try:
-            print provider
             response.status = 202
             job = BuildDispatcher().push_image_to_providers(image_id, build_id, (provider, ), credentials)[0]
 
