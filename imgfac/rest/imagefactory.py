@@ -129,7 +129,7 @@ To import an image, supply target_name, provider_name, target_identifier, and im
         response.status = 400
         return help_txt
 
-@rest_api.post('/imagefactory/images/:image_id/builds/:build_id/target_image/:target_image_id/provider_images')
+@rest_api.post('/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id/provider_images')
 def push_image(image_id, build_id, target_image_id):
     log.debug("Starting 'push' process...")
     _request_data = _request_data_for_content_type(request.headers.get('Content-Type'))
