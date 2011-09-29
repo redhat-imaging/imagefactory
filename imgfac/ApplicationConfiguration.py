@@ -59,7 +59,9 @@ class ApplicationConfiguration(Singleton):
         group_rest.add_argument('--rest', action='store_true', default=False, help='Turn on the RESTful http interface. (default: %(default)s)')
         group_rest.add_argument('--port', type=int, default=8075, help='Port to attach the RESTful http interface to. (defaul: %(default)s)')
         group_rest.add_argument('--address', default='0.0.0.0', help='Interface address to listen to. (defaul: %(default)s)')
+        group_rest.add_argument('--no_ssl', action='store_true', default=False, help='Turn off SSL. (default: %(default)s)')
         group_rest.add_argument('--ssl_pem', default='*', help='PEM certificate file to use for HTTPS access to the REST interface. (default: A transient certificate is generated at runtime.)')
+        group_rest.add_argument('--no_oauth', action='store_true', default=False, help='Use 2 legged OAuth to protect the REST interface. (default: %(default)s)')
 
         group_qmf = argparser.add_argument_group(title='QMF agent', description=qmf_description)
         group_qmf.add_argument('--qmf', action='store_true', default=False, help='Turn on QMF agent interface. (default: %(default)s)')
@@ -111,8 +113,11 @@ class ApplicationConfiguration(Singleton):
                 # coerce this dict to ascii for python 2.6
                 config = {}
                 for k, v in uconfig.items():
-                    config[k.encode('ascii')]=v.encode('ascii')
+                    if(type(v) == str):
+                        config[k.encode('ascii')]=v.encode('ascii')
+                    else:
+                        config[k.encode('ascii')]=v
                 configuration = self.__parse_args(defaults=config)
             except IOError, e:
-                i.log.exception(e)
+                self.log.exception(e)
         return configuration.__dict__
