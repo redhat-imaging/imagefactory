@@ -24,8 +24,6 @@ from imgfac.ApplicationConfiguration import ApplicationConfiguration
 
 log = logging.getLogger(__name__)
 
-log = logging.getLogger(__name__)
-
 sys.path.append('%s/imgfac/rest' % sys.path[0])
 
 rest_api = Bottle(catchall=False)
