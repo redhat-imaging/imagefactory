@@ -13,15 +13,59 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from bottle import *
 import sys
+import logging
+import oauth2 as oauth
+from bottle import *
 from traceback import *
 from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.JobRegistry import JobRegistry
+from imgfac.ApplicationConfiguration import ApplicationConfiguration
+
+log = logging.getLogger(__name__)
 
 sys.path.append('%s/imgfac/rest' % sys.path[0])
 
-rest_api = Bottle()
+rest_api = Bottle(catchall=False)
+
+oauth_server = oauth.Server(signature_methods={'HMAC-SHA1':oauth.SignatureMethod_HMAC_SHA1()})
+
+class Consumer(object):
+    def __init__(self, key):
+        consumers = ApplicationConfiguration().configuration['clients']
+        self.key = key
+        self.secret = consumers.get(key) if consumers else None
+
+def validate_two_leg_oauth():
+    try:
+        auth_header_key = 'Authorization'
+        auth_header = {}
+        if auth_header_key in request.headers:
+            auth_header.update({auth_header_key:request.headers[auth_header_key]})
+        req = oauth.Request.from_request(request.method,
+                                         request.url,
+                                         headers=auth_header,
+                                         parameters=request.params)
+        oauth_consumer = Consumer(request.params.get('oauth_consumer_key'))
+        oauth_server.verify_request(req, oauth_consumer, None)
+        return True
+    except oauth.Error as e:
+        log.exception(e)
+        raise HTTPResponse(status=401, output=e)
+    except KeyError as e:
+        log.exception(e)
+        raise HTTPResponse(status=400, output=e)
+    except Exception as e:
+        log.exception(e)
+        raise HTTPResponse(status=500, output=e)
+
+def oauth_protect(f):
+    def decorated_function(*args, **kwargs):
+        if(not ApplicationConfiguration().configuration['no_oauth']):
+            validate_two_leg_oauth()
+        return f(*args, **kwargs)
+    decorated_function.__name__ = f.__name__
+    return decorated_function
 
 @rest_api.get('/imagefactory')
 def api_info():
@@ -29,6 +73,7 @@ def api_info():
 
 @rest_api.post('/imagefactory/images')
 @rest_api.put('/imagefactory/images/:image_id')
+@oauth_protect
 def build_image(image_id=None):
     help_txt = """To build a new target image, supply a template and list of targets to build for.
 To import an image, supply target_name, provider_name, target_identifier, and image_descriptor."""
@@ -67,7 +112,8 @@ To import an image, supply target_name, provider_name, target_identifier, and im
             response.status = 202
             return image
         except Exception as e:
-            return _response_for_exception(e)
+            log.exception(e)
+            raise HTTPResponse(status=500, output=e)
 
     elif(target_name and provider_name and target_identifier and image_descriptor):
         image_id = request.forms.get('image_id')
@@ -102,12 +148,13 @@ To import an image, supply target_name, provider_name, target_identifier, and im
             response.status = 200
             return image
         except Exception as e:
-            return _response_for_exception(e)
+            log.exception(e)
+            raise HTTPResponse(status=500, output=e)
     else:
-        response.status = 400
-        return help_txt
+        raise HTTPResponse(status=400, output=help_txt)
 
 @rest_api.post('/imagefactory/images/:image_id/builds/:build_id/target_image/:target_image_id/provider_images')
+@oauth_protect
 def push_image(image_id, build_id, target_image_id):
     provider = request.forms.get('provider')
     credentials = request.forms.get('credentials')
@@ -123,14 +170,10 @@ def push_image(image_id, build_id, target_image_id):
                     'href':'%s/%s' % (request.url, provider_image_id)}
 
         except Exception as e:
-            return _response_for_exception(e)
+            log.exception(e)
+            raise HTTPResponse(status=500, output=e)
     else:
-        response.status = 400
-        return 'To push an image, a provider id and provider credentials must be supplied.'
-
-def _response_for_exception(exception):
-    response.status = 500
-    return {'exception':e, 'traceback':format_tb(sys.exc_info()[2])}
+        raise HTTPResponse(status=400, output='To push an image, a provider id and provider credentials must be supplied.')
 
 @rest_api.get('/imagefactory/builders')
 def list_builders():
