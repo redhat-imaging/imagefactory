@@ -15,13 +15,31 @@
 
 from bottle import *
 import sys
+import logging
 from traceback import *
 from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.JobRegistry import JobRegistry
 
+log = logging.getLogger(__name__)
+
 sys.path.append('%s/imgfac/rest' % sys.path[0])
 
 rest_api = Bottle()
+
+def _request_data_for_content_type(content_type):
+    log.info("Request recieved with Content-Type (%s)" % content_type)
+    if(content_type == 'application/json'):
+        keys = request.json.keys()
+        if(len(keys) == 1):
+            request_data = request.json[keys[0]]
+        else:
+            request_data = request.json
+    else:
+        request_data = request.forms
+
+    log.debug('returning %s' % request_data)
+    return request_data
+
 
 @rest_api.get('/imagefactory')
 def api_info():
@@ -32,16 +50,19 @@ def api_info():
 def build_image(image_id=None):
     help_txt = """To build a new target image, supply a template and list of targets to build for.
 To import an image, supply target_name, provider_name, target_identifier, and image_descriptor."""
+
+    _request_data = _request_data_for_content_type(request.headers.get('Content-Type'))
     # build image arguments
-    template = request.forms.get('template')
-    targets = request.forms.get('targets')
+    template = _request_data.get('template')
+    targets = _request_data.get('targets')
     # import image arguments
-    target_name = request.forms.get('target_name')
-    provider_name = request.forms.get('provider_name')
-    target_identifier = request.forms.get('target_identifier')
-    image_descriptor = request.forms.get('image_descriptor')
+    target_name = _request_data.get('target_name')
+    provider_name = _request_data.get('provider_name')
+    target_identifier = _request_data.get('target_identifier')
+    image_descriptor = _request_data.get('image_descriptor')
 
     if(template and targets):
+        log.debug("Starting 'build' process...")
         try:
             jobs = BuildDispatcher().build_image_for_targets(image_id, None, template, targets.split(','))
             if(image_id):
@@ -67,11 +88,13 @@ To import an image, supply target_name, provider_name, target_identifier, and im
             response.status = 202
             return image
         except Exception as e:
-            return _response_for_exception(e)
+            log.exception(e)
+            raise HTTPResponse(status=500, output=e)
 
     elif(target_name and provider_name and target_identifier and image_descriptor):
-        image_id = request.forms.get('image_id')
-        build_id = request.forms.get('build_id')
+        log.debug("Starting 'import' process...")
+        image_id = _request_data.get('image_id')
+        build_id = _request_data.get('build_id')
         try:
             import_result = BuildDispatcher().import_image(image_id,
                                                             build_id,
@@ -102,20 +125,23 @@ To import an image, supply target_name, provider_name, target_identifier, and im
             response.status = 200
             return image
         except Exception as e:
-            return _response_for_exception(e)
+            log.exception(e)
+            raise HTTPResponse(status=500, output=e)
     else:
         response.status = 400
         return help_txt
 
-@rest_api.post('/imagefactory/images/:image_id/builds/:build_id/target_image/:target_image_id/provider_images')
+@rest_api.post('/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id/provider_images')
 def push_image(image_id, build_id, target_image_id):
-    provider = request.forms.get('provider')
-    credentials = request.forms.get('credentials')
+    log.debug("Starting 'push' process...")
+    _request_data = _request_data_for_content_type(request.headers.get('Content-Type'))
+    provider = _request_data.get('provider')
+    credentials = _request_data.get('credentials')
 
-    if(provider and credentials and (len(provider.split(',')) == 1)):
+    if(provider and credentials):
         try:
             response.status = 202
-            job = BuildDispatcher().push_image_to_providers(image_id, build_id, provider, credentials)[0]
+            job = BuildDispatcher().push_image_to_providers(image_id, build_id, (provider, ), credentials)[0]
 
             provider_image_id = job.new_image_id
             return {'_type':'provider_image',
@@ -123,14 +149,10 @@ def push_image(image_id, build_id, target_image_id):
                     'href':'%s/%s' % (request.url, provider_image_id)}
 
         except Exception as e:
-            return _response_for_exception(e)
+            log.exception(e)
+            raise HTTPResponse(status=500, output=e)
     else:
-        response.status = 400
-        return 'To push an image, a provider id and provider credentials must be supplied.'
-
-def _response_for_exception(exception):
-    response.status = 500
-    return {'exception':e, 'traceback':format_tb(sys.exc_info()[2])}
+        raise HTTPResponse(status=400, output='To push an image, a provider id and provider credentials must be supplied.')
 
 @rest_api.get('/imagefactory/builders')
 def list_builders():
