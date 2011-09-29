@@ -88,7 +88,8 @@ To import an image, supply target_name, provider_name, target_identifier, and im
             response.status = 202
             return image
         except Exception as e:
-            return _response_for_exception(e)
+            log.exception(e)
+            raise HTTPResponse(status=500, output=e)
 
     elif(target_name and provider_name and target_identifier and image_descriptor):
         log.debug("Starting 'import' process...")
@@ -124,7 +125,8 @@ To import an image, supply target_name, provider_name, target_identifier, and im
             response.status = 200
             return image
         except Exception as e:
-            return _response_for_exception(e)
+            log.exception(e)
+            raise HTTPResponse(status=500, output=e)
     else:
         response.status = 400
         return help_txt
@@ -136,10 +138,11 @@ def push_image(image_id, build_id, target_image_id):
     provider = _request_data.get('provider')
     credentials = _request_data.get('credentials')
 
-    if(provider and credentials and (len(provider.split(',')) == 1)):
+    if(provider and credentials):
         try:
+            print provider
             response.status = 202
-            job = BuildDispatcher().push_image_to_providers(image_id, build_id, provider, credentials)[0]
+            job = BuildDispatcher().push_image_to_providers(image_id, build_id, (provider, ), credentials)[0]
 
             provider_image_id = job.new_image_id
             return {'_type':'provider_image',
@@ -147,14 +150,10 @@ def push_image(image_id, build_id, target_image_id):
                     'href':'%s/%s' % (request.url, provider_image_id)}
 
         except Exception as e:
-            return _response_for_exception(e)
+            log.exception(e)
+            raise HTTPResponse(status=500, output=e)
     else:
-        response.status = 400
-        return 'To push an image, a provider id and provider credentials must be supplied.'
-
-def _response_for_exception(exception):
-    response.status = 500
-    return {'exception':e, 'traceback':format_tb(sys.exc_info()[2])}
+        raise HTTPResponse(status=400, output='To push an image, a provider id and provider credentials must be supplied.')
 
 @rest_api.get('/imagefactory/builders')
 def list_builders():
