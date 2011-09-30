@@ -74,7 +74,14 @@ class Fedora_ec2_Builder(BaseBuilder):
 
     def __init__(self, template, target, config_block = None):
         super(Fedora_ec2_Builder, self).__init__(template, target, config_block)
-        self.app_config = ApplicationConfiguration().configuration
+        config_obj = ApplicationConfiguration()
+        self.app_config = config_obj.configuration
+        if "ec2" in config_obj.jeos_images:
+            self.ec2_jeos_amis = config_obj.jeos_images['ec2']
+        else:
+            self.log.warning("No JEOS amis defined for ec2.  Snapshot builds will not be possible.")
+            self.ec2_jeos_amis = {}
+        
         self.warehouse_url = self.app_config['warehouse']
         # May not be necessary to do both of these
         self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml)
@@ -1190,24 +1197,5 @@ none       /sys      sysfs   defaults         0 0
         #           ad-hoc ssh keys replace userdata - runtime install of euca tools for bundling
         # v0.6 of F14 and F15 - dropped F13 for now - also include official public RHEL hourly AMIs for RHEL6
         # Sept 1 - 2011 - updated us-west Fedora JEOSes to 0.6
-    ec2_jeos_amis={
-         'ec2-us-east-1': {'Fedora': { '14' : { 'x86_64': 'ami-5b1dd932', 'i386': 'ami-171dd97e' },
-                                       '15' : { 'x86_64': 'ami-c31cd8aa', 'i386': 'ami-b71cd8de' }
-                                     } ,
-                           'RHEL-6': { '0'  : { 'x86_64': 'ami-80c937e9', 'i386': 'ami-ceb841a7' },
-                                       '1'  : { 'x86_64': 'ami-5e837b37', 'i386': 'ami-0cbb4265' }
-                                     }
-                          } ,
-         'ec2-us-west-1': {'Fedora': { '14' : { 'x86_64': 'ami-75a9fb30', 'i386': 'ami-73a9fb36' },
-                                       '15' : { 'x86_64': 'ami-45a9fb00', 'i386': 'ami-65a9fb20' }
-                                     } ,
-                           'RHEL-6': { '0'  : { 'x86_64': 'ami-a5c695e0', 'i386': 'ami-05e7b440' },
-                                       '1'  : { 'x86_64': 'ami-592d7f1c', 'i386': 'ami-dfe7b49a' }
-                                     }
-# TODO: RHEL5 snapshots fail because of block device mapping issues - fix this
-#                           ,
-#                           'RHEL-5': { 'U5' : { 'x86_64': 'ami-6fc99a2a', 'i386': 'ami-89e0b3cc' },
-#                                       'U6' : { 'x86_64': 'ami-edc596a8', 'i386': 'ami-73e7b436' }
-#                                     }
-                          }
-                  }
+        # Sept 30 - 2011 - Moved out of here entirely to ApplicationConfiguration
+        # ec2_jeos_amis = <not here anymore>

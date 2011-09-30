@@ -29,6 +29,8 @@ class ApplicationConfiguration(Singleton):
         super(ApplicationConfiguration, self)._singleton_init()
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.configuration = self.__parse_arguments()
+        self.jeos_images = {}
+        self.__parse_jeos_images()
 
     def __init__(self):
         pass
@@ -121,3 +123,54 @@ class ApplicationConfiguration(Singleton):
             except IOError, e:
                 self.log.exception(e)
         return configuration.__dict__
+
+    def __add_jeos_image(self, image_detail):
+        # our multi-dimensional-dict has the following keys
+        # target - provider - os - version - arch
+        for i in range(6):
+            image_detail[i] = image_detail[i].strip()
+
+        ( target, provider, os, version, arch, provider_image_id) = image_detail
+        if not (target in self.jeos_images):
+            self.jeos_images[target] = {}
+        if not (provider in self.jeos_images[target]):
+            self.jeos_images[target][provider] = {}
+        if not (os in self.jeos_images[target][provider]):
+            self.jeos_images[target][provider][os] = {}
+        if not (version in self.jeos_images[target][provider][os]):
+            self.jeos_images[target][provider][os][version] = {}
+        if arch in self.jeos_images[target][provider][os][version]:
+            pass
+            #TODO
+            #We really should warn here but we have a bootstrap problem - loggin isn't initialized until after the singleton is created
+            #self.log.warning("JEOS image defined more than once for %s - %s - %s - %s - %s" % (target, provider, os, version, arch))
+            #self.log.warning("Replacing (%s) with (%s)" % (self.jeos_images[target][provider][os][version][arch], provider_image_id))
+
+        self.jeos_images[target][provider][os][version][arch] = provider_image_id
+
+    def __parse_jeos_images(self):
+        # Loop through all JEOS configuration files to populate our jeos_images dictionary
+        # TODO: Make this path itself configurable?
+        config_path = '/etc/imagefactory/jeos_images/'
+        listing = os.listdir(config_path)
+        for infile in listing:
+            fileIN = open(config_path + infile, "r")
+            line = fileIN.readline()
+
+            while line:
+                if line[0] == "#":
+                    # Comment
+                    pass
+                if len(line.strip()) == 0:
+                    # Whitespace
+                    pass
+                image_detail = line.split(":")
+                if len(image_detail) == 6:
+                    self.__add_jeos_image(image_detail)
+                else:
+                    pass
+                    #TODO
+                    #We really should warn here but we have a bootstrap problem - loggin isn't initialized until after the singleton is created
+                    #self.log.warning("Found unparsable JEOS config line in (%s)" % (config_path + infile))
+
+                line = fileIN.readline()
