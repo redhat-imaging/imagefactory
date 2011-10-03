@@ -42,7 +42,7 @@ python setup.py build
 %{__rm} -rf $RPM_BUILD_ROOT
 python setup.py install -O1 --root=$RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/imagefactory/jeos_images
-
+mkdir -p $RPM_BUILD_ROOT/%{_localstatedir}/lib/imagefactory/images
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -56,6 +56,7 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/imagefactory/imagefactory.conf
 %dir %attr(0755, root, root) %{_sysconfdir}/pki/imagefactory/
 %dir %attr(0755, root, root) %{_sysconfdir}/imagefactory/jeos_images/
+%dir %attr(0755, root, root) %{_localstatedir}/lib/imagefactory/images
 %{_sysconfdir}/pki/imagefactory/cert-ec2.pem
 %{python_sitelib}/imgfac
 %{python_sitelib}/imagefactory-*.egg-info
