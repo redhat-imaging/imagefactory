@@ -25,7 +25,7 @@ from imgfac.Singleton import Singleton
 from imgfac.Template import Template
 from imgfac.JobRegistry import JobRegistry
 # Yes - we already import libxml2 - xml is built in - there is no harm here and I like the API
-from xml.etree.ElementTree import fromstring, ParseError
+from xml.etree.ElementTree import fromstring
 
 class BuildDispatcher(Singleton):
 
@@ -98,7 +98,7 @@ class BuildDispatcher(Singleton):
         try:
             xml_et = fromstring(provider)
             return xml_et.attrib
-        except ParseError:
+        except:
             pass
 
         try:
