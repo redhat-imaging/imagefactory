@@ -675,8 +675,8 @@ class Fedora_ec2_Builder(BaseBuilder):
             metadata = dict(target_image=target_image_id, provider=provider, icicle=icicle_id, target_identifier=ami_id)
             self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
         finally:
-            self.log.debug("Stopping EC2 instance and deleting temp security group")
-            instance.stop()
+            self.log.debug("Terminating EC2 instance and deleting temp security group")
+            instance.terminate()
             key_file_object.close()
             conn.delete_key_pair(key_name)
             try:
@@ -963,8 +963,8 @@ class Fedora_ec2_Builder(BaseBuilder):
             ami_id = str(result)
             self.log.debug("Extracted AMI ID: %s " % (ami_id))
         finally:
-            self.log.debug("Stopping EC2 instance and deleting temp security group and volume")
-            instance.stop()
+            self.log.debug("Terminating EC2 instance and deleting temp security group and volume")
+            instance.terminate()
             factory_security_group.delete()
             key_file_object.close()
             conn.delete_key_pair(key_name)
