@@ -203,7 +203,8 @@ class ImageWarehouse(object):
             # Upload the image itself
             image_size = os.path.getsize(image_file_path)
             curl = pycurl.Curl()
-            curl.setopt(pycurl.URL, object_url)
+            # Our URL can end up as unicode - only pycurl seems to object - cast to string
+            curl.setopt(pycurl.URL, str(object_url))
             curl.setopt(pycurl.HTTPHEADER, ["User-Agent: Load Tool (PyCURL Load Tool)"])
             curl.setopt(pycurl.PUT, 1)
             curl.setopt(pycurl.INFILE, image_file)
