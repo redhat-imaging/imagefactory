@@ -469,6 +469,10 @@ class Fedora_ec2_Builder(BaseBuilder):
             self.status="FAILED"
             raise ImageFactoryException("Instance failed to start after 300 seconds - stopping")
 
+    def correct_remote_manifest(self, guestaddr, manifest):
+        # not needed in fedora but unfortunately needed elsewhere
+        pass
+
     def push_image_snapshot_ec2(self, target_image_id, provider, credentials):
         def replace(item):
             if item in [self.ec2_access_key, self.ec2_secret_key]:
@@ -639,6 +643,10 @@ class Fedora_ec2_Builder(BaseBuilder):
 
             # TODO: We cannot timeout on any of the three commands below - can we fix that?
             manifest = "/mnt/bundles/%s.manifest.xml" % (uuid)
+
+            # Unfortunately, for some OS versions we need to correct the manifest
+            self.correct_remote_manifest(guestaddr, manifest)
+
             command = ['euca-upload-bundle', '-b', bucket, '-m', manifest,
                        '--ec2cert', '/tmp/cert-ec2.pem',
                        '-a', self.ec2_access_key, '-s', self.ec2_secret_key,
