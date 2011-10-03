@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 
 sys.path.append('%s/imgfac/rest' % sys.path[0])
 
-rest_api = Bottle(catchall=False)
+rest_api = Bottle(catchall=True)
 
 oauth_server = oauth.Server(signature_methods={'HMAC-SHA1':oauth.SignatureMethod_HMAC_SHA1()})
 
@@ -228,17 +228,24 @@ def builder_detail(builder_id=None, image_id=None, build_id=None, target_image_i
         _id = target_image_id
         _type = 'target_image_status'
     else:
-        response.status = 404
-        return
+        self.log.warn('No uuid provided, unable to fetch builder...')
+        raise HTTPResponse(status=400, output='No uuid provided, unable to fetch builder...')
 
-    job = JobRegistry().jobs[_id]
-    return {'completed':job.percent_complete,
-            'status':job.status,
-            'operation':job.operation,
-            'target':job.target,
-            'href':request.url,
-            'id':_id,
-            '_type':_type}
+    try:
+        job = JobRegistry().jobs[_id]
+        return {'completed':job.percent_complete,
+                'status':job.status,
+                'operation':job.operation,
+                'target':job.target,
+                'href':request.url,
+                'id':_id,
+                '_type':_type}
+    except KeyError as e:
+        self.log.exception(e)
+        raise HTTPResponse(status=404, output="No builder found with uuid %s" % _id)
+    except Exception as e:
+        self.log.exception(e)
+        raise HTTPResponse(status=500, output=e)
 
 @rest_api.get('/imagefactory/builders/:builder_id/status')
 @rest_api.get('/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id/status')
@@ -254,14 +261,22 @@ def builder_status(builder_id=None, image_id=None, build_id=None, target_image_i
         _id = target_image_id
         _type = 'target_image_status'
     else:
-        response.status = 404
-        return
+        self.log.warn('No uuid provided, unable to fetch builder...')
+        raise HTTPResponse(status=400, output='No uuid provided, unable to fetch builder...')
 
-    job = JobRegistry().jobs[_id]
-    return {'_type':_type,
-            'id':_id,
-            'href':request.url,
-            'status':job.status}
+    try:
+        job = JobRegistry().jobs[_id]
+        return {'_type':_type,
+                'id':_id,
+                'href':request.url,
+                'status':job.status}
+    except KeyError as e:
+        self.log.exception(e)
+        raise HTTPResponse(status=404, output="No builder found with uuid %s" % _id)
+    except Exception as e:
+        self.log.exception(e)
+        raise HTTPResponse(status=500, output=e)
+
 
 # Things we have not yet implemented
 @rest_api.route('/imagefactory/images', method=('GET','DELETE'))
