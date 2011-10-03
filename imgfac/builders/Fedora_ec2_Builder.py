@@ -473,6 +473,15 @@ class Fedora_ec2_Builder(BaseBuilder):
         # not needed in fedora but unfortunately needed elsewhere
         pass
 
+    def terminate_instance(self, instance):
+        # boto 1.9 claims a terminate() method but does not implement it
+        # boto 2.0 throws an exception if you attempt to stop() an S3 backed instance
+        # introspect here and do the best we can
+        if "terminate" in dir(instance):
+            instance.terminate()
+        else:
+            instance.stop()
+
     def push_image_snapshot_ec2(self, target_image_id, provider, credentials):
         def replace(item):
             if item in [self.ec2_access_key, self.ec2_secret_key]:
@@ -676,7 +685,7 @@ class Fedora_ec2_Builder(BaseBuilder):
             self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
         finally:
             self.log.debug("Terminating EC2 instance and deleting temp security group")
-            instance.terminate()
+            self.terminate_instance(instance)
             key_file_object.close()
             conn.delete_key_pair(key_name)
             try:
@@ -964,7 +973,7 @@ class Fedora_ec2_Builder(BaseBuilder):
             self.log.debug("Extracted AMI ID: %s " % (ami_id))
         finally:
             self.log.debug("Terminating EC2 instance and deleting temp security group and volume")
-            instance.terminate()
+            self.terminate_instance(instance)
             factory_security_group.delete()
             key_file_object.close()
             conn.delete_key_pair(key_name)
