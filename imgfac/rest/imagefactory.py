@@ -176,25 +176,39 @@ To import an image, supply target_name, provider_name, target_identifier, and im
 @oauth_protect
 def push_image(image_id, build_id, target_image_id):
     log.debug("Starting 'push' process...")
-    _request_data = _request_data_for_content_type(request.headers.get('Content-Type'))
-    provider = _request_data.get('provider')
-    credentials = _request_data.get('credentials')
+    try:
+        _request_data = _request_data_for_content_type(request.headers.get('Content-Type'))
+        provider = _request_data.get('provider')
+        credentials = _request_data.get('credentials')
 
-    if(provider and credentials):
-        try:
-            response.status = 202
-            job = BuildDispatcher().push_image_to_providers(image_id, build_id, (provider, ), credentials)[0]
+        response.status = 202
+        job = BuildDispatcher().push_image_to_providers(image_id, build_id, (provider, ), credentials)[0]
 
-            provider_image_id = job.new_image_id
-            return {'_type':'provider_image',
-                    'id':provider_image_id,
-                    'href':'%s/%s' % (request.url, provider_image_id)}
+        provider_image_id = job.new_image_id
+        return {'_type':'provider_image',
+                'id':provider_image_id,
+                'href':'%s/%s' % (request.url, provider_image_id)}
 
-        except Exception as e:
-            log.exception(e)
-            raise HTTPResponse(status=500, output=e)
-    else:
+    except KeyError:
         raise HTTPResponse(status=400, output='To push an image, a provider id and provider credentials must be supplied.')
+    except Exception as e:
+        log.exception(e)
+        raise HTTPResponse(status=500, output=e)
+
+@rest_api.post('/imagefactory/provider_images')
+@oauth_protect
+def create_provider_image():
+    try:
+        _request_data = _request_data_for_content_type(request.headers.get('Content-Type'))
+        image_id = _request_data.get('image_id')
+        build_id = _request_data.get('build_id')
+        target_image_id = _request_data.get('target_image_id')
+        return push_image(image_id, build_id, target_image_id)
+    except KeyError:
+        raise HTTPResponse(status=400, output='Missing one or more of image_id, build_id, or target_image_id.')
+    except Exception as e:
+        log.exception(e)
+        raise HTTPResponse(status=500, output=e)
 
 @rest_api.get('/imagefactory/builders')
 def list_builders():
