@@ -32,46 +32,41 @@ import boto
 from M2Crypto import BN, EVP, RSA, X509
 import base64
 import logging
+from threading import Thread
 from imagefactory.ImageFactoryException import ImageFactoryException
 
-class WindowsBuilderWorker:
-    def __init__(self, tdl, credentials, target, windows_proxy_address, windows_proxy_password):
-        self.tdl = libxml2.parseDoc(tdl.xml)
-        self.target = target
-        self.provider_user = credentials['userid']
-        self.provider_key = credentials['api-key']
-        self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        self.windows_proxy_address = windows_proxy_address
-        self.windows_proxy_password = windows_proxy_password
 
        
-    def create_provider_image(self):
-        try:
-           ec2region = boto.ec2.get_region(self.target['host'], aws_access_key_id=self.provider_user, aws_secret_access_key=self.provider_key)
-           self.boto = ec2region.connect(aws_access_key_id=self.provider_user, aws_secret_access_key=self.provider_key)                    
-           return self.create_instance(ami_id=self.target[self.tdl.xpathEval("/template/os/arch")[0].content], image_id=self.target['host'], hwp_id='t1.micro') 
-        except:
-            raise ImageFactoryException("Invalid create image requested for target %s" % (self.target))
 
+class Threaded_create_instance(Thread):
+   
+    def __init__(self, ami_id, image_id, hwp_id, boto_connection):
+        Thread.__init__(self)
+        self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        self.ami_id = ami_id
+        self.image_id = image_id
+        self.hwp_id = hwp_id
+        self.boto_connection = boto_connection
+        
     def progress(self):
         sys.stdout.write('.')
         sys.stdout.flush()
 
-    def create_instance(self,image_id,hwp_id,ami_id=None):
+    def run(self):
            
        # Create a use once WinRM security group
        factory_security_group_id = random.randrange(0, 9999999999)
        factory_security_group_name = "imagefactory-%s" % (factory_security_group_id, )
        factory_security_group_desc = "Temporary ImageFactory generated security group with WinRM access"
        self.log.debug("Creating temporary security group (%s)" % (factory_security_group_name))
-       factory_security_group = self.boto.create_security_group(factory_security_group_name, factory_security_group_desc)
+       factory_security_group = self.boto_connection.create_security_group(factory_security_group_name, factory_security_group_desc)
        factory_security_group.authorize('tcp', 5985, 5986, '0.0.0.0/0')
        factory_security_group.authorize('tcp', 5672, 5672, '0.0.0.0/0')
 
 
        # Create keypair
        key_name = "imagefactory-%s" % (factory_security_group_id, )
-       key = self.boto.create_key_pair(key_name)
+       key = self.boto_connection.create_key_pair(key_name)
        # Save it to a temp file
        key_file_object = NamedTemporaryFile()
        key_file_object.write(key.material)
@@ -79,7 +74,7 @@ class WindowsBuilderWorker:
        key_file=key_file_object.name
        
        # Launch instance
-       reservation = self.boto.run_instances(ami_id, instance_type=hwp_id, key_name=key_name, security_groups = [ factory_security_group_name])
+       reservation = self.boto_connection.run_instances(self.ami_id, instance_type=self.hwp_id, key_name=key_name, security_groups = [ factory_security_group_name])
        
        if len(reservation.instances) != 1:
            self.status="FAILED"
@@ -87,12 +82,11 @@ class WindowsBuilderWorker:
 
        self.instance = reservation.instances[0]
        
-       
        sleep(10)
-
-
+       
+       
        for i in range(300):
-           self.log.debug("Waiting for EC2 instance to start: %d/300" % (i*10))
+           self.log.debug("Waiting for EC2 %s to start: %d/300" % (self.instance, (i*10)))
            self.instance.update()
            self.progress()
            if self.instance.state == u'running':
@@ -112,10 +106,13 @@ class WindowsBuilderWorker:
        for j in range(90):
            self.log.debug("Waiting for the EC2 instance password to be available: %d/900" % (j*10))
            self.progress()
-           instance_encrypted_password = base64.b64decode(self.boto.get_password_data(self.instance.id).strip('\r\n') )
+           instance_encrypted_password = base64.b64decode(self.boto_connection.get_password_data(self.instance.id).strip('\r\n') )
            if len(instance_encrypted_password) != 0:
                break
            sleep(10)
+       if len(instance_encrypted_password) == 0:
+           raise ImageFactoryException("Could not get instance %s password in 15 minutes - stopping" %(self.instance))
+
 
        # Now we can get the password and decrypt it using the certificate
        pk = RSA.load_key(key_file)
@@ -130,12 +127,51 @@ class WindowsBuilderWorker:
                self.escaped_instance_password += i
 
        self.log.info("Instance %s created" % (self.instance.id))
-       self.ami_id = ami_id
-       return self.customize()
+       
+       return self.instance.id, self.instance_address, self.escaped_instance_password
+
+
+class WindowsBuilderWorker:
+    def __init__(self, tdl, credentials, target, proxy_ami_id):
+        self.tdl = libxml2.parseDoc(tdl.xml)
+        self.target = target
+        self.provider_user = credentials['userid']
+        self.provider_key = credentials['api-key']
+        self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        self.proxy_ami_id = proxy_ami_id
+
+    def progress(self):
+        sys.stdout.write('.')
+        sys.stdout.flush()
+       
+    def create_provider_image(self):
+        try:
+           ec2region = boto.ec2.get_region(self.target['host'], aws_access_key_id=self.provider_user, aws_secret_access_key=self.provider_key)
+           self.boto = ec2region.connect(aws_access_key_id=self.provider_user, aws_secret_access_key=self.provider_key)
+           proxy = Threaded_create_instance(self.proxy_ami_id, image_id=self.target['host'], hwp_id='t1.micro', boto_connection=self.boto )
+           instance = Threaded_create_instance(ami_id=self.target[self.tdl.xpathEval("/template/os/arch")[0].content], image_id=self.target['host'], hwp_id='t1.micro', boto_connection=self.boto) 
+           
+           proxy.start()
+           instance.start()
+
+           proxy.join()
+           instance.join()
+
+           self.proxy_id, self.proxy_address, self.proxy_password = proxy.instance.id, proxy.instance_address, proxy.instance_password  
+           self.instance_id, self.instance_address, self.instance_password = instance.instance.id, instance.instance_address, instance.instance_password
+
+           return self.customize()
+
+
+        except:
+            raise ImageFactoryException("Invalid create image requested for target %s" % (self.target))
+    
+
+
 
     def connect_to_proxy(self):
         try:
-            self.connection = Connection(self.windows_proxy_address, username='Administrator', password=self.windows_proxy_password)
+            self.connection = Connection(self.proxy_address, username='Administrator', password=self.proxy_password)
             self.connection.open()
             self.session = self.connection.session(str(uuid4()))
 
@@ -147,22 +183,22 @@ class WindowsBuilderWorker:
     def execute_command(self, command):
         if len(command) == 0:
             self.log.debug("Command is empty")
-        command ="winrs -r:"+self.instance_address+" -u:Administrator -p:"+self.escaped_instance_password+" \""+ command+"\"" 
+        command ="winrs -r:"+self.instance_address+" -u:Administrator -p:"+self.instance_password+" \""+ command+"\"" 
         msg = Message(base64.b64encode(command))
         msg.reply_to = 'reply-%s' % self.session.name
         self.sender.send(msg)
         message = self.receiver.fetch()
-        retcode = message.properties["retcode"]
+        retcode = base64.b64decode(message.properties["retcode"])
         stderr = base64.b64decode(message.properties["stderr"])
         stdout = base64.b64decode(message.content)
         self.session.acknowledge()
-        return (stdout, retcode, stderr)
+        return (stdout, int(retcode), stderr)
 
         
     def wait_for_boot(self):
         s = socket.socket()
         port = 5985 
-        self.log.debug("Waiting for instance %s to come online" % (self.instance.id))
+        self.log.debug("Waiting for instance %s to come online" % (self.instance_id))
         for k in range(300):
             self.log.debug("Waiting for the instance to become fully accessible %d/300" % (k*10))
             status = s.connect_ex((self.instance_address, port))
@@ -177,17 +213,16 @@ class WindowsBuilderWorker:
 
     def test_winrm(self):
         winrm_command, retcode, stderr = self.execute_command("dir c:\\")
-        while retcode != 0:
+        while retcode != 0 and stderr:
             winrm_command, retcode, stderr = self.execute_command("dir c:\\")
             sleep(5)
 
     def delete_temp(self):
         stdout, retcode, stderr = self.execute_command("dir c:\\temp")
-        if "File Not Found" not in stdout:
+        if not stderr:
            delstdout, retcode, stderr =self.execute_command("rmdir /Q /S c:\\temp")
            if retcode != 0:
                self.log.warning('Failed to delete temp folder %s' % (delstdout))
-               return
 
     def customize(self):
         if not self.tdl.xpathEval("/template/packages/package") or not self.tdl.xpathEval("/template/packages"):
@@ -238,7 +273,7 @@ class WindowsBuilderWorker:
                         if stderr:
                             self.log.warning("Failed to install package %s with error %s" % (package_name, stderr))
                         else:
-                            self.log.warning("Package %s exited with code %s" % (package_name, retcode))
+                            self.log.info("Package %s exited with code %s" % (package_name, retcode))
                     continue
 
                 else:
@@ -250,19 +285,16 @@ class WindowsBuilderWorker:
 
     def generate_icicle(self):
         try:
-            stdout, retcode, stderr = self.execute_command('cmd.exe /c  wmic os get caption, version, osarchitecture, plusversionnumber, servicepackmajorversion, servicepackminorversion')
-            array = stdout.split('\r\r\n')[1].strip().split('  ')
+            stdout, retcode, stderr = self.execute_command('cmd.exe /c  wmic os get caption, version, osarchitecture, plusversionnumber, servicepackmajorversion, servicepackminorversion /format:csv')
+            components = filter(None, ((filter(None, stdout.split('\n\n'))[-1]).split(',')))
         except:
             raise ImageFactoryException('Could not retrieve OS information %s' %(stderr))
-        components = []
-        for item in array:
-           if item:
-              components.append(item.strip())
-        os = components[0].strip()
-        architecture = components[1].strip()
-        spmajorver = components[2].strip()
-        spminorver = components[3].strip()
-        version = components[4].strip()
+
+        os = components[0]
+        architecture = components[1]
+        spmajorver = components[2]
+        spminorver = components[3]
+        version = components[4]
 
         try:
             stdout, retcode, stderr = self.execute_command('cmd.exe /c reg Query HKLM\Software\Microsoft\Windows\CurrentVersion\Uninstall /s /v DisplayName')
@@ -297,7 +329,7 @@ class WindowsBuilderWorker:
 
     def create_image(self):
        
-        image_name = self.boto.create_image(self.instance.id, self.instance.id)
+        image_name = self.boto.create_image(self.instance_id, self.instance_id)
         image_obj = self.boto.get_image(image_name)
         for i in range(60):
            self.log.debug = "Waiting for the image to be saved %d/600" %(i*10)
@@ -308,11 +340,12 @@ class WindowsBuilderWorker:
            sleep(10)
             
         self.terminate_instance()
-        return self.icicle, image_name, self.ami_id
+        return self.icicle, image_name, self.instance_id
 
     def terminate_instance(self):
         try:
-            self.boto.terminate_instances(str(self.instance.id))
+            self.boto.terminate_instances(str(self.instance_id))
+            self.boto.terminate_instances(str(self.proxy_id))
         except:
             raise ImageFactoryException('Could not terminate instance %s' %(self.instance.id))
 

@@ -45,13 +45,9 @@ class WindowsBuilder(BaseBuilder):
         self.app_config = ApplicationConfiguration().configuration
         self.warehouse_url = self.app_config['warehouse']
         try:
-            self.windows_proxy_address = self.app_config['windows_proxy_address']
+            self.proxy_ami_id = self.app_config['proxy_ami_id']
         except:
-            raise ImageFactoryException("Windows Proxy address is missing from imagefactory.conf")
-        try:
-            self.windows_proxy_password = self.app_config['windows_proxy_password']
-        except:
-            raise ImageFactoryException("Windows Proxy password is missing from imagefactory.conf")
+            raise ImageFactoryException("Windows Proxy ami_id is missing from imagefactory.conf")
 
 
     # Image actions
@@ -94,7 +90,7 @@ class WindowsBuilder(BaseBuilder):
         # By this point the original image placeholder has been read and the template and target retrieved
         if self.target in self.nonul_clouds:
             # This is where we do the real work of a build
-            new_object = WindowsBuilderWorker(self.template, creds, ec2_region_details[provider], self.windows_proxy_address, self.windows_proxy_password)
+            new_object = WindowsBuilderWorker(self.template, creds, ec2_region_details[provider], self.proxy_ami_id)
             self.log.status = "BUILDING"
             icicle, provider_image_id, ami_id = new_object.create_provider_image()
             metadata = dict(image=provider_image_id, provider=provider, target_identifier=ami_id, icicle=icicle)
@@ -104,7 +100,7 @@ class WindowsBuilder(BaseBuilder):
 
 ec2_region_details={
          'ec2-us-east-1':      { 'host':'us-east-1',      'x86_64': 'ami-1cbd4475' },
-         'ec2-us-west-1':      { 'host':'us-west-1',      'x86_64': 'ami-ade2b2e8' },
+         'ec2-us-west-1':      { 'host':'us-west-1',      'x86_64': 'ami-07d28f42' },
          'ec2-ap-southeast-1': { 'host':'ap-southeast-1', 'x86_64': 'ami-4edca21c' },
          'ec2-ap-northeast-1': { 'host':'ap-northeast-1', 'x86_64': 'ami-c01cb7c1' },
          'ec2-eu-west-1':      { 'host':'eu-west-1',      'x86_64': 'ami-f8c9ff8c' } }
