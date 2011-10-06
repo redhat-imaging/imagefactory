@@ -242,7 +242,7 @@ def builder_detail(builder_id=None, image_id=None, build_id=None, target_image_i
         _id = target_image_id
         _type = 'target_image_status'
     else:
-        self.log.warn('No uuid provided, unable to fetch builder...')
+        log.warn('No uuid provided, unable to fetch builder...')
         raise HTTPResponse(status=400, output='No uuid provided, unable to fetch builder...')
 
     try:
@@ -255,10 +255,9 @@ def builder_detail(builder_id=None, image_id=None, build_id=None, target_image_i
                 'id':_id,
                 '_type':_type}
     except KeyError as e:
-        self.log.exception(e)
         raise HTTPResponse(status=404, output="No builder found with uuid %s" % _id)
     except Exception as e:
-        self.log.exception(e)
+        log.exception(e)
         raise HTTPResponse(status=500, output=e)
 
 @rest_api.get('/imagefactory/builders/:builder_id/status')
@@ -275,7 +274,7 @@ def builder_status(builder_id=None, image_id=None, build_id=None, target_image_i
         _id = target_image_id
         _type = 'target_image_status'
     else:
-        self.log.warn('No uuid provided, unable to fetch builder...')
+        log.warn('No uuid provided, unable to fetch builder...')
         raise HTTPResponse(status=400, output='No uuid provided, unable to fetch builder...')
 
     try:
@@ -285,10 +284,9 @@ def builder_status(builder_id=None, image_id=None, build_id=None, target_image_i
                 'href':request.url,
                 'status':job.status}
     except KeyError as e:
-        self.log.exception(e)
         raise HTTPResponse(status=404, output="No builder found with uuid %s" % _id)
     except Exception as e:
-        self.log.exception(e)
+        log.exception(e)
         raise HTTPResponse(status=500, output=e)
 
 
