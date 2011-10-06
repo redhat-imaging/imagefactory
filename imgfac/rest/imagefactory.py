@@ -176,25 +176,39 @@ To import an image, supply target_name, provider_name, target_identifier, and im
 @oauth_protect
 def push_image(image_id, build_id, target_image_id):
     log.debug("Starting 'push' process...")
-    _request_data = _request_data_for_content_type(request.headers.get('Content-Type'))
-    provider = _request_data.get('provider')
-    credentials = _request_data.get('credentials')
+    try:
+        _request_data = _request_data_for_content_type(request.headers.get('Content-Type'))
+        provider = _request_data.get('provider')
+        credentials = _request_data.get('credentials')
 
-    if(provider and credentials):
-        try:
-            response.status = 202
-            job = BuildDispatcher().push_image_to_providers(image_id, build_id, (provider, ), credentials)[0]
+        response.status = 202
+        job = BuildDispatcher().push_image_to_providers(image_id, build_id, (provider, ), credentials)[0]
 
-            provider_image_id = job.new_image_id
-            return {'_type':'provider_image',
-                    'id':provider_image_id,
-                    'href':'%s/%s' % (request.url, provider_image_id)}
+        provider_image_id = job.new_image_id
+        return {'_type':'provider_image',
+                'id':provider_image_id,
+                'href':'%s/%s' % (request.url, provider_image_id)}
 
-        except Exception as e:
-            log.exception(e)
-            raise HTTPResponse(status=500, output=e)
-    else:
+    except KeyError:
         raise HTTPResponse(status=400, output='To push an image, a provider id and provider credentials must be supplied.')
+    except Exception as e:
+        log.exception(e)
+        raise HTTPResponse(status=500, output=e)
+
+@rest_api.post('/imagefactory/provider_images')
+@oauth_protect
+def create_provider_image():
+    try:
+        _request_data = _request_data_for_content_type(request.headers.get('Content-Type'))
+        image_id = _request_data.get('image_id')
+        build_id = _request_data.get('build_id')
+        target_image_id = _request_data.get('target_image_id')
+        return push_image(image_id, build_id, target_image_id)
+    except KeyError:
+        raise HTTPResponse(status=400, output='Missing one or more of image_id, build_id, or target_image_id.')
+    except Exception as e:
+        log.exception(e)
+        raise HTTPResponse(status=500, output=e)
 
 @rest_api.get('/imagefactory/builders')
 def list_builders():
@@ -228,7 +242,7 @@ def builder_detail(builder_id=None, image_id=None, build_id=None, target_image_i
         _id = target_image_id
         _type = 'target_image_status'
     else:
-        self.log.warn('No uuid provided, unable to fetch builder...')
+        log.warn('No uuid provided, unable to fetch builder...')
         raise HTTPResponse(status=400, output='No uuid provided, unable to fetch builder...')
 
     try:
@@ -241,10 +255,9 @@ def builder_detail(builder_id=None, image_id=None, build_id=None, target_image_i
                 'id':_id,
                 '_type':_type}
     except KeyError as e:
-        self.log.exception(e)
         raise HTTPResponse(status=404, output="No builder found with uuid %s" % _id)
     except Exception as e:
-        self.log.exception(e)
+        log.exception(e)
         raise HTTPResponse(status=500, output=e)
 
 @rest_api.get('/imagefactory/builders/:builder_id/status')
@@ -261,7 +274,7 @@ def builder_status(builder_id=None, image_id=None, build_id=None, target_image_i
         _id = target_image_id
         _type = 'target_image_status'
     else:
-        self.log.warn('No uuid provided, unable to fetch builder...')
+        log.warn('No uuid provided, unable to fetch builder...')
         raise HTTPResponse(status=400, output='No uuid provided, unable to fetch builder...')
 
     try:
@@ -271,10 +284,9 @@ def builder_status(builder_id=None, image_id=None, build_id=None, target_image_i
                 'href':request.url,
                 'status':job.status}
     except KeyError as e:
-        self.log.exception(e)
         raise HTTPResponse(status=404, output="No builder found with uuid %s" % _id)
     except Exception as e:
-        self.log.exception(e)
+        log.exception(e)
         raise HTTPResponse(status=500, output=e)
 
 
