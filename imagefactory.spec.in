@@ -1,12 +1,11 @@
-Summary: Image Factory system image generation tool
+Summary: System image generation tool
 Name: imagefactory
 Version: @VERSION@
 Release: 1%{?dist}
-Source0: %{name}-%{version}.tar.gz
-License: GPLv2
-Group: Development/Libraries
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
-Url: http://www.aeolusproject.org/imagefactory.html
+Source0: http://repos.fedorapeople.org/repos/aeolus/imagefactory/%{version}/tarball/%{name}-%{version}.tar.gz
+License: ASL 2.0
+Group: Applications/System
+URL: http://www.aeolusproject.org/imagefactory.html
 BuildArch: noarch
 Requires: oz >= 0.7.0
 Requires: euca2ools
@@ -24,7 +23,10 @@ Requires: VMDKstream
 Requires: python-suds >= 0.4.1
 Requires: python-paste-deploy
 Requires: python-oauth2
-BuildRequires: python
+Requires(post): chkconfig
+Requires(preun): chkconfig
+# This is for /sbin/service
+Requires(preun): initscripts
 BuildRequires: python-setuptools
 
 %description
@@ -32,41 +34,71 @@ imagefactory is a daemon that listens for build requests via QMF.  When
 a build request is received, imagefactory will build the requested image
 for the requested target.
 
+%package jeosconf-ec2-fedora
+Summary: Configuration for JEOS images for EC2
+License: ASL 2.0
+Requires: %{name} = %{version}-%{release}
+
+%description jeosconf-ec2-fedora
+The configuration file for Fedora EC2 JEOS images.
+
+%package jeosconf-ec2-rhel
+Summary: Configuration for JEOS images for EC2
+License: ASL 2.0
+Requires: %{name} = %{version}-%{release}
+
+%description jeosconf-ec2-rhel
+The configuration file for Fedora EC2 JEOS images.
+
 %prep
-%setup -n %{name}-%{version}
+%setup -q
 
 %build
 python setup.py build
 
 %install
-%{__rm} -rf $RPM_BUILD_ROOT
-python setup.py install -O1 --root=$RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/imagefactory/jeos_images
-mkdir -p $RPM_BUILD_ROOT/%{_localstatedir}/lib/imagefactory/images
-%clean
-rm -rf $RPM_BUILD_ROOT
+python setup.py install -O1 --root=%{buildroot} --skip-build
 
-%postun
-/sbin/service imagefactory condrestart > /dev/null 2>&1 || :
+mkdir -p %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
+mkdir -p %{buildroot}/%{_localstatedir}/lib/imagefactory/images
+
+sed -i '/\/usr\/bin\/env python/d' %{buildroot}/%{python_sitelib}/imgfac/*.py
+
+cp conf/ec2_fedora_jeos_03_OCT_2011.conf %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
+cp conf/ec2_rhel_jeos_03_OCT_2011.conf %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
+
+%post
+/sbin/chkconfig --add %{name}
+
+%preun
+if [ $1 = 0 ] ; then
+    /sbin/service %{name} stop >/dev/null 2>&1
+    /sbin/chkconfig --del %{name}
+fi
 
 %files
-%defattr(-,root,root,-)
-%doc COPYING version.txt
-%{_initrddir}/imagefactory
+%doc COPYING
+%{_initddir}/imagefactory
 %config(noreplace) %{_sysconfdir}/imagefactory/imagefactory.conf
 %dir %attr(0755, root, root) %{_sysconfdir}/pki/imagefactory/
 %dir %attr(0755, root, root) %{_sysconfdir}/imagefactory/jeos_images/
 %dir %attr(0755, root, root) %{_localstatedir}/lib/imagefactory/images
-%{_sysconfdir}/pki/imagefactory/cert-ec2.pem
+%config %{_sysconfdir}/pki/imagefactory/cert-ec2.pem
 %{python_sitelib}/imgfac
 %{python_sitelib}/imagefactory-*.egg-info
 %{_bindir}/imagefactory
 %{_mandir}/man1/*
 
+%files jeosconf-ec2-fedora
+%{_sysconfdir}/imagefactory/jeos_images/ec2_fedora_jeos_03_OCT_2011.conf
+
+%files jeosconf-ec2-rhel
+%{_sysconfdir}/imagefactory/jeos_images/ec2_rhel_jeos_03_OCT_2011.conf
+
 %changelog
 * Thu Sep 15 2011 Ian McLeod <imcleod@redhat.com> - 0.6.1
 - Update Oz requirement to 0.7.0 or later for new target-specific package config
-- Update SPEC file to restart service after an install 
+- Update SPEC file to restart service after an install
 
 * Mon Apr 04 2011 Chris Lalancette <clalance@redhat.com> - 0.1.6-1
 - Initial spec file.
