@@ -33,8 +33,8 @@ oauth_server = oauth.Server(signature_methods={'HMAC-SHA1':oauth.SignatureMethod
 class Consumer(object):
     def __init__(self, key):
         consumers = ApplicationConfiguration().configuration['clients']
-        self.key = key
-        self.secret = consumers.get(key) if consumers else None
+        self.key = key.encode('ascii')
+        self.secret = consumers.get(key).encode('ascii') if consumers else None
 
 def validate_two_leg_oauth():
     try:
