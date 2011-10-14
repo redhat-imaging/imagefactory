@@ -22,6 +22,7 @@ import uuid
 import os
 import libxml2
 import props
+import oauth2 as oauth
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 
 
@@ -44,26 +45,45 @@ class ImageWarehouse(object):
     def __init__(self, url=None):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
 
+        appconfig = ApplicationConfiguration().configuration
         self.http = httplib2.Http()
 
         if(not url):
-            url = ApplicationConfiguration().configuration['warehouse']
+            url = appconfig['warehouse']
             self.log.debug("Property (url) not specified.  Pulling from application configuration: %s" % (url, ))
 
-        self.image_bucket = ApplicationConfiguration().configuration['image_bucket']
-        self.build_bucket = ApplicationConfiguration().configuration['build_bucket']
-        self.target_image_bucket = ApplicationConfiguration().configuration['target_bucket']
-        self.template_bucket = ApplicationConfiguration().configuration['template_bucket']
-        self.icicle_bucket = ApplicationConfiguration().configuration['icicle_bucket']
-        self.provider_image_bucket = ApplicationConfiguration().configuration['provider_bucket']
+        self.image_bucket = appconfig['image_bucket']
+        self.build_bucket = appconfig['build_bucket']
+        self.target_image_bucket = appconfig['target_bucket']
+        self.template_bucket = appconfig['template_bucket']
+        self.icicle_bucket = appconfig['icicle_bucket']
+        self.provider_image_bucket = appconfig['provider_bucket']
+        self.warehouse_credentials = {'key':appconfig.get('warehouse_key'), 'secret':appconfig.get('warehouse_secret')}
+        self.warehouse_oauth = True if(self.warehouse_credentials['key'] and self.warehouse_credentials['secret']) else False
 
         self.url = url.rstrip('/')
 
         self.log.debug("Created Image Warehouse instance %s" % (self, ))
 
+    def _oauth_headers(self, url, http_method):
+        consumer = oauth.Consumer(key=self.warehouse_credentials['key'],
+                                  secret=self.warehouse_credentials['secret'])
+        sig_method = oauth.SignatureMethod_HMAC_SHA1()
+        params = {'oauth_version':oauth.OAUTH_VERSION,
+                  'oauth_nonce':oauth.generate_nonce(),
+                  'oauth_timestamp':oauth.generate_timestamp(),
+                  'oauth_signature_method':sig_method.name,
+                  'oauth_consumer_key':consumer.key}
+        req = oauth.Request(method=http_method, url=url, parameters=params)
+        sig = sig_method.sign(req, consumer, None)
+        req['oauth_signature'] = sig
+        return req.to_header()
+
     def _http_request(self, url, method, body = None, content_type = 'text/plain'):
         try:
-            return self.http.request(url, method, body, headers={'content-type': content_type})
+            headers = self._oauth_headers(url, method) if self.warehouse_oauth else {}
+            headers['content-type'] = content_type
+            return self.http.request(url, method, body, headers=headers)
         except Exception, e:
             raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
 
@@ -81,7 +101,7 @@ class ImageWarehouse(object):
         status = int(response_headers["status"])
         if(399 < status < 600):
             # raise RuntimeError("Could not create bucket: %s" % url)
-            self.log.info("Creating a bucket returned status %s." % (status, ))
+            self.log.info("Creating a bucket returned status (%s), %s." % (status, response))
             return False
         else:
             return True
@@ -194,18 +214,22 @@ class ImageWarehouse(object):
             current_mb = int(up_current) / 10485760
             if current_mb > self.last_mb or up_current == up_total:
                 self.last_mb = current_mb
-                self.log.debug("%dkB of %dkB" % (up_current/1024,
+                self.log.debug("Uploading %dkB of %dkB" % (up_current/1024,
                                                  up_total/1024))
 
         try:
             image_file = open(image_file_path)
 
+            oauth_header = "%s: %s" % self._oauth_headers(object_url, 'PUT').items()[0] if self.warehouse_oauth else None
+            headers = ["User-Agent: Load Tool (PyCURL Load Tool)"]
+            if(oauth_header):
+                headers.append(str(oauth_header))
             # Upload the image itself
             image_size = os.path.getsize(image_file_path)
             curl = pycurl.Curl()
             # Our URL can end up as unicode - only pycurl seems to object - cast to string
             curl.setopt(pycurl.URL, str(object_url))
-            curl.setopt(pycurl.HTTPHEADER, ["User-Agent: Load Tool (PyCURL Load Tool)"])
+            curl.setopt(pycurl.HTTPHEADER, headers)
             curl.setopt(pycurl.PUT, 1)
             curl.setopt(pycurl.INFILE, image_file)
             curl.setopt(pycurl.INFILESIZE, image_size)
