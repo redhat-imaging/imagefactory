@@ -110,17 +110,23 @@ class ApplicationConfiguration(Singleton):
         configuration = self.__parse_args()
         if (os.path.isfile(configuration.config)):
             try:
+                def dencode(a_dict, encoding='ascii'):
+                    new_dict = {}
+                    for k,v in a_dict.items():
+                        ek = k.encode(encoding)
+                        if(isinstance(v, unicode)):
+                            new_dict[ek] = v.encode(encoding)
+                        elif(isinstance(v, dict)):
+                            new_dict[ek] = dencode(v)
+                        else:
+                            new_dict[ek] = v
+                    return new_dict
+
                 config_file = open(configuration.config)
                 uconfig = json.load(config_file)
-                # coerce this dict to ascii for python 2.6
-                config = {}
-                for k, v in uconfig.items():
-                    if(type(v) == str):
-                        config[k.encode('ascii')]=v.encode('ascii')
-                    else:
-                        config[k.encode('ascii')]=v
-                configuration = self.__parse_args(defaults=config)
-            except IOError, e:
+                config_file.close()
+                configuration = self.__parse_args(defaults=dencode(uconfig))
+            except Exception, e:
                 self.log.exception(e)
         return configuration.__dict__
 
