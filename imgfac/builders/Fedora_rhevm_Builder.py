@@ -32,7 +32,7 @@ from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.BuildDispatcher import BuildDispatcher
 from IBuilder import IBuilder
 from BaseBuilder import BaseBuilder
-
+from copy import deepcopy
 
 def subprocess_check_output(*popenargs, **kwargs):
     if 'stdout' in kwargs:
@@ -241,10 +241,14 @@ class Fedora_rhevm_Builder(BaseBuilder):
         # Populate the last field we need in our JSON command file
         provider_data['image'] = image_link
 
-        provider_json = json.dumps(provider_data, sort_keys=True, indent=4)
-        self.log.debug("Produced provider json: \n%s" % (provider_json))
+        # Redact password when logging
+        provider_data_log = deepcopy(provider_data)
+        provider_data_log['apipass'] = "REDACTED"
+        provider_json_log = json.dumps(provider_data_log, sort_keys=True, indent=4)
+        self.log.debug("Produced provider json: \n%s" % (provider_json_log))
 
         # Shove into a named temporary file
+        provider_json = json.dumps(provider_data, sort_keys=True, indent=4)
         json_file_object = NamedTemporaryFile()
         json_file_object.write(provider_json)
         json_file_object.flush()
