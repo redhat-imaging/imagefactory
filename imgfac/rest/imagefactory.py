@@ -68,19 +68,34 @@ def oauth_protect(f):
     return decorated_function
 
 def _request_data_for_content_type(content_type):
-    log.info("Request recieved with Content-Type (%s)" % content_type)
-    if(content_type == 'application/json'):
-        keys = request.json.keys()
-        if(len(keys) == 1):
-            request_data = request.json[keys[0]]
+    def dencode(a_dict, encoding='ascii'):
+        new_dict = {}
+        for k,v in a_dict.items():
+            ek = k.encode(encoding)
+            if(isinstance(v, unicode)):
+                new_dict[ek] = v.encode(encoding)
+            elif(isinstance(v, dict)):
+                new_dict[ek] = dencode(v)
+            else:
+                new_dict[ek] = v
+        return new_dict
+
+    try:
+        log.info("Request recieved with Content-Type (%s)" % content_type)
+        if(content_type == 'application/json'):
+            keys = request.json.keys()
+            if(len(keys) == 1):
+                request_data = request.json[keys[0]]
+            else:
+                request_data = request.json
         else:
-            request_data = request.json
-    else:
-        request_data = request.forms
+            request_data = request.forms
 
-    log.debug('returning %s' % request_data)
-    return request_data
-
+        log.debug('returning %s' % request_data)
+        return dencode(request_data)
+    except Exception as e:
+        log.exception(e)
+        raise HTTPResponse(status=500, output=e)
 
 @rest_api.get('/imagefactory')
 def api_info():
@@ -178,13 +193,11 @@ def push_image(image_id, build_id, target_image_id):
     log.debug("Starting 'push' process...")
     try:
         _request_data = _request_data_for_content_type(request.headers.get('Content-Type'))
-        provider = _request_data.get('provider')
-        credentials = _request_data.get('credentials')
-
-        response.status = 202
+        provider = _request_data['provider']
+        credentials = _request_data['credentials']
         job = BuildDispatcher().push_image_to_providers(image_id, build_id, (provider, ), credentials)[0]
-
         provider_image_id = job.new_image_id
+        response.status = 202
         return {'_type':'provider_image',
                 'id':provider_image_id,
                 'href':'%s/%s' % (request.url, provider_image_id)}
