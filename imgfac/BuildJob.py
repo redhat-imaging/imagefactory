@@ -30,6 +30,7 @@ class BuildJob(object):
     percent_complete = props.prop("_percent_complete", "The percent_complete property.")
     new_image_id = props.prop("_new_image_id" "The image property.")
     operation = props.prop("_operation", "Operation of the builder. ie 'build' or 'push'")
+    builder_thread = props.prop("_builder_thread", "Thread object doing the build or push")
 
     def __init__(self, template, target, image_id = '', build_id = ''):
         super(BuildJob, self).__init__()
@@ -50,6 +51,7 @@ class BuildJob(object):
 
         self.new_image_id = self._builder.new_image_id
         self.operation = None
+        self.builder_thread = None
 
     def build_image(self, watcher=None):
         self._watcher = watcher
@@ -104,5 +106,5 @@ class BuildJob(object):
     def _start_builder_thread(self, method_name, arg_dict):
         thread_name = "%s.%s()" % (self.new_image_id, method_name)
         # using args to pass the method we want to call on the target object.
-        builder_thread = threading.Thread(target = self._builder, name=thread_name, args=(method_name), kwargs=arg_dict)
-        builder_thread.start()
+        self.builder_thread = threading.Thread(target = self._builder, name=thread_name, args=(method_name), kwargs=arg_dict)
+        self.builder_thread.start()
