@@ -68,19 +68,34 @@ def oauth_protect(f):
     return decorated_function
 
 def _request_data_for_content_type(content_type):
-    log.info("Request recieved with Content-Type (%s)" % content_type)
-    if(content_type == 'application/json'):
-        keys = request.json.keys()
-        if(len(keys) == 1):
-            request_data = request.json[keys[0]]
+    def dencode(a_dict, encoding='ascii'):
+        new_dict = {}
+        for k,v in a_dict.items():
+            ek = k.encode(encoding)
+            if(isinstance(v, unicode)):
+                new_dict[ek] = v.encode(encoding)
+            elif(isinstance(v, dict)):
+                new_dict[ek] = dencode(v)
+            else:
+                new_dict[ek] = v
+        return new_dict
+
+    try:
+        log.info("Request recieved with Content-Type (%s)" % content_type)
+        if(content_type == 'application/json'):
+            keys = request.json.keys()
+            if(len(keys) == 1):
+                request_data = request.json[keys[0]]
+            else:
+                request_data = request.json
         else:
-            request_data = request.json
-    else:
-        request_data = request.forms
+            request_data = request.forms
 
-    log.debug('returning %s' % request_data)
-    return request_data
-
+        log.debug('returning %s' % request_data)
+        return dencode(request_data)
+    except Exception as e:
+        log.exception(e)
+        raise HTTPResponse(status=500, output=e)
 
 @rest_api.get('/imagefactory')
 def api_info():
