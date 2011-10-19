@@ -238,6 +238,11 @@ class Fedora_rhevm_Builder(BaseBuilder):
         image_link = "/tmp/" + str(self.new_image_id)
         os.symlink(input_image, image_link)
 
+        # iwhd 0.99 and above expect this to be set
+        # we default to 30 minutes as these copies can sometimes take a long time
+        if not 'timeout' in provider_data:
+            provider_data['timeout'] = 1800
+
         # Populate the last field we need in our JSON command file
         provider_data['image'] = image_link
 
