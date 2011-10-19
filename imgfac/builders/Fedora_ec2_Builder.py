@@ -98,6 +98,8 @@ class Fedora_ec2_Builder(BaseBuilder):
         self.oz_config = ConfigParser.SafeConfigParser()
         self.oz_config.read("/etc/oz/oz.cfg")
         self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
+        # make this a property to enable quick cleanup on abort
+        self.instance = None
 
     def init_guest(self, guesttype):
         if guesttype == "local":
@@ -567,19 +569,19 @@ class Fedora_ec2_Builder(BaseBuilder):
             self.status="FAILED"
             raise ImageFactoryException("run_instances did not result in the expected single instance - stopping")
 
-        instance = reservation.instances[0]
+        self.instance = reservation.instances[0]
 
         # We have occasionally seen issues when you immediately query an instance
         # Give it 10 seconds to settle
         sleep(10)
 
-        self.wait_for_ec2_instance_start(instance)
+        self.wait_for_ec2_instance_start(self.instance)
 
         # From this point on we must be sure to terminate the instance when we are done
         # so wrap in a try/finally
         # Accidentally running a 64 bit instance doing nothing costs 56 USD week
         try:
-            guestaddr = instance.public_dns_name
+            guestaddr = self.instance.public_dns_name
 
             self.guest.sshprivkey = key_file
 
@@ -685,20 +687,20 @@ class Fedora_ec2_Builder(BaseBuilder):
             self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
         finally:
             self.log.debug("Terminating EC2 instance and deleting temp security group")
-            self.terminate_instance(instance)
+            self.terminate_instance(self.instance)
             key_file_object.close()
             conn.delete_key_pair(key_name)
             try:
                 timeout = 60
                 interval = 5
                 for i in range(timeout):
-                    instance.update()
-                    if(instance.state == "terminated"):
+                    self.instance.update()
+                    if(self.instance.state == "terminated"):
                         factory_security_group.delete()
                         self.log.debug("Removed temporary security group (%s)" % (factory_security_group_name))
                         break
                     elif(i < timeout):
-                        self.log.debug("Instance status (%s) - waiting for 'terminated'. [%d of %d seconds elapsed]" % (instance.state, i * interval, timeout * interval))
+                        self.log.debug("Instance status (%s) - waiting for 'terminated'. [%d of %d seconds elapsed]" % (self.instance.state, i * interval, timeout * interval))
                         sleep(interval)
                     else:
                         raise Exception("Timeout waiting for instance to terminate.")
@@ -861,20 +863,20 @@ class Fedora_ec2_Builder(BaseBuilder):
             self.status="FAILED"
             raise ImageFactoryException("run_instances did not result in the expected single instance - stopping")
 
-        instance = reservation.instances[0]
+        self.instance = reservation.instances[0]
 
         # We have occasionally seen issues when you immediately query an instance
         # Give it 10 seconds to settle
         sleep(10)
 
-        self.wait_for_ec2_instance_start(instance)
+        self.wait_for_ec2_instance_start(self.instance)
 
         # From this point on we must be sure to terminate the instance when we are done
         # so wrap in a try/finally
         # Accidentally running a 64 bit instance doing nothing costs 56 USD week
         volume = None
         try:
-            guestaddr = instance.public_dns_name
+            guestaddr = self.instance.public_dns_name
 
             self.guest.sshprivkey = key_file
 
@@ -886,8 +888,8 @@ class Fedora_ec2_Builder(BaseBuilder):
             self.log.debug("Waiting 20 seconds for remaining boot tasks")
             sleep(20)
 
-            self.log.debug("Creating 10 GiB volume in (%s)" % (instance.placement))
-            volume = conn.create_volume(10, instance.placement)
+            self.log.debug("Creating 10 GiB volume in (%s)" % (self.instance.placement))
+            volume = conn.create_volume(10, self.instance.placement)
 
             # Do the upload before testing to see if the volume has completed
             # to get a bit of parallel work
@@ -911,7 +913,7 @@ class Fedora_ec2_Builder(BaseBuilder):
 
             # Volume is now available
             # Attach it
-            conn.attach_volume(volume.id, instance.id, "/dev/sdh")
+            conn.attach_volume(volume.id, self.instance.id, "/dev/sdh")
 
             self.log.debug("Waiting up to 120 seconds for volume (%s) to become in-use" % (volume.id))
             retcode = 1
@@ -925,7 +927,7 @@ class Fedora_ec2_Builder(BaseBuilder):
                 sleep(10)
 
             if retcode:
-                raise ImageFactoryException("Unable to attach volume (%s) to instance (%s) aborting" % (volume.id, instance.id))
+                raise ImageFactoryException("Unable to attach volume (%s) to instance (%s) aborting" % (volume.id, self.instance.id))
 
             # TODO: This may not be necessary but it helped with some funnies observed during testing
             #         At some point run a bunch of builds without the delay to see if it breaks anything
@@ -973,20 +975,20 @@ class Fedora_ec2_Builder(BaseBuilder):
             self.log.debug("Extracted AMI ID: %s " % (ami_id))
         finally:
             self.log.debug("Terminating EC2 instance and deleting temp security group and volume")
-            self.terminate_instance(instance)
+            self.terminate_instance(self.instance)
             factory_security_group.delete()
             key_file_object.close()
             conn.delete_key_pair(key_name)
 
             if volume:
-                self.log.debug("Waiting up to 240 seconds for instance (%s) to shut down" % (instance.id))
+                self.log.debug("Waiting up to 240 seconds for instance (%s) to shut down" % (self.instance.id))
                 retcode = 1
                 for i in range(24):
-                    instance.update()
-                    if instance.state == "terminated":
+                    self.instance.update()
+                    if self.instance.state == "terminated":
                         retcode = 0
                         break
-                    self.log.debug("Instance status (%s) - waiting for 'terminated': %d/240" % (instance.state, i*10))
+                    self.log.debug("Instance status (%s) - waiting for 'terminated': %d/240" % (self.instance.state, i*10))
                     sleep(10)
 
                 if retcode:
@@ -1110,7 +1112,16 @@ class Fedora_ec2_Builder(BaseBuilder):
         self.percent_complete=100
 
     def abort(self):
-        pass
+        # TODO: Make this progressively more robust
+
+        # In the near term, the most important thing we can do is terminate any EC2 instance we may be using
+        if self.instance:
+            instance_id = self.instance.id
+            try:
+                self.terminate_instance(self.instance)
+            except Exception, e:
+                self.log.warning("Warning, encountered - Instance %s may not be terminated ******** " % (instance_id))
+                self.log.exception(e)
 
     # This file content is tightly bound up with our mod code above
     # I've inserted it as class variables for convenience
