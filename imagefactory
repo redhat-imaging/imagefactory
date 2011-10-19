@@ -71,6 +71,21 @@ class Application(Singleton):
         if (signum == signal.SIGTERM):
             logging.warn('caught signal SIGTERM, stopping...')
 
+            # Run the abort() method in all running builders
+            # TODO: Find some way to regularly purge non-running builders from the registry
+            #       or replace it with something else
+            builder_dict = BuildDispatcher().job_registry.jobs
+            for builder_id in builder_dict:
+                # If the build or push worker thread has already exited we do nothing
+                # builder classes should always cleanup before exiting the thread-starting methods
+                if builder_dict[builder_id].builder_thread and builder_dict[builder_id].builder_thread.isAlive():
+                    try:
+                        logging.debug("Executing abort method for builder id (%s)" % (builder_id))
+                        builder_dict[builder_id].abort()
+                    except Exception as e:
+                        logging.warning("Got exception when attempting to abort build id (%s) during shutdown" % (builder_id))
+                        logging.exception(e)
+
             if (self.qmf_agent):
                 self.qmf_agent.shutdown()
                 try:

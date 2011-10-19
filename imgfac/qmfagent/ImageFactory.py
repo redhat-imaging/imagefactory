@@ -98,6 +98,8 @@ class ImageFactory(Singleton):
     def image(self,template,target):
         template_object = Template(template=template)
         build_adaptor = BuildAdaptor(template_object,target,agent=self.agent)
+        # Needed to allow us to walk all builders during a shutdown
+        BuildDispatcher().job_registry.register(build_adaptor)
         build_adaptor.build_image()
         return build_adaptor
 
@@ -110,6 +112,8 @@ class ImageFactory(Singleton):
 
         if (template_id and target):
             build_adaptor = BuildAdaptor(Template(uuid=template_id),target,agent=self.agent)
+            # Needed to allow us to walk all builders during a shutdown
+            BuildDispatcher().job_registry.register(build_adaptor)
             build_adaptor.push_image(target_image_id, provider, credentials)
             return build_adaptor
         else:
