@@ -73,7 +73,7 @@ class Fedora_rhevm_Builder(BaseBuilder):
         self.log.debug("Building for target %s with warehouse config %s" % (self.target, self.app_config['warehouse']))
         self.status="BUILDING"
 
-        self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml)
+        self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml, rootpw_required=True)
         # Add in target specific content
         self.add_target_content()
         # Oz assumes unique names - TDL built for multiple backends guarantees
