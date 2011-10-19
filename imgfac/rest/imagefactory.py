@@ -193,13 +193,11 @@ def push_image(image_id, build_id, target_image_id):
     log.debug("Starting 'push' process...")
     try:
         _request_data = _request_data_for_content_type(request.headers.get('Content-Type'))
-        provider = _request_data.get('provider')
-        credentials = _request_data.get('credentials')
-
-        response.status = 202
+        provider = _request_data['provider']
+        credentials = _request_data['credentials']
         job = BuildDispatcher().push_image_to_providers(image_id, build_id, (provider, ), credentials)[0]
-
         provider_image_id = job.new_image_id
+        response.status = 202
         return {'_type':'provider_image',
                 'id':provider_image_id,
                 'href':'%s/%s' % (request.url, provider_image_id)}
