@@ -58,6 +58,11 @@ class Fedora_vsphere_Builder(BaseBuilder):
         self.status="BUILDING"
 
         self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml)
+
+        # Add a root pw if it exists in app config and was not set in the TDL
+        if ( not self.tdlobj.rootpw ) and ( 'root_password' in self.app_config ):
+            self.tdlobj.rootpw = app_config['root_password']
+
         # Add in target specific content
         self.add_target_content()
         # Oz assumes unique names - TDL built for multiple backends guarantees
