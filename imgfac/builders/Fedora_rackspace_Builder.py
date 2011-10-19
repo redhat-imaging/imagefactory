@@ -48,7 +48,7 @@ class Fedora_rackspace_Builder(BaseBuilder):
         self.app_config = ApplicationConfiguration().configuration
         self.warehouse_url = self.app_config['warehouse']
         # May not be necessary to do both of these
-        self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml)
+        self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml, rootpw_required=True)
         # Add in target specific content
         self.add_target_content()
         # Oz assumes unique names - TDL built for multiple backends guarantees they are not unique
