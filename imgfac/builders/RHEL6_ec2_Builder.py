@@ -25,6 +25,16 @@ class RHEL6RemoteGuest(oz.RHEL_6.RHEL6Guest):
     def connect_to_libvirt(self):
         pass
 
+    def guest_execute_command(self, guestaddr, command, timeout=30,
+                              tunnels=None):
+        return super(RHEL6RemoteGuest, self).guest_execute_command(guestaddr, command, timeout, tunnels)
+
+    def guest_live_upload(self, guestaddr, file_to_upload, destination,
+                          timeout=30):
+        return super(RHEL6RemoteGuest, self).guest_live_upload(guestaddr, file_to_upload, destination, timeout)
+
+
+
 class RHEL6_ec2_Builder(Fedora_ec2_Builder):
     def init_guest(self, guesttype):
         if guesttype == "local":

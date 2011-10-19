@@ -67,6 +67,15 @@ class FedoraRemoteGuest(oz.Fedora.FedoraGuest):
     def connect_to_libvirt(self):
         pass
 
+    def guest_execute_command(self, guestaddr, command, timeout=30,
+                              tunnels=None):
+        return super(FedoraRemoteGuest, self).guest_execute_command(guestaddr, command, timeout, tunnels)
+
+    def guest_live_upload(self, guestaddr, file_to_upload, destination,
+                          timeout=30):
+        return super(FedoraRemoteGuest, self).guest_live_upload(guestaddr, file_to_upload, destination, timeout)
+
+
 
 class Fedora_ec2_Builder(BaseBuilder):
     """docstring for Fedora_ec2_Builder"""
@@ -448,7 +457,7 @@ class Fedora_ec2_Builder(BaseBuilder):
                 self.log.debug("Waiting for EC2 ssh access: %d/300" % (i))
 
             try:
-                stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, "/bin/true")
+                stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, "/bin/true", timeout = 10)
                 break
             except:
                 pass
