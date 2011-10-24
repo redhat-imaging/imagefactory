@@ -158,7 +158,23 @@ class Application(Singleton):
             self.qmf_agent = ImageFactoryAgent(self.app_config['qpidd'])
             self.qmf_agent.run()
         elif(self.app_config['rest']):
+            if (not self.app_config['foreground']):
+                self.daemon = self.daemonize()
+
             self.setup_logging()
+            if(self.daemon):
+                try:
+                    with open(self.pid_file_path, "w") as pidfile:
+                        pidfile.write("%s\n" % (str(os.getpid()), ))
+                        pidfile.close()
+                except Exception, e:
+                    logging.warning(str(e))
+                logging.info("Launched as daemon...")
+            elif(self.app_config['foreground']):
+                logging.info("Launching in foreground...")
+            else:
+                logging.warning("Failed to launch as daemon...")
+
             debug(self.app_config['debug'])
             pem_file = self.app_config['ssl_pem'] if not self.app_config['no_ssl'] else None
             # Don't set reloader to True or you will lose state.  You have been warned.
