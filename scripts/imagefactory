@@ -38,7 +38,7 @@
 . /etc/init.d/functions
 
 
-OPTIONS="--qmf --debug"
+OPTIONS="--rest --debug"
 if [ -e /etc/sysconfig/imagefactory ]; then
   . /etc/sysconfig/imagefactory
 fi
