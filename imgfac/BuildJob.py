@@ -70,15 +70,18 @@ class BuildJob(object):
         self._builder.abort()
 
     def builder_did_update_status(self, builder, old_status, new_status):
+        self.log.debug("Builder (%s) changed status from %s to %s" % (builder.new_image_id, old_status, new_status))
         self.status = new_status
         if self.status == "COMPLETED" and self._watcher:
             self._watcher.completed()
             self._watcher = None
 
     def builder_did_update_percentage(self, builder, original_percentage, new_percentage):
+        self.log.debug("Builder (%s) changed percent complete from %s to %s" % (builder.new_image_id, original_percentage, new_percentage))
         self.percent_complete = new_percentage
 
     def builder_did_fail(self, builder, failure_type, failure_info):
+        self.log.debug("Builder (%s) reported BUILD FAILED: %s - %s" % (builder.new_image_id, failure_type, failure_info))
         pass
 
     def _get_builder(self):
