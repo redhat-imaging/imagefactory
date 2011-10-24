@@ -69,7 +69,15 @@ class ImageWarehouse(object):
         consumer = oauth.Consumer(key=self.warehouse_credentials['key'],
                                   secret=self.warehouse_credentials['secret'])
         sig_method = oauth.SignatureMethod_HMAC_SHA1()
-        params = {'oauth_version':oauth.OAUTH_VERSION,
+
+        # Annoyingly, this module variable name changes between 1.2 and 1.5
+        oauth_version = None
+        try:
+            oauth_version = oauth.OAUTH_VERSION
+        except AttributeError:
+            oauth_version = oauth.VERSION
+
+        params = {'oauth_version':oauth_version,
                   'oauth_nonce':oauth.generate_nonce(),
                   'oauth_timestamp':oauth.generate_timestamp(),
                   'oauth_signature_method':sig_method.name,
