@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Bottle is a fast and simple micro-framework for small web applications. It
@@ -499,7 +500,6 @@ class Bottle(object):
         self.router = Router() # Maps requests to :class:`Route` instances.
         self.plugins = [] # List of installed plugins.
 
-        self.mounts = {}
         self.error_handler = {}
         #: If true, most exceptions are catched and returned as :exc:`HTTPError`
         self.catchall = catchall
@@ -511,33 +511,44 @@ class Bottle(object):
             self.install(JSONPlugin())
         self.install(TemplatePlugin())
 
-    def mount(self, app, prefix, **options):
-        ''' Mount an application to a specific URL prefix. The prefix is added
-            to SCIPT_PATH and removed from PATH_INFO before the sub-application
-            is called.
+    def mount(self, prefix, app, **options):
+        ''' Mount an application (:class:`Bottle` or plain WSGI) to a specific
+            URL prefix. Example::
 
-            :param app: an instance of :class:`Bottle`.
-            :param prefix: path prefix used as a mount-point.
+                root_app.mount('/admin/', admin_app)
+
+            :param prefix: path prefix or `mount-point`. If it ends in a slash,
+                that slash is mandatory.
+            :param app: an instance of :class:`Bottle` or a WSGI application.
 
             All other parameters are passed to the underlying :meth:`route` call.
         '''
-        if not isinstance(app, Bottle):
-            raise TypeError('Only Bottle instances are supported for now.')
-        prefix = '/'.join(filter(None, prefix.split('/')))
-        if not prefix:
-            raise TypeError('Empty prefix. Perhaps you want a merge()?')
-        for other in self.mounts:
-            if other.startswith(prefix):
-                raise TypeError('Conflict with existing mount: %s' % other)
-        path_depth = prefix.count('/') + 1
-        options.setdefault('method', 'ANY')
+        if isinstance(app, basestring):
+            prefix, app = app, prefix
+            depr('Parameter order of Bottle.mount() changed.') # 0.10
+
+        parts = filter(None, prefix.split('/'))
+        if not parts: raise ValueError('Empty path prefix.')
+        path_depth = len(parts)
         options.setdefault('skip', True)
-        self.mounts[prefix] = app
-        @self.route('/%s/:#.*#' % prefix, **options)
+        options.setdefault('method', 'ANY')
+
+        @self.route('/%s/:#.*#' % '/'.join(parts), **options)
         def mountpoint():
-            request.path_shift(path_depth)
-            # TODO: This sucks. Make it better.
-            return app._cast(app._handle(request.environ), request, response)
+            try:
+                request.path_shift(path_depth)
+                rs = BaseResponse([], 200)
+                def start_response(status, header):
+                    rs.status = status
+                    [rs.add_header(name, value) for name, value in header]
+                    return lambda x: out.append(x)
+                rs.body.extend(app(request.environ, start_response))
+                return HTTPResponse(rs.body, rs.status, rs.headers)
+            finally:
+                request.path_shift(-path_depth)
+
+        if not prefix.endswith('/'):
+            self.route('/' + '/'.join(parts), callback=mountpoint, **options)
 
     def install(self, plugin):
         ''' Add a plugin to the list of plugins and prepare it for being
@@ -776,11 +787,11 @@ class Bottle(object):
             response.bind()
             out = self._cast(self._handle(environ), request, response)
             # rfc2616 section 4.3
-            if response.status_code in (100, 101, 204, 304)\
+            if response._status_code in (100, 101, 204, 304)\
             or request.method == 'HEAD':
                 if hasattr(out, 'close'): out.close()
                 out = []
-            start_response(response.status_line, list(response.iter_headers()))
+            start_response(response._status_line, list(response.iter_headers()))
             return out
         except (KeyboardInterrupt, SystemExit, MemoryError):
             raise
@@ -842,13 +853,10 @@ class BaseRequest(DictMixin):
 
     @DictProperty('environ', 'bottle.request.cookies', read_only=True)
     def cookies(self):
-        """ Cookies parsed into a dictionary. Signed cookies are NOT decoded.
-            Use :meth:`get_cookie` if you expect signed cookies. """
-        raw_dict = SimpleCookie(self.environ.get('HTTP_COOKIE',''))
-        cookies = {}
-        for cookie in raw_dict.itervalues():
-            cookies[cookie.key] = cookie.value
-        return cookies
+        """ Cookies parsed into a :class:`FormsDict`. Signed cookies are NOT
+            decoded. Use :meth:`get_cookie` if you expect signed cookies. """
+        cookies = SimpleCookie(self.environ.get('HTTP_COOKIE',''))
+        return FormsDict((c.key, c.value) for c in cookies.itervalues())
 
     def get_cookie(self, key, default=None, secret=None):
         """ Return the content of a cookie. To read a `Signed Cookie`, the
@@ -1024,8 +1032,8 @@ class BaseRequest(DictMixin):
     def script_name(self):
         ''' The initial portion of the URL's `path` that was removed by a higher
             level (server or routing middleware) before the application was
-            called. This property returns an empty string, or a path with
-            leading and tailing slashes. '''
+            called. This script path is returned with leading and tailing
+            slashes. '''
         script_name = self.environ.get('SCRIPT_NAME', '').strip('/')
         return '/' + script_name + '/' if script_name else '/'
 
@@ -1165,13 +1173,8 @@ class BaseResponse(object):
                   'Content-Md5', 'Last-Modified'))}
 
     def __init__(self, body='', status=None, **headers):
-        #: The HTTP status code as an integer (e.g. 404).
-        #: Do not change the value manually, use :attr:`status` instead.
-        self.status_code = None
-        #: The HTTP status line as a string (e.g. "404 Not Found").
-        #: Do not change the value manually, use :attr:`status` instead.
-        self.status_line = None
-        #: The response body as one of the supported data types.
+        self._status_line = None
+        self._status_code = None
         self.body = body
         self._cookies = None
         self._headers = {'Content-Type': [self.default_content_type]}
@@ -1194,6 +1197,16 @@ class BaseResponse(object):
         if hasattr(self.body, 'close'):
             self.body.close()
 
+    @property
+    def status_line(self):
+        ''' The HTTP status line as a string (e.g. ``404 Not Found``).'''
+        return self._status_line
+
+    @property
+    def status_code(self):
+        ''' The HTTP status code as an integer (e.g. 404).'''
+        return self._status_code
+
     def _set_status(self, status):
         if isinstance(status, int):
             code, status = status, _HTTP_STATUS_LINES.get(status)
@@ -1203,16 +1216,21 @@ class BaseResponse(object):
         else:
             raise ValueError('String status line without a reason phrase.')
         if not 100 <= code <= 999: raise ValueError('Status code out of range.')
-        self.status_code = code
-        self.status_line = status or ('%d Unknown' % code)
+        self._status_code = code
+        self._status_line = status or ('%d Unknown' % code)
 
-    status = property(lambda self: self.status_code, _set_status, None,
+    def _get_status(self):
+        depr('BaseReuqest.status will change to return a string in 0.11. Use'\
+             'status_line and status_code to make sure.') #0.10
+        return self._status_code
+
+    status = property(_get_status, _set_status, None,
         ''' A writeable property to change the HTTP response status. It accepts
             either a numeric code (100-999) or a string with a custom reason
             phrase (e.g. "404 Brain not found"). Both :data:`status_line` and
             :data:`status_code` are updates accordingly. The return value is
             always a numeric code. ''')
-    del _set_status
+    del _get_status, _set_status
 
     @property
     def headers(self):
@@ -1426,7 +1444,7 @@ class HooksPlugin(object):
         hooks = self.hooks[name]
         if ka.pop('reversed', False): hooks = hooks[::-1]
         return [hook(*a, **ka) for hook in hooks]
-    
+
     def apply(self, callback, context):
         if self._empty(): return callback
         def wrapper(*a, **ka):
@@ -1557,10 +1575,28 @@ class MultiDict(DictMixin):
 
 
 class FormsDict(MultiDict):
-    ''' A :class:`MultiDict` with attribute-like access to form values.
-        Missing attributes are always `None`. '''
-    def __getattr__(self, name):
-        return self.get(name, None)
+    ''' This :class:`MultiDict` subclass is used to store request form data.
+        Additionally to the normal dict-like item access methods (which return
+        unmodified data as native strings), this container also supports
+        attribute-like access to its values. Attribues are automatiically de- or
+        recoded to match :attr:`input_encoding` (default: 'utf8'). Missing
+        attributes default to ``None``. '''
+
+    #: Encoding used for attribute values.
+    input_encoding = 'utf8'
+
+    def getunicode(self, name, default=None, encoding=None):
+        value, enc = self.get(name, default), encoding or self.input_encoding
+        try:
+            if isinstance(value, bytes): # Python 2 WSGI
+                return value.decode(enc)
+            elif isinstance(value, unicode): # Python 3 WSGI
+                return value.encode('latin1').decode(enc)
+            return value
+        except UnicodeError, e:
+            return default
+
+    __getattr__ = getunicode
 
 
 class HeaderDict(MultiDict):
@@ -2107,11 +2143,12 @@ class GeventServer(ServerAdapter):
 
 
 class GunicornServer(ServerAdapter):
-    """ Untested. """
+    """ Untested. See http://gunicorn.org/configure.html for options. """
     def run(self, handler):
         from gunicorn.app.base import Application
 
-        config = {'bind': "%s:%d" % (self.host, int(self.port)), 'workers': 4}
+        config = {'bind': "%s:%d" % (self.host, int(self.port))}
+        config.update(self.options)
 
         class GunicornApplication(Application):
             def init(self, parser, opts, args):
@@ -2209,10 +2246,14 @@ def load_app(target):
     """ Load a bottle application from a module and make sure that the import
         does not affect the current default application, but returns a separate
         application object. See :func:`load` for the target parameter. """
-    tmp = app.push() # Create a new "default application"
-    rv = load(target) # Import the target module
-    app.remove(tmp) # Remove the temporary added default application
-    return rv if isinstance(rv, Bottle) else tmp
+    global NORUN; NORUN, nr_old = True, NORUN
+    try:
+        tmp = app.push() # Create a new "default application"
+        rv = load(target) # Import the target module
+        app.remove(tmp) # Remove the temporary added default application
+        return rv if isinstance(rv, Bottle) else tmp
+    finally:
+        NORUN = nr_old
 
 
 def run(app=None, server='wsgiref', host='127.0.0.1', port=8080,
@@ -2233,6 +2274,7 @@ def run(app=None, server='wsgiref', host='127.0.0.1', port=8080,
         :param quiet: Suppress output to stdout and stderr? (default: False)
         :param options: Options passed to the server adapter.
      """
+    if NORUN: return
     app = app or default_app()
     if isinstance(app, basestring):
         app = load_app(app)
@@ -2653,7 +2695,8 @@ class SimpleTemplate(BaseTemplate):
         env = self.defaults.copy()
         env.update({'_stdout': _stdout, '_printlist': _stdout.extend,
                '_include': self.subtemplate, '_str': self._str,
-               '_escape': self._escape})
+               '_escape': self._escape, 'get': env.get,
+               'setdefault': env.setdefault, 'defined': env.__contains__})
         env.update(kwargs)
         eval(self.co, env)
         if '_rebase' in env:
@@ -2741,6 +2784,7 @@ simpletal_view = functools.partial(view, template_adapter=SimpleTALTemplate)
 TEMPLATE_PATH = ['./', './views/']
 TEMPLATES = {}
 DEBUG = False
+NORUN = False # If set, run() does nothing. Used by load_app()
 
 #: A dict to map HTTP status codes (e.g. 404) to phrases (e.g. 'Not Found')
 HTTP_CODES = httplib.responses
@@ -2801,5 +2845,37 @@ app.push()
 #: A virtual package that redirects import statements.
 #: Example: ``import bottle.ext.sqlite`` actually imports `bottle_sqlite`.
 ext = _ImportRedirect(__name__+'.ext', 'bottle_%s').module
+
+def main():
+    from optparse import OptionParser
+    parser = OptionParser(usage="usage: %prog [options] package.module:application")
+    add = parser.add_option
+    add("-b", "--bind", metavar="ADDRESS", help="bind socket to ADDRESS.")
+    add("-s", "--server", help="use SERVER as backend. (default: wsgiref)")
+    add("-p", "--plugin", action="append", help="install additinal plugin/s.")
+    add("--debug", action="store_true", help="start server in debug mode.")
+    add("--reload", action="store_true", help="auto-reload on file changes.")
+    opt, args = parser.parse_args()
+    debug(opt.debug)
+
+    if len(args) != 1: parser.error('No application specified.')
+
+    try:
+        sys.path.insert(0, '.')
+        sys.modules.setdefault('bottle', sys.modules['__main__'])
+        app = load_app(args[0])
+        for plugin in opt.plugin or []: app.install(plugin)
+    except (AttributeError, ImportError), e:
+        parser.error(e.args[0])
+
+    if opt.bind and ':' in opt.bind: host, port = opt.bind.rsplit(':', 1)
+    else:                            host, port = opt.bind or 'localhost', 8080
+    if not app.routes: parser.error('App does not define any routes.')
+    if opt.server not in server_names: parser.error('Unknown server backend.')
+    run(app, host=host, port=port, server=opt.server or 'wsgiref',
+        reloader=opt.reload)
+
+if __name__ == '__main__':
+    main()
 
 # THE END

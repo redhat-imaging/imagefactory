@@ -46,18 +46,12 @@ def validate_two_leg_oauth():
                                          request.url,
                                          headers=auth_header,
                                          parameters=request.params)
-        oauth_consumer = Consumer(request.params.get('oauth_consumer_key'))
+        oauth_consumer = Consumer(request.params['oauth_consumer_key'])
         oauth_server.verify_request(req, oauth_consumer, None)
         return True
-    except oauth.Error as e:
-        log.exception(e)
-        raise HTTPResponse(status=401, output=e)
-    except KeyError as e:
-        log.exception(e)
-        raise HTTPResponse(status=400, output=e)
     except Exception as e:
         log.exception(e)
-        raise HTTPResponse(status=500, output=e)
+        raise HTTPResponse(status=500, output='OAuth validation failed: %s' % e)
 
 def oauth_protect(f):
     def decorated_function(*args, **kwargs):
