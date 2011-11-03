@@ -47,6 +47,7 @@ class Application(Singleton):
         self.pid_file_path = "/var/run/imagefactory.pid"
         signal.signal(signal.SIGTERM, self.signal_handler)
         self.app_config = ApplicationConfiguration().configuration
+        self.qmf_agent = None
 
         # by setting TMPDIR here we make sure that libguestfs
         # (imagefactory -> oz -> libguestfs) uses the temporary directory of
