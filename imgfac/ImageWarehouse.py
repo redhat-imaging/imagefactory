@@ -91,7 +91,12 @@ class ImageWarehouse(object):
         try:
             headers = self._oauth_headers(url, method) if self.warehouse_oauth else {}
             headers['content-type'] = content_type
-            return self.http.request(url, method, body, headers=headers)
+            response_headers, response = self.http.request(url, method, body, headers=headers)
+            status = int(response_headers["status"])
+            if(399 < status < 600):
+                raise Exception("Image Warehouse returned status (%d) with message: %s" % (status, response))
+            else:
+                return (response_headers, response)
         except Exception, e:
             raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
 
