@@ -22,6 +22,7 @@ import uuid
 import os
 import libxml2
 import props
+import time
 import oauth2 as oauth
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 
@@ -207,7 +208,8 @@ class ImageWarehouse(object):
 
         self._http_put(object_url)
 
-        meta_data = dict(uuid=str(build_id), object_type="build")
+        # TODO: patch Oz to add timestamp to the icicle and use that value here
+        meta_data = dict(uuid=str(build_id), object_type="build", timestamp=str(time.time()))
         if(metadata):
             meta_data.update(metadata)
         self.set_metadata_for_object_at_url(meta_data, object_url)
