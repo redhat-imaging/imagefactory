@@ -22,6 +22,7 @@ import uuid
 import os
 import libxml2
 import props
+import time
 import oauth2 as oauth
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 
@@ -91,7 +92,12 @@ class ImageWarehouse(object):
         try:
             headers = self._oauth_headers(url, method) if self.warehouse_oauth else {}
             headers['content-type'] = content_type
-            return self.http.request(url, method, body, headers=headers)
+            response_headers, response = self.http.request(url, method, body, headers=headers)
+            status = int(response_headers["status"])
+            if(399 < status < 600):
+                raise Exception("Image Warehouse returned status (%d) with message: %s" % (status, response))
+            else:
+                return (response_headers, response)
         except Exception, e:
             raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
 
@@ -207,7 +213,8 @@ class ImageWarehouse(object):
 
         self._http_put(object_url)
 
-        meta_data = dict(uuid=str(build_id), object_type="build")
+        # TODO: patch Oz to add timestamp to the icicle and use that value here
+        meta_data = dict(uuid=str(build_id), object_type="build", timestamp=str(time.time()))
         if(metadata):
             meta_data.update(metadata)
         self.set_metadata_for_object_at_url(meta_data, object_url)
