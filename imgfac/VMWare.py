@@ -23,7 +23,6 @@
 #  There are a number of baked in assumptions here
 #  Some are valid (like controller type) and others probably need to be
 #  dynamic
-
 import sys
 import os
 import math
@@ -33,9 +32,9 @@ from psphere.vim25 import HttpNfcLease
 from psphere.vim25 import Vim
 from psphere.soap import VimFault
 from psphere.scripting import BaseScript
-from pprint import pprint
 from time import sleep
 from time import time
+from imgfac.ImageFactoryException import ImageFactoryException
 import logging
 
 logging.getLogger('suds').setLevel(logging.INFO)
@@ -90,26 +89,27 @@ class VMImport:
         try:
             ds = ds_target.find_datastore(name=datastore)
         except ObjectNotFoundError, e:
-            self.log.error('Could not find datastore with name %s: %s' % (datastore,
+            raise ImageFactoryException('Could not find datastore with name %s: %s' % (datastore,
                                                                  e.error))
-            sys.exit()
+
 
         ds.update_view_data(properties=['summary'])
         # Ensure the datastore is accessible and has enough space
         if (not ds.summary.accessible or
             ds.summary.freeSpace < disksize_kb * 1024):
-            self.log.error('Datastore (%s) exists, but is not accessible or'
+            raise ImageFactoryException('Datastore (%s) exists, but is not accessible or'
                   'does not have sufficient free space.' % ds.summary.name)
-            sys.exit()
 
         disk = self.create_disk(datastore=ds, disksize_kb=disksize_kb)
         vm_devices.append(disk)
 
+        cdrom = self.create_cdrom(datastore=ds)
+        vm_devices.append(cdrom)
+
         for nic in nics:
             nic_spec = self.create_nic(target, nic)
             if not nic_spec:
-                self.log.error('Could not create spec for NIC')
-                sys.exit()
+                raise ImageFactoryException('Could not create spec for NIC')
 
             # Append the nic spec to the vm_devices list
             vm_devices.append(nic_spec)
@@ -129,9 +129,8 @@ class VMImport:
         try:
             dc = target.find_datacenter()
         except ObjectNotFoundError, e:
-            self.log.error('Error while trying to find datacenter for %s: %s' %
+            raise ImageFactoryException('Error while trying to find datacenter for %s: %s' %
                   (target.name, e.error))
-            sys.exit()
 
         dc.update_view_data(properties=['vmFolder'])
 
@@ -152,7 +151,18 @@ class VMImport:
                 break
             sleep(5)
 
-        url = lease.info.deviceUrl[0]['url']
+        # There's not a lot of logic to how these URLs are described
+        # However, we can look to see if the upload URL defines a disk
+        # We should only have one such URL, so use it and throw an error if 
+        # we do not find it
+
+        url = None
+        for url in lease.info.deviceUrl:
+            if url['disk']:
+                url = url['url']
+
+        if not url: 
+            raise ImageFactoryException("Unable to extract disk upload URL from HttpNfcLease")
 
         self.lease_timeout = lease.info.leaseTimeout
         self.time_at_last_poke = time()
@@ -176,6 +186,11 @@ class VMImport:
         image_file.close()
 
         self.vim.invoke('HttpNfcLeaseComplete', _this=lease.mo_ref)
+
+        # Flip this vm to a template
+        self.log.debug("Marking newly created VM as a template")
+        self.vim.invoke('MarkAsTemplate', _this=lease.info.entity)
+
 
         self.vim.logout()
 
@@ -255,3 +270,32 @@ class VMImport:
         disk_spec.operation = operation.add
 
         return disk_spec
+
+    def create_cdrom(self, datastore):
+        # This creates what is essentially a virtual CDROM drive with no disk in it
+        # Adding this greatly simplifies the process of adding a custom ISO via deltacloud
+        connectable = self.vim.create_object('VirtualDeviceConnectInfo')
+        connectable.allowGuestControl = True
+        connectable.connected = True
+        connectable.startConnected = True
+        #connectable.status = None
+
+        backing = self.vim.create_object('VirtualCdromIsoBackingInfo')
+        backing.datastore = None
+        backing.fileName = '[%s]' % datastore.summary.name
+
+        cdrom = self.vim.create_object('VirtualCdrom')
+        cdrom.connectable = connectable
+        cdrom.backing = backing
+        # 201 is the second built in IDE controller
+        cdrom.controllerKey = 201
+        cdrom.key = 10
+        cdrom.unitNumber = 0
+
+        cdrom_spec = self.vim.create_object('VirtualDeviceConfigSpec')
+        cdrom_spec.fileOperation = None
+        cdrom_spec.device = cdrom
+        operation = self.vim.create_object('VirtualDeviceConfigSpecOperation')
+        cdrom_spec.operation = operation.add
+
+        return cdrom_spec
