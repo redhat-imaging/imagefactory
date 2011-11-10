@@ -94,10 +94,11 @@ class ImageWarehouse(object):
             headers['content-type'] = content_type
             response_headers, response = self.http.request(url, method, body, headers=headers)
             status = int(response_headers["status"])
+            # Log additional detail if the HTTP resonse code is abnormal
+            # Cannot raise an exception here as we occasionally _expect_ a 500 from iwhd
             if(399 < status < 600):
-                raise Exception("Image Warehouse returned status (%d) with message: %s" % (status, response))
-            else:
-                return (response_headers, response)
+                self.log.debug("Image Warehouse returned status (%d) with message: %s" % (status, response))
+            return (response_headers, response)
         except Exception, e:
             raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
 
