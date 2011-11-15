@@ -484,6 +484,10 @@ class Fedora_ec2_Builder(BaseBuilder):
         # not needed in fedora but unfortunately needed elsewhere
         pass
 
+    def ebs_pre_shapshot_tasks(self, guestaddr):
+        # not needed in Fedora but needed in current RHEL AMIs to make key injection work
+        pass
+
     def terminate_instance(self, instance):
         # boto 1.9 claims a terminate() method but does not implement it
         # boto 2.0 throws an exception if you attempt to stop() an S3 backed instance
@@ -542,18 +546,29 @@ class Fedora_ec2_Builder(BaseBuilder):
             self.status="FAILED"
             raise ImageFactoryException("No available JEOS for desired OS, verison combination")
 
-        instance_type='m1.large'
-        if self.tdlobj.arch == "i386":
-            instance_type='m1.small'
-
         # These are the region details for the region we are building in (which may be different from the target)
         build_region_conf = self.ec2_region_details[build_region]
 
-        self.log.debug("Starting ami %s with instance_type %s" % (ami_id, instance_type))
 
         # Note that this connection may be to a region other than the target
         ec2region = boto.ec2.get_region(build_region_conf['host'], aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key)
         conn = ec2region.connect(aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key)
+
+        # Verify that AMI actually exists - err out if not
+        # Extract AMI type - "ebs" or "instance-store" (S3)
+        # If build_region != provider (meaning we are not building in our target region)
+        #  if type == ebs throw an error - EBS builds must be in the target region/provider
+        amis = conn.get_all_images([ ami_id ])
+        ami = amis[0]
+        if (build_region != provider) and (ami.root_device_type == "ebs"):
+            self.log.error("EBS JEOS image exists in us-east-1 but not in target region (%s)" % (provider))
+            raise ImageFactoryException("No EBS JEOS image for region (%s) - aborting" % (provider))
+
+        instance_type='m1.large'
+        if self.tdlobj.arch == "i386":
+            instance_type='m1.small'
+        if ami.root_device_type == "ebs":
+            instance_type='t1.micro'
 
         # Create a use-once SSH-able security group
         factory_security_group_name = "imagefactory-%s" % (self.new_image_id, )
@@ -572,6 +587,7 @@ class Fedora_ec2_Builder(BaseBuilder):
         key_file=key_file_object.name
 
         # Now launch it
+        self.log.debug("Starting ami %s with instance_type %s" % (ami_id, instance_type))
         reservation = conn.run_instances(ami_id, instance_type=instance_type, key_name=key_name, security_groups = [ factory_security_group_name ])
 
         if len(reservation.instances) != 1:
@@ -608,8 +624,10 @@ class Fedora_ec2_Builder(BaseBuilder):
             self.guest.guest_execute_command(guestaddr, "killall -9 updatedb || /bin/true")
             self.log.debug("Done")
 
-            # Different OSes need different steps here
-            self.install_euca_tools(guestaddr)
+            if ami.root_device_type == "instance-store":
+                # Different OSes need different steps here
+                # Only needed for S3 images
+                self.install_euca_tools(guestaddr)
 
             self.log.debug("Customizing guest: %s" % (guestaddr))
             self.guest.mkdir_p(self.guest.icicle_tmp)
@@ -624,75 +642,109 @@ class Fedora_ec2_Builder(BaseBuilder):
             self.guest.guest_execute_command(guestaddr, "[ -f /etc/init.d/firstboot ] && /sbin/chkconfig firstboot off || /bin/true")
             self.log.debug("De-activation complete")
 
-            ec2cert =  "/etc/pki/imagefactory/cert-ec2.pem"
+            new_ami_id = None
+            image_name = str(self.tdlobj.name)
+            image_desc = "%s - %s" % (asctime(localtime()), self.tdlobj.description)
 
-            # This is needed for uploading and registration
-            # Note that it is excluded from the final image
-            self.log.debug("Uploading cert material")
-            self.guest.guest_live_upload(guestaddr, self.ec2_cert_file, "/tmp")
-            self.guest.guest_live_upload(guestaddr, self.ec2_key_file, "/tmp")
-            self.guest.guest_live_upload(guestaddr, ec2cert, "/tmp")
-            self.log.debug("Cert upload complete")
+            if ami.root_device_type == "instance-store":
+                # This is an S3 image so we snapshot to another S3 image using euca-bundle-vol and
+                # associated tools
+                ec2cert =  "/etc/pki/imagefactory/cert-ec2.pem"
 
-            # Some local variables to make the calls below look a little cleaner
-            ec2_uid = self.ec2_user_id
-            arch = self.tdlobj.arch
-            # AKI is set above
-            uuid = self.new_image_id
+                # This is needed for uploading and registration
+                # Note that it is excluded from the final image
+                self.log.debug("Uploading cert material")
+                self.guest.guest_live_upload(guestaddr, self.ec2_cert_file, "/tmp")
+                self.guest.guest_live_upload(guestaddr, self.ec2_key_file, "/tmp")
+                self.guest.guest_live_upload(guestaddr, ec2cert, "/tmp")
+                self.log.debug("Cert upload complete")
 
-            # We exclude /mnt /tmp and /root/.ssh to avoid embedding our utility key into the image
-            command = "euca-bundle-vol -c /tmp/%s -k /tmp/%s -u %s -e /mnt,/tmp,/root/.ssh --arch %s -d /mnt/bundles --kernel %s -p %s -s 10240 --ec2cert /tmp/cert-ec2.pem --fstab /etc/fstab -v /" % (os.path.basename(self.ec2_cert_file), os.path.basename(self.ec2_key_file), ec2_uid, arch, aki, uuid)
-            self.log.debug("Executing bundle vol command: %s" % (command))
-            stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, command)
-            self.log.debug("Bundle output: %s" % (stdout))
+                # Some local variables to make the calls below look a little cleaner
+                ec2_uid = self.ec2_user_id
+                arch = self.tdlobj.arch
+                # AKI is set above
+                uuid = self.new_image_id
 
-            # Now, ensure we have an appropriate bucket to receive this image
-            # TODO: This is another copy - make it a function soon please
-            bucket= "imagefactory-" + region + "-" + self.ec2_user_id
+                # We exclude /mnt /tmp and /root/.ssh to avoid embedding our utility key into the image
+                command = "euca-bundle-vol -c /tmp/%s -k /tmp/%s -u %s -e /mnt,/tmp,/root/.ssh --arch %s -d /mnt/bundles --kernel %s -p %s -s 10240 --ec2cert /tmp/cert-ec2.pem --fstab /etc/fstab -v /" % (os.path.basename(self.ec2_cert_file), os.path.basename(self.ec2_key_file), ec2_uid, arch, aki, uuid)
+                self.log.debug("Executing bundle vol command: %s" % (command))
+                stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, command)
+                self.log.debug("Bundle output: %s" % (stdout))
 
-            sconn = S3Connection(self.ec2_access_key, self.ec2_secret_key)
-            try:
-                sconn.create_bucket(bucket, location=boto_loc)
-            except S3CreateError as buckerr:
-                if buckerr.error_code == "BucketAlreadyOwnedByYou":
-                    # Expected behavior after first push - not an error
-                    pass
-                else:
-                    raise
-            # TODO: End of copy
+                # Now, ensure we have an appropriate bucket to receive this image
+                # TODO: This is another copy - make it a function soon please
+                bucket= "imagefactory-" + region + "-" + self.ec2_user_id
 
-            # TODO: We cannot timeout on any of the three commands below - can we fix that?
-            manifest = "/mnt/bundles/%s.manifest.xml" % (uuid)
+                sconn = S3Connection(self.ec2_access_key, self.ec2_secret_key)
+                try:
+                    sconn.create_bucket(bucket, location=boto_loc)
+                except S3CreateError as buckerr:
+                    if buckerr.error_code == "BucketAlreadyOwnedByYou":
+                        # Expected behavior after first push - not an error
+                        pass
+                    else:
+                        raise
+                # TODO: End of copy
 
-            # Unfortunately, for some OS versions we need to correct the manifest
-            self.correct_remote_manifest(guestaddr, manifest)
+                # TODO: We cannot timeout on any of the three commands below - can we fix that?
+                manifest = "/mnt/bundles/%s.manifest.xml" % (uuid)
 
-            command = ['euca-upload-bundle', '-b', bucket, '-m', manifest,
-                       '--ec2cert', '/tmp/cert-ec2.pem',
-                       '-a', self.ec2_access_key, '-s', self.ec2_secret_key,
-                       '-U', upload_url]
-            command_log = map(replace, command)
-            self.log.debug("Executing upload bundle command: %s" % (command_log))
-            stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, ' '.join(command))
-            self.log.debug("Upload output: %s" % (stdout))
+                # Unfortunately, for some OS versions we need to correct the manifest
+                self.correct_remote_manifest(guestaddr, manifest)
 
-            manifest_s3_loc = "%s/%s.manifest.xml" % (bucket, uuid)
+                command = ['euca-upload-bundle', '-b', bucket, '-m', manifest,
+                           '--ec2cert', '/tmp/cert-ec2.pem',
+                           '-a', self.ec2_access_key, '-s', self.ec2_secret_key,
+                           '-U', upload_url]
+                command_log = map(replace, command)
+                self.log.debug("Executing upload bundle command: %s" % (command_log))
+                stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, ' '.join(command))
+                self.log.debug("Upload output: %s" % (stdout))
 
-            command = ['euca-register', '-U', register_url,
-                       '-A', self.ec2_access_key, '-S', self.ec2_secret_key,
-                       manifest_s3_loc]
-            command_log = map(replace, command)
-            self.log.debug("Executing register command: %s" % (command_log))
-            stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr,
-                                                                       ' '.join(command))
-            self.log.debug("Register output: %s" % (stdout))
+                manifest_s3_loc = "%s/%s.manifest.xml" % (bucket, uuid)
 
-            m = re.match(".*(ami-[a-fA-F0-9]+)", stdout)
-            ami_id = m.group(1)
-            self.log.debug("Extracted AMI ID: %s " % (ami_id))
+                command = ['euca-register', '-U', register_url,
+                           '-A', self.ec2_access_key, '-S', self.ec2_secret_key,
+                           #'-n', image_name, '-d', image_desc,
+                           manifest_s3_loc]
+                command_log = map(replace, command)
+                self.log.debug("Executing register command: %s" % (command_log))
+                stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr,
+                                                                           ' '.join(command))
+                self.log.debug("Register output: %s" % (stdout))
+
+                m = re.match(".*(ami-[a-fA-F0-9]+)", stdout)
+                new_ami_id = m.group(1)
+                self.log.debug("Extracted AMI ID: %s " % (new_ami_id))
+                ### End S3 snapshot code
+            else:
+                self.log.debug("Performing image prep tasks for EBS backed images")
+                self.ebs_pre_shapshot_tasks(guestaddr)
+                self.log.debug("Creating a new EBS backed image from our running EBS instance")
+                new_ami_id = conn.create_image(self.instance.id, image_name, image_desc)
+                self.log.debug("EUCA creat_image call returned AMI ID: %s" % (new_ami_id))
+                self.log.debug("Now waiting for AMI to become available")
+                # As with launching an instance we have seen occasional issues when trying to query this AMI right
+                # away - give it a moment to settle
+                sleep(10)
+                new_amis = conn.get_all_images([ new_ami_id ])
+                new_ami = new_amis[0]
+                timeout = 120
+                interval = 10
+                for i in range(timeout):
+                    new_ami.update()
+                    if new_ami.state == "available":
+                        break
+                    elif new_ami.state == "failed":
+                        raise ImageFactoryException("Amazon reports EBS image creation failed")
+                    self.log.debug("AMI status (%s) - waiting for 'available' - [%d of %d seconds elapsed]" % (new_ami.state, i * interval, timeout * interval))
+                    sleep(interval)
+
+            if not new_ami_id:
+                raise ImageFactoryException("Failed to produce an AMI ID")
 
             icicle_id = self.warehouse.store_icicle(self.output_descriptor)
-            metadata = dict(target_image=target_image_id, provider=provider, icicle=icicle_id, target_identifier=ami_id)
+            metadata = dict(target_image=target_image_id, provider=provider, icicle=icicle_id, target_identifier=new_ami_id)
             self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
         finally:
             self.log.debug("Terminating EC2 instance and deleting temp security group")
