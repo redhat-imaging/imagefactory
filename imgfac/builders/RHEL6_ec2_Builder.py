@@ -46,6 +46,13 @@ class RHEL6_ec2_Builder(Fedora_ec2_Builder):
         # We don't really care about the name so just force uniqueness
         self.guest.name = self.guest.name + "-" + self.new_image_id
 
+    def ebs_pre_shapshot_tasks(self, guestaddr):
+        # The RHEL JEOS AMIs will refuse to inject the dynamic EC2 key if authorized_keys already exists
+        # We have to remove it here.
+        # NOTE: This means it is not possible for users to add a static authorized key during the build via a file or RPM
+        self.log.debug("Removing existing authorized_keys file to allow key injection on RHEL reboot")
+        self.guest.guest_execute_command(guestaddr, "[ -f /root/.ssh/authorized_keys ] && rm -f /root/.ssh/authorized_keys")
+
     def install_euca_tools(self, guestaddr):
         # For RHEL6 we need to enable EPEL, install, then disable EPEL
         # TODO: This depends on external infra which is bad, and trusts external SW, which may be bad
