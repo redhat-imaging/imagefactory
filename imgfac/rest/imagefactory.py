@@ -116,6 +116,8 @@ To import an image, supply target_name, provider_name, target_identifier, and im
     if(template and targets):
         log.debug("Starting 'build' process...")
         try:
+            if build_id and not image_id:
+                raise Exception("The parameter build_id must be used with a specific image_id...")
             jobs = BuildDispatcher().build_image_for_targets(image_id, build_id, template, targets.split(','))
             if(image_id):
                 base_url = request.url
