@@ -106,6 +106,7 @@ To import an image, supply target_name, provider_name, target_identifier, and im
     # build image arguments
     template = _request_data.get('template')
     targets = _request_data.get('targets')
+    build_id = _request_data.get('build_id') #optional
     # import image arguments
     target_name = _request_data.get('target_name')
     provider_name = _request_data.get('provider_name')
@@ -115,7 +116,9 @@ To import an image, supply target_name, provider_name, target_identifier, and im
     if(template and targets):
         log.debug("Starting 'build' process...")
         try:
-            jobs = BuildDispatcher().build_image_for_targets(image_id, None, template, targets.split(','))
+            if build_id and not image_id:
+                raise Exception("The parameter build_id must be used with a specific image_id...")
+            jobs = BuildDispatcher().build_image_for_targets(image_id, build_id, template, targets.split(','))
             if(image_id):
                 base_url = request.url
             else:
@@ -123,7 +126,8 @@ To import an image, supply target_name, provider_name, target_identifier, and im
                 base_url = '%s/%s' % (request.url, image_id)
 
             image = {'_type':'image','id':image_id,'href':base_url}
-            build_id = jobs[0].build_id
+            if not build_id:
+                build_id = jobs[0].build_id
             build = {'_type':'build',
                         'id':build_id,
                         'href':'%s/builds/%s' % (base_url, build_id)}
