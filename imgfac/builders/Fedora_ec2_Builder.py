@@ -744,7 +744,7 @@ class Fedora_ec2_Builder(BaseBuilder):
                 raise ImageFactoryException("Failed to produce an AMI ID")
 
             icicle_id = self.warehouse.store_icicle(self.output_descriptor)
-            metadata = dict(target_image=target_image_id, provider=provider, icicle=icicle_id, target_identifier=new_ami_id)
+            metadata = dict(target_image=target_image_id, provider=provider, icicle=icicle_id, target_identifier=new_ami_id, provider_account_identifier=self.ec2_access_key)
             self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
         finally:
             self.log.debug("Terminating EC2 instance and deleting temp security group")
@@ -1059,7 +1059,7 @@ class Fedora_ec2_Builder(BaseBuilder):
                     volume.delete()
 
         # TODO: Add back-reference to ICICLE from base image object
-        metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=ami_id)
+        metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=ami_id, provider_account_identifier=self.ec2_access_key)
         self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
 
         self.log.debug("Fedora_ec2_Builder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), target_image_id, self.new_image_id, str(metadata)))
@@ -1166,7 +1166,7 @@ class Fedora_ec2_Builder(BaseBuilder):
         # Use new warehouse wrapper to do everything
         # TODO: Generate and store ICICLE
         self.status = "PUSHING"
-        metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=ami_id)
+        metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=ami_id, provider_account_identifier=self.ec2_access_key)
         self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
 
         self.log.debug("Fedora_ec2_Builder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), target_image_id, self.new_image_id, str(metadata)))
