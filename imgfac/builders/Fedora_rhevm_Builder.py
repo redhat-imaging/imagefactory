@@ -287,7 +287,7 @@ class Fedora_rhevm_Builder(BaseBuilder):
         self.log.debug("Extracted RHEVM UUID: %s " % (rhevm_uuid))
 
         # Create the provdier image
-        metadata = dict(target_image=target_image_id, provider=provider_data['name'], icicle="none", target_identifier=rhevm_uuid)
+        metadata = dict(target_image=target_image_id, provider=provider_data['name'], icicle="none", target_identifier=rhevm_uuid, provider_account_identifier=self.username)
         self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
         self.percent_complete = 100
 

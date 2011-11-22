@@ -221,7 +221,7 @@ class Fedora_vsphere_Builder(BaseBuilder):
                        guest_id='otherLinux64Guest', imagefilename=input_image)
 
         # Create the provdier image
-        metadata = dict(target_image=target_image_id, provider=provider_data['name'], icicle="none", target_identifier=vm_name)
+        metadata = dict(target_image=target_image_id, provider=provider_data['name'], icicle="none", target_identifier=vm_name, provider_account_identifier=self.username)
         self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
         self.percent_complete = 100
 
