@@ -203,7 +203,7 @@ class Fedora_rackspace_Builder(BaseBuilder):
 
             self.log.debug("Storing Rackspace image ID (%s) and details in Warehouse" % (snap_image.id))
             icicle_id = self.warehouse.store_icicle(self.output_descriptor)
-            metadata = dict(target_image=target_image_id, provider=provider, icicle=icicle_id, target_identifier=snap_image.id)
+            metadata = dict(target_image=target_image_id, provider=provider, icicle=icicle_id, target_identifier=snap_image.id, provider_account_identifier=rack_username)
             self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
 
         finally:
