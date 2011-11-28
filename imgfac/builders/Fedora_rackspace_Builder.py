@@ -108,6 +108,7 @@ class Fedora_rackspace_Builder(BaseBuilder):
         doc = libxml2.parseDoc(credentials)
 
         rack_username = doc.xpathEval("//provider_credentials/rackspace_credentials/username")[0].content
+        self.provider_account_identifier = rack_username
         rack_access_key = doc.xpathEval("//provider_credentials/rackspace_credentials/password")[0].content
 
         cloudservers = CloudServers(rack_username, rack_access_key)

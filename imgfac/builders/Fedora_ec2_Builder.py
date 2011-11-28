@@ -802,6 +802,7 @@ class Fedora_ec2_Builder(BaseBuilder):
 
         self.ec2_user_id = self._ec2_get_xml_node(doc, "account_number")
         self.ec2_access_key = self._ec2_get_xml_node(doc, "access_key")
+        self.provider_account_identifier = self.ec2_access_key
         self.ec2_secret_key = self._ec2_get_xml_node(doc, "secret_access_key")
 
         # Support both "key" and "x509_private" as element names
