@@ -31,6 +31,12 @@ class BuildJob(object):
     new_image_id = props.prop("_new_image_id" "The image property.")
     operation = props.prop("_operation", "Operation of the builder. ie 'build' or 'push'")
     builder_thread = props.prop("_builder_thread", "Thread object doing the build or push")
+    target_image_id = props.prop("_target_image_id", "UUID of the target image being pushed.")
+
+    @property
+    def provider_account_identifier(self):
+        """The property provider_account_identifier"""
+        return self._builder.provider_account_identifier
 
     def __init__(self, template, target, image_id = '', build_id = ''):
         super(BuildJob, self).__init__()
@@ -45,6 +51,8 @@ class BuildJob(object):
         self.status = "New"
         self.percent_complete = 0
         self._watcher = None
+        self.target_image_id = None
+        self._provider_account_identifier = None
 
         self._builder = self._get_builder()
         self._builder.delegate = self
@@ -62,6 +70,7 @@ class BuildJob(object):
     def push_image(self, target_image_id, provider, credentials, watcher=None):
         self._watcher = watcher
         self.provider = provider
+        self.target_image_id = target_image_id
         kwargs = dict(target_image_id=target_image_id, provider=provider, credentials=credentials)
         self._start_builder_thread("push_image", arg_dict=kwargs)
         self.operation = 'push'

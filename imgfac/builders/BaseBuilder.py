@@ -35,6 +35,7 @@ class BaseBuilder(object):
     target = props.prop("_target", "The target cloud for which to build this image.")
     target_id = props.prop("_target_id", "The identifier provided by the target.")
     provider = props.prop("_provider", "The a string name of the target region or provider.")
+    provider_account_identifier = props.prop("_provider_account_identifier", "Username used with provider.")
     new_image_id = props.prop("_new_image_id", "The uuid of the newly created target or provider image.")
     image = props.prop("_image", "The image file path.")
     output_descriptor = props.prop("_output_descriptor", "An XML string describing the completed image, aka: CDL or ICICLE.")
@@ -117,6 +118,7 @@ class BaseBuilder(object):
         self.delegate = None
         self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
         self.config_block = config_block
+        self.provider_account_identifier = None
 
     # Make instances callable for passing to thread objects
     def __call__(self, *args, **kwargs):

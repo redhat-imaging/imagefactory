@@ -304,6 +304,7 @@ class Fedora_rhevm_Builder(BaseBuilder):
                 self.username = provider_data['username']
             except KeyError:
                 raise ImageFactoryException("No username specified in config file or in push call")
+        self.provider_account_identifier = self.username
 
         _passnodes = doc.xpathEval("//provider_credentials/%s_credentials/password" % (self.target))
         if len(_passnodes) > 0:

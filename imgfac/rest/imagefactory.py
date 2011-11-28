@@ -234,6 +234,11 @@ def list_builders():
                          'target':job.target,
                          '_type':'builder',
                          'id':builder_id,
+                         'image_id':job.image_id,
+                         'build_id':job.build_id,
+                         'target_image_id':job.target_image_id,
+                         'provider':job.provider,
+                         'provider_account_identifier':job.provider_account_identifier,
                          'href':'%s/%s' % (request.url, builder_id)})
 
     collection['builders'] = builders
@@ -264,6 +269,11 @@ def builder_detail(builder_id=None, image_id=None, build_id=None, target_image_i
                 'target':job.target,
                 'href':request.url,
                 'id':_id,
+                'image_id':job.image_id,
+                'build_id':job.build_id,
+                'target_image_id':job.target_image_id,
+                'provider':job.provider,
+                'provider_account_identifier':job.provider_account_identifier,
                 '_type':_type}
     except KeyError as e:
         raise HTTPResponse(status=404, output="No builder found with uuid %s" % _id)
