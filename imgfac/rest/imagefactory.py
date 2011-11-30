@@ -75,7 +75,6 @@ def _request_data_for_content_type(content_type):
         return new_dict
 
     try:
-        log.info("Request recieved with Content-Type (%s)" % content_type)
         if(content_type == 'application/json'):
             keys = request.json.keys()
             if(len(keys) == 1):
@@ -85,7 +84,6 @@ def _request_data_for_content_type(content_type):
         else:
             request_data = request.forms
 
-        log.debug('returning %s' % request_data)
         return dencode(request_data)
     except Exception as e:
         log.exception(e)
@@ -114,7 +112,6 @@ To import an image, supply target_name, provider_name, target_identifier, and im
     image_descriptor = _request_data.get('image_descriptor')
 
     if(template and targets):
-        log.debug("Starting 'build' process...")
         try:
             if build_id and not image_id:
                 raise Exception("The parameter build_id must be used with a specific image_id...")
@@ -147,7 +144,6 @@ To import an image, supply target_name, provider_name, target_identifier, and im
             raise HTTPResponse(status=500, output=e)
 
     elif(target_name and provider_name and target_identifier and image_descriptor):
-        log.debug("Starting 'import' process...")
         image_id = _request_data.get('image_id')
         build_id = _request_data.get('build_id')
         try:
@@ -188,7 +184,6 @@ To import an image, supply target_name, provider_name, target_identifier, and im
 @rest_api.post('/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id/provider_images')
 @oauth_protect
 def push_image(image_id, build_id, target_image_id):
-    log.debug("Starting 'push' process...")
     try:
         _request_data = _request_data_for_content_type(request.headers.get('Content-Type'))
         provider = _request_data['provider']
