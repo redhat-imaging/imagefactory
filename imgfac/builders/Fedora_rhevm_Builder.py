@@ -129,6 +129,14 @@ class Fedora_rhevm_Builder(BaseBuilder):
         # Add the cloud-info file
         self.modify_oz_filesystem()
 
+        # Finally, if our format is qcow2, do the transformation here
+        if ("rhevm_image_format" in self.app_config) and  (self.app_config["rhevm_image_format"] == "qcow2"):
+            self.log.debug("Converting RAW image to compressed qcow2 format")
+            qemu_img_cmd = [ "qemu-img", "convert", "-c", "-O", "qcow2", guest.diskimage, guest.diskimage + ".tmp.qcow2" ]
+            (stdout, stderr, retcode) = subprocess_check_output(qemu_img_cmd)
+            os.unlink(guest.diskimage)
+            os.rename(guest.diskimage + ".tmp.qcow2", guest.diskimage)
+
         if (self.app_config['warehouse']):
             self.log.debug("Storing Fedora image at %s..." % (self.app_config['warehouse'], ))
             # TODO: Revisit target_parameters for different providers

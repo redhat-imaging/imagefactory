@@ -23,6 +23,7 @@ Requires: VMDKstream
 Requires: python-suds >= 0.4.1
 Requires: python-paste-deploy
 Requires: python-oauth2
+Requires: qemu-img
 Requires(post): chkconfig
 Requires(preun): chkconfig
 # This is for /sbin/service
