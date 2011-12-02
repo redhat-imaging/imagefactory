@@ -131,8 +131,8 @@ class MockConsole(ConsoleHandler):
         if(str(self.agent_addr).startswith(agent.getName())):
             self.agent = agent
             self.factory = agent.query("{class:ImageFactory, package:'com.redhat.imagefactory'}")[0]
-            self.build_adaptor_addr_success = self.factory.build_image("", "", "<template></template>", ["mock"])["build_adaptors"][0]
             self.build_adaptor_addr_fail = self.factory.build_image("", "", "<template>FAIL</template>", ["mock"])["build_adaptors"][0]
+            self.build_adaptor_addr_success = self.factory.build_image("", "", "<template></template>", ["mock"])["build_adaptors"][0]
 
             self.image_factory_states = self.factory.instance_states("ImageFactory")
             self.build_adaptor_states = self.factory.instance_states("BuildAdaptor")

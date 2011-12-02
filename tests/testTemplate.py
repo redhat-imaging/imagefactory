@@ -42,7 +42,7 @@ class testTemplate(unittest.TestCase):
         self.assertEqual(self.template_xml, template.xml)
         self.assertIsNone(template.url)
 
-    def testTemplateFramImageID(self):
+    def testTemplateFromImageID(self):
         template_id = self.warehouse.store_template(self.template_xml)
         template = Template(template_id)
         target = "mock"
