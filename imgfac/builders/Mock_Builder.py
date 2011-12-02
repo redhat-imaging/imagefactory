@@ -21,6 +21,7 @@ import httplib2
 import os
 import os.path
 import pwd
+import libxml2
 from threading import Thread
 from IBuilder import IBuilder
 from BaseBuilder import BaseBuilder
@@ -84,9 +85,11 @@ class Mock_Builder(BaseBuilder):
             self.store_image(build_id)
 
     def push_image(self, target_image_id, provider, credentials):
-        self.status = "INITIALIZING"
+        self.status = "PUSHING"
         try:
-            self.status = "PENDING"
+            doc = libxml2.parseDoc(credentials)
+            mock_username = doc.xpathEval("//provider_credentials/mock_credentials/username")[0].content
+            self.provider_account_identifier = mock_username
             image, image_metadata = self.warehouse.target_image_with_id(target_image_id, metadata_keys=("icicle", ))
             # write the provider image out to the filesystem
             image_path = "%s/deltacloud-%s/%s/images/%s.yml" % (self.app_config['imgdir'], pwd.getpwuid(os.getuid())[0], provider, self.new_image_id)
@@ -98,9 +101,8 @@ class Mock_Builder(BaseBuilder):
                 image_file.write(image)
                 image_file.close()
             # push the provider image up to the warehouse
-            metadata = dict(target_image=target_image_id, provider=provider, icicle=image_metadata["icicle"], target_identifier="Mock_%s_%s" % (provider, self.new_image_id))
+            metadata = dict(provider_account_identifier=mock_username, target_image=target_image_id, provider=provider, icicle=image_metadata["icicle"], target_identifier="Mock_%s_%s" % (provider, self.new_image_id))
             self.warehouse.create_provider_image(self.new_image_id, txt=image, metadata=metadata)
-            self.status = "FINISHING"
             self.log.debug("Mock_Builder instance %s pushed image with uuid %s to warehouse (%s/%s) and set metadata: %s" % (id(self), target_image_id, self.warehouse.url, self.warehouse.provider_image_bucket, metadata))
             self.status = "COMPLETED"
         except Exception, e:
