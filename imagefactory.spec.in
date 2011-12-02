@@ -13,7 +13,7 @@ Requires: python-qmf
 Requires: python-pycurl
 Requires: python-libguestfs
 Requires: python-zope-interface
-Requires: python-boto
+Requires: python-boto >= 2.0
 Requires: libxml2-python
 Requires: python-httplib2
 Requires: python-argparse
