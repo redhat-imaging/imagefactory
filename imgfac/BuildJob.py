@@ -104,8 +104,8 @@ class BuildJob(object):
         if self.status == "COMPLETED" and self._watcher:
             self._watcher.completed()
             self._watcher = None
-            if(old_status == ('BUILDING' or 'PUSHING')):
-                ReservationManager().exit_queue(self._queue_for_builder(builder, new_status))
+        if((new_status == ('COMPLETED' or 'FAILED')) and (old_status == ('BUILDING' or 'PUSHING'))):
+            ReservationManager().exit_queue(self._queue_for_builder(builder, new_status))
 
     def builder_did_update_percentage(self, builder, original_percentage, new_percentage):
         self.log.debug("Builder (%s) changed percent complete from %s to %s" % (builder.new_image_id, original_percentage, new_percentage))
