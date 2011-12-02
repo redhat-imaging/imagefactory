@@ -201,7 +201,9 @@ class ReservationManager(object):
 
         @param name - The name of the queue to enter. See the queues property of ReservationManager.
         """
+        self.log.debug("ENTERING queue: (%s)" % (name))
         self._queue_with_name(name).acquire()
+        self.log.debug("SUCCESS ENTERING queue: (%s)" % (name))
 
     def exit_queue(self, name=None):
         """
@@ -211,4 +213,6 @@ class ReservationManager(object):
 
         @param name - The name of the queue to enter. See the queues property of ReservationManager.
         """
+        self.log.debug("EXITING queue: (%s)" % (name))
         self._queue_with_name(name).release()
+        self.log.debug("SUCCESS EXITING queue: (%s)" % (name))
