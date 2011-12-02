@@ -35,7 +35,7 @@ class BuildDispatcher(Singleton):
         self.job_registry = JobRegistry()
 
     def import_image(self, image_id, build_id, target_identifier, image_desc, target, provider):
-        image_id = self._ensure_image_with_template(image_id, image_desc, Template('<template></template>'))
+        image_id = self._ensure_image_with_template(image_id, Template('<template></template>'), image_desc)
         build_id = self._ensure_build(image_id, build_id)
 
         target_image_id = self._ensure_target_image(build_id, target)
@@ -129,6 +129,8 @@ class BuildDispatcher(Singleton):
         return nodes[0].content
 
     def _ensure_image_with_template(self, image_id, template, image_desc=None):
+        if not (type(template) == Template):
+            template = Template(template)
         if not image_desc:
             name = self._xml_node(template.xml, '/template/name')
             if name:
