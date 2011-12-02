@@ -15,6 +15,8 @@
 import logging
 import os
 import os.path
+from imgfac.ApplicationConfiguration import ApplicationConfiguration
+from threading import BoundedSemaphore
 
 class ReservationManager(object):
     """ TODO: Docstring for ReservationManager """
@@ -47,6 +49,11 @@ class ReservationManager(object):
         for key in self._mounts.keys():
             reservations.update(self._mounts[key]['reservations'])
         return reservations
+
+    @property
+    def queues(self):
+        """The property queues"""
+        return self._queues.keys()
     ### END Properties
 
     def __new__(cls, *p, **k):
@@ -57,6 +64,9 @@ class ReservationManager(object):
             i.default_minimum = k.get('default_minimum',
                     p[0] if(len(p) > 0) else cls.DEFAULT_MINIMUM)
             i._mounts = dict()
+            i.appconfig = ApplicationConfiguration().configuration
+            i._queues = dict(local=BoundedSemaphore(i.appconfig.get('max_concurrent_local_sessions', 1)),
+                             ec2=BoundedSemaphore(i.appconfig.get('max_concurrent_ec2_sessions', 1)))
             cls.instance = i
         return cls.instance
 
@@ -169,3 +179,36 @@ class ReservationManager(object):
             return available - (remaining if remaining > 0 else 0)
         else:
             return None
+
+    def _queue_with_name(self, name=None):
+        """
+        TODO: Docstring for _queue_with_name
+
+        @param name TODO
+
+        @return TODO
+        """
+        if(name):
+            return self._queues[name]
+        else:
+            return self._queues['local']
+
+    def enter_queue(self, name=None):
+        """
+        Tries to acquire a semaphore for the named queue. Blocks until a slot opens up.
+        If no name is given or a queue for the given name is not found, the default 'local' 
+        queue will be used.
+
+        @param name - The name of the queue to enter. See the queues property of ReservationManager.
+        """
+        self._queue_with_name(name).acquire()
+
+    def exit_queue(self, name=None):
+        """
+        Releases semaphore for the named queue. This opens up a slot for waiting members of the queue.
+        If no name is given or a queue for the given name is not found, the default 'local' 
+        queue will be used.
+
+        @param name - The name of the queue to enter. See the queues property of ReservationManager.
+        """
+        self._queue_with_name(name).release()

@@ -15,7 +15,9 @@
 import unittest
 import logging
 import os
+import time
 from imgfac.ReservationManager import ReservationManager
+from threading import Thread, Semaphore
 
 
 class testReservationManager(unittest.TestCase):
@@ -122,6 +124,47 @@ class testReservationManager(unittest.TestCase):
             self.assertEqual(now_available, (available - size))
         else:
             self.fail('Failed to reserve space...')
+
+    def testJobQueue(self):
+        """
+        TODO: Docstring for testJobQueue
+        """
+        job_number = 3
+        job_threads = []
+        job_output = []
+        for i in range(job_number):
+            for name in ReservationManager().queues:
+                job_threads.append(MockJob(kwargs=dict(qname=name, position=i, output=job_output)))
+        for job in job_threads:
+            job.start()
+        for job in job_threads:
+            if job.isAlive():
+                job.join()
+        #self.log.info(job_output)
+        self.assertEqual((3 * job_number * len(ReservationManager().queues)), len(job_output))
+
+
+class MockJob(Thread):
+    """ TODO: Docstring for MockJob  """
+
+    def __init__(self, group=None, target=None, name=None, args=(), kwargs={}):
+        super(MockJob, self).__init__(group=None, target=None, name=None, args=(), kwargs={})
+        self.qname = kwargs['qname']
+        self.position = kwargs['position']
+        self.output = kwargs['output']
+
+    def run(self):
+        resmgr = ReservationManager()
+        str_args = (self.qname, self.position)
+        self.output.append('enter-%s-%d' % str_args)
+        resmgr.enter_queue(self.qname)
+        self.output.append('start-%s-%d' % str_args)
+        if(self.qname == 'local'):
+            time.sleep(4)
+        else:
+            time.sleep(1)
+        self.output.append('exit-%s-%d' % str_args)
+        resmgr.exit_queue(self.qname)
 
 
 if __name__ == '__main__':
