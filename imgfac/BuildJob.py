@@ -18,6 +18,8 @@ import props
 import sys
 import threading
 from imgfac.Template import Template
+from imgfac.ReservationManager import ReservationManager
+from imgfac.ApplicationConfiguration import ApplicationConfiguration
 
 class BuildJob(object):
 
@@ -43,6 +45,7 @@ class BuildJob(object):
 
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
 
+        self.appconfig = ApplicationConfiguration().configuration
         self.template = template if isinstance(template, Template) else Template(template)
         self.target = target
         self.image_id = image_id
@@ -78,12 +81,31 @@ class BuildJob(object):
     def abort(self):
         self._builder.abort()
 
+#### IBuilderDelegate methods ####
+    def _queue_for_builder(self, builder, new_status):
+        ec2 = builder.target == 'ec2'
+        upload = self.appconfig['ec2_build_style'] == 'upload'
+        ebs = self.appconfig['ec2_ami_type'] == 'ebs'
+        if(new_status == 'BUILDING'):
+            if((not ec2) or upload):
+                return 'local'
+        elif(new_status == 'PUSHING'):
+            if((ec2 and ebs and upload) or (ec2 and (not upload))):
+                return 'ec2'
+
+    def builder_will_update_status(self, builder, original_status, new_status):
+        if(new_status == ('BUILDING' or 'PUSHING')):
+            ReservationManager().enter_queue(self._queue_for_builder(builder, new_status))
+        return new_status
+
     def builder_did_update_status(self, builder, old_status, new_status):
         self.log.debug("Builder (%s) changed status from %s to %s" % (builder.new_image_id, old_status, new_status))
         self.status = new_status
         if self.status == "COMPLETED" and self._watcher:
             self._watcher.completed()
             self._watcher = None
+            if(old_status == ('BUILDING' or 'PUSHING')):
+                ReservationManager().exit_queue(self._queue_for_builder(builder, new_status))
 
     def builder_did_update_percentage(self, builder, original_percentage, new_percentage):
         self.log.debug("Builder (%s) changed percent complete from %s to %s" % (builder.new_image_id, original_percentage, new_percentage))
@@ -91,7 +113,7 @@ class BuildJob(object):
 
     def builder_did_fail(self, builder, failure_type, failure_info):
         self.log.debug("Builder (%s) reported BUILD FAILED: %s - %s" % (builder.new_image_id, failure_type, failure_info))
-        pass
+#### End Delegate methods ####
 
     def _get_builder(self):
         if self.target == "mock":
