@@ -139,6 +139,7 @@ class Fedora_ec2_Builder(BaseBuilder):
 
     def build_snapshot(self, build_id):
         # All we need do here is store the relevant bits in the Warehouse
+        self.status = "BUILDING"
         self.log.debug("Building Linux for non-upload cloud (%s)" % (self.target))
         self.image = "%s/placeholder-linux-image-%s" % (self.app_config['imgdir'], self.new_image_id)
         image_file = open(self.image, 'w')
