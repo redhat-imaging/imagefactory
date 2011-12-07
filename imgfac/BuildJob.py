@@ -82,20 +82,23 @@ class BuildJob(object):
         self._builder.abort()
 
 #### IBuilderDelegate methods ####
-    def _queue_for_builder(self, builder, new_status):
+    def _queue_for_builder(self, builder, status):
         ec2 = builder.target == 'ec2'
         upload = self.appconfig['ec2_build_style'] == 'upload'
         ebs = self.appconfig['ec2_ami_type'] == 'ebs'
-        if(new_status == 'BUILDING'):
+        if(status == 'BUILDING'):
             if((not ec2) or upload):
                 return 'local'
-        elif(new_status == 'PUSHING'):
+        elif(status == 'PUSHING'):
             if((ec2 and ebs and upload) or (ec2 and (not upload))):
                 return 'ec2'
+        return None
 
     def builder_will_update_status(self, builder, original_status, new_status):
         if(new_status == ('BUILDING' or 'PUSHING')):
-            ReservationManager().enter_queue(self._queue_for_builder(builder, new_status))
+            qname = self._queue_for_builder(builder, new_status)
+            self.log.debug("%s for %s about to enter %s queue..." % (builder.new_image_id, builder.target, qname))
+            ReservationManager().enter_queue(qname)
         return new_status
 
     def builder_did_update_status(self, builder, old_status, new_status):
@@ -105,7 +108,9 @@ class BuildJob(object):
             self._watcher.completed()
             self._watcher = None
         if((new_status == ('COMPLETED' or 'FAILED')) and (old_status == ('BUILDING' or 'PUSHING'))):
-            ReservationManager().exit_queue(self._queue_for_builder(builder, new_status))
+            qname = self._queue_for_builder(builder, old_status)
+            self.log.debug("%s for %s about to exit %s queue..." % (builder.new_image_id, builder.target, qname))
+            ReservationManager().exit_queue(qname)
 
     def builder_did_update_percentage(self, builder, original_percentage, new_percentage):
         self.log.debug("Builder (%s) changed percent complete from %s to %s" % (builder.new_image_id, original_percentage, new_percentage))
