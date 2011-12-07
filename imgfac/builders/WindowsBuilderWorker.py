@@ -132,13 +132,18 @@ class Threaded_create_instance(Thread):
 
 
 class WindowsBuilderWorker:
-    def __init__(self, tdl, credentials, target, proxy_ami_id):
+    def __init__(self, tdl, credentials, target, *args):
         self.tdl = libxml2.parseDoc(tdl.xml)
         self.target = target
         self.provider_user = credentials['userid']
         self.provider_key = credentials['api-key']
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        self.proxy_ami_id = proxy_ami_id
+        if len(args) == 1:
+            self.proxy_ami_id = args[0]
+        else:
+            self.proxy_ami_id = None
+            self.proxy_address = args[0]
+            self.proxy_password = args[1]
 
     def progress(self):
         sys.stdout.write('.')
@@ -146,21 +151,27 @@ class WindowsBuilderWorker:
        
     def create_provider_image(self):
         try:
-           ec2region = ec2.get_region(self.target['host'], aws_access_key_id=self.provider_user, aws_secret_access_key=self.provider_key)
-           self.boto = ec2region.connect(aws_access_key_id=self.provider_user, aws_secret_access_key=self.provider_key)
-           proxy = Threaded_create_instance(self.proxy_ami_id, image_id=self.target['host'], hwp_id='t1.micro', boto_connection=self.boto )
-           instance = Threaded_create_instance(ami_id=self.target[self.tdl.xpathEval("/template/os/arch")[0].content], image_id=self.target['host'], hwp_id='t1.micro', boto_connection=self.boto) 
-           
-           proxy.start()
-           instance.start()
+            ec2region = ec2.get_region(self.target['host'], aws_access_key_id=self.provider_user, aws_secret_access_key=self.provider_key)
+            self.boto = ec2region.connect(aws_access_key_id=self.provider_user, aws_secret_access_key=self.provider_key)
+            instance = Threaded_create_instance(ami_id=self.target[self.tdl.xpathEval("/template/os/arch")[0].content], image_id=self.target['host'], hwp_id='t1.micro', boto_connection=self.boto) 
+            if self.proxy_ami_id:
+                proxy = Threaded_create_instance(self.proxy_ami_id, image_id=self.target['host'], hwp_id='t1.micro', boto_connection=self.boto )
+                proxy.start()
+                instance.start()
 
-           proxy.join()
-           instance.join()
+                proxy.join()
+                instance.join()
 
-           self.proxy_id, self.proxy_address, self.proxy_password = proxy.instance.id, proxy.instance_address, proxy.instance_password  
-           self.instance_id, self.instance_address, self.instance_password = instance.instance.id, instance.instance_address, instance.instance_password
+                self.proxy_id, self.proxy_address, self.proxy_password = proxy.instance.id, proxy.instance_address, proxy.instance_password  
+                self.instance_id, self.instance_address, self.instance_password = instance.instance.id, instance.instance_address, instance.instance_password
+            else:
 
-           return self.customize()
+                self.proxy_address, self.proxy_password = self.proxy_address, self.proxy_password 
+                instance.start()
+                instance.join()
+                self.instance_id, self.instance_address, self.instance_password = instance.instance.id, instance.instance_address, instance.instance_password
+
+            return self.customize()
 
 
         except:
@@ -183,7 +194,7 @@ class WindowsBuilderWorker:
     def execute_command(self, command):
         if len(command) == 0:
             self.log.debug("Command is empty")
-        command ="winrs -r:"+self.instance_address+" -u:Administrator -p:"+self.instance_password+" \""+ command+"\"" 
+        command ='winrs -r:'+self.instance_address+' -u:Administrator -p:'+self.instance_password+' \"'+ command+'\"' 
         msg = Message(base64.b64encode(command))
         msg.reply_to = 'reply-%s' % self.session.name
         self.sender.send(msg)
@@ -198,7 +209,7 @@ class WindowsBuilderWorker:
     def wait_for_boot(self):
         s = socket.socket()
         port = 5985 
-        self.log.debug("Waiting for instance %s to come online" % (self.instance_id))
+        self.log.debug("Waiting for instance %s to come online" % (str(self.instance_id)))
         for k in range(300):
             self.log.debug("Waiting for the instance to become fully accessible %d/300" % (k*10))
             status = s.connect_ex((self.instance_address, port))
@@ -214,9 +225,16 @@ class WindowsBuilderWorker:
 
     def test_winrm(self):
         winrm_command, retcode, stderr = self.execute_command("dir c:\\")
-        while retcode != 0 and stderr:
-            winrm_command, retcode, stderr = self.execute_command("dir c:\\")
+        for i in range(120):
+            if retcode != 0:
+                winrm_command, retcode, stderr = self.execute_command("dir c:\\")
+                self.progress()
+            else:
+                sleep(30)
+                break
             sleep(5)
+        if retcode !=0:
+            raise ImageFactoryException("Winrm failed to respond in 10 minutes")
 
     def delete_temp(self):
         stdout, retcode, stderr = self.execute_command("dir c:\\temp")
@@ -246,8 +264,10 @@ class WindowsBuilderWorker:
                     samba_password = matches.groups()[1]
                     samba_path = matches.groups()[2]
                     package_name =  item.xpathEval("name")[0].content
-                    package_file = item.xpathEval("file")[0].content
-                    package_arguments = item.xpathEval("arguments")[0].content
+                    if item.xpathEval("path"):
+                        if len(item.xpathEval("path")[0].content) > 1:
+                            package_path = item.xpathEval("path")[0].content
+                    package_command = item.xpathEval("command")
                     #extracting the samba server name
                     matches2  = re.match(r'^(.*)', samba_path)
                     samba_server = matches2.groups()[0]
@@ -256,28 +276,30 @@ class WindowsBuilderWorker:
                     self.wait_for_boot()
 
                     # copy package to c:\temp
+                    if package_path:
+                        print "Copying %s" % package_name
+                        stdout, retcode, stderr = self.execute_command("net use \\\\"+samba_path+" "+samba_password+" "+"/u:"+samba_user+" "+"&"+" "+"xcopy"+" "+"\\\\"+samba_path+"\\"+package_path+" "+"c:\\temp\\"+" "+"/S"+" "+"/I"+" "+"/Y"+" "+"/Q")
+                        if retcode != 0 and 'The command completed successfully' not in stdout:
+                            if stderr:
+                                self.log.warning('Failed to copy package %s with error %s' % (package_name, stderr))
+                            else:
+                                self.log.warning('Failed to copy package %s. Error %s' % (package_name, stdout))
+                                return
 
-                    print "Copying package %s" % package_name
-                    stdout, retcode, stderr = self.execute_command("cmd.exe /c net use \\\\"+samba_path+" "+samba_password+" "+"/u:"+samba_user+" "+"&"+" "+"xcopy"+" "+"\\\\"+samba_path+"\\"+package_file+" "+"c:\\temp\\"+" "+"/S"+" "+"/I"+" "+"/Y")
-                    if retcode != 0 and 'The command completed successfully' not in stdout:
-                        if stderr:
-                            self.log.warning('Failed to copy package %s with error %s' % (package_name, stderr))
-                        else:
-                            self.log.warning('Failed to copy package %s. Error %s' % (package_name, stdout))
-                            return
-
-                    #running the installer for each package
-                    
+                        #running the installer for each package
+                            
                     sleep(2)
 
-                    print "Installing %s" % package_name
-                    stdout, retcode, stderr = self.execute_command("cmd.exe /c c:\\temp\\"+package_file+" "+package_arguments)
-                    if retcode != 0 and retcode != -2144108526 and retcode != -2144108250:
-                        if stderr:
-                            self.log.warning("Failed to install package %s with error %s %s" % (package_name, stderr, retcode))
-                        else:
-                            self.log.info("Package %s exited with code %s" % (package_name, retcode))
-                    continue
+
+                    for command in package_command:
+                        print "Installing %s" % package_name
+                        stdout, retcode, stderr = self.execute_command(command.content)
+                        if retcode != 0 and retcode != -2144108526 and retcode != -2144108250:
+                            if stderr:
+                                self.log.warning("Failed to install package %s with error %s %s" % (package_name, stderr, retcode))
+                            else:
+                                self.log.info("Package %s exited with code %s" % (package_name, retcode))
+                        continue
 
                 else:
                     raise ImageFactoryException("Failed to identify the repo share, syntax may be wrong.")
@@ -355,7 +377,8 @@ class WindowsBuilderWorker:
     def terminate_instance(self):
         try:
             self.boto.terminate_instances(str(self.instance_id))
-            self.boto.terminate_instances(str(self.proxy_id))
+            if self.proxy_ami_id:
+                self.boto.terminate_instances(str(self.proxy_id))
         except:
             raise ImageFactoryException('Could not terminate instance %s' %(self.instance.id))
 

@@ -240,3 +240,9 @@ class AppServerSvc (win32serviceutil.ServiceFramework):
 
                     sender.send(result)
 
+
+        connection.close()
+
+if __name__ == '__main__':
+    win32serviceutil.HandleCommandLine(AppServerSvc)
+
