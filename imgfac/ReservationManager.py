@@ -180,19 +180,6 @@ class ReservationManager(object):
         else:
             return None
 
-    def _queue_with_name(self, name=None):
-        """
-        TODO: Docstring for _queue_with_name
-
-        @param name TODO
-
-        @return TODO
-        """
-        if(name):
-            return self._queues[name]
-        else:
-            return self._queues['local']
-
     def enter_queue(self, name=None):
         """
         Tries to acquire a semaphore for the named queue. Blocks until a slot opens up.
@@ -201,9 +188,10 @@ class ReservationManager(object):
 
         @param name - The name of the queue to enter. See the queues property of ReservationManager.
         """
-        self.log.debug("ENTERING queue: (%s)" % (name))
-        self._queue_with_name(name).acquire()
-        self.log.debug("SUCCESS ENTERING queue: (%s)" % (name))
+        if(name):
+            self.log.debug("ENTERING queue: (%s)" % (name))
+            self.self._queues[name].acquire()
+            self.log.debug("SUCCESS ENTERING queue: (%s)" % (name))
 
     def exit_queue(self, name=None):
         """
@@ -213,6 +201,7 @@ class ReservationManager(object):
 
         @param name - The name of the queue to enter. See the queues property of ReservationManager.
         """
-        self.log.debug("EXITING queue: (%s)" % (name))
-        self._queue_with_name(name).release()
-        self.log.debug("SUCCESS EXITING queue: (%s)" % (name))
+        if(name):
+            self.log.debug("EXITING queue: (%s)" % (name))
+            self.self._queues[name].release()
+            self.log.debug("SUCCESS EXITING queue: (%s)" % (name))

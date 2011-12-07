@@ -48,7 +48,7 @@ class Mock_Builder(BaseBuilder):
             self.log.debug("build_image() called on Mock_Builder...")
             self.image = "%s/deltacloud-%s/images/%s.yml" % (self.app_config['imgdir'], pwd.getpwuid(os.getuid())[0], self.new_image_id)
             self.log.debug("Setting image build path: %s" % (self.image, ))
-            self.status = "INITIALIZING"
+            self.status = "BUILDING"
             self.log.debug("Initializing mock image...")
             self.percent_complete = 0
 
@@ -57,7 +57,6 @@ class Mock_Builder(BaseBuilder):
                 os.makedirs(directory)
 
             with open(self.image, 'w') as image_file:
-                self.status = "PENDING"
                 self.log.debug("Building mock image...")
                 image_file.write(':description: This is a mock build image for testing the image factory.\n')
                 self.percent_complete = 5
@@ -76,7 +75,6 @@ class Mock_Builder(BaseBuilder):
             self.percent_complete = 50
             self.percent_complete = 75
             self.percent_complete = 95
-            self.status = "FINISHING"
             self.log.debug("Finishing mock image...")
             self.percent_complete = 100
             self.status = "COMPLETED"
