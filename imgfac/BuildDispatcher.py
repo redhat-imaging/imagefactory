@@ -35,7 +35,7 @@ class BuildDispatcher(Singleton):
         self.job_registry = JobRegistry()
 
     def import_image(self, image_id, build_id, target_identifier, image_desc, target, provider):
-        image_id = self._ensure_image_with_template(image_id, Template('<template></template>'), image_desc)
+        image_id = self._ensure_image(image_id, image_desc)
         build_id = self._ensure_build(image_id, build_id)
 
         target_image_id = self._ensure_target_image(build_id, target)
@@ -144,8 +144,10 @@ class BuildDispatcher(Singleton):
     def _ensure_image(self, image_id, image_desc, template_id=None):
         if image_id:
             return image_id
-        else:
+        elif(template_id):
             return self.warehouse.store_image(None, image_desc, dict(template=template_id))
+        else:
+            return self.warehouse.store_image(None, image_desc)
 
     def _ensure_build(self, image_id, build_id):
         if build_id:
