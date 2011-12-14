@@ -24,6 +24,9 @@ Requires: python-suds >= 0.4.1
 Requires: python-paste-deploy
 Requires: python-oauth2
 Requires: qemu-img
+# We need this for dc-rhev-image
+# TODO: Remove this requirement when move pushing internal to the factory
+Requires: iwhd >= 1.2
 Requires(post): chkconfig
 Requires(preun): chkconfig
 # This is for /sbin/service
