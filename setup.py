@@ -32,6 +32,7 @@ datafiles=[('share/man/man1', ['Documentation/man/imagefactory.1']),
            ('/etc/imagefactory', ['imagefactory.conf']),
            ('/etc/pki/imagefactory', ['cert-ec2.pem']),
            ('/etc/sysconfig', ['imagefactory']),
+           ('/etc/logrotate.d', ['imagefactory']),
            ('/etc/rc.d/init.d', ['scripts/imagefactory'])]
 
 class sdist(_sdist):
