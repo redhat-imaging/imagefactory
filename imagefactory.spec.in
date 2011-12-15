@@ -63,16 +63,16 @@ python setup.py build
 %install
 python setup.py install -O1 --root=%{buildroot} --skip-build
 
-mkdir -p %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
-mkdir -p %{buildroot}/%{_localstatedir}/lib/imagefactory/images
-mkdir -p %{buildroot}/%{_sysconfdir}/logrotate.d
+%{__install} -d %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
+%{__install} -d %{buildroot}/%{_localstatedir}/lib/imagefactory/images
+%{__install} -d %{buildroot}/%{_sysconfdir}/logrotate.d
 
 sed -i '/\/usr\/bin\/env python/d' %{buildroot}/%{python_sitelib}/imgfac/*.py
 
-cp conf/ec2_fedora_jeos_03_OCT_2011.conf %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
-cp conf/ec2_rhel_jeos_03_OCT_2011.conf %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
-cp conf/imagefactory.sysconfig %{buildroot}/%{_sysconfdir}/sysconfig/imagefactory
-cp conf/imagefactory.logrotate %{buildroot}/%{_sysconfdir}/logrotate.d/imagefactory
+%{__install} conf/ec2_fedora_jeos_03_OCT_2011.conf %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
+%{__install} conf/ec2_rhel_jeos_03_OCT_2011.conf %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
+%{__install} -m0600 conf/imagefactory.sysconfig %{buildroot}/%{_sysconfdir}/sysconfig/imagefactory
+%{__install} -m0600 conf/imagefactory.logrotate %{buildroot}/%{_sysconfdir}/logrotate.d/imagefactory
 
 %post
 /sbin/chkconfig --add %{name}
