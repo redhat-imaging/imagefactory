@@ -68,6 +68,7 @@ mkdir -p %{buildroot}/%{_localstatedir}/lib/imagefactory/images
 
 sed -i '/\/usr\/bin\/env python/d' %{buildroot}/%{python_sitelib}/imgfac/*.py
 
+cp conf/imagefactory.sysconfig %{buildroot}/%{_sysconfdir}/sysconfig/imagefactory
 cp conf/ec2_fedora_jeos_03_OCT_2011.conf %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
 cp conf/ec2_rhel_jeos_03_OCT_2011.conf %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
 
@@ -84,6 +85,7 @@ fi
 %doc COPYING
 %{_initddir}/imagefactory
 %config(noreplace) %{_sysconfdir}/imagefactory/imagefactory.conf
+%config(noreplace) %{_sysconfdir}/sysconfig/%{name}
 %dir %attr(0755, root, root) %{_sysconfdir}/pki/imagefactory/
 %dir %attr(0755, root, root) %{_sysconfdir}/imagefactory/jeos_images/
 %dir %attr(0755, root, root) %{_localstatedir}/lib/imagefactory/images
