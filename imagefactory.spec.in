@@ -63,13 +63,16 @@ python setup.py build
 %install
 python setup.py install -O1 --root=%{buildroot} --skip-build
 
-mkdir -p %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
-mkdir -p %{buildroot}/%{_localstatedir}/lib/imagefactory/images
+%{__install} -d %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
+%{__install} -d %{buildroot}/%{_localstatedir}/lib/imagefactory/images
+%{__install} -d %{buildroot}/%{_sysconfdir}/logrotate.d
 
 sed -i '/\/usr\/bin\/env python/d' %{buildroot}/%{python_sitelib}/imgfac/*.py
 
-cp conf/ec2_fedora_jeos_03_OCT_2011.conf %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
-cp conf/ec2_rhel_jeos_03_OCT_2011.conf %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
+%{__install} conf/ec2_fedora_jeos_03_OCT_2011.conf %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
+%{__install} conf/ec2_rhel_jeos_03_OCT_2011.conf %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
+%{__install} -m0600 conf/imagefactory.sysconfig %{buildroot}/%{_sysconfdir}/sysconfig/imagefactory
+%{__install} -m0600 conf/imagefactory.logrotate %{buildroot}/%{_sysconfdir}/logrotate.d/imagefactory
 
 %post
 /sbin/chkconfig --add %{name}
@@ -84,6 +87,8 @@ fi
 %doc COPYING
 %{_initddir}/imagefactory
 %config(noreplace) %{_sysconfdir}/imagefactory/imagefactory.conf
+%config(noreplace) %{_sysconfdir}/sysconfig/%{name}
+%config(noreplace) %{_sysconfdir}/logrotate.d/%{name}
 %dir %attr(0755, root, root) %{_sysconfdir}/pki/imagefactory/
 %dir %attr(0755, root, root) %{_sysconfdir}/imagefactory/jeos_images/
 %dir %attr(0755, root, root) %{_localstatedir}/lib/imagefactory/images
