@@ -1,0 +1,79 @@
+<template>
+  <name>win2kjeos</name>
+  <os>
+    <name>Windows</name>
+    <version>2008</version>
+    <arch>x86_64</arch>
+    <install type='iso'>
+    <iso>http://www.example.com/ISOs/en_windows_server_2008.iso</iso>
+    </install>
+    <key></key>
+  </os>
+  <description>Windows 2008</description>
+  <repos>
+     <repository url="smb://smbuser:password@sambahost.example.com\share1" name="Default"/>
+     <repository url="smb://smbuser:password@sambahost.example.com\share2" name="Default2"/>
+  </repos>
+  <packages>
+    <package>
+        <repo name="Default"/>
+	    <name>ActiveState Python 2.7</name>
+	    <path>ActivePython-2.7.2.5-win32-x86.msi</path>
+	    <command>start /wait msiexec.exe /i c:\temp\ActivePython-2.7.2.5-win32-x86.msi /quiet</command>
+	</package>
+	<package>
+        <repo name="Default"/>
+	    <name>Configure WinRM TrustedHosts</name>
+	    <path></path>
+	    <command>powershell &quot;&amp; {$username = 'administrator'; $pass = ConvertTo-SecureString '%instance_password%' -AsPlainText -Force; $cred = New-Object System.Management.Automation.PSCredential $username, $pass; Connect-WSMan -Credential $cred; cd WSMan:\localhost\Client; Set-Item TrustedHosts * -Force}&quot;</command>
+	</package>
+	<package>
+        <repo name="Default"/>
+	    <name>Qpid python bindings</name>
+	    <path>python_qpid_extensions</path>
+	    <command> cd c:\temp &amp; c:\python27\python.exe setup.py install</command>
+	</package>
+	<package>
+        <repo name="Default"/>
+	    <name>Qpid Broker</name>
+	    <path>qpidc-0.10-x86.msi</path>
+	    <command>start /wait msiexec.exe /i c:\temp\qpidc-0.10-x86.msi /quiet</command>
+	</package>
+    <package>
+        <repo name="Default"/>
+	    <name>Qpid service</name>
+	    <path>qpid-service.py</path>
+	    <command>c:\python27\python.exe c:\temp\qpid-service.py install</command>
+	</package>
+	<package>
+	    <repo name="Default"/>
+	    <name>Consumer service</name>
+	    <path>consumer-service.py</path>
+	    <command>c:\python27\python.exe c:\temp\consumer-service.py install</command>
+	</package>
+	<package>
+	    <repo name="Default"/>
+	    <name>Configure qpid service to start automatically</name>
+	    <path></path>
+	    <command>sc config StartQpid start= auto</command>
+	</package>
+	<package>
+	    <repo name="Default"/>
+	    <name>Configure consumer service to start automatically</name>
+	    <path></path>
+	    <command>sc config StartConsumer start= auto</command>
+	</package>
+	<package>
+	    <repo name="Default"/>
+	    <name>Set consumer service dependency on qpid service</name>
+	    <path></path>
+	    <command>sc config StartConsumer depend= StartQpid</command>
+	</package>
+	<package>
+	    <repo name="Default"/>
+	    <name>Set Ec2 service dependency on consumer service</name>
+	    <path></path>
+	    <command>sc config EC2Config depend= StartConsumer</command>
+	</package>
+  </packages>
+</template>

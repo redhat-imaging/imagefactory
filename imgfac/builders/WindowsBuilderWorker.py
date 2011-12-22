@@ -293,6 +293,11 @@ class WindowsBuilderWorker:
 
                     for command in package_command:
                         print "Installing %s" % package_name
+                        # TODO: replace %instance_password% and %instance_address% with dictionary keywords to make it more flexile
+                        if "%instance_password%" in command.content:
+                            command.content = command.content.replace('%instance_password%', self.instance_password)
+                        if "%instance_address%" in command.content:
+                            command.content = command.content.replace('%instance_address%', self.instance_address)
                         stdout, retcode, stderr = self.execute_command(command.content)
                         if retcode != 0 and retcode != -2144108526 and retcode != -2144108250:
                             if stderr:
