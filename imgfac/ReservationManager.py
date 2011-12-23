@@ -61,8 +61,7 @@ class ReservationManager(object):
             i = super(ReservationManager, cls).__new__(cls, *p, **k)
             # initialize here, not in __init__()
             i.log = logging.getLogger('%s.%s' % (__name__, i.__class__.__name__))
-            i.default_minimum = k.get('default_minimum',
-                    p[0] if(len(p) > 0) else cls.DEFAULT_MINIMUM)
+            i.default_minimum = cls.DEFAULT_MINIMUM
             i._mounts = dict()
             i.appconfig = ApplicationConfiguration().configuration
             i._queues = dict(local=BoundedSemaphore(i.appconfig.get('max_concurrent_local_sessions', 1)),
@@ -70,7 +69,7 @@ class ReservationManager(object):
             cls.instance = i
         return cls.instance
 
-    def __init__(self, default_minimum=None):
+    def __init__(self):
         """
         @param default_minimum Default for the minimum amount needed for a path.
         """

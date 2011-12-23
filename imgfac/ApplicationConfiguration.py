@@ -100,7 +100,7 @@ class ApplicationConfiguration(Singleton):
             sys.exit()
         elif(sys.argv[0].endswith("imagefactory")):
             return self.argparser.parse_args()
-        elif(sys.argv[0].endswith("unittest")):
+        elif(sys.argv[0].endswith("unittest" or "nosetests")):
             return self.argparser.parse_args('--image_bucket unittests_images --build_bucket unittests_builds --target_bucket unittests_target_images --template_bucket unittests_templates --icicle_bucket unittests_icicles --provider_bucket unittests_provider_images'.split())
         else:
             return self.argparser.parse_args([])

@@ -49,7 +49,7 @@ class TestBaseBuilder(unittest.TestCase):
 
     def testDelegateAssignment(self):
         self.builder.delegate = self.delegate
-        self.assertIs(self.builder.delegate, self.delegate)
+        self.assertEqual(id(self.builder.delegate), id(self.delegate))
 
     def testShouldUpdateStatus(self):
         self.builder.status = "UPDATE_ME"

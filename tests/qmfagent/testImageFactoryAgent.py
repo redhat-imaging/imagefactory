@@ -56,20 +56,14 @@ class TestImageFactoryAgent(unittest.TestCase):
         self.assertEqual(len(self.console.real_failure_events), 0, "Unexpected failure events raised!\n%s" % (self.console.real_failure_events, ))
         self.assertEqual(self.console.build_adaptor_addr_fail, self.console.test_failure_events[0]["data"]["addr"])
         # test that exceptions are passed properly by the agent handler
-        self.assertIsInstance(self.console.image_exception, Exception)
+        self.assertTrue(isinstance(self.console.image_exception, Exception))
         self.assertEqual(str(self.console.image_exception), "Wrong number of arguments: expected 2, got 0")
 
         # test that the agent registered and consoles can see it.
-        try:
-            self.assertIsNotNone(self.console.agent)
-        except AttributeError:
-            self.fail("No imagefactory agent found...")
+        self.assertTrue(self.console.agent)
 
         # test that image returns what we expect
-        try:
-            self.assertIsNotNone(self.console.build_adaptor_addr_success)
-        except AttributeError:
-            self.fail("image did not return a DataAddr for build_adaptor...")
+        self.assertTrue(self.console.build_adaptor_addr_success)
 
         # test that status changes in build adaptor create QMF events the consoles see.
         agent_name = self.console.agent.getName()
@@ -78,19 +72,16 @@ class TestImageFactoryAgent(unittest.TestCase):
             index = self.console.build_status_events.index(event)
             self.assertEqual(agent_name, event["agent"].getName())
             properties = event["data"]
-            self.assertIsNotNone(properties)
+            self.assertTrue(properties)
             self.assertEqual(self.console.build_adaptor_addr_success, properties["addr"])
             self.assertEqual(self.expected_state_transitions[index][0],properties["old_status"])
             self.assertEqual(self.expected_state_transitions[index][1],properties["new_status"])
 
         # test that provider_image returns what we expect
-        try:
-            self.assertIsNotNone(self.console.build_adaptor_addr_push)
-        except AttributeError:
-            self.fail("provider_image did not return a DataAddr for build_adaptor...")
+        self.assertTrue(self.console.build_adaptor_addr_push)
 
         # test that status changes in build adaptor create QMF events the consoles see.
-        self.assertGreater(len(self.console.push_status_events), 0)
+        self.assertTrue(len(self.console.push_status_events) > 0)
         # self.assertEqual(len(self.expected_state_transitions), len(self.console.push_status_events))
         # for event in self.console.push_status_events:
         #     index = self.console.push_status_events.index(event)
@@ -101,7 +92,7 @@ class TestImageFactoryAgent(unittest.TestCase):
         #     self.assertEqual(self.expected_state_transitions[index][0],properties["old_status"])
         #     self.assertEqual(self.expected_state_transitions[index][1],properties["new_status"])
 
-        self.assertIsNotNone(self.console.import_image_ids)
+        self.assertTrue(self.console.import_image_ids)
         self.assertEqual(len(self.console.import_image_ids), 4)
         self.assertTrue('image' in self.console.import_image_ids)
         self.assertTrue('build' in self.console.import_image_ids)
@@ -109,8 +100,8 @@ class TestImageFactoryAgent(unittest.TestCase):
         self.assertTrue('provider_image' in self.console.import_image_ids)
 
         # test instance_states method
-        self.assertIsNotNone(self.console.image_factory_states)
-        self.assertIsNotNone(self.console.build_adaptor_states)
+        self.assertTrue(self.console.image_factory_states)
+        self.assertTrue(self.console.build_adaptor_states)
 
 
 class MockConsole(ConsoleHandler):

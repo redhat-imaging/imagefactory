@@ -40,7 +40,7 @@ class testTemplate(unittest.TestCase):
         template = Template(template_id)
         self.assertEqual(template_id, template.identifier)
         self.assertEqual(self.template_xml, template.xml)
-        self.assertIsNone(template.url)
+        self.assertFalse(template.url)
 
     def testTemplateFromImageID(self):
         template_id = self.warehouse.store_template(self.template_xml)
@@ -53,13 +53,13 @@ class testTemplate(unittest.TestCase):
         image_template = Template(builder.new_image_id)
         self.assertEqual(template_id, image_template.identifier)
         self.assertEqual(self.template_xml, image_template.xml)
-        self.assertIsNone(template.url)
+        self.assertFalse(template.url)
 
     def testTemplateFromXML(self):
         template = Template(self.template_xml)
         self.assertEqual(self.template_xml, template.xml)
-        self.assertIsNone(template.identifier)
-        self.assertIsNone(template.url)
+        self.assertFalse(template.identifier)
+        self.assertFalse(template.url)
 
     def testTemplateFromURL(self):
         template_id = self.warehouse.store_template(self.template_xml)
@@ -75,8 +75,8 @@ class testTemplate(unittest.TestCase):
         os.close(fd)
 
         template = Template(template_path)
-        self.assertIsNone(template.url)
-        self.assertIsNone(template.identifier)
+        self.assertFalse(template.url)
+        self.assertFalse(template.identifier)
         self.assertEqual(self.template_xml, template.xml)
 
         os.remove(template_path)
