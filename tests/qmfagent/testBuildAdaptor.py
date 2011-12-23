@@ -28,9 +28,9 @@ class TestBuildAdaptor(unittest.TestCase):
         expected_schema_properties = ("image", "build", "status", "percent_complete", "image_id")
         expected_schema_methods = dict(abort=(), instance_states=("class_name", "states"))
         for schema_property in BuildAdaptor.qmf_schema.getProperties():
-            self.assertIn(schema_property.getName(), expected_schema_properties)
+            self.assertTrue(schema_property.getName() in expected_schema_properties)
         for schema_method in BuildAdaptor.qmf_schema.getMethods():
-            self.assertIn(schema_method.getName(), expected_schema_methods)
+            self.assertTrue(schema_property.getName() in expected_schema_properties)
             arguments = expected_schema_methods[schema_method.getName()]
             for schema_property in schema_method.getArguments():
                 self.assertIn(schema_property.getName(), arguments)

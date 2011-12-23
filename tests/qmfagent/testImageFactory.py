@@ -34,15 +34,16 @@ class TestImageFactory(unittest.TestCase):
                                        import_image=("image", "build", "target_identifier", "image_desc", "target", "provider", "target_image", "provider_image"),
                                        instance_states=("class_name", "states"))
         for schema_method in ImageFactory.qmf_schema.getMethods():
-            self.assertIn(schema_method.getName(), expected_schema_methods)
+            self.assertTrue(schema_method.getName() in expected_schema_methods)
             arguments = expected_schema_methods[schema_method.getName()]
             for schema_property in schema_method.getArguments():
-                self.assertIn(schema_property.getName(), arguments)
+                self.assertTrue(schema_property.getName() in arguments)
+                    
 
     def testSingleton(self):
         image_factory_one = ImageFactory()
         image_factory_two = ImageFactory()
-        self.assertIs(image_factory_one, image_factory_two)
+        self.assertEqual(image_factory_one, image_factory_two)
         del image_factory_one
         del image_factory_two
 
