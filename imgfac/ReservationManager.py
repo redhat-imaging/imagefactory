@@ -190,7 +190,7 @@ class ReservationManager(object):
         """
         if(name):
             self.log.debug("ENTERING queue: (%s)" % (name))
-            self.self._queues[name].acquire()
+            self._queues[name].acquire()
             self.log.debug("SUCCESS ENTERING queue: (%s)" % (name))
 
     def exit_queue(self, name=None):
@@ -203,5 +203,5 @@ class ReservationManager(object):
         """
         if(name):
             self.log.debug("EXITING queue: (%s)" % (name))
-            self.self._queues[name].release()
+            self._queues[name].release()
             self.log.debug("SUCCESS EXITING queue: (%s)" % (name))
