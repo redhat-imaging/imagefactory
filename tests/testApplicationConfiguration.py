@@ -42,7 +42,7 @@ class TestApplicationConfiguration(unittest.TestCase):
         del self.defaults
 
     def testSingleton(self):
-        self.assertIs(ApplicationConfiguration(), ApplicationConfiguration())
+        self.assertTrue(id(ApplicationConfiguration()) == id(ApplicationConfiguration()))
 
     # def testConfigurationDictionaryDefaults(self):
     #     self.assertIsNotNone(ApplicationConfiguration().configuration)

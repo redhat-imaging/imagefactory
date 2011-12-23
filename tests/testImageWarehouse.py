@@ -54,7 +54,7 @@ class testImageWarehouse(unittest.TestCase):
         template_content = "<template>This is a test template. There is not much to see here.</template>"
         # store the template and let an id get assigned
         template_id = self.warehouse.store_template(template_content)
-        self.assertIsNotNone(template_id)
+        self.assertTrue(template_id)
         # store the template with a specified id
         template_id_known = str(uuid.uuid4())
         template_id2 = self.warehouse.store_template(template_content, template_id_known)
@@ -74,7 +74,7 @@ class testImageWarehouse(unittest.TestCase):
         icicle_content = "<icicle>This is a test icicle. There is not much to see here.</icicle>"
         # store the icicle and let an id get assigned
         icicle_id = self.warehouse.store_icicle(icicle_content)
-        self.assertIsNotNone(icicle_id)
+        self.assertTrue(icicle_id)
         # store the icicle with a specified id
         icicle_id_known = str(uuid.uuid4())
         icicle_id2 = self.warehouse.store_icicle(icicle_content, icicle_id_known)
@@ -104,7 +104,7 @@ class testImageWarehouse(unittest.TestCase):
 
         image_id = self.warehouse.store_image(None, image_xml, self.metadata)
 
-        self.assertIsNotNone(image_id)
+        self.assertTrue(image_id)
 
         image_body, metadata = self.warehouse.object_with_id_of_type(image_id, 'image', self.metadata.keys())
 
@@ -120,7 +120,7 @@ class testImageWarehouse(unittest.TestCase):
 
         ids = self.warehouse.query('build', '$object_type == "build" && $key1 == "value1"')
 
-        self.assertIn(build_id, ids)
+        self.assertTrue(build_id in ids)
 
     def testBucketCreation(self):
         # self.assert_(self.warehouse.create_bucket_at_url("%s/unittests-create_bucket/%s" % (self.warehouse.url, str(uuid.uuid4()))))

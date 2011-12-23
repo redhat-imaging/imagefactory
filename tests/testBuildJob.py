@@ -30,7 +30,7 @@ class testBuildJob(unittest.TestCase):
     def testInstantiateMock_Builder(self):
         template_xml = "<template><name>f14jeos</name><os><name>Fedora</name></os></template>"
         job = BuildJob.BuildJob(template_xml, "mock")
-        self.assertIsInstance(job._builder, Mock_Builder.Mock_Builder)
+        self.assertTrue(isinstance(job._builder, Mock_Builder.Mock_Builder))
         self.assertEqual(job.template.xml, template_xml)
         self.assertEqual(job.target, "mock")
 

@@ -40,7 +40,7 @@ class testReservationManager(unittest.TestCase):
         fstat = os.statvfs(self.test_path)
         self.max_free = fstat.f_bavail * fstat.f_frsize
         self.min_free = self.max_free / 2
-        self.res_mgr = ReservationManager(self.min_free)
+        self.res_mgr = ReservationManager()
 
     def tearDown(self):
         self.res_mgr.remove_path(self.test_path)
@@ -51,12 +51,13 @@ class testReservationManager(unittest.TestCase):
         """
         Prove this class produces a singelton object.
         """
-        self.assertIs(self.res_mgr, ReservationManager())
+        self.assertEqual(id(self.res_mgr), id(ReservationManager()))
 
     def testDefaultMinimumProperty(self):
         """
         TODO: Docstring for testDefaultMinimumProperty
         """
+        self.res_mgr.default_minimum = self.min_free
         self.assertEqual(self.min_free, self.res_mgr.default_minimum)
 
     def testAddRemovePath(self):
@@ -79,6 +80,7 @@ class testReservationManager(unittest.TestCase):
         """
         TODO: Docstring for testReserveSpaceForFile
         """
+        self.res_mgr.default_minimum = self.min_free
         size = self.min_free / 10
         result = self.res_mgr.reserve_space_for_file(size, self.test_file)
         self.assertTrue(result)
@@ -98,6 +100,7 @@ class testReservationManager(unittest.TestCase):
         TODO: Docstring for testCancelReservationForFile
         """
         size = self.min_free / 10
+        self.res_mgr.default_minimum = self.min_free
         if(self.res_mgr.reserve_space_for_file(size, self.test_file)):
             self.assertTrue(self.test_file in self.res_mgr.reservations)
             self.res_mgr.cancel_reservation_for_file(self.test_file)
@@ -109,8 +112,7 @@ class testReservationManager(unittest.TestCase):
         """
         TODO: Docstring for testCancelNonExistentReservation
         """
-        with self.assertRaises((TypeError, KeyError)):
-            self.res_mgr.cancel_reservation_for_file('/tmp/not.there', False)
+        self.assertRaises((TypeError, KeyError), self.res_mgr.cancel_reservation_for_file, *('/tmp/not.there', False))
 
     def testAvailableSpaceForPath(self):
         """
