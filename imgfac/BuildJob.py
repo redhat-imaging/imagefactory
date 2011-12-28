@@ -95,7 +95,7 @@ class BuildJob(object):
         return None
 
     def builder_will_update_status(self, builder, original_status, new_status):
-        if(new_status == ('BUILDING' or 'PUSHING')):
+        if(new_status in ('BUILDING','PUSHING')):
             qname = self._queue_for_builder(builder, new_status)
             self.log.debug("%s for %s about to enter %s queue..." % (builder.new_image_id, builder.target, qname))
             ReservationManager().enter_queue(qname)
@@ -103,14 +103,15 @@ class BuildJob(object):
 
     def builder_did_update_status(self, builder, old_status, new_status):
         self.log.debug("Builder (%s) changed status from %s to %s" % (builder.new_image_id, old_status, new_status))
+        if((new_status in ('COMPLETED','FAILED')) and (old_status in ('BUILDING','PUSHING'))):
+            qname = self._queue_for_builder(builder, old_status)
+            self.log.debug("%s for %s about to exit %s queue..." % (builder.new_image_id, builder.target, qname))
+            ReservationManager().exit_queue(qname)
+
         self.status = new_status
         if self.status == "COMPLETED" and self._watcher:
             self._watcher.completed()
             self._watcher = None
-        if((new_status == ('COMPLETED' or 'FAILED')) and (old_status == ('BUILDING' or 'PUSHING'))):
-            qname = self._queue_for_builder(builder, old_status)
-            self.log.debug("%s for %s about to exit %s queue..." % (builder.new_image_id, builder.target, qname))
-            ReservationManager().exit_queue(qname)
 
     def builder_did_update_percentage(self, builder, original_percentage, new_percentage):
         self.log.debug("Builder (%s) changed percent complete from %s to %s" % (builder.new_image_id, original_percentage, new_percentage))
