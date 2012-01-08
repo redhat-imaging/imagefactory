@@ -565,11 +565,9 @@ class Fedora_ec2_Builder(BaseBuilder):
             self.log.error("EBS JEOS image exists in us-east-1 but not in target region (%s)" % (provider))
             raise ImageFactoryException("No EBS JEOS image for region (%s) - aborting" % (provider))
 
-        instance_type='m1.large'
+        instance_type=self.app_config['ec2-32bit-util']
         if self.tdlobj.arch == "i386":
-            instance_type='m1.small'
-        if ami.root_device_type == "ebs":
-            instance_type='t1.micro'
+            instance_type=self.app_config['ec2-64bit-util']
 
         # Create a use-once SSH-able security group
         factory_security_group_name = "imagefactory-%s" % (self.new_image_id, )
@@ -897,7 +895,7 @@ class Fedora_ec2_Builder(BaseBuilder):
             raise ImageFactoryException("Can only build EBS in us-east and us-west for now - aborting")
 
         # i386
-        instance_type='m1.small'
+        instance_type=self.app_config['ec2-32bit-util']
 
         self.log.debug("Initializing connection to ec2 region (%s)" % region_conf['host'])
         ec2region = boto.ec2.get_region(region_conf['host'], aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key)

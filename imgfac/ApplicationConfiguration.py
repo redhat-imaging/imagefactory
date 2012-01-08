@@ -44,6 +44,7 @@ class ApplicationConfiguration(Singleton):
         cli_build_description = """Build specified system and exit."""
         cli_push_description = """Push an image and exit."""
         warehouse_description = """Options for specifying Image Warehouse (http://aeolusproject.org/imagewarehouse.html) base URL and bucket names."""
+        ec2_description = """Options specifying EC2 instance types to use for various functions"""
         rest_description = """Enable the RESTful interface."""
 
         argparser = argparse.ArgumentParser(description=main_description, prog='imagefactory')
@@ -76,6 +77,10 @@ class ApplicationConfiguration(Singleton):
         group_push = argparser.add_argument_group(title='Image pushing', description=cli_push_description)
         group_push.add_argument('--provider', action='append', help='Cloud service providers to push the image (e.g. ec2-us-east-1, rackspace, etc.)')
         group_push.add_argument('--credentials', help='Cloud provider credentials XML (i.e. <provider_credentials/> document)')
+
+        group_ec2 = argparser.add_argument_group(title='EC2 activities', description=ec2_description)
+        group_push.add_argument('--ec2-32bit-util', default = 'm1.small', help='Instance type to use when launching a 32 bit utility instance')
+        group_push.add_argument('--ec2-64bit-util', default = 'm1.large', help='Instance type to use when launching a 64 bit utility instance')
 
         group_build = argparser.add_argument_group(title='Image importing', description=cli_build_description)
         group_build.add_argument('--target-image', help='Target specific identifier for the image to import.')
