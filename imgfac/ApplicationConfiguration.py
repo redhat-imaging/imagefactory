@@ -79,8 +79,8 @@ class ApplicationConfiguration(Singleton):
         group_push.add_argument('--credentials', help='Cloud provider credentials XML (i.e. <provider_credentials/> document)')
 
         group_ec2 = argparser.add_argument_group(title='EC2 activities', description=ec2_description)
-        group_push.add_argument('--ec2-32bit-util', default = 'm1.small', help='Instance type to use when launching a 32 bit utility instance')
-        group_push.add_argument('--ec2-64bit-util', default = 'm1.large', help='Instance type to use when launching a 64 bit utility instance')
+        group_ec2.add_argument('--ec2-32bit-util', default = 'm1.small', help='Instance type to use when launching a 32 bit utility instance')
+        group_ec2.add_argument('--ec2-64bit-util', default = 'm1.large', help='Instance type to use when launching a 64 bit utility instance')
 
         group_build = argparser.add_argument_group(title='Image importing', description=cli_build_description)
         group_build.add_argument('--target-image', help='Target specific identifier for the image to import.')
