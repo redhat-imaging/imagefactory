@@ -567,7 +567,7 @@ class Fedora_ec2_Builder(BaseBuilder):
 
         instance_type=self.app_config.get('ec2-64bit-util','m1.large')
         if self.tdlobj.arch == "i386":
-            instance_type=self.app_config.get('ec2-64bit-util','m1.small')
+            instance_type=self.app_config.get('ec2-32bit-util','m1.small')
 
         # Create a use-once SSH-able security group
         factory_security_group_name = "imagefactory-%s" % (self.new_image_id, )
