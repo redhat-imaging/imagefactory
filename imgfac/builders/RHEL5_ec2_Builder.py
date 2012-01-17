@@ -14,6 +14,7 @@
 
 import oz.RHEL_5
 import ConfigParser
+from tempfile import *
 from Fedora_ec2_Builder import Fedora_ec2_Builder
 
 class RHEL5RemoteGuest(oz.RHEL_5.RHEL5Guest):
@@ -49,6 +50,15 @@ class RHEL5_ec2_Builder(Fedora_ec2_Builder):
         self.guest.name = self.guest.name + "-" + self.new_image_id
 
     def ebs_pre_shapshot_tasks(self, guestaddr):
+        # We have to add the audrey conditional
+        self.log.info("Updating rc.local with Audrey conditional")
+        audrey_file_object = NamedTemporaryFile()
+        audrey_file_object.write(self.rc_local_all)
+        audrey_file_object.flush()
+        self.guest.guest_live_upload(guestaddr, audrey_file_object.name, "/tmp/rc.local.append")
+        self.guest.guest_execute_command(guestaddr, "cat /tmp/rc.local.append >> /etc/rc.local")
+        audrey_file_object.close()
+
         # The RHEL JEOS AMIs will refuse to inject the dynamic EC2 key if authorized_keys already exists
         # We have to remove it here.
         # NOTE: This means it is not possible for users to add a static authorized key during the build via a file or RPM
