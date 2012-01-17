@@ -217,7 +217,11 @@ class Fedora_ec2_Builder(BaseBuilder):
         g.launch ()
 
         g.mount_options("", "/dev/VolGroup00/LogVol00", "/")
-        g.mount_options("", "/dev/sda1", "/boot")
+        # F16 and upwards end up with boot on sda2 due to GRUB changes
+        if (self.tdlobj.distro == 'Fedora') and (self.tdlobj.update >= 16):
+            g.mount_options("", "/dev/sda2", "/boot")
+        else:
+            g.mount_options("", "/dev/sda1", "/boot")
 
         self.log.info("Creating cloud-info file indicating target (%s)" % (self.target))
         tmpl = 'CLOUD_TYPE="%s"\n' % (self.target)
@@ -290,7 +294,11 @@ class Fedora_ec2_Builder(BaseBuilder):
         #  because we cannot use wildcards directly with guestfs
         g.mkdir("/out/in")
         g.mount_ro ("/dev/VolGroup00/LogVol00", "/in")
-        g.mount_ro ("/dev/sda1", "/in/boot")
+        # F16 and upwards end up with boot on sda2 due to GRUB changes
+        if (self.tdlobj.distro == 'Fedora') and (self.tdlobj.update >= 16):
+            g.mount_options("", "/dev/sda2", "/boot")
+        else:
+            g.mount_options("", "/dev/sda1", "/boot")
         g.mount_options ("", "/dev/sdb", "/out/in")
 
         self.log.info("Copying image contents to EC2 flat filesystem")

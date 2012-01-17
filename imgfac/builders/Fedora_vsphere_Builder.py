@@ -170,7 +170,11 @@ class Fedora_vsphere_Builder(BaseBuilder):
         g.launch ()
 
         g.mount_options("", "/dev/VolGroup00/LogVol00", "/")
-        g.mount_options("", "/dev/sda1", "/boot")
+        # F16 and upwards end up with boot on sda2 due to GRUB changes
+        if (self.tdlobj.distro == 'Fedora') and (self.tdlobj.update >= 16):
+            g.mount_options("", "/dev/sda2", "/boot")
+        else:
+            g.mount_options("", "/dev/sda1", "/boot")
 
         self.log.info("Creating cloud-info file indicating target (%s)" % (self.target))
         tmpl = 'CLOUD_TYPE="%s"\n' % (self.target)
