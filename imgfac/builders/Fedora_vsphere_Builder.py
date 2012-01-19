@@ -72,7 +72,7 @@ class Fedora_vsphere_Builder(BaseBuilder):
         # force uniqueness
         #  Oz now uses the tdlobject name property directly in several places
         # so we must change it
-        self.tdlobj.name = self.tdlobj.name + "-" + self.new_image_id
+        self.tdlobj.name = "factory-build-" + self.new_image_id
 
         # populate a config object to pass to OZ; this allows us to specify our
         # own output dir but inherit other Oz behavior
