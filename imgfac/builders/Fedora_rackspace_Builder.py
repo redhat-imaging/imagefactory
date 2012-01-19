@@ -55,7 +55,7 @@ class Fedora_rackspace_Builder(BaseBuilder):
         # We don't really care about the name so just force uniqueness
         # 18-Jul-2011 - Moved to constructor and modified to change TDL object name itself
         #   Oz now uses the tdlobject name property directly in several places so we must change it
-        self.tdlobj.name = self.tdlobj.name + "-" + self.new_image_id
+        self.tdlobj.name = "factory-build-" + self.new_image_id
 
         # populate a config object to pass to OZ; this allows us to specify our
         # own output dir but inherit other Oz behavior
