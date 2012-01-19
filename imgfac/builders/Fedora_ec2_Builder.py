@@ -96,11 +96,14 @@ class Fedora_ec2_Builder(BaseBuilder):
         self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml, rootpw_required=True)
         # Add in target specific content
         self.add_target_content()
+
+        # Create a name combining the TDL name and the UUID for use when tagging EC2 AMIs
+        self.longname = self.tdlobj.name + "-" + self.new_image_id
         # Oz assumes unique names - TDL built for multiple backends guarantees they are not unique
         # We don't really care about the name so just force uniqueness
         # 18-Jul-2011 - Moved to constructor and modified to change TDL object name itself
         #   Oz now uses the tdlobject name property directly in several places so we must change it
-        self.tdlobj.name = self.tdlobj.name + "-" + self.new_image_id
+        self.tdlobj.name = "factory-build-" + self.new_image_id
 
         # populate a config object to pass to OZ; this allows us to specify our
         # own output dir but inherit other Oz behavior
@@ -650,7 +653,7 @@ class Fedora_ec2_Builder(BaseBuilder):
             self.log.debug("De-activation complete")
 
             new_ami_id = None
-            image_name = str(self.tdlobj.name)
+            image_name = str(self.longname)
             image_desc = "%s - %s" % (asctime(localtime()), self.tdlobj.description)
 
             if ami.root_device_type == "instance-store":
