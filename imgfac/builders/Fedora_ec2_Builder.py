@@ -639,6 +639,10 @@ class Fedora_ec2_Builder(BaseBuilder):
                 # Only needed for S3 images
                 self.install_euca_tools(guestaddr)
 
+            # Not all JEOS images contain this - redoing it if already present is harmless
+            self.log.info("Creating cloud-info file indicating target (%s)" % (self.target))
+            self.guest.guest_execute_command(guestaddr, 'echo CLOUD_TYPE=\\\"%s\\\" > /etc/sysconfig/cloud-info' % (self.target))
+
             self.log.debug("Customizing guest: %s" % (guestaddr))
             self.guest.mkdir_p(self.guest.icicle_tmp)
             self.guest.do_customize(guestaddr)
