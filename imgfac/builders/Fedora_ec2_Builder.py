@@ -221,7 +221,7 @@ class Fedora_ec2_Builder(BaseBuilder):
 
         g.mount_options("", "/dev/VolGroup00/LogVol00", "/")
         # F16 and upwards end up with boot on sda2 due to GRUB changes
-        if (self.tdlobj.distro == 'Fedora') and (self.tdlobj.update >= 16):
+        if (self.tdlobj.distro == 'Fedora') and (int(self.tdlobj.update) >= 16):
             g.mount_options("", "/dev/sda2", "/boot")
         else:
             g.mount_options("", "/dev/sda1", "/boot")
@@ -298,7 +298,7 @@ class Fedora_ec2_Builder(BaseBuilder):
         g.mkdir("/out/in")
         g.mount_ro ("/dev/VolGroup00/LogVol00", "/in")
         # F16 and upwards end up with boot on sda2 due to GRUB changes
-        if (self.tdlobj.distro == 'Fedora') and (self.tdlobj.update >= 16):
+        if (self.tdlobj.distro == 'Fedora') and (int(self.tdlobj.update) >= 16):
             g.mount_options("", "/dev/sda2", "/boot")
         else:
             g.mount_options("", "/dev/sda1", "/boot")
