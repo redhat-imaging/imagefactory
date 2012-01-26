@@ -91,7 +91,7 @@ class Fedora_vsphere_Builder(BaseBuilder):
 
         try:
             self.guest.cleanup_old_guest()
-            self.guest.generate_install_media(force_download=False)
+            self.threadsafe_generate_install_media(self.guest)
             self.percent_complete=10
         except:
             self.log_exc()

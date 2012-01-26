@@ -24,6 +24,7 @@ from imgfac import props
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageWarehouse import ImageWarehouse
 from imgfac.Template import Template
+from imgfac.ReservationManager import ReservationManager
 
 class BaseBuilder(object):
     """BaseBuilder provides a starting point for builder classes conforming to the IBuilder interface.
@@ -225,3 +226,15 @@ class BaseBuilder(object):
         else:
             self.log.debug("Image file %s already present - skipping warehouse download" % (local_image_file))
 
+    def threadsafe_generate_install_media(self, guest):
+        # Oz caching of install media and modified install media is not thread safe
+        # Make it safe here using some locks
+        # We can only have one active generate_install_media() call for each unique tuple:
+        #  (OS, update, architecture, installtype)
+
+        tdl = guest.tdl
+        queue_name = "%s-%s-%s-%s" % (tdl.distro, tdl.update, tdl.arch, tdl.installtype)
+        res_mgr = ReservationManager()
+        res_mgr.get_named_lock(queue_name)
+        guest.generate_install_media(force_download=False)
+        res_mgr.release_named_lock(queue_name) 
