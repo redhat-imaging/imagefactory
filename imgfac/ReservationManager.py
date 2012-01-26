@@ -66,6 +66,8 @@ class ReservationManager(object):
             i.appconfig = ApplicationConfiguration().configuration
             i._queues = dict(local=BoundedSemaphore(i.appconfig.get('max_concurrent_local_sessions', 1)),
                              ec2=BoundedSemaphore(i.appconfig.get('max_concurrent_ec2_sessions', 1)))
+            i._named_locks = { } 
+            i._named_locks_lock = BoundedSemaphore()
             cls.instance = i
         return cls.instance
 
@@ -204,3 +206,31 @@ class ReservationManager(object):
             self.log.debug("EXITING queue: (%s)" % (name))
             self._queues[name].release()
             self.log.debug("SUCCESS EXITING queue: (%s)" % (name))
+
+    def get_named_lock(self, name):
+        """
+        Get the named lock.
+        If the semaphore representing the lock does not exit, create it in a thread safe way.
+        Note that this is always a blocking call that will wait until the lock is available.
+
+        @param name - The name of the lock
+        """
+        # Global critical section
+        self._named_locks_lock.acquire()
+        if not name in self._named_locks:
+            self._named_locks[name] = BoundedSemaphore()
+        self._named_locks_lock.release()
+        # End global critical section
+
+        self.log.debug("Grabbing named lock (%s)" % name)
+        self._named_locks[name].acquire()
+        self.log.debug("Got named lock (%s)" % name)
+
+    def release_named_lock(self, name):
+        """
+        Release a named lock acquired with get_named_lock()
+
+        @param name - The name of the lock
+        """
+        self.log.debug("Releasing named lock (%s)" % name)
+        self._named_locks[name].release()
