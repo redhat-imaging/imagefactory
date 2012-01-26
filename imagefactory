@@ -110,6 +110,9 @@ class Application(Singleton):
         if (pid == 0):
             os.setsid()
             signal.signal(signal.SIGHUP, signal.SIG_IGN)
+            # TODO: Figure out what is generating the spurious SIGALRMs
+            # For now - ignore them
+            signal.signal(signal.SIGALRM, signal.SIG_IGN)
             try:
                 pid = os.fork()
             except OSError, e:
