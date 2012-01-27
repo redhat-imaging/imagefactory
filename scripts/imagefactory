@@ -29,7 +29,7 @@
 # Should-Stop: 
 # Default-Start: 
 # Default-Stop: 
-# Short-Description: start and stop Image Factory qmf agent
+# Short-Description: start and stop Image Factory daemon
 # Description: Image Factory
 ### END INIT INFO
 

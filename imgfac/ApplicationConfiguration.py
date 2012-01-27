@@ -40,7 +40,6 @@ class ApplicationConfiguration(Singleton):
                                 clouds.  The imagefactory command can be used to start a daemon providing a QMFv2 agent interface, allowing for \
                                 remote interaction.  An alternate method of running imagefactory allows for one-off image building and deployment \
                                 and does not connect to a qpidd."""
-        qmf_description = """Provide a QMFv2 agent interface. (see https://cwiki.apache.org/qpid/qmfv2-project-page.html for more information)"""
         cli_build_description = """Build specified system and exit."""
         cli_push_description = """Push an image and exit."""
         warehouse_description = """Options for specifying Image Warehouse (http://aeolusproject.org/imagewarehouse.html) base URL and bucket names."""
@@ -66,9 +65,8 @@ class ApplicationConfiguration(Singleton):
         group_rest.add_argument('--ssl_pem', default='*', help='PEM certificate file to use for HTTPS access to the REST interface. (default: A transient certificate is generated at runtime.)')
         group_rest.add_argument('--no_oauth', action='store_true', default=False, help='Use 2 legged OAuth to protect the REST interface. (default: %(default)s)')
 
-        group_qmf = argparser.add_argument_group(title='QMF agent', description=qmf_description)
-        group_qmf.add_argument('--qmf', action='store_true', default=False, help='Turn on QMF agent interface. (default: %(default)s)')
-        group_qmf.add_argument('--qpidd', default='localhost', help='URL of qpidd to connect to. (default: %(default)s)')
+        group_qmf = argparser.add_argument_group(title='QMF agent', description="NO LONGER SUPPORTED")
+        group_qmf.add_argument('--qmf', action='store_true', default=False, help='NO LONGER SUPPORTED')
 
         group_build = argparser.add_argument_group(title='Image building', description=cli_build_description)
         group_build.add_argument('--template', help='Template XML file to build from.')
