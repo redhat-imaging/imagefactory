@@ -9,7 +9,6 @@ URL: http://www.aeolusproject.org/imagefactory.html
 BuildArch: noarch
 Requires: oz >= 0.7.0
 Requires: euca2ools
-Requires: python-qmf
 Requires: python-pycurl
 Requires: python-libguestfs
 Requires: python-zope-interface
@@ -34,9 +33,9 @@ Requires(preun): initscripts
 BuildRequires: python-setuptools
 
 %description
-imagefactory is a daemon that listens for build requests via QMF.  When
-a build request is received, imagefactory will build the requested image
-for the requested target.
+imagefactory allows the creation of system images for multiple virtualization
+and cloud providers from a single template definition. See 
+http://aeolusproject.org/projects/imagefactory for more information.
 
 %package jeosconf-ec2-fedora
 Summary: Configuration for JEOS images for EC2
