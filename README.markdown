@@ -6,14 +6,14 @@ and Cloud providers.
 
 ![](http://aeolusproject.github.com/imagefactory/IF-highlevel.png)
 
-###Features:###
+##Features##
 *   Build guest images for a growing list of operating system and cloud combinations.
     * Current guest OS support: Fedora 7-16, RHEL 5.x and 6.x
     * Current cloud support: Red Hat Enterprise Virtualization, VMware vSphere, Amazon EC2, Rackspace
 *   Image Factory supports "build and upload" or snapshotting of existing images.
 *   RESTful API makes integrating Image Factory into existing workflows simple.
 
-###Using Image Factory###
+##Using Image Factory##
 Building an image begins with a template describing what to build.
 
     <template>
@@ -41,8 +41,7 @@ That's it!  You can now launch an instance of this image using either the cloud
 provider's management console or a cloud management tool such as 
 **[Aeolus](http://www.aeolusproject.org/)**.
 
-###Installing Image Factory###
-
+##Installing Image Factory##
 Installing Image Factory is quick and easy.  Fedora 15-16 and RHEL 5-6 users can
 add the Aeolus repository for either RHEL or Fedora as described on the
 [Aeolus | Get It](http://www.aeolusproject.org/get_it.html#stable) page.  Once
