@@ -21,24 +21,12 @@ import os.path
 import signal
 import logging
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
-from imgfac.qmfagent.ImageFactoryAgent import ImageFactoryAgent
 from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.Singleton import Singleton
 from imgfac.rest.bottle import *
 from imgfac.rest.imagefactory import rest_api
 
 class Application(Singleton):
-
-    def qmf_agent():
-        doc = "The qmf_agent property."
-        def fget(self):
-            return self._qmf_agent
-        def fset(self, value):
-            self._qmf_agent = value
-        def fdel(self):
-            del self._qmf_agent
-        return locals()
-    qmf_agent = property(**qmf_agent())
 
     def _singleton_init(self):
         super(Application, self)._singleton_init()
@@ -47,7 +35,6 @@ class Application(Singleton):
         self.pid_file_path = "/var/run/imagefactory.pid"
         signal.signal(signal.SIGTERM, self.signal_handler)
         self.app_config = ApplicationConfiguration().configuration
-        self.qmf_agent = None
 
         # by setting TMPDIR here we make sure that libguestfs
         # (imagefactory -> oz -> libguestfs) uses the temporary directory of
@@ -87,16 +74,8 @@ class Application(Singleton):
                         logging.warning("Got exception when attempting to abort build id (%s) during shutdown" % (builder_id))
                         logging.exception(e)
 
-            if (self.qmf_agent):
-                self.qmf_agent.shutdown()
-                try:
-                    os.remove(self.pid_file_path)
-                except Exception, e:
-                    self.log.warning(str(e))
-
             sys.exit(0)
 
-    # TODO: (redmine 273) - add code here to set the user:group we're running as and drop privileges
     def daemonize(self): #based on Python recipe 278731
         UMASK = 0
         WORKING_DIRECTORY = '/'
@@ -139,28 +118,8 @@ class Application(Singleton):
         return(True)
 
     def main(self):
-        # TODO: Put the QMF and REST listeners in separate threads and move the
-        # CLI to a seperate script that uses either API.
         if (self.app_config['qmf']):
-            if (not self.app_config['foreground']):
-                self.daemon = self.daemonize()
-
-            self.setup_logging()
-            if(self.daemon):
-                try:
-                    with open(self.pid_file_path, "w") as pidfile:
-                        pidfile.write("%s\n" % (str(os.getpid()), ))
-                        pidfile.close()
-                except Exception, e:
-                    logging.warning(str(e))
-                logging.info("Launched as daemon...")
-            elif(self.app_config['foreground']):
-                logging.info("Launching in foreground...")
-            else:
-                logging.warning("Failed to launch as daemon...")
-
-            self.qmf_agent = ImageFactoryAgent(self.app_config['qpidd'])
-            self.qmf_agent.run()
+            print "QMF agent support is no longer available..."
         elif(self.app_config['rest']):
             if (not self.app_config['foreground']):
                 self.daemon = self.daemonize()
