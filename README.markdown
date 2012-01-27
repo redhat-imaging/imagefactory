@@ -4,7 +4,7 @@
 Image Factory enables appliance creation and deployment to multiple virtualization
 and Cloud providers.
 
-![](http://aeolusproject.github.com/imagefactory/IF-highlevel.png)
+![](http://aeolusproject.github.com/imagefactory/images/IF-highlevel.png)
 
 ##Features##
 *   Build guest images for a growing list of operating system and cloud combinations.
@@ -14,7 +14,10 @@ and Cloud providers.
 *   RESTful API makes integrating Image Factory into existing workflows simple.
 
 ##Using Image Factory##
-Building an image begins with a template describing what to build.
+Building an image begins with a template describing what to build. See an example
+of such a template below. See the [schema documentation for TDL](http://aeolusproject.github.com/imagefactory/tdl/)
+for more detail on creating a template. Note that a template is **not** tied to
+a specific cloud. 
 
     <template>
         <name>f12jeos</name>
@@ -28,7 +31,8 @@ Building an image begins with a template describing what to build.
         </os>
     </template>
 
-Next, use the imagefactory command to specify for which clouds to build an image.
+Next, use the imagefactory command and specify the template to use and for which
+clouds to build an image. The above template example was saved to a file name f12_64.tdl.
 
     $ sudo imagefactory --template f12_64.tdl --target ec2
 
