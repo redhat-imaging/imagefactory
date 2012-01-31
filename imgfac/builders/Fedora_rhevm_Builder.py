@@ -174,6 +174,9 @@ class Fedora_rhevm_Builder(BaseBuilder):
         self.log.info("Updating rc.local with Audrey conditional")
         g.write("/tmp/rc.local", self.rc_local_all)
         g.sh("cat /tmp/rc.local >> /etc/rc.local")
+        # It's possible the above line actually creates rc.local
+        # Make sure it is executable
+        g.sh("chmod a+x /etc/rc.local")
 
         # In the cloud context we currently never need or want persistent net device names
         # This is known to break networking in RHEL/VMWare and could potentially do so elsewhere

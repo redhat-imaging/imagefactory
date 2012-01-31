@@ -386,6 +386,9 @@ class Fedora_ec2_Builder(BaseBuilder):
         self.log.info("Updating rc.local for key injection")
         g.write("/tmp/rc.local", self.rc_local)
         g.sh("cat /tmp/rc.local >> /etc/rc.local")
+        # It's possible the above line actually creates rc.local
+        # Make sure it is executable
+        g.sh("chmod a+x /etc/rc.local")
         g.rm("/tmp/rc.local")
 
         # Install menu list
