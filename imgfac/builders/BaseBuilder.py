@@ -236,5 +236,7 @@ class BaseBuilder(object):
         queue_name = "%s-%s-%s-%s" % (tdl.distro, tdl.update, tdl.arch, tdl.installtype)
         res_mgr = ReservationManager()
         res_mgr.get_named_lock(queue_name)
-        guest.generate_install_media(force_download=False)
-        res_mgr.release_named_lock(queue_name) 
+        try:
+            guest.generate_install_media(force_download=False)
+        finally:
+            res_mgr.release_named_lock(queue_name) 
