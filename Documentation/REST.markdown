@@ -2,10 +2,7 @@
 
 ---
 
-Image Factory is the ideal system image creation engine for any application that needs to support
-a variety of virtualization and cloud services. Our REST API provides developers with a straightforward
-and easy way to develop solutions on top of Image Factory. This document describes the Image Factory REST
-API for building and pushing images as well as getting the status of builder operations.
+Image Factory is the ideal system image creation engine for any application that needs to support a variety of virtualization and cloud services. Our REST API provides developers with a straightforward and easy way to develop solutions on top of Image Factory. This document describes the Image Factory REST API for building and pushing images as well as getting the status of builder operations.
 
 ## Starting imagefactory in REST mode
 
@@ -21,21 +18,15 @@ API for building and pushing images as well as getting the status of builder ope
     *   `--no_oauth` can be specified on the command line to turn off OAuth.
     *   More detail on how Image Factory uses OAuth can be found [below](#oauth)
 
-**NOTE:** As an alternative to specifying arguments on the command line, options can be set in the
-imagefactory configuration file. Just leave the dashes off of the option name.
+**NOTE:** As an alternative to specifying arguments on the command line, options can be set in the imagefactory configuration file. Just leave the dashes off of the option name.
 
 ## Using the Image Factory REST API
 
 ---
 
-To use the Image Factory REST API, send an HTTP request to any of the [resources][] Image Factory provides.
-Each resource supports one or more of the stand HTTP methods (POST, GET, PUT, DELETE) which map to the
-operations Create, Read, Update, and Delete. More detail on what methods are supported and what parameters
-are required by each resource can be found in the [resources][] section.
+To use the Image Factory REST API, send an HTTP request to any of the [resources][] Image Factory provides.  Each resource supports one or more of the stand HTTP methods (POST, GET, PUT, DELETE) which map to the operations Create, Read, Update, and Delete. More detail on what methods are supported and what parameters are required by each resource can be found in the [resources][] section.
 
-Responses are formatted as JSON in all cases.  POST requests can also be formatted as JSON if the HTTP
-header, `Content-Type`, is set to `application/json`. Response contents are documented for each specific resource
-in the [resources][] section.
+Responses are formatted as JSON in all cases.  POST requests can also be formatted as JSON if the HTTP header, `Content-Type`, is set to `application/json`. Response contents are documented for each specific resource in the [resources][] section.
 
 
 <a id="oauth"></a>
@@ -43,17 +34,15 @@ in the [resources][] section.
 
 ---
 
-Image Factory uses two-legged OAuth to protect writable operations from unauthorized access. This means that even
-when OAuth is configured and enabled, Image Factory allows all read-only requests. This makes it simple to use any
-browser to get a quick status of current builder activity.
+Image Factory uses two-legged OAuth to protect writable operations from unauthorized access. This means that even when OAuth is configured and enabled, Image Factory allows all read-only requests. This makes it simple to use any browser to get a quick status of current builder activity.
 
-Any number of consumer_key / shared_secret pairs can be used. Just add these to the `clients` section of the
-`imagefactory.conf` file.
-> Example:
-> > `"clients": {
-    "client1": "our-secret",
-    "client2": "just-between-us"
-    }`
+Any number of consumer_key / shared_secret pairs can be used. Just add these to the `clients` section of the `imagefactory.conf` file.
+> Example:  
+> >  
+    "clients": {
+        "client1": "our-secret",
+        "client2": "just-between-us"
+    }
 
 <a id="resources"></a>
 ## Resources
@@ -154,8 +143,7 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     **Methods:**
     
     * **POST**  
-    > **Description:** Creates a provider image using the specified target image and pushes it up to a cloud provider using the given credentials.
-    > This is an alternate URI for the resource above.
+    > **Description:** Creates a provider image using the specified target image and pushes it up to a cloud provider using the given credentials. This is an alternate URI for the resource above.
     >
     > **OAuth protected:** YES
     >
