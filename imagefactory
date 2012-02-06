@@ -46,9 +46,9 @@ class Application(Singleton):
 
     def setup_logging(self):
         if (self.app_config['foreground']):
-            logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) thread(%(threadName)s) Message: %(message)s')
+            logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(levelname)s %(name)s thread(%(threadName)s) Message: %(message)s')
         else:
-            logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(levelname)s %(name)s pid(%(process)d) thread(%(threadName)s) Message: %(message)s', filename='/var/log/imagefactory.log')
+            logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(levelname)s %(name)s thread(%(threadName)s) Message: %(message)s', filename='/var/log/imagefactory.log')
         if (self.app_config['debug']):
             logging.getLogger('').setLevel(logging.DEBUG)
         elif (self.app_config['verbose']):
