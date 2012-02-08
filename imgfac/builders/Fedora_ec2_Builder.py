@@ -1242,14 +1242,6 @@ chown $user $home/.ssh/authorized_keys
 
 done
 rm /tmp/my-key
-
-# This conditionally runs Audrey if it exists
-[ -f /usr/bin/audrey ] && /usr/bin/audrey
-"""
-
-    rc_local_all="""
-# This conditionally runs Audrey if it exists
-[ -f /usr/bin/audrey ] && /usr/bin/audrey
 """
 
     ifcfg_eth0="""DEVICE=eth0
