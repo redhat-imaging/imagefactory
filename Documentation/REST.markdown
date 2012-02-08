@@ -37,6 +37,7 @@ Responses are formatted as JSON in all cases.  POST requests can also be formatt
 Image Factory uses two-legged OAuth to protect writable operations from unauthorized access. This means that even when OAuth is configured and enabled, Image Factory allows all read-only requests. This makes it simple to use any browser to get a quick status of current builder activity.
 
 Any number of consumer_key / shared_secret pairs can be used. Just add these to the `clients` section of the `imagefactory.conf` file.
+
 > Example:  
 > >  
     "clients": {
@@ -53,6 +54,7 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     **Methods:**
     
     * **GET**
+
     > **Description:** Returns the version string for the API
     >
     > **OAuth protected:** NO
@@ -72,6 +74,7 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     **Methods:**
 
     * **POST**
+    
     >  **Description:** Builds a new target image.
     >
     > **OAuth protected:** YES
@@ -91,11 +94,13 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     > > `{"_type": "image", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "id": "0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "build": {"target_images": [{"_type": "target_image", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/29085ce6-3e31-4dc4-b8fc-74622f2b5ad7/target_images/569121e2-5c5e-4457-b88c-13a925eee01d", "id": "569121e2-5c5e-4457-b88c-13a925eee01d"}], "_type": "build", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/29085ce6-3e31-4dc4-b8fc-74622f2b5ad7", "id": "29085ce6-3e31-4dc4-b8fc-74622f2b5ad7"}}`
 
 * __*/imagefactory/images/:image_id*__
+    
     > __image_id__ - uuid of the image to be rebuilt  
 
     **Methods:**
     
     * **PUT**
+    
     >  **Description:** Rebuild an existing target image
     >
     > **OAuth protected:** YES
@@ -115,6 +120,7 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     > >`{"_type": "image", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "id": "0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "build": {"target_images": [{"_type": "target_image", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_images/f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "id": "f721adc4-ea4c-4d20-adf9-1a02153a9cc6"}], "_type": "build", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935", "id": "c68f4d55-0785-4460-9092-07fc7c126935"}}`
 
 * __*/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id/provider_images*__
+    
     > __image_id__ - uuid of the image  
     > __build_id__ - uuid of the image build  
     > __target_image_id__ - uuid of the target image to push
@@ -122,6 +128,7 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     **Methods:**
 
     * **POST**  
+    
     > **Description:** Creates a provider image using the specified target image and pushes it up to a cloud provider using the given credentials.
     >
     > **OAuth protected:** YES
@@ -143,6 +150,7 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     **Methods:**
     
     * **POST**  
+    
     > **Description:** Creates a provider image using the specified target image and pushes it up to a cloud provider using the given credentials. This is an alternate URI for the resource above.
     >
     > **OAuth protected:** YES
@@ -163,6 +171,7 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     > > `To be filled in...`
 
 * __*/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id*__
+    
     > __image_id__ - uuid of the image  
     > __build_id__ - uuid of the image build  
     > __target_image_id__ - uuid of the target image being built
@@ -170,6 +179,7 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     **Methods:**
     
     * **GET**  
+    
     > **Description:** Displays the details of the Image Factory builder object responsible for building the target image.
     >
     > **OAuth protected:** NO
@@ -188,6 +198,7 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     > > `{"status": "COMPLETED", "_type": "target_image_status", "completed": 100, "provider_account_identifier": null, "image_id": "0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_images/f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "operation": "build", "id": "f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "build_id": "c68f4d55-0785-4460-9092-07fc7c126935", "target": "mock", "provider": null, "target_image_id": null}`
 
 * __*/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id/status*__
+    
     > __image_id__ - uuid of the image  
     > __build_id__ - uuid of the image build  
     > __target_image_id__ - uuid of the target image being built
@@ -195,6 +206,7 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     **Methods:**
     
     * **GET**  
+    
     > **Description:** Displays just the status of the Image Factory builder object responsible for building the target image.
     >
     > **OAuth protected:** NO
@@ -213,6 +225,7 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     > > `{"status": "COMPLETED", "_type": "target_image_status", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_images/f721adc4-ea4c-4d20-adf9-1a02153a9cc6/status", "id": "f721adc4-ea4c-4d20-adf9-1a02153a9cc6"}`
 
 * __*/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id/provider_images/:provider_image_id*__
+    
     > __image_id__ - uuid of the image  
     > __build_id__ - uuid of the image build  
     > __target_image_id__ - uuid of the target image  
@@ -221,6 +234,7 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     **Methods:**
     
     * **GET**  
+    
     > **Description:** Displays the details of the Image Factory builder object responsible for pushing the provider image.
     >
     > **OAuth protected:** NO
@@ -237,6 +251,7 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     > > `To be filled in...`
 
 * __*/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id/provider_images/:provider_image_id/status*__
+    
     > __image_id__ - uuid of the image  
     > __build_id__ - uuid of the image build  
     > __target_image_id__ - uuid of the target image  
@@ -245,6 +260,7 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     **Methods:**
     
     * **GET**  
+    
     > **Description:** Displays just the status of the Image Factory builder object responsible for pushing the provider image.
     >
     > **OAuth protected:** NO
@@ -265,6 +281,7 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     **Methods:**
     
     * **GET**  
+    
     > **Description:** Displays a list of all current Image Factory builder objects.
     >
     > **OAuth protected:** NO
@@ -282,11 +299,13 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     > > `{"_type": "builders", "href": "http://imgfac-host:8075/imagefactory/builders", "builders": [{"status": "COMPLETED", "_type": "builder", "completed": 100, "provider_account_identifier": null, "image_id": "6b558510-15db-4beb-b385-843241ea0639", "href": "http://imgfac-host:8075/imagefactory/builders/acd2e7fd-2dda-4aa1-aee1-23e207782f39", "operation": "build", "id": "acd2e7fd-2dda-4aa1-aee1-23e207782f39", "build_id": "6297c0f7-d6f1-41fc-a87d-4afbc582b57a", "target": "mock", "provider": null, "target_image_id": null}, {"status": "COMPLETED", "_type": "builder", "completed": 100, "provider_account_identifier": null, "image_id": "0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "href": "http://imgfac-host:8075/imagefactory/builders/f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "operation": "build", "id": "f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "build_id": "c68f4d55-0785-4460-9092-07fc7c126935", "target": "mock", "provider": null, "target_image_id": null}, {"status": "COMPLETED", "_type": "builder", "completed": 100, "provider_account_identifier": null, "image_id": "0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "href": "http://imgfac-host:8075/imagefactory/builders/569121e2-5c5e-4457-b88c-13a925eee01d", "operation": "build", "id": "569121e2-5c5e-4457-b88c-13a925eee01d", "build_id": "29085ce6-3e31-4dc4-b8fc-74622f2b5ad7", "target": "mock", "provider": null, "target_image_id": null}]}`
 
 * __*/imagefactory/builders/:builder_id*__
+    
     > __builder_id__ - uuid of the builder
     
     **Methods:**
     
     * **GET**  
+    
     > **Description:** Displays the details for a specific builder object.
     >
     > **OAuth protected:** NO
@@ -305,11 +324,13 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     > > `{"status": "COMPLETED", "_type": "builder", "completed": 100, "provider_account_identifier": null, "image_id": "6b558510-15db-4beb-b385-843241ea0639", "href": "http://imgfac-host:8075/imagefactory/builders/acd2e7fd-2dda-4aa1-aee1-23e207782f39", "operation": "build", "id": "acd2e7fd-2dda-4aa1-aee1-23e207782f39", "build_id": "6297c0f7-d6f1-41fc-a87d-4afbc582b57a", "target": "mock", "provider": null, "target_image_id": null}`
 
 * __*/imagefactory/builders/:builder_id/status*__
+    
     > __builder_id__ - uuid of the builder
     
     **Methods:**
     
     * **GET**  
+    
     > **Description:** Displays just the status for a specific builder object.
     >
     > **OAuth protected:** NO
