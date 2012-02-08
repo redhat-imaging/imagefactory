@@ -195,8 +195,8 @@ def push_image(image_id, build_id, target_image_id):
                 'id':provider_image_id,
                 'href':'%s/%s' % (request.url, provider_image_id)}
 
-    except KeyError:
-        raise HTTPResponse(status=400, output='To push an image, a provider id and provider credentials must be supplied.')
+    except KeyError as e:
+        raise HTTPResponse(status=400, output="Missing either 'provider' or 'credentials' in request: %s" % e)
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
@@ -210,8 +210,8 @@ def create_provider_image():
         build_id = _request_data.get('build_id')
         target_image_id = _request_data.get('target_image_id')
         return push_image(image_id, build_id, target_image_id)
-    except KeyError:
-        raise HTTPResponse(status=400, output='Missing one or more of image_id, build_id, or target_image_id.')
+    except KeyError as e:
+        raise HTTPResponse(status=400, output="Missing one or more of 'image_id', 'build_id', or 'target_image_id': %s" % e)
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)

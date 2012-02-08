@@ -98,13 +98,15 @@ class BuildDispatcher(Singleton):
         try:
             xml_et = fromstring(provider)
             return xml_et.attrib
-        except:
+        except Exception as e:
+            self.log.debug('Testing provider for XML: %s' % e)
             pass
 
         try:
             jload = json.loads(provider)
             return jload
-        except ValueError:
+        except ValueError as e:
+            self.log.debug('Testing provider for JSON: %s' % e)
             pass
 
         rhevm_data = self._return_dynamic_provider_data(provider, "rhevm")
@@ -271,7 +273,11 @@ class BuildDispatcher(Singleton):
         # Check for dynamic providers first
         provider_data = self.get_dynamic_provider_data(provider)
         if provider_data:
-            return provider_data['target']
+            try:
+                return provider_data['target']
+            except KeyError as e:
+                self.log.debug('Provider data does not specify target!\n%s' % provider_data)
+                raise Exception('Provider data does not specify target!\n%s' % provider_data)
         elif provider.startswith('ec2-'):
             return 'ec2'
         elif provider == 'rackspace':
