@@ -39,8 +39,6 @@ Image Factory uses two-legged OAuth to protect writable operations from unauthor
 Any number of consumer_key / shared_secret pairs can be used. Just add these to the `clients` section of the `imagefactory.conf` file.
 
 > Example:  
-
-> >  
     "clients": {
         "client1": "our-secret",
         "client2": "just-between-us"
@@ -61,18 +59,15 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     > **OAuth protected:** NO
     >
     > **Parameters:**  
-
-    > > __None__
+    > * __None__
     >
     > **Responses:**  
-    
-    > > __200__ - Name and version of the API  
+    > * __200__ - Name and version of the API  
     >
     > *Example:*  
-    
-    > >`% curl http://imgfac-host:8075/imagefactory`
-    > >
-    > > `{"version": "1.0", "name": "imagefactory"}`
+    > `% curl http://imgfac-host:8075/imagefactory`
+    > 
+    > `{"version": "1.0", "name": "imagefactory"}`
 
 * __*/imagefactory/images*__  
     **Methods:**
