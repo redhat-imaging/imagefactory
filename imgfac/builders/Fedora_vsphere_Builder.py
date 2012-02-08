@@ -180,13 +180,6 @@ class Fedora_vsphere_Builder(BaseBuilder):
         tmpl = 'CLOUD_TYPE="%s"\n' % (self.target)
         g.write("/etc/sysconfig/cloud-info", tmpl)
 
-        self.log.info("Updating rc.local with Audrey conditional")
-        g.write("/tmp/rc.local", self.rc_local_all)
-        g.sh("cat /tmp/rc.local >> /etc/rc.local")
-        # It's possible the above line actually creates rc.local
-        # Make sure it is executable
-        g.sh("chmod a+x /etc/rc.local")
-
         # In the cloud context we currently never need or want persistent net device names
         # This is known to break networking in RHEL/VMWare and could potentially do so elsewhere
         # Just delete the file to be safe
@@ -302,8 +295,3 @@ class Fedora_vsphere_Builder(BaseBuilder):
 
     def abort(self):
         pass
-
-    rc_local_all="""
-# This conditionally runs Audrey if it exists
-[ -f /usr/bin/audrey ] && /usr/bin/audrey
-"""
