@@ -39,6 +39,7 @@ Image Factory uses two-legged OAuth to protect writable operations from unauthor
 Any number of consumer_key / shared_secret pairs can be used. Just add these to the `clients` section of the `imagefactory.conf` file.
 
 > Example:  
+
 > >  
     "clients": {
         "client1": "our-secret",
@@ -60,12 +61,15 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     > **OAuth protected:** NO
     >
     > **Parameters:**  
+
     > > __None__
     >
     > **Responses:**  
+    
     > > __200__ - Name and version of the API  
     >
     > *Example:*  
+    
     > >`% curl http://imgfac-host:8075/imagefactory`
     > >
     > > `{"version": "1.0", "name": "imagefactory"}`
@@ -80,15 +84,18 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     > **OAuth protected:** YES
     >
     > **Parameters:**  
+    
     > > __targets__ - comma separated string  
     > > __template__ - string representation of XML document, UUID, or URL
     >
     > **Responses:**  
+    
     > > __202__ - New image  
     > > __400__ - Missing parameters  
     > > __500__ - Error building image
     >
     > *Example:*  
+    
     > > `% curl -d "targets=mock&template=<template> <name>f14jeos</name> <os> <name>Fedora</name> <version>14</version> <arch>x86_64</arch> <install type='url'> <url>http://download.fedoraproject.org/pub/fedora/linux/releases/14/Fedora/x86_64/os/</url> </install> </os> <description>Fedora 14</description> </template>" http://imgfac-host:8075/imagefactory/images`
     > >
     > > `{"_type": "image", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "id": "0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "build": {"target_images": [{"_type": "target_image", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/29085ce6-3e31-4dc4-b8fc-74622f2b5ad7/target_images/569121e2-5c5e-4457-b88c-13a925eee01d", "id": "569121e2-5c5e-4457-b88c-13a925eee01d"}], "_type": "build", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/29085ce6-3e31-4dc4-b8fc-74622f2b5ad7", "id": "29085ce6-3e31-4dc4-b8fc-74622f2b5ad7"}}`
@@ -106,15 +113,18 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     > **OAuth protected:** YES
     >
     > **Parameters:**  
+    
     > > __targets__ - comma separated string  
     > > __template__ - string representation of XML document, UUID, or URL
     >
     > **Responses:**  
+    
     > > __202__ - New image  
     > > __400__ - Missing parameters  
     > > __500__ - Error building image
     >
     > *Example:*  
+    
     > > `% curl -d "targets=mock&template=<template> <name>f14jeos</name> <os> <name>Fedora</name> <version>14</version> <arch>x86_64</arch> <install type='url'> <url>http://download.fedoraproject.org/pub/fedora/linux/releases/14/Fedora/x86_64/os/</url> </install> </os> <description>Fedora 14</description> </template>" -X PUT http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf`
     > >
     > >`{"_type": "image", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "id": "0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "build": {"target_images": [{"_type": "target_image", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_images/f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "id": "f721adc4-ea4c-4d20-adf9-1a02153a9cc6"}], "_type": "build", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935", "id": "c68f4d55-0785-4460-9092-07fc7c126935"}}`
@@ -134,10 +144,12 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     > **OAuth protected:** YES
     >
     > **Parameters:**  
+    
     > > __provider__ - provider name as a string  
     > > __credentials__ - XML string representation of credentials for the given provider
     >
     > **Responses:**  
+    
     > > __202__ - New provider image  
     > > __400__ - Missing parameters  
     > > __500__ - Error pushing image
@@ -156,6 +168,7 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     > **OAuth protected:** YES
     >
     > **Parameters:**  
+    
     > > __image_id__ - uuid of the image  
     > > __build_id__ - uuid of the image build  
     > > __target_image_id__ - uuid of the target image to push  
@@ -163,11 +176,13 @@ Any number of consumer_key / shared_secret pairs can be used. Just add these to 
     > > __credentials__ - XML string representation of credentials for the given provider
     >
     > **Responses:**  
+    
     > > __202__ - New provider image  
     > > __400__ - Missing parameters  
     > > __500__ - Error pushing image
     >
     > *Example:*
+    
     > > `To be filled in...`
 
 * __*/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id*__
