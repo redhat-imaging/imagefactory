@@ -2,7 +2,11 @@
 
 ---
 
+Image Factory looks for a configuration file at `/etc/imagefactory/imagefactory.conf` by default. The configuration file uses JSON for the format. This document describes the configuration options for Image Factory below.
+
 ## General options
+
+Options setting the overall behavior of Image Factory.
 
 + **debug**
     - _Description:_ Turns on verbose debugging messages in the log file.
@@ -21,6 +25,8 @@
     - _Default:_ /tmp
 
 ## REST API options
+
+Options for enabling the REST API and configuring how it is accessed.
 
 + **rest**
     - _Description:_ Enable the REST API
@@ -47,6 +53,8 @@
 
 ## Amazon EC2 options
 
+Options specific to Amazon EC2.
+
 + **ec2_build_style**
     - _Description:_ How images should be built for EC2. As the name implies, an upload build will install an OS in a VM locally to be customized and prepared for upload to EC2. A snapshot build will copy an existing AMI to be customized.
     - _Default:_ snapshot
@@ -65,7 +73,9 @@
     - _Description:_ The maximum number of concurrent EC2 snapshot builds to allow. Once the number of concurrent builds is reached, any other builds will entera queue and continue as previous builds complete.
     - _Default:_ 2
 
-## Red Hat Enterprise Virtualization options
+## RHEVM options
+
+Options specific to Red Hat Enterprise Virtualization
 
 + **rhevm_image_format**
     - _Description:_ The format to use for RHEVM images.
@@ -73,6 +83,8 @@
     - _Values:_ qcow2
 
 ## Image Warehouse options
+
+Settings for using the Aeolus Image Warehouse (iwhd) component.
 
 + **warehouse**
     - _Description:_ URL of the warehouse location to store images.
