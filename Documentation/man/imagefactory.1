@@ -1,163 +1,543 @@
-.TH IMAGEFACTORY 1 "April 2011" "imagefactory"
-
-.SH NAME
-imagefactory - Create and customize OS images for private and public clouds.
-This tool can be launched as a daemon to provide a QMFv2 interface that other applications can use for building images and instantiating these images on supported clouds.  Alternatively, a single image can be built or instantiated using the command line options described below without creating a daemon process or using QMF.
-
-Currently supported public cloud services are: Amazon EC2, Rackspace.
-Currently supported private cloud services: RHEV-M, KVM.
-
-.SH SYNOPSIS
-.B imagefactory [-h] [--version] [-v] [--debug] [--foreground] [--config CONFIG]
-.B          [imgdir IMGDIR] [--timeout TIMEOUT] [--qmf] [--qpidd QPIDD]
-.B          [--image IMAGE]
-.B          [--template TEMPLATE] [--target TARGET] [--target TARGET]...
-.B          [--credentials CREDENTIALS] [--provider PROVIDER] [--provider PROVIDER]...
-.B          [--warehouse WAREHOUSE]
-.B          [--image_bucket IMAGE_BUCKET]
-.B          [--build_bucket BUILD_BUCKET]
-.B          [--target_bucket TARGET_BUCKET]
-.B          [--template_bucket TEMPLATE_BUCKET]
-.B          [--icicle_bucket ICICLE_BUCKET]
-.B          [--provider_bucket PROVIDER_BUCKET]
-
-.SH OPTIONS
-
-.B -h, --help
-Display the help page.
-
-.B --version
-imagefactory version info.
-
-.B -v, --verbose
-Set verbose logging.
-
-.B --debug
-Set really verbose logging for debugging.
-
-.B --config CONFIG
-Image factory configuration file to use.  (default: /etc/imagefactory/imagefactory.conf)
-
-.B --imgdir IMGDIR
-Build image files in location specified. After the image is finished it will be saved in this location.  (default: /tmp)
-
-.B --image IMAGE
-The UUID of the image to build or push. This is a UUID of an object in IWHD's image bucket.
-
-.B --timeout TIMEOUT
-Set the timeout period for image building in seconds.  (default: 3600)
-
-.SS QMF agent:
-  Provide a QMFv2 agent interface.
-
-.B --foreground
-Stay in the foreground and avoid launching a daemon.
-Launching in foreground allows the user to see what messages are being passed to QMF. For more detailed output use this parameter together with .B --debug.
-If the parameter is not specified, the QMF agent will be started as a daemon.
-(default: False)
-
-.B --qmf
-Turn on QMF agent interface.  (default: False)
-
-.B --qpidd QPIDD
-URL of qpidd to connect to.  (default: localhost)
-
-.SS Image building:
-  Build specified system and exit.
-
-.B --template TEMPLATE
-Template to build from. Template can be passed as URL, PATH, UUID or XML. Please refer to the
-.BR XML
-.BR EXAMPLES
-section at the bottom.
-
-.B --target TARGET
-The list of cloud services to target. Examples include ec2, rhevm,
-vsphere, rackspace, and condorcloud.
-
-
-.SS Image pushing:
-  Push an image and exit.
-
-
-.B --provider PROVIDER
-The list of cloud service providers to push the emacs. Examples include ec2-us-east-1, ec2-us-west-1, rackspace.
-
-.B --credentials CREDENTIALS
-Cloud provider credentials. Credentials must be passed as XML file. Please refer to the
-.BR XML
-.BR EXAMPLES
-section at the bottom.
-
-.SS Image Warehouse:
-  Options for specifying Image Warehouse base URL and bucket names.
-
-.B --warehouse WAREHOUSE
-URL of the warehouse location to store images.  (default: http://localhost:9090/)
-
-.B --image_bucket IMAGE_BUCKET
-Name of warehouse bucket to look in for images.  (default: None)
-
-.B --build_bucket BUILD_BUCKET
-Name of warehouse bucket to look in for builds.  (default: None)
-
-.B --target_bucket TARGET_BUCKET
-Name of warehouse bucket to look in for target images.  (default: None)
-
-.B --template_bucket TEMPLATE_BUCKET
-Name of warehouse bucket to look in for templates.  (default: None)
-
-.B --icicle_bucket ICICLE_BUCKET
-Name of warehouse bucket to look in for icicles.  (default: None)
-
-.B --provider_bucket PROVIDER_BUCKET
-Name of warehouse bucket to look in for provider image instances. (default: None)
-
-.SH XML EXAMPLES
-.sp
-.SS CREDENTIALS
-
-It's assumed that you will have more credentials in the same XML file, so the syntax will be .B cloud_provider = [XML string]
-eg.
-
-rackspace = "<provider_credentials> \\
-        <rackspace_credentials> \\
-            <username>foo</username> \\
-            <api_key>0123456789</api_key> \\
-        </rackspace_credentials> \\
-    </provider_credentials>"
-
-.SS TEMPLATE
-eg. a Windows 2008 64bit example
-
-<template>
-  <name>win2kjeos</name>
-  <os>
-    <name>Windows</name>
-    <version>2008</version>
-    <arch>x86_64</arch>
-    <install type='iso'>
-      <iso>http://directory_path/windows2008x64.iso</iso>
-    </install>
-    <key></key>
-  </os>
-  <description>Windows 2008</description>
-  <repos>
-     <repo url="smb://domain\\user:UserName@IP\\share" name="Default"/>
-     <repo url="smb://domain\\user:UserName@IP\\another_share" name="Alternative"/>
-  </repos>
-  <packages>
-    <package>
-        <repo name="Default"/>
-        <name>Dot Net 4.0</name>
-        <file>dotNetFx40_Full_x86_x64.exe</file>
-        <arguments>/passive</arguments>
-    </package>
-    <package>
-        <repo name="Alternative"/>
-        <name>Winrar</name>
-        <file>winrarx64393.exe</file>
-        <arguments>/s</arguments>
-    </package>
-  </packages>
-</template>
+.TH IMAGEFACTORY 1 "" "Version 1.0 - February 10, 2012" "User Manual"
+.PP
+\f[B]NAME\f[]
+.RS
+.PP
+imagefactory - create virtual machine images for use on a variety of
+clouds
+.RE
+.PP
+\f[B]SYNOPSIS\f[]
+.RS
+.PP
+\f[B]imagefactory\f[] [optional arguments]
+.RE
+.PP
+\f[B]DESCRIPTION\f[]
+.RS
+.PP
+\f[B]imagefactory\f[] is the command for starting the Image Factory REST
+API.
+\f[B]imagefactory\f[] can also be used to create virtual machine images
+and push these images to cloud providers from the command line without
+starting the REST API.
+.RE
+.RS
+.PP
+Image Factory builds virtual machine images using a template document,
+which is an abstract description of the system to be built.
+See the TDL schema
+documentation (http://aeolusproject.github.com/imagefactory/tdl/) for a
+full description of what can be specified in a template.
+Built images can then be pushed to cloud providers such as Amazon EC2 or
+VMware vSphere where they can be launched as instances.
+.RE
+.RS
+.PP
+Image Factory uses the Image Warehouse to store images and image
+metadata.
+More information about Image Warehouse can be found at the project
+page (http://www.aeolusproject.org/imagewarehouse.html) on
+AeolusProject.org.
+.RE
+.PP
+\  \  \f[B]Using imagefactory\f[]
+.RS
+.PP
+The \f[B]imagefactory\f[] command can be considered to have two modes of
+operation.
+One mode is used to start a daemon providing the REST API for use by
+remote clients.
+.RE
+.RS
+.RS
+.IP
+.nf
+\f[C]
+imagefactory\ --rest
+\f[]
+.fi
+.RE
+.RE
+.RS
+.PP
+Another mode of operation is as a local command line utility for
+building images and/or pushing them to a cloud provider.
+Specifying a template and target will build an image.
+.RE
+.RS
+.RS
+.IP
+.nf
+\f[C]
+imagefactory\ --target\ rhevm\ --template\ `cat\ f15_64bit.tdl`
+\f[]
+.fi
+.RE
+.RE
+.RS
+.PP
+Specifying a provider, credentials, and an image id will push an image
+previously built for a target cloud to the cloud provider.
+.RE
+.RS
+.RS
+.IP
+.nf
+\f[C]
+imagefactory\ --provider\ rhevm-1\ --credentials\ `cat\ creds.xml`\ \\
+\ \ \ \ --image\ 2d73cd08-1924-4f02-80e9-f6d7bb1a68bd
+\f[]
+.fi
+.RE
+.RE
+.RS
+.PP
+A full description of \f[B]imagefactory\f[] options is provided below.
+.RE
+.PP
+\f[B]OPTIONS\f[]
+.PP
+\  \  \f[B]General options\f[]
+.RS
+.PP
+\f[B]-h\f[] or \f[B]--help\f[]
+.RE
+.RS
+.RS
+.PP
+Shows a help message with short descriptions of these options and exits.
+.RE
+.RE
+.RS
+.PP
+\f[B]--version\f[]
+.RE
+.RS
+.RS
+.PP
+Shows the version information for Image Factory and exits.
+.RE
+.RE
+.RS
+.PP
+\f[B]-v\f[] or \f[B]--version\f[]
+.RE
+.RS
+.RS
+.PP
+Turn on verbose logging.
+.RE
+.RE
+.RS
+.PP
+\f[B]--debug\f[]
+.RE
+.RS
+.RS
+.PP
+Turn on debug logging.
+.RE
+.RE
+.RS
+.PP
+\f[B]--foreground\f[]
+.RE
+.RS
+.RS
+.PP
+Keep imagefactory running in the foreground.
+Logs will be written to stdout.
+.RE
+.RE
+.RS
+.PP
+\f[B]--config\f[] CONFIGFILE
+.RE
+.RS
+.RS
+.PP
+Path to the configuration file to use.
+The default location is \f[C]/etc/imagefactory/imagefactory.conf\f[].
+For more information about the format of the configuration file, see the
+\f[B]imagefactory.conf(5)\f[] man page or the online
+documentation (https://github.com/aeolusproject/imagefactory/blob/master/Documentation/configuration.markdown).
+.RE
+.RE
+.RS
+.PP
+\f[B]--imgdir\f[] IMGDIR
+.RE
+.RS
+.RS
+.PP
+The filesystem path in which to build images.
+The default location is \f[C]/tmp\f[].
+.RE
+.RE
+.RS
+.PP
+\f[B]--timeout\f[] TIMEOUT
+.RE
+.RS
+.RS
+.PP
+Sets the timeout period for image building in seconds.
+Default value is \f[C]3600\f[].
+.RE
+.RE
+.RS
+.PP
+\f[B]--tmpdir\f[] TMPDIR
+.RE
+.RS
+.RS
+.PP
+The filesystem path in which to store temporary files.
+The default location is \f[C]/tmp\f[].
+.RE
+.RE
+.PP
+\  \  \f[B]REST API options\f[]
+.RS
+.PP
+For a full discussion of the REST API, see the
+\f[B]imagefactory.rest(7)\f[] man page or the online
+documentation (https://github.com/aeolusproject/imagefactory/blob/master/Documentation/REST.markdown).
+.RE
+.RS
+.PP
+\f[B]--rest\f[]
+.RE
+.RS
+.RS
+.PP
+Start the imagefactory daemon and enable the REST interface.
+.RE
+.RE
+.RS
+.PP
+\f[B]--port\f[] PORT
+.RE
+.RS
+.RS
+.PP
+The network port the daemon should listen to.
+Default: \f[C]8075\f[]
+.RE
+.RE
+.RS
+.PP
+\f[B]--address\f[] ADDR
+.RE
+.RS
+.RS
+.PP
+The network address the daemon should lisen on.
+Default: \f[C]0.0.0.0\f[] (listen on all interfaces)
+.RE
+.RE
+.RS
+.PP
+\f[B]--no_ssl\f[]
+.RE
+.RS
+.RS
+.PP
+Turns off SSL.
+.RE
+.RE
+.RS
+.PP
+\f[B]--ssl_pem\f[] CERTPATH
+.RE
+.RS
+.RS
+.PP
+The path to the SSL certificate to use.
+If this is not specified either on the command line or in the
+configuration file, \f[B]imagefactory\f[] will generate a temporary,
+self-signed, certificate each time \f[B]imagefactory\f[] is started.
+.RE
+.RE
+.RS
+.PP
+\f[B]--no_oauth\f[]
+.RE
+.RS
+.RS
+.PP
+Turn off OAuth authentication.
+.RE
+.RE
+.PP
+\  \  \f[B]Image build options\f[]
+.RS
+.PP
+\f[B]--target\f[] TARGET
+.RE
+.RS
+.RS
+.PP
+Name of the cloud for which to build an image.
+Ex.
+rhevm, ec2, vsphere, rackspace, etc...
+.RE
+.RE
+.RS
+.PP
+\f[B]--template\f[] TEMPLATE
+.RE
+.RS
+.RS
+.PP
+An XML document describing the system to be built.
+The template schema is described in the online
+documentation (http://aeolusproject.github.com/imagefactory/tdl/).
+.RE
+.RE
+.PP
+\  \  \f[B]Image push options\f[]
+.RS
+.PP
+\f[B]--image\f[] IMAGE ID
+.RE
+.RS
+.RS
+.PP
+The UUID of a previously built image.
+.RE
+.RE
+.RS
+.PP
+\f[B]--provider\f[] PROVIDER NAME
+.RE
+.RS
+.RS
+.PP
+The name of the provider to push to.
+This name will be matched to providers Image Factory knows about either.
+These can either be existing regions in a public cloud such as
+Amazon\[aq]s EC2 or configured in the private cloud definitions such as
+\f[C]rhevm.json\f[] and \f[C]vsphere.json\f[] found in \f[C]/etc\f[].
+.RE
+.RE
+.RS
+.RS
+.PP
+The private cloud provider definitions use the following format:
+.RE
+.RE
+.RS
+.RS
+.PP
+\f[I]rhevm.json\f[]
+.IP
+.nf
+\f[C]
+\ \ \ \ {
+\ \ \ \ \ \ \ \ "name":\ 
+\ \ \ \ \ \ \ \ {
+\ \ \ \ \ \ \ \ \ \ \ \ "api-url":\ URL,
+\ \ \ \ \ \ \ \ \ \ \ \ "api-key":\ KEY,
+\ \ \ \ \ \ \ \ \ \ \ \ "api-secret":\ SECRET,
+\ \ \ \ \ \ \ \ \ \ \ \ "nfs-dir":\ DIR,
+\ \ \ \ \ \ \ \ \ \ \ \ "nfs-path":\ PATH,
+\ \ \ \ \ \ \ \ \ \ \ \ "nfs-host":\ HOST
+\ \ \ \ \ \ \ \ }
+\ \ \ \ }
+\f[]
+.fi
+.RE
+.RE
+.RS
+.RS
+.PP
+\f[I]vsphere.json\f[]
+.IP
+.nf
+\f[C]
+\ \ \ \ {
+\ \ \ \ \ \ \ \ "name":
+\ \ \ \ \ \ \ \ {
+\ \ \ \ \ \ \ \ \ \ \ \ "api-url":\ URL,
+\ \ \ \ \ \ \ \ \ \ \ \ "datastore":\ STORE_NAME,
+\ \ \ \ \ \ \ \ \ \ \ \ "network_name":\ NETWORK_NAME
+\ \ \ \ \ \ \ \ }
+\ \ \ \ }
+\f[]
+.fi
+.RE
+.RE
+.RS
+.RS
+.PP
+It is possible to also pass in a provider definition.
+In this case, only the inner dictionary is used and the keys
+\[aq]name\[aq] and \[aq]target\[aq] must be added.
+For example, a definition for a vSphere provider would be:
+.IP
+.nf
+\f[C]
+\ \ \ \ {
+\ \ \ \ \ \ \ \ "name":\ PROVIDER_NAME,
+\ \ \ \ \ \ \ \ "target":\ "vsphere",
+\ \ \ \ \ \ \ \ "api-url":\ URL,
+\ \ \ \ \ \ \ \ "datastore":\ STORE_NAME,
+\ \ \ \ \ \ \ \ "network_name":\ NETWORK_NAME
+\ \ \ \ }
+\f[]
+.fi
+.RE
+.RE
+.RS
+.PP
+\f[B]--credentials\f[] CREDENTIALS
+.RE
+.RS
+.RS
+.PP
+XML formatted credentials for authentication with the cloud provider.
+\f[I]Schema documentation for credentials is forthcoming...\f[]
+.RE
+.RE
+.PP
+\  \  \f[B]EC2 options\f[]
+.RS
+.PP
+\f[B]--ec2-32bit-util\f[] INSTANCE TYPE
+.RE
+.RS
+.RS
+.PP
+The instance type to use when launching a 32 bit utility instance.
+Example: m1.small
+.RE
+.RE
+.RS
+.PP
+\f[B]--ec2-64bit-util\f[] INSTANCE TYPE
+.RE
+.RS
+.RS
+.PP
+The instance type to use when launching a 64 bit utility instance.
+Example: m1.large
+.RE
+.RE
+.PP
+\  \  \f[B]Image Warehouse options\f[]
+.RS
+.PP
+Image Warehouse is a component of Aeolus Project for generic object
+storage.
+Image Factory stores images and image metadata in the Image Warehouse
+consumption by other Aeolus components, such as Conductor.
+.RE
+.RS
+.PP
+\f[B]--warehouse\f[] WAREHOUSE URL
+.RE
+.RS
+.RS
+.PP
+The URL to the iwhd to use.
+Default: \f[C]http://localhost:9090/\f[]
+.RE
+.RE
+.RS
+.PP
+\f[B]--image_bucket\f[] BUCKET
+.RE
+.RS
+.RS
+.PP
+Name of the bucket in Image Warehouse to use for image storage.
+Default: \f[C]images\f[]
+.RE
+.RE
+.RS
+.PP
+\f[B]--build_bucket\f[] BUCKET
+.RE
+.RS
+.RS
+.PP
+Name of the bucket in Image Warehouse to use for builds.
+Default: \f[C]builds\f[]
+.RE
+.RE
+.RS
+.PP
+\f[B]--target_bucket\f[] BUCKET
+.RE
+.RS
+.RS
+.PP
+Name of the bucket in Image Warehouse to use for target images.
+Default: \f[C]target_images\f[]
+.RE
+.RE
+.RS
+.PP
+\f[B]--template_bucket\f[] BUCKET
+.RE
+.RS
+.RS
+.PP
+Name of the bucket in Image Warehouse to use for templates.
+Default: \f[C]templates\f[]
+.RE
+.RE
+.RS
+.PP
+\f[B]--icicle_bucket\f[] BUCKET
+.RE
+.RS
+.RS
+.PP
+Name of the bucket in Image Warehouse to use for icicle documents.
+Default: \f[C]icicles\f[]
+.RE
+.RE
+.RS
+.PP
+\f[B]--provider_bucket\f[] BUCKET
+.RE
+.RS
+.RS
+.PP
+Name of the bucket in Image Warehouse to use for provider images.
+Default: \f[C]provider_images\f[]
+.RE
+.RE
+.PP
+\  \  \f[B]Image import options\f[]
+.RS
+.PP
+Image importing establishes records in the Image Warehouse for images
+built without Image Factory.
+This allows such images to be used by other Aeolus components, such as
+Conductor.
+.RE
+.RS
+.PP
+\f[B]--target-image\f[] TARGET IMAGE ID
+.RE
+.RS
+.RS
+.PP
+The cloud specific identifier of the image to import.
+.RE
+.RE
+.RS
+.PP
+\f[B]--image-desc\f[] IMAGE DESCRIPTION
+.RE
+.RS
+.RS
+.PP
+An XML document describing the image being imported.
+\f[I]Schema documentation for image description is forthcoming...\f[]
+.RE
+.RE
