@@ -1,0 +1,740 @@
+.TH IMAGEFACTORY "" "" "REST API(1) Version 1.0 - February 10, 2012"
+.PP
+Image Factory is the ideal system image creation engine for any
+application that needs to support a variety of virtualization and cloud
+services.
+Our REST API provides developers with a straightforward and easy way to
+develop solutions on top of Image Factory.
+This document describes the Image Factory REST API for building and
+pushing images as well as getting the status of builder operations.
+.SS Starting imagefactory in REST mode
+.PP
+   *   *   *   *   *
+.IP \[bu] 2
+To use the REST API, imagefactory must be started with the
+\f[C]--rest\f[] command line argument.
+.RS 2
+.IP \[bu] 2
+\f[I]DEFAULT\f[]: imagefactory listens on port 8075.
+.IP \[bu] 2
+\f[C]--port\f[] can be specified on the command line to change the port
+imagefactory listens on.
+.RE
+.IP \[bu] 2
+\f[I]DEFAULT\f[]: imagefactory will use SSL and generate a self signed
+key.
+.RS 2
+.IP \[bu] 2
+\f[C]--no_ssl\f[] can be specified on the command line to turn off SSL.
+.IP \[bu] 2
+\f[C]--ssl_pem\f[] can be used on the command line to specify the path
+to a different certificate.
+.RE
+.IP \[bu] 2
+\f[I]DEFAULT\f[]: imagefactory uses OAuth to authenticate connections.
+.RS 2
+.IP \[bu] 2
+\f[C]--no_oauth\f[] can be specified on the command line to turn off
+OAuth.
+.IP \[bu] 2
+More detail on how Image Factory uses OAuth can be found below (#oauth)
+.RE
+.PP
+\f[B]NOTE:\f[] As an alternative to specifying arguments on the command
+line, options can be set in the imagefactory configuration file.
+Just leave the dashes off of the option name.
+.SS Using the Image Factory REST API
+.PP
+   *   *   *   *   *
+.PP
+To use the Image Factory REST API, send an HTTP request to any of the
+[resources][] Image Factory provides.
+Each resource supports one or more of the stand HTTP methods (POST, GET,
+PUT, DELETE) which map to the operations Create, Read, Update, and
+Delete.
+More detail on what methods are supported and what parameters are
+required by each resource can be found in the [resources][] section.
+.PP
+Responses are formatted as JSON in all cases.
+POST requests can also be formatted as JSON if the HTTP header,
+\f[C]Content-Type\f[], is set to \f[C]application/json\f[].
+Response contents are documented for each specific resource in the
+[resources][] section.
+.PP
+ ## OAuth Authentication
+.PP
+   *   *   *   *   *
+.PP
+Image Factory uses two-legged OAuth to protect writable operations from
+unauthorized access.
+This means that even when OAuth is configured and enabled, Image Factory
+allows all read-only requests.
+This makes it simple to use any browser to get a quick status of current
+builder activity.
+.PP
+Any number of consumer_key / shared_secret pairs can be used.
+Just add these to the \f[C]clients\f[] section of the
+\f[C]imagefactory.conf\f[] file.
+.PP
+\f[I]Example:\f[]
+.PD 0
+.P
+.PD
+
+\f[C]"clients":\ {\ \ \ \ \ \ \ \ \ "client1":\ "our-secret",\ \ \ \ \ \ \ \ \ "client2":\ "just-between-us"\ \ \ \ \ }\f[]
+.PP
+ ## Resources
+.PP
+   *   *   *   *   *
+.IP \[bu] 2
+\f[B]\f[I]/imagefactory\f[]\f[]
+.PD 0
+.P
+.PD
+ \f[B]Methods:\f[]
+.RS 2
+.IP \[bu] 2
+\f[B]GET\f[]
+.RS
+.PP
+\f[B]Description:\f[] Returns the version string for the API
+.PP
+\f[B]OAuth protected:\f[] NO
+.PP
+\f[B]Parameters:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]None\f[]
+.RE
+.PP
+\f[B]Responses:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]200\f[] - Name and version of the API
+.RE
+.PP
+\f[I]Example:\f[]
+.PD 0
+.P
+.PD
+\f[C]%\ curl\ http://imgfac-host:8075/imagefactory\f[]
+.PP
+\f[C]{"version":\ "1.0",\ "name":\ "imagefactory"}\f[]
+.RE
+.RE
+.IP \[bu] 2
+\f[B]\f[I]/imagefactory/images\f[]\f[]
+.PD 0
+.P
+.PD
+ \f[B]Methods:\f[]
+.RS 2
+.IP \[bu] 2
+\f[B]POST\f[]
+.RS
+.PP
+\f[B]Description:\f[] Builds a new target image.
+.PP
+\f[B]OAuth protected:\f[] YES
+.PP
+\f[B]Parameters:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]targets\f[] - comma separated string
+.PD 0
+.P
+.PD
+\f[B]template\f[] - string representation of XML document, UUID, or URL
+.RE
+.PP
+\f[B]Responses:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]202\f[] - New image
+.PD 0
+.P
+.PD
+\f[B]400\f[] - Missing parameters
+.PD 0
+.P
+.PD
+\f[B]500\f[] - Error building image
+.RE
+.PP
+\f[I]Example:\f[]
+.PD 0
+.P
+.PD
+\f[C]%\ curl\ -d\ "targets=mock&template=<template>\ <name>f14jeos</name>\ <os>\ <name>Fedora</name>\ <version>14</version>\ <arch>x86_64</arch>\ <install\ type=\[aq]url\[aq]>\ <url>http://download.fedoraproject.org/pub/fedora/linux/releases/14/Fedora/x86_64/os/</url>\ </install>\ </os>\ <description>Fedora\ 14</description>\ </template>"\ http://imgfac-host:8075/imagefactory/images\f[]
+.PP
+\f[C]{"_type":\ "image",\ "href":\ "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf",\ "id":\ "0e5b4e6b-c658-4a16-bc71-88293cb1cadf",\ "build":\ {"target_images":\ [{"_type":\ "target_image",\ "href":\ "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/29085ce6-3e31-4dc4-b8fc-74622f2b5ad7/target_images/569121e2-5c5e-4457-b88c-13a925eee01d",\ "id":\ "569121e2-5c5e-4457-b88c-13a925eee01d"}],\ "_type":\ "build",\ "href":\ "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/29085ce6-3e31-4dc4-b8fc-74622f2b5ad7",\ "id":\ "29085ce6-3e31-4dc4-b8fc-74622f2b5ad7"}}\f[]
+.RE
+.RE
+.IP \[bu] 2
+\f[B]\f[I]/imagefactory/images/:image_id\f[]\f[]
+.RS 2
+.RS
+.PP
+\f[B]image_id\f[] - uuid of the image to be rebuilt
+.RE
+.PP
+\f[B]Methods:\f[]
+.IP \[bu] 2
+\f[B]PUT\f[]
+.RS
+.PP
+\f[B]Description:\f[] Rebuild an existing target image
+.PP
+\f[B]OAuth protected:\f[] YES
+.PP
+\f[B]Parameters:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]targets\f[] - comma separated string
+.PD 0
+.P
+.PD
+\f[B]template\f[] - string representation of XML document, UUID, or URL
+.RE
+.PP
+\f[B]Responses:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]202\f[] - New image
+.PD 0
+.P
+.PD
+\f[B]400\f[] - Missing parameters
+.PD 0
+.P
+.PD
+\f[B]500\f[] - Error building image
+.RE
+.PP
+\f[I]Example:\f[]
+.PD 0
+.P
+.PD
+\f[C]%\ curl\ -d\ "targets=mock&template=<template>\ <name>f14jeos</name>\ <os>\ <name>Fedora</name>\ <version>14</version>\ <arch>x86_64</arch>\ <install\ type=\[aq]url\[aq]>\ <url>http://download.fedoraproject.org/pub/fedora/linux/releases/14/Fedora/x86_64/os/</url>\ </install>\ </os>\ <description>Fedora\ 14</description>\ </template>"\ -X\ PUT\ http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf\f[]
+.PP
+\f[C]{"_type":\ "image",\ "href":\ "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf",\ "id":\ "0e5b4e6b-c658-4a16-bc71-88293cb1cadf",\ "build":\ {"target_images":\ [{"_type":\ "target_image",\ "href":\ "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_images/f721adc4-ea4c-4d20-adf9-1a02153a9cc6",\ "id":\ "f721adc4-ea4c-4d20-adf9-1a02153a9cc6"}],\ "_type":\ "build",\ "href":\ "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935",\ "id":\ "c68f4d55-0785-4460-9092-07fc7c126935"}}\f[]
+.RE
+.RE
+.IP \[bu] 2
+\f[B]\f[I]/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id/provider_images\f[]\f[]
+.RS 2
+.RS
+.PP
+\f[B]image_id\f[] - uuid of the image
+.PD 0
+.P
+.PD
+\f[B]build_id\f[] - uuid of the image build
+.PD 0
+.P
+.PD
+\f[B]target_image_id\f[] - uuid of the target image to push
+.RE
+.PP
+\f[B]Methods:\f[]
+.IP \[bu] 2
+\f[B]POST\f[]
+.RS
+.PP
+\f[B]Description:\f[] Creates a provider image using the specified
+target image and pushes it up to a cloud provider using the given
+credentials.
+.PP
+\f[B]OAuth protected:\f[] YES
+.PP
+\f[B]Parameters:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]provider\f[] - provider name as a string
+.PD 0
+.P
+.PD
+\f[B]credentials\f[] - XML string representation of credentials for the
+given provider
+.RE
+.PP
+\f[B]Responses:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]202\f[] - New provider image
+.PD 0
+.P
+.PD
+\f[B]400\f[] - Missing parameters
+.PD 0
+.P
+.PD
+\f[B]500\f[] - Error pushing image
+.RE
+.PP
+\f[I]Example:\f[] \f[C]To\ be\ filled\ in...\f[]
+.RE
+.RE
+.IP \[bu] 2
+\f[B]\f[I]/imagefactory/provider_images\f[]\f[]
+.RS 2
+.PP
+\f[B]Methods:\f[]
+.IP \[bu] 2
+\f[B]POST\f[]
+.RS
+.PP
+\f[B]Description:\f[] Creates a provider image using the specified
+target image and pushes it up to a cloud provider using the given
+credentials.
+This is an alternate URI for the resource above.
+.PP
+\f[B]OAuth protected:\f[] YES
+.PP
+\f[B]Parameters:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]image_id\f[] - uuid of the image
+.PD 0
+.P
+.PD
+\f[B]build_id\f[] - uuid of the image build
+.PD 0
+.P
+.PD
+\f[B]target_image_id\f[] - uuid of the target image to push
+.PD 0
+.P
+.PD
+\f[B]provider\f[] - provider name as a string
+.PD 0
+.P
+.PD
+\f[B]credentials\f[] - XML string representation of credentials for the
+given provider
+.RE
+.PP
+\f[B]Responses:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]202\f[] - New provider image
+.PD 0
+.P
+.PD
+\f[B]400\f[] - Missing parameters
+.PD 0
+.P
+.PD
+\f[B]500\f[] - Error pushing image
+.RE
+.PP
+\f[I]Example:\f[] \f[C]To\ be\ filled\ in...\f[]
+.RE
+.RE
+.IP \[bu] 2
+\f[B]\f[I]/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id\f[]\f[]
+.RS 2
+.RS
+.PP
+\f[B]image_id\f[] - uuid of the image
+.PD 0
+.P
+.PD
+\f[B]build_id\f[] - uuid of the image build
+.PD 0
+.P
+.PD
+\f[B]target_image_id\f[] - uuid of the target image being built
+.RE
+.PP
+\f[B]Methods:\f[]
+.IP \[bu] 2
+\f[B]GET\f[]
+.RS
+.PP
+\f[B]Description:\f[] Displays the details of the Image Factory builder
+object responsible for building the target image.
+.PP
+\f[B]OAuth protected:\f[] NO
+.PP
+\f[B]Parameters:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]None\f[]
+.RE
+.PP
+\f[B]Responses:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]200\f[] - Builder details
+.PD 0
+.P
+.PD
+\f[B]400\f[] - Missing parameters
+.PD 0
+.P
+.PD
+\f[B]500\f[] - Error getting builder details
+.RE
+.PP
+\f[I]Example:\f[]
+.PD 0
+.P
+.PD
+\f[C]%\ curl\ http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_images/f721adc4-ea4c-4d20-adf9-1a02153a9cc6\f[]
+.PP
+\f[C]{"status":\ "COMPLETED",\ "_type":\ "target_image_status",\ "completed":\ 100,\ "provider_account_identifier":\ null,\ "image_id":\ "0e5b4e6b-c658-4a16-bc71-88293cb1cadf",\ "href":\ "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_images/f721adc4-ea4c-4d20-adf9-1a02153a9cc6",\ "operation":\ "build",\ "id":\ "f721adc4-ea4c-4d20-adf9-1a02153a9cc6",\ "build_id":\ "c68f4d55-0785-4460-9092-07fc7c126935",\ "target":\ "mock",\ "provider":\ null,\ "target_image_id":\ null}\f[]
+.RE
+.RE
+.IP \[bu] 2
+\f[B]\f[I]/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id/status\f[]\f[]
+.RS 2
+.RS
+.PP
+\f[B]image_id\f[] - uuid of the image
+.PD 0
+.P
+.PD
+\f[B]build_id\f[] - uuid of the image build
+.PD 0
+.P
+.PD
+\f[B]target_image_id\f[] - uuid of the target image being built
+.RE
+.PP
+\f[B]Methods:\f[]
+.IP \[bu] 2
+\f[B]GET\f[]
+.RS
+.PP
+\f[B]Description:\f[] Displays just the status of the Image Factory
+builder object responsible for building the target image.
+.PP
+\f[B]OAuth protected:\f[] NO
+.PP
+\f[B]Parameters:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]None\f[]
+.RE
+.PP
+\f[B]Responses:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]200\f[] - Builder status
+.PD 0
+.P
+.PD
+\f[B]400\f[] - Missing parameters
+.PD 0
+.P
+.PD
+\f[B]500\f[] - Error getting builder details
+.RE
+.PP
+\f[I]Example:\f[]
+.PD 0
+.P
+.PD
+\f[C]%\ curl\ http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_images/f721adc4-ea4c-4d20-adf9-1a02153a9cc6/status\f[]
+.PP
+\f[C]{"status":\ "COMPLETED",\ "_type":\ "target_image_status",\ "href":\ "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_images/f721adc4-ea4c-4d20-adf9-1a02153a9cc6/status",\ "id":\ "f721adc4-ea4c-4d20-adf9-1a02153a9cc6"}\f[]
+.RE
+.RE
+.IP \[bu] 2
+\f[B]\f[I]/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id/provider_images/:provider_image_id\f[]\f[]
+.RS 2
+.RS
+.PP
+\f[B]image_id\f[] - uuid of the image
+.PD 0
+.P
+.PD
+\f[B]build_id\f[] - uuid of the image build
+.PD 0
+.P
+.PD
+\f[B]target_image_id\f[] - uuid of the target image
+.PD 0
+.P
+.PD
+\f[B]provider_image_id\f[] - uuid of the provider image being pushed
+.RE
+.PP
+\f[B]Methods:\f[]
+.IP \[bu] 2
+\f[B]GET\f[]
+.RS
+.PP
+\f[B]Description:\f[] Displays the details of the Image Factory builder
+object responsible for pushing the provider image.
+.PP
+\f[B]OAuth protected:\f[] NO
+.PP
+\f[B]Parameters:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]None\f[]
+.RE
+.PP
+\f[B]Responses:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]200\f[] - Builder details
+.PD 0
+.P
+.PD
+\f[B]400\f[] - Missing parameters
+.PD 0
+.P
+.PD
+\f[B]500\f[] - Error getting builder details
+.RE
+.PP
+\f[I]Example:\f[]
+.PD 0
+.P
+.PD
+\f[C]To\ be\ filled\ in...\f[]
+.RE
+.RE
+.IP \[bu] 2
+\f[B]\f[I]/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id/provider_images/:provider_image_id/status\f[]\f[]
+.RS 2
+.RS
+.PP
+\f[B]image_id\f[] - uuid of the image
+.PD 0
+.P
+.PD
+\f[B]build_id\f[] - uuid of the image build
+.PD 0
+.P
+.PD
+\f[B]target_image_id\f[] - uuid of the target image
+.PD 0
+.P
+.PD
+\f[B]provider_image_id\f[] - uuid of the provider image being pushed
+.RE
+.PP
+\f[B]Methods:\f[]
+.IP \[bu] 2
+\f[B]GET\f[]
+.RS
+.PP
+\f[B]Description:\f[] Displays just the status of the Image Factory
+builder object responsible for pushing the provider image.
+.PP
+\f[B]OAuth protected:\f[] NO
+.PP
+\f[B]Parameters:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]None\f[]
+.RE
+.PP
+\f[B]Responses:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]200\f[] - Builder status
+.PD 0
+.P
+.PD
+\f[B]400\f[] - Missing parameters
+.PD 0
+.P
+.PD
+\f[B]500\f[] - Error getting builder details
+.RE
+.PP
+\f[I]Example:\f[]
+.PD 0
+.P
+.PD
+\f[C]To\ be\ filled\ in...\f[]
+.RE
+.RE
+.IP \[bu] 2
+\f[B]\f[I]/imagefactory/builders\f[]\f[]
+.RS 2
+.PP
+\f[B]Methods:\f[]
+.IP \[bu] 2
+\f[B]GET\f[]
+.RS
+.PP
+\f[B]Description:\f[] Displays a list of all current Image Factory
+builder objects.
+.PP
+\f[B]OAuth protected:\f[] NO
+.PP
+\f[B]Parameters:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]None\f[]
+.RE
+.PP
+\f[B]Responses:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]200\f[] - Builder list
+.PD 0
+.P
+.PD
+\f[B]500\f[] - Error getting builder list
+.RE
+.PP
+\f[I]Example:\f[]
+.PD 0
+.P
+.PD
+\f[C]%\ curl\ http://imgfac-host:8075/imagefactory/builders\f[]
+.PP
+\f[C]{"_type":\ "builders",\ "href":\ "http://imgfac-host:8075/imagefactory/builders",\ "builders":\ [{"status":\ "COMPLETED",\ "_type":\ "builder",\ "completed":\ 100,\ "provider_account_identifier":\ null,\ "image_id":\ "6b558510-15db-4beb-b385-843241ea0639",\ "href":\ "http://imgfac-host:8075/imagefactory/builders/acd2e7fd-2dda-4aa1-aee1-23e207782f39",\ "operation":\ "build",\ "id":\ "acd2e7fd-2dda-4aa1-aee1-23e207782f39",\ "build_id":\ "6297c0f7-d6f1-41fc-a87d-4afbc582b57a",\ "target":\ "mock",\ "provider":\ null,\ "target_image_id":\ null},\ {"status":\ "COMPLETED",\ "_type":\ "builder",\ "completed":\ 100,\ "provider_account_identifier":\ null,\ "image_id":\ "0e5b4e6b-c658-4a16-bc71-88293cb1cadf",\ "href":\ "http://imgfac-host:8075/imagefactory/builders/f721adc4-ea4c-4d20-adf9-1a02153a9cc6",\ "operation":\ "build",\ "id":\ "f721adc4-ea4c-4d20-adf9-1a02153a9cc6",\ "build_id":\ "c68f4d55-0785-4460-9092-07fc7c126935",\ "target":\ "mock",\ "provider":\ null,\ "target_image_id":\ null},\ {"status":\ "COMPLETED",\ "_type":\ "builder",\ "completed":\ 100,\ "provider_account_identifier":\ null,\ "image_id":\ "0e5b4e6b-c658-4a16-bc71-88293cb1cadf",\ "href":\ "http://imgfac-host:8075/imagefactory/builders/569121e2-5c5e-4457-b88c-13a925eee01d",\ "operation":\ "build",\ "id":\ "569121e2-5c5e-4457-b88c-13a925eee01d",\ "build_id":\ "29085ce6-3e31-4dc4-b8fc-74622f2b5ad7",\ "target":\ "mock",\ "provider":\ null,\ "target_image_id":\ null}]}\f[]
+.RE
+.RE
+.IP \[bu] 2
+\f[B]\f[I]/imagefactory/builders/:builder_id\f[]\f[]
+.RS 2
+.RS
+.PP
+\f[B]builder_id\f[] - uuid of the builder
+.RE
+.PP
+\f[B]Methods:\f[]
+.IP \[bu] 2
+\f[B]GET\f[]
+.RS
+.PP
+\f[B]Description:\f[] Displays the details for a specific builder
+object.
+.PP
+\f[B]OAuth protected:\f[] NO
+.PP
+\f[B]Parameters:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]None\f[]
+.RE
+.PP
+\f[B]Responses:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]200\f[] - Builder detail
+.PD 0
+.P
+.PD
+\f[B]404\f[] - Builder not found
+.PD 0
+.P
+.PD
+\f[B]500\f[] - Error getting builder details
+.RE
+.PP
+\f[I]Example:\f[]
+.PD 0
+.P
+.PD
+\f[C]%\ curl\ http://imgfac-host:8075/imagefactory/builders/acd2e7fd-2dda-4aa1-aee1-23e207782f39\f[]
+.PP
+\f[C]{"status":\ "COMPLETED",\ "_type":\ "builder",\ "completed":\ 100,\ "provider_account_identifier":\ null,\ "image_id":\ "6b558510-15db-4beb-b385-843241ea0639",\ "href":\ "http://imgfac-host:8075/imagefactory/builders/acd2e7fd-2dda-4aa1-aee1-23e207782f39",\ "operation":\ "build",\ "id":\ "acd2e7fd-2dda-4aa1-aee1-23e207782f39",\ "build_id":\ "6297c0f7-d6f1-41fc-a87d-4afbc582b57a",\ "target":\ "mock",\ "provider":\ null,\ "target_image_id":\ null}\f[]
+.RE
+.RE
+.IP \[bu] 2
+\f[B]\f[I]/imagefactory/builders/:builder_id/status\f[]\f[]
+.RS 2
+.RS
+.PP
+\f[B]builder_id\f[] - uuid of the builder
+.RE
+.PP
+\f[B]Methods:\f[]
+.IP \[bu] 2
+\f[B]GET\f[]
+.RS
+.PP
+\f[B]Description:\f[] Displays just the status for a specific builder
+object.
+.PP
+\f[B]OAuth protected:\f[] NO
+.PP
+\f[B]Parameters:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]None\f[]
+.RE
+.PP
+\f[B]Responses:\f[]
+.RE
+.RS
+.RS
+.PP
+\f[B]200\f[] - Builder status
+.PD 0
+.P
+.PD
+\f[B]404\f[] - Builder not found
+.PD 0
+.P
+.PD
+\f[B]500\f[] - Error getting builder details
+.RE
+.PP
+\f[I]Example:\f[]
+.PD 0
+.P
+.PD
+\f[C]%\ curl\ http://imgfac-host:8075/imagefactory/builders/acd2e7fd-2dda-4aa1-aee1-23e207782f39/status\f[]
+.PP
+\f[C]{"status":\ "COMPLETED",\ "_type":\ "builder_status",\ "href":\ "http://imgfac-host:8075/imagefactory/builders/acd2e7fd-2dda-4aa1-aee1-23e207782f39/status",\ "id":\ "acd2e7fd-2dda-4aa1-aee1-23e207782f39"}\f[]
+.RE
+.RE
+.PP
+ [resources]: #resources (Resources)

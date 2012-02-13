@@ -1,6 +1,4 @@
-# Image Factory REST API
-
----
+% IMAGEFACTORY REST API(1) Version 1.0 - February 10, 2012
 
 Image Factory is the ideal system image creation engine for any application that needs to support a variety of virtualization and cloud services. Our REST API provides developers with a straightforward and easy way to develop solutions on top of Image Factory. This document describes the Image Factory REST API for building and pushing images as well as getting the status of builder operations.
 
