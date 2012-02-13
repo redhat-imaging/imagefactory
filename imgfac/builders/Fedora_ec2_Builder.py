@@ -299,9 +299,9 @@ class Fedora_ec2_Builder(BaseBuilder):
         g.mount_ro ("/dev/VolGroup00/LogVol00", "/in")
         # F16 and upwards end up with boot on sda2 due to GRUB changes
         if (self.tdlobj.distro == 'Fedora') and (int(self.tdlobj.update) >= 16):
-            g.mount_options("", "/dev/sda2", "/boot")
+            g.mount_ro ("/dev/sda2", "/in/boot")
         else:
-            g.mount_options("", "/dev/sda1", "/boot")
+            g.mount_ro ("/dev/sda1", "/in/boot")
         g.mount_options ("", "/dev/sdb", "/out/in")
 
         self.log.info("Copying image contents to EC2 flat filesystem")
