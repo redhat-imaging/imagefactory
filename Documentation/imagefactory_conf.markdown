@@ -1,6 +1,4 @@
-# Image Factory configuration
-
----
+% IMAGEFACTORY.CONF(5) Version 1.0 - February 10, 2012
 
 Image Factory looks for a configuration file at `/etc/imagefactory/imagefactory.conf` by default. The configuration file uses JSON for the format. This document describes the configuration options for Image Factory below.
 
