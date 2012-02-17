@@ -386,10 +386,11 @@ class Fedora_ec2_Builder(BaseBuilder):
         #  and add a special user to sudoers - this is what BG has evolved to do
         self.log.info("Updating rc.local for key injection")
         g.write("/tmp/rc.local", self.rc_local)
-        g.sh("cat /tmp/rc.local >> /etc/rc.local")
-        # It's possible the above line actually creates rc.local
-        # Make sure it is executable
-        g.sh("chmod a+x /etc/rc.local")
+        # Starting with F16, rc.local doesn't exist by default
+        if not g.exists("/etc/rc.d/rc.local"):
+            g.sh("echo \#\!/bin/bash > /etc/rc.d/rc.local")
+            g.sh("chmod a+x /etc/rc.d/rc.local")
+        g.sh("cat /tmp/rc.local >> /etc/rc.d/rc.local")
         g.rm("/tmp/rc.local")
 
         # Don't ever allow password logins to EC2 sshd
