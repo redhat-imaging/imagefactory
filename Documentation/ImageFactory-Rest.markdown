@@ -361,7 +361,8 @@ _Example:_
     > > __500__ - Error getting builder list
     >
     > *Example:*  
-    > `% curl http://imgfac-host:8075/imagefactory/builders`
+    >  
+        % curl http://imgfac-host:8075/imagefactory/builders
     >
     >  
         {"_type": "builders", "href": "http://imgfac-host:8075/imagefactory/bui  
