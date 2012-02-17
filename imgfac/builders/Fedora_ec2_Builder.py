@@ -1045,6 +1045,19 @@ class Fedora_ec2_Builder(BaseBuilder):
             ebs.snapshot_id = snapshot.id
             block_map = BlockDeviceMapping()
             block_map['/dev/sda1'] = ebs
+            # The ephemeral mappings are automatic with S3 images
+            # For EBS images we need to make them explicit
+            # These settings are required to make the same fstab work on both S3 and EBS images
+            e0 = EBSBlockDeviceType()
+            e0.ephemeral_name = 'ephemeral0'
+            e1 = EBSBlockDeviceType()
+            e1.ephemeral_name = 'ephemeral1'
+            if self.tdlobj.arch == "i386":
+                block_map['/dev/sda2'] = e0
+                block_map['/dev/sda3'] = e1
+            else:
+                block_map['/dev/sdb'] = e0
+                block_map['/dev/sdc'] = e1
             result = conn.register_image(name='ImageFactory created AMI - %s' % (self.new_image_id),
                             description='ImageFactory created AMI - %s' % (self.new_image_id),
                             architecture=self.tdlobj.arch,  kernel_id=aki,
