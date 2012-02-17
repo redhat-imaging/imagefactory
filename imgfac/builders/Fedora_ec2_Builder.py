@@ -1073,24 +1073,24 @@ class Fedora_ec2_Builder(BaseBuilder):
         finally:
             self.log.debug("Terminating EC2 instance and deleting temp security group and volume")
             self.terminate_instance(self.instance)
-            factory_security_group.delete()
             key_file_object.close()
             conn.delete_key_pair(key_name)
 
-            if volume:
-                self.log.debug("Waiting up to 240 seconds for instance (%s) to shut down" % (self.instance.id))
-                retcode = 1
-                for i in range(24):
-                    self.instance.update()
-                    if self.instance.state == "terminated":
-                        retcode = 0
-                        break
-                    self.log.debug("Instance status (%s) - waiting for 'terminated': %d/240" % (self.instance.state, i*10))
-                    sleep(10)
-
-                if retcode:
-                    self.log.debug("WARNING: Unable to delete volume (%s)" % (volume.id))
-                else:
+            self.log.debug("Waiting up to 240 seconds for instance (%s) to shut down" % (self.instance.id))
+            retcode = 1
+            for i in range(24):
+                self.instance.update()
+                if self.instance.state == "terminated":
+                    retcode = 0
+                    break
+                self.log.debug("Instance status (%s) - waiting for 'terminated': %d/240" % (self.instance.state, i*10))
+                sleep(10)
+            if retcode:
+                self.log.warning("Instance (%s) failed to terminate - Unable to delete volume (%s) or delete factory temp security group" % (self.instance.id, volume.id))
+            else:
+                self.log.debug("Deleting temporary security group")
+                factory_security_group.delete()
+                if volume:
                     self.log.debug("Deleting EBS volume (%s)" % (volume.id))
                     volume.delete()
 
