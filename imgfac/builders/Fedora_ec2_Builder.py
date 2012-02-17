@@ -427,7 +427,13 @@ class Fedora_ec2_Builder(BaseBuilder):
         if (distro == "rhel") and (major_version == 5):
             g.sh("/sbin/mkinitrd -f -v --preload xenblk --preload xennet /boot/initrd-%s.img %s" % (kernel_version))
 
+        kernel_options = ""
+        if (distro == "fedora") and (str(major_version) == "16"):
+            self.log.debug("Adding idle=halt option for Fedora 16 on EC2")
+            kernel_options += "idle=halt " 
+
         tmpl = self.menu_lst
+        tmpl = string.replace(tmpl, "#KERNEL_OPTIONS#", kernel_options)
         tmpl = string.replace(tmpl, "#KERNEL_VERSION#", kernel_version)
         tmpl = string.replace(tmpl, "#KERNEL_IMAGE_NAME#", ramfs_prefix)
         tmpl = string.replace(tmpl, "#TITLE#", name)
@@ -1257,7 +1263,7 @@ IPV6INIT=no
 timeout=0
 title #TITLE#
     root (hd0)
-    kernel /boot/vmlinuz-#KERNEL_VERSION# ro root=LABEL=/ rd_NO_PLYMOUTH
+    kernel /boot/vmlinuz-#KERNEL_VERSION# ro root=LABEL=/ rd_NO_PLYMOUTH #KERNEL_OPTIONS#
     initrd /boot/#KERNEL_IMAGE_NAME#-#KERNEL_VERSION#.img
 """
 
