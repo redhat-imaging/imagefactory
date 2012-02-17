@@ -1070,6 +1070,7 @@ class Fedora_ec2_Builder(BaseBuilder):
             #self.log.debug("Waiting more or less forever to allow inspection of the instance")
             #self.log.debug("run this: ssh -i %s root@%s" % (key_file, self.instance.public_dns_name))
             #sleep(999999)
+            raise
         finally:
             self.log.debug("Terminating EC2 instance and deleting temp security group and volume")
             self.terminate_instance(self.instance)
