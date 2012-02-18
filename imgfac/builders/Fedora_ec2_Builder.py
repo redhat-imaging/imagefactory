@@ -33,6 +33,7 @@ from time import *
 from tempfile import *
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
+from imgfac.ReservationManager import ReservationManager
 from IBuilder import IBuilder
 from BaseBuilder import BaseBuilder
 from boto.s3.connection import S3Connection
@@ -864,21 +865,27 @@ class Fedora_ec2_Builder(BaseBuilder):
     def retrieve_image(self, target_image_id, local_image_file):
         # Grab target_image_id from warehouse unless it is already present as local_image_file
         # TODO: Use Warehouse class instead
-        if not os.path.isfile(local_image_file):
-            if not (self.app_config['warehouse']):
-                raise ImageFactoryException("No warehouse configured - cannot retrieve image")
-            url = "%simages/%s" % (self.app_config['warehouse'], target_image_id)
-            self.log.debug("Image %s not present locally - Fetching from %s" % (local_image_file, url))
-            fp = open(local_image_file, "wb")
-            curl = pycurl.Curl()
-            curl.setopt(pycurl.URL, url)
-            curl.setopt(pycurl.WRITEDATA, fp)
-            curl.perform()
-            curl.close()
-            fp.close()
-        else:
-            self.log.debug("Image file %s already present - skipping warehouse download" % (local_image_file))
-
+        # This is another place where we are guaranteed to get multiple threads pulling the same
+        # file at the same time.  Protect with a lock
+        res_mgr = ReservationManager()
+        res_mgr.get_named_lock(local_image_file)
+        try:
+            if not os.path.isfile(local_image_file):
+                if not (self.app_config['warehouse']):
+                    raise ImageFactoryException("No warehouse configured - cannot retrieve image")
+                url = "%simages/%s" % (self.app_config['warehouse'], target_image_id)
+                self.log.debug("Image %s not present locally - Fetching from %s" % (local_image_file, url))
+                fp = open(local_image_file, "wb")
+                curl = pycurl.Curl()
+                curl.setopt(pycurl.URL, url)
+                curl.setopt(pycurl.WRITEDATA, fp)
+                curl.perform()
+                curl.close()
+                fp.close()
+            else:
+                self.log.debug("Image file %s already present - skipping warehouse download" % (local_image_file))
+        finally:
+            res_mgr.release_named_lock(local_image_file)
 
     def ec2_push_image_upload_ebs(self, target_image_id, provider, credentials):
         # TODO: Merge with ec2_push_image_upload and/or factor out duplication
@@ -901,15 +908,29 @@ class Fedora_ec2_Builder(BaseBuilder):
 
         input_image_compressed_name = input_image_name + ".gz"
         input_image_compressed = input_image + ".gz"
+        compress_complete_marker = input_image_compressed + "-factory-compressed"
 
-        if not os.path.isfile(input_image_compressed):
-            self.log.debug("No compressed version of image file found - compressing now")
-            f_in = open(input_image, 'rb')
-            f_out = gzip.open(input_image_compressed, 'wb')
-            f_out.writelines(f_in)
-            f_out.close()
-            f_in.close()
-            self.log.debug("Compression complete")
+        # We are guaranteed to hit this from multiple builders looking at the same image
+        # Grab a named lock based on the file name
+        # If the file is not present this guarantees that only one thread will compress
+        # NOTE: It is important to grab the lock before we even look for the file
+        # TODO: Switched this to use shell callouts because of a 64 bit bug - fix that
+        res_mgr = ReservationManager()
+        res_mgr.get_named_lock(input_image_compressed)
+        try:
+            if not os.path.isfile(input_image_compressed) or not os.path.isfile(compress_complete_marker):
+                self.log.debug("No compressed version of image file found - compressing now")
+                compress_command = 'gzip -c %s > %s' % (input_image, input_image_compressed)
+                self.log.debug("Compressing image file with external gzip cmd: %s" % (compress_command))
+                result = subprocess.call(compress_command, shell = True)
+                if result:
+                    raise ImageFactoryException("Compression of image failed")
+                self.log.debug("Compression complete")
+                # Mark completion with an empty file
+                # Without this we might use a partially compressed file that resulted from a crash or termination
+                subprocess.call("touch %s" % (compress_complete_marker), shell = True)
+        finally:
+            res_mgr.release_named_lock(input_image_compressed)
 
         region=provider
         region_conf=self.ec2_region_details[region]
