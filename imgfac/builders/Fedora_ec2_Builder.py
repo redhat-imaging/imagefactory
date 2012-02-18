@@ -237,7 +237,8 @@ class Fedora_ec2_Builder(BaseBuilder):
             g.rm("/etc/udev/rules.d/70-persistent-net.rules")
 
         # Also clear out the MAC address this image was bound to.
-        g.aug_init("/", 1)
+        # Second argument is 0 - means don't save a backup - this confuses network init
+        g.aug_init("/", 0)
         if g.aug_rm("/files/etc/sysconfig/network-scripts/ifcfg-eth0/HWADDR"):
             self.log.debug("Removed HWADDR from image's /etc/sysconfig/network-scripts/ifcfg-eth0")
             g.aug_save()
