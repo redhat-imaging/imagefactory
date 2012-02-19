@@ -378,6 +378,12 @@ class Fedora_ec2_Builder(BaseBuilder):
         if g.is_file("/etc/init.d/firstboot"):
             g.sh("/sbin/chkconfig firstboot off")
 
+        # Ensure a sensible runlevel on systemd systems (>=F15)
+        # Oz/Anaconda hand us a graphical runlevel
+        if g.is_symlink("/etc/systemd/system/default.target"):
+            g.rm("/etc/systemd/system/default.target")
+            g.ln_s("/lib/systemd/system/multi-user.target","/etc/systemd/system/default.target")
+
         # BG - Upload rc.local extra content
         # Again, this uses a static copy - this bit is where the ssh key is downloaded
         # TODO: Is this where we inject puppet?
@@ -440,13 +446,14 @@ class Fedora_ec2_Builder(BaseBuilder):
 
         g.write("/boot/grub/menu.lst", tmpl)
 
-        # F14 bug fix
-        # This fixes issues with Fedora 14 on EC2: https://bugzilla.redhat.com/show_bug.cgi?id=651861#c39
-        if (distro == "fedora") and (major_version == 14):
-            self.log.info("Fixing F14 EC2 bug")
+        # EC2 Xen nosegneg bug
+        # This fixes issues with Fedora >=14 on EC2: https://bugzilla.redhat.com/show_bug.cgi?id=651861#c39
+        if (arch == "i386") and (distro == "fedora") and (int(major_version) >= 14):
+            self.log.info("Fixing Xen EC2 bug")
             g.sh("echo \"hwcap 1 nosegneg\" > /etc/ld.so.conf.d/libc6-xen.conf")
             g.sh("/sbin/ldconfig")
-            self.log.info("Done with EC2 filesystem modifications")
+
+        self.log.info("Done with EC2 filesystem modifications")
 
         g.sync ()
         g.umount_all ()
