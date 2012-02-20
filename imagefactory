@@ -26,6 +26,7 @@ from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.Singleton import Singleton
 from imgfac.rest.bottle import *
 from imgfac.rest.imagefactory import rest_api
+from time import asctime, localtime
 
 class Application(Singleton):
 
@@ -80,7 +81,10 @@ class Application(Singleton):
     def daemonize(self): #based on Python recipe 278731
         UMASK = 0
         WORKING_DIRECTORY = '/'
-        IO_REDIRECT = os.devnull
+        if self.app_config['debug']:
+            IO_REDIRECT = "/var/log/imagefactory.log-stderr_debug"
+        else:
+            IO_REDIRECT = os.devnull
 
         try:
             pid = os.fork()
@@ -111,8 +115,11 @@ class Application(Singleton):
                 os.close(file_descriptor)
             except OSError:
                 pass # The file descriptor wasn't open to begin with, just ignore
-
-        os.open(IO_REDIRECT, os.O_RDWR)
+          
+        if self.app_config['debug']:
+            os.open(IO_REDIRECT, os.O_RDWR | os.O_SYNC | os.O_CREAT | os.O_APPEND)
+        else:
+            os.open(IO_REDIRECT, os.O_RDWR)
         os.dup2(0, 1)
         os.dup2(0, 2)
 
@@ -143,6 +150,24 @@ class Application(Singleton):
             pem_file = self.app_config['ssl_pem'] if not self.app_config['no_ssl'] else None
             # TODO: Remove this call and the function def when BZ 790528 is resolved
             self._init_guestfs()
+
+            if self.app_config['debug']:
+                # Mark the start of this run in our stderr/stdout debug redirect
+                sys.stderr.write("%s - starting factory process %d\n" % (asctime(localtime()), os.getpid()))
+                sys.stderr.flush()
+                # Import and activate faulthandler if it exists
+                try:
+                    import faulthandler
+                    logging.debug("Enabling faulthandler")
+                    faultfile = open("/var/log/imagefactory.log-faulthandler", "a")
+                    faultfile.write("%s - starting factory process %d\n" % (asctime(localtime()), os.getpid()))
+                    faultfile.flush()
+                    faulthandler.enable(file=faultfile, all_threads = True)
+                    logging.debug("Enabled faulthandler")
+                except:
+                    logging.debug("Unable to start faulthandler - multi-thread tracebacks will not be available", exc_info=True)
+                    pass
+
             # Don't set reloader to True or you will lose state.  You have been warned.
             run(server='paste',
                     app=rest_api,
