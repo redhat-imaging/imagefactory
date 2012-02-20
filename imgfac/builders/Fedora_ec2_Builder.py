@@ -1043,6 +1043,7 @@ class Fedora_ec2_Builder(BaseBuilder):
             self.log.debug("Registering snapshot (%s) as new EBS AMI" % (snapshot.id))
             ebs = EBSBlockDeviceType()
             ebs.snapshot_id = snapshot.id
+            ebs.delete_on_termination = True
             block_map = BlockDeviceMapping()
             block_map['/dev/sda1'] = ebs
             # The ephemeral mappings are automatic with S3 images
