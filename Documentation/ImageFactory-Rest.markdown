@@ -90,7 +90,7 @@ _Example:_
     > > __500__ - Error building image
     >
     > *Example:*  
-    > `% curl -d "targets=mock&template=<template> <name>f14jeos</name> <os> <name>Fedora</name> <version>14</version> <arch>x86_64</arch> <install type='url'> <url>http://download.fedoraproject.org/pub/fedora/linux/releases/14/Fedora/x86_64/os/</url> </install> </os> <description>Fedora 14</description> </template>" http://imgfac-host:8075/imagefactory/images`
+    > `% curl -d "targets=mock&template=<template> <name>f14jeos</name> <os> <name>Fedora</name> <version>14</version> <arch>x86_64</arch> <install type='url'> <url>http://download.fedoraproject.org/pub/fedora/linux/releases/14/Fedora/x86_64/os/</url> </install> <rootpw>p@55w0rd!</rootpw> </os> <description>Fedora 14</description> </template>" http://imgfac-host:8075/imagefactory/images`
     >
     > `{"_type": "image", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "id": "0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "build": {"target_images": [{"_type": "target_image", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/29085ce6-3e31-4dc4-b8fc-74622f2b5ad7/target_images/569121e2-5c5e-4457-b88c-13a925eee01d", "id": "569121e2-5c5e-4457-b88c-13a925eee01d"}], "_type": "build", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/29085ce6-3e31-4dc4-b8fc-74622f2b5ad7", "id": "29085ce6-3e31-4dc4-b8fc-74622f2b5ad7"}}`
 
@@ -118,7 +118,7 @@ _Example:_
     > > __500__ - Error building image
     >
     > *Example:*  
-    > `% curl -d "targets=mock&template=<template> <name>f14jeos</name> <os> <name>Fedora</name> <version>14</version> <arch>x86_64</arch> <install type='url'> <url>http://download.fedoraproject.org/pub/fedora/linux/releases/14/Fedora/x86_64/os/</url> </install> </os> <description>Fedora 14</description> </template>" -X PUT http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf`
+    > `% curl -d "targets=mock&template=<template> <name>f14jeos</name> <os> <name>Fedora</name> <version>14</version> <arch>x86_64</arch> <install type='url'> <url>http://download.fedoraproject.org/pub/fedora/linux/releases/14/Fedora/x86_64/os/</url> </install> <rootpw>p@55w0rd!</rootpw> </os> <description>Fedora 14</description> </template>" -X PUT http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf`
     >
     > `{"_type": "image", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "id": "0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "build": {"target_images": [{"_type": "target_image", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_images/f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "id": "f721adc4-ea4c-4d20-adf9-1a02153a9cc6"}], "_type": "build", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935", "id": "c68f4d55-0785-4460-9092-07fc7c126935"}}`
 
