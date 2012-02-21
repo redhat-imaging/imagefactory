@@ -392,6 +392,13 @@ class Fedora_ec2_Builder(BaseBuilder):
         g.sh("chmod a+x /etc/rc.local")
         g.rm("/tmp/rc.local")
 
+        # Don't ever allow password logins to EC2 sshd
+        g.aug_init("/", 0)
+        g.aug_set("/files/etc/ssh/sshd_config/PermitRootLogin", "without-password")
+        g.aug_save()
+        g.aug_close()
+        self.log.debug("Disabled root loging with password in /etc/ssh/sshd_config")
+
         # Install menu list
         # Derive the kernel version from the last element of ls /lib/modules and some
         # other magic - look at linux_helper for details
