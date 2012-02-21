@@ -404,15 +404,15 @@ class Fedora_ec2_Builder(BaseBuilder):
             for kern in kernel_versions:
                 if xenre.search(kern):
                     kernel_version = kern
-        elif (len(kernel_versions) > 1) and (arch == "i386"):
+        elif (len(kernel_versions) > 1) and (arch == "i386") and (distro == "fedora") and (int(major_version) <=13):
             paere = re.compile("PAE$")
             for kern in kernel_versions:
                 if paere.search(kern):
                     kernel_version = kern
         else:
             kernel_version = kernel_versions[len(kernel_versions)-1]
-
         if not kernel_version:
+            self.log.debug("Unable to extract correct kernel version from: %s" % (str(kernel_versions)))
             raise ImageFactoryException("Unable to extract kernel version")
 
         self.log.debug("Using kernel version: %s" % (kernel_version))
