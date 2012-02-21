@@ -28,8 +28,11 @@ a specific cloud.
             <install type='iso'>
                 <iso>http://download.fedoraproject.org/pub/fedora/linux/releases/12/Fedora/x86_64/os/</iso>
             </install>
+            <rootpw>p@55word!</rootpw>
         </os>
     </template>
+
+Ensure to change the element to your desired root password.
 
 Next, use the imagefactory command and specify the template to use and for which
 clouds to build an image. The above template example was saved to a file name f12_64.tdl.
