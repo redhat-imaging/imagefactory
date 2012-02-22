@@ -949,11 +949,11 @@ class Fedora_ec2_Builder(BaseBuilder):
         region_conf=self.ec2_region_details[region]
         aki = region_conf[self.tdlobj.arch]
 
-        # For now, use our F14 - 32 bit JEOS image as the utility image for uploading to the EBS volume
+        # Use our F16 - 32 bit JEOS image as the utility image for uploading to the EBS volume
         try:
-            ami_id = self.ec2_jeos_amis[provider]['Fedora']['14']['i386']
+            ami_id = self.ec2_jeos_amis[provider]['Fedora']['16']['i386']
         except KeyError:
-            raise ImageFactoryException("Can only build EBS in us-east and us-west for now - aborting")
+            raise ImageFactoryException("No Fedora 16 i386 JEOS/utility image in region (%s) - aborting", (provider))
 
         # i386
         instance_type=self.app_config.get('ec2-32bit-util','m1.small')
