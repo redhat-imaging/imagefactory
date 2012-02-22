@@ -33,6 +33,7 @@ from time import *
 from tempfile import *
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
+from imgfac.ReservationManager import ReservationManager
 from IBuilder import IBuilder
 from BaseBuilder import BaseBuilder
 from boto.s3.connection import S3Connection
@@ -237,7 +238,8 @@ class Fedora_ec2_Builder(BaseBuilder):
             g.rm("/etc/udev/rules.d/70-persistent-net.rules")
 
         # Also clear out the MAC address this image was bound to.
-        g.aug_init("/", 1)
+        # Second argument is 0 - means don't save a backup - this confuses network init
+        g.aug_init("/", 0)
         if g.aug_rm("/files/etc/sysconfig/network-scripts/ifcfg-eth0/HWADDR"):
             self.log.debug("Removed HWADDR from image's /etc/sysconfig/network-scripts/ifcfg-eth0")
             g.aug_save()
@@ -385,11 +387,19 @@ class Fedora_ec2_Builder(BaseBuilder):
         #  and add a special user to sudoers - this is what BG has evolved to do
         self.log.info("Updating rc.local for key injection")
         g.write("/tmp/rc.local", self.rc_local)
-        g.sh("cat /tmp/rc.local >> /etc/rc.local")
-        # It's possible the above line actually creates rc.local
-        # Make sure it is executable
-        g.sh("chmod a+x /etc/rc.local")
+        # Starting with F16, rc.local doesn't exist by default
+        if not g.exists("/etc/rc.d/rc.local"):
+            g.sh("echo \#\!/bin/bash > /etc/rc.d/rc.local")
+            g.sh("chmod a+x /etc/rc.d/rc.local")
+        g.sh("cat /tmp/rc.local >> /etc/rc.d/rc.local")
         g.rm("/tmp/rc.local")
+
+        # Don't ever allow password logins to EC2 sshd
+        g.aug_init("/", 0)
+        g.aug_set("/files/etc/ssh/sshd_config/PermitRootLogin", "without-password")
+        g.aug_save()
+        g.aug_close()
+        self.log.debug("Disabled root loging with password in /etc/ssh/sshd_config")
 
         # Install menu list
         # Derive the kernel version from the last element of ls /lib/modules and some
@@ -855,21 +865,27 @@ class Fedora_ec2_Builder(BaseBuilder):
     def retrieve_image(self, target_image_id, local_image_file):
         # Grab target_image_id from warehouse unless it is already present as local_image_file
         # TODO: Use Warehouse class instead
-        if not os.path.isfile(local_image_file):
-            if not (self.app_config['warehouse']):
-                raise ImageFactoryException("No warehouse configured - cannot retrieve image")
-            url = "%simages/%s" % (self.app_config['warehouse'], target_image_id)
-            self.log.debug("Image %s not present locally - Fetching from %s" % (local_image_file, url))
-            fp = open(local_image_file, "wb")
-            curl = pycurl.Curl()
-            curl.setopt(pycurl.URL, url)
-            curl.setopt(pycurl.WRITEDATA, fp)
-            curl.perform()
-            curl.close()
-            fp.close()
-        else:
-            self.log.debug("Image file %s already present - skipping warehouse download" % (local_image_file))
-
+        # This is another place where we are guaranteed to get multiple threads pulling the same
+        # file at the same time.  Protect with a lock
+        res_mgr = ReservationManager()
+        res_mgr.get_named_lock(local_image_file)
+        try:
+            if not os.path.isfile(local_image_file):
+                if not (self.app_config['warehouse']):
+                    raise ImageFactoryException("No warehouse configured - cannot retrieve image")
+                url = "%simages/%s" % (self.app_config['warehouse'], target_image_id)
+                self.log.debug("Image %s not present locally - Fetching from %s" % (local_image_file, url))
+                fp = open(local_image_file, "wb")
+                curl = pycurl.Curl()
+                curl.setopt(pycurl.URL, url)
+                curl.setopt(pycurl.WRITEDATA, fp)
+                curl.perform()
+                curl.close()
+                fp.close()
+            else:
+                self.log.debug("Image file %s already present - skipping warehouse download" % (local_image_file))
+        finally:
+            res_mgr.release_named_lock(local_image_file)
 
     def ec2_push_image_upload_ebs(self, target_image_id, provider, credentials):
         # TODO: Merge with ec2_push_image_upload and/or factor out duplication
@@ -892,15 +908,29 @@ class Fedora_ec2_Builder(BaseBuilder):
 
         input_image_compressed_name = input_image_name + ".gz"
         input_image_compressed = input_image + ".gz"
+        compress_complete_marker = input_image_compressed + "-factory-compressed"
 
-        if not os.path.isfile(input_image_compressed):
-            self.log.debug("No compressed version of image file found - compressing now")
-            f_in = open(input_image, 'rb')
-            f_out = gzip.open(input_image_compressed, 'wb')
-            f_out.writelines(f_in)
-            f_out.close()
-            f_in.close()
-            self.log.debug("Compression complete")
+        # We are guaranteed to hit this from multiple builders looking at the same image
+        # Grab a named lock based on the file name
+        # If the file is not present this guarantees that only one thread will compress
+        # NOTE: It is important to grab the lock before we even look for the file
+        # TODO: Switched this to use shell callouts because of a 64 bit bug - fix that
+        res_mgr = ReservationManager()
+        res_mgr.get_named_lock(input_image_compressed)
+        try:
+            if not os.path.isfile(input_image_compressed) or not os.path.isfile(compress_complete_marker):
+                self.log.debug("No compressed version of image file found - compressing now")
+                compress_command = 'gzip -c %s > %s' % (input_image, input_image_compressed)
+                self.log.debug("Compressing image file with external gzip cmd: %s" % (compress_command))
+                result = subprocess.call(compress_command, shell = True)
+                if result:
+                    raise ImageFactoryException("Compression of image failed")
+                self.log.debug("Compression complete")
+                # Mark completion with an empty file
+                # Without this we might use a partially compressed file that resulted from a crash or termination
+                subprocess.call("touch %s" % (compress_complete_marker), shell = True)
+        finally:
+            res_mgr.release_named_lock(input_image_compressed)
 
         region=provider
         region_conf=self.ec2_region_details[region]
@@ -1286,13 +1316,13 @@ none       /sys      sysfs   defaults         0 0
     # TODO: Ideally we should use boto "Location" references when possible - 1.9 contains only DEFAULT and EU
     #       The rest are hard coded strings for now.
     ec2_region_details={
-         'ec2-us-east-1':      { 'boto_loc': Location.DEFAULT,     'host':'us-east-1',      'i386': 'aki-407d9529', 'x86_64': 'aki-427d952b' },
-         'ec2-us-west-1':      { 'boto_loc': 'us-west-1',          'host':'us-west-1',      'i386': 'aki-99a0f1dc', 'x86_64': 'aki-9ba0f1de' },
-         'ec2-us-west-2':      { 'boto_loc': 'us-west-2',          'host':'us-west-2',      'i386': 'aki-dce26fec', 'x86_64': 'aki-98e26fa8' },
-         'ec2-ap-southeast-1': { 'boto_loc': 'ap-southeast-1',     'host':'ap-southeast-1', 'i386': 'aki-13d5aa41', 'x86_64': 'aki-11d5aa43' },
-         'ec2-ap-northeast-1': { 'boto_loc': 'ap-northeast-1',     'host':'ap-northeast-1', 'i386': 'aki-d209a2d3', 'x86_64': 'aki-d409a2d5' },
+         'ec2-us-east-1':      { 'boto_loc': Location.DEFAULT,     'host':'us-east-1',      'i386': 'aki-805ea7e9', 'x86_64': 'aki-825ea7eb' },
+         'ec2-us-west-1':      { 'boto_loc': 'us-west-1',          'host':'us-west-1',      'i386': 'aki-83396bc6', 'x86_64': 'aki-8d396bc8' },
+         'ec2-us-west-2':      { 'boto_loc': 'us-west-2',          'host':'us-west-2',      'i386': 'aki-c2e26ff2', 'x86_64': 'aki-98e26fa8' },
+         'ec2-ap-southeast-1': { 'boto_loc': 'ap-southeast-1',     'host':'ap-southeast-1', 'i386': 'aki-a4225af6', 'x86_64': 'aki-aa225af8' },
+         'ec2-ap-northeast-1': { 'boto_loc': 'ap-northeast-1',     'host':'ap-northeast-1', 'i386': 'aki-ec5df7ed', 'x86_64': 'aki-ee5df7ef' },
          'ec2-sa-east-1':      { 'boto_loc': 'sa-east-1',          'host':'sa-east-1',      'i386': 'aki-bc3ce3a1', 'x86_64': 'aki-cc3ce3d1' },
-         'ec2-eu-west-1':      { 'boto_loc': Location.EU,          'host':'eu-west-1',      'i386': 'aki-4deec439', 'x86_64': 'aki-4feec43b' } }
+         'ec2-eu-west-1':      { 'boto_loc': Location.EU,          'host':'eu-west-1',      'i386': 'aki-64695810', 'x86_64': 'aki-62695816' } }
 
         # July 13 - new approach - generic JEOS AMIs for Fedora - no userdata and no euca-tools
         #           ad-hoc ssh keys replace userdata - runtime install of euca tools for bundling
