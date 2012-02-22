@@ -380,6 +380,12 @@ class Fedora_ec2_Builder(BaseBuilder):
         if g.is_file("/etc/init.d/firstboot"):
             g.sh("/sbin/chkconfig firstboot off")
 
+        # Ensure a sensible runlevel on systemd systems (>=F15)
+        # Oz/Anaconda hand us a graphical runlevel
+        if g.is_symlink("/etc/systemd/system/default.target"):
+            g.rm("/etc/systemd/system/default.target")
+            g.ln_s("/lib/systemd/system/multi-user.target","/etc/systemd/system/default.target")
+
         # BG - Upload rc.local extra content
         # Again, this uses a static copy - this bit is where the ssh key is downloaded
         # TODO: Is this where we inject puppet?
@@ -414,15 +420,15 @@ class Fedora_ec2_Builder(BaseBuilder):
             for kern in kernel_versions:
                 if xenre.search(kern):
                     kernel_version = kern
-        elif (len(kernel_versions) > 1) and (arch == "i386"):
+        elif (len(kernel_versions) > 1) and (arch == "i386") and (distro == "fedora") and (int(major_version) <=13):
             paere = re.compile("PAE$")
             for kern in kernel_versions:
                 if paere.search(kern):
                     kernel_version = kern
         else:
             kernel_version = kernel_versions[len(kernel_versions)-1]
-
         if not kernel_version:
+            self.log.debug("Unable to extract correct kernel version from: %s" % (str(kernel_versions)))
             raise ImageFactoryException("Unable to extract kernel version")
 
         self.log.debug("Using kernel version: %s" % (kernel_version))
@@ -437,20 +443,27 @@ class Fedora_ec2_Builder(BaseBuilder):
         if (distro == "rhel") and (major_version == 5):
             g.sh("/sbin/mkinitrd -f -v --preload xenblk --preload xennet /boot/initrd-%s.img %s" % (kernel_version))
 
+        kernel_options = ""
+        if (distro == "fedora") and (str(major_version) == "16"):
+            self.log.debug("Adding idle=halt option for Fedora 16 on EC2")
+            kernel_options += "idle=halt " 
+
         tmpl = self.menu_lst
+        tmpl = string.replace(tmpl, "#KERNEL_OPTIONS#", kernel_options)
         tmpl = string.replace(tmpl, "#KERNEL_VERSION#", kernel_version)
         tmpl = string.replace(tmpl, "#KERNEL_IMAGE_NAME#", ramfs_prefix)
         tmpl = string.replace(tmpl, "#TITLE#", name)
 
         g.write("/boot/grub/menu.lst", tmpl)
 
-        # F14 bug fix
-        # This fixes issues with Fedora 14 on EC2: https://bugzilla.redhat.com/show_bug.cgi?id=651861#c39
-        if (distro == "fedora") and (major_version == 14):
-            self.log.info("Fixing F14 EC2 bug")
+        # EC2 Xen nosegneg bug
+        # This fixes issues with Fedora >=14 on EC2: https://bugzilla.redhat.com/show_bug.cgi?id=651861#c39
+        if (arch == "i386") and (distro == "fedora") and (int(major_version) >= 14):
+            self.log.info("Fixing Xen EC2 bug")
             g.sh("echo \"hwcap 1 nosegneg\" > /etc/ld.so.conf.d/libc6-xen.conf")
             g.sh("/sbin/ldconfig")
-            self.log.info("Done with EC2 filesystem modifications")
+
+        self.log.info("Done with EC2 filesystem modifications")
 
         g.sync ()
         g.umount_all ()
@@ -1287,7 +1300,7 @@ IPV6INIT=no
 timeout=0
 title #TITLE#
     root (hd0)
-    kernel /boot/vmlinuz-#KERNEL_VERSION# ro root=LABEL=/ rd_NO_PLYMOUTH
+    kernel /boot/vmlinuz-#KERNEL_VERSION# ro root=LABEL=/ rd_NO_PLYMOUTH #KERNEL_OPTIONS#
     initrd /boot/#KERNEL_IMAGE_NAME#-#KERNEL_VERSION#.img
 """
 
