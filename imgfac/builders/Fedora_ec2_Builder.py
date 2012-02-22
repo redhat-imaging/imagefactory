@@ -1086,8 +1086,22 @@ class Fedora_ec2_Builder(BaseBuilder):
             self.log.debug("Registering snapshot (%s) as new EBS AMI" % (snapshot.id))
             ebs = EBSBlockDeviceType()
             ebs.snapshot_id = snapshot.id
+            ebs.delete_on_termination = True
             block_map = BlockDeviceMapping()
             block_map['/dev/sda1'] = ebs
+            # The ephemeral mappings are automatic with S3 images
+            # For EBS images we need to make them explicit
+            # These settings are required to make the same fstab work on both S3 and EBS images
+            e0 = EBSBlockDeviceType()
+            e0.ephemeral_name = 'ephemeral0'
+            e1 = EBSBlockDeviceType()
+            e1.ephemeral_name = 'ephemeral1'
+            if self.tdlobj.arch == "i386":
+                block_map['/dev/sda2'] = e0
+                block_map['/dev/sda3'] = e1
+            else:
+                block_map['/dev/sdb'] = e0
+                block_map['/dev/sdc'] = e1
             result = conn.register_image(name='ImageFactory created AMI - %s' % (self.new_image_id),
                             description='ImageFactory created AMI - %s' % (self.new_image_id),
                             architecture=self.tdlobj.arch,  kernel_id=aki,
@@ -1095,27 +1109,33 @@ class Fedora_ec2_Builder(BaseBuilder):
 
             ami_id = str(result)
             self.log.debug("Extracted AMI ID: %s " % (ami_id))
+        except:
+            self.log.debug("EBS image upload failed on exception", exc_info = True)
+            #self.log.debug("Waiting more or less forever to allow inspection of the instance")
+            #self.log.debug("run this: ssh -i %s root@%s" % (key_file, self.instance.public_dns_name))
+            #sleep(999999)
+            raise
         finally:
             self.log.debug("Terminating EC2 instance and deleting temp security group and volume")
             self.terminate_instance(self.instance)
-            factory_security_group.delete()
             key_file_object.close()
             conn.delete_key_pair(key_name)
 
-            if volume:
-                self.log.debug("Waiting up to 240 seconds for instance (%s) to shut down" % (self.instance.id))
-                retcode = 1
-                for i in range(24):
-                    self.instance.update()
-                    if self.instance.state == "terminated":
-                        retcode = 0
-                        break
-                    self.log.debug("Instance status (%s) - waiting for 'terminated': %d/240" % (self.instance.state, i*10))
-                    sleep(10)
-
-                if retcode:
-                    self.log.debug("WARNING: Unable to delete volume (%s)" % (volume.id))
-                else:
+            self.log.debug("Waiting up to 240 seconds for instance (%s) to shut down" % (self.instance.id))
+            retcode = 1
+            for i in range(24):
+                self.instance.update()
+                if self.instance.state == "terminated":
+                    retcode = 0
+                    break
+                self.log.debug("Instance status (%s) - waiting for 'terminated': %d/240" % (self.instance.state, i*10))
+                sleep(10)
+            if retcode:
+                self.log.warning("Instance (%s) failed to terminate - Unable to delete volume (%s) or delete factory temp security group" % (self.instance.id, volume.id))
+            else:
+                self.log.debug("Deleting temporary security group")
+                factory_security_group.delete()
+                if volume:
                     self.log.debug("Deleting EBS volume (%s)" % (volume.id))
                     volume.delete()
 
