@@ -513,6 +513,13 @@ class Fedora_ec2_Builder(BaseBuilder):
                 instance.update()
             except EC2ResponseError, e:
                 self.log.warning("Exception encountered when querying EC2 instance (%s) - trying to continue" % (instance.id), exc_info = True)
+            except:
+                self.log.error("Exception encountered when updating status of instance (%s)" % (instance.id), exc_info = True)
+                try:
+                    self.terminate_instance(instance)
+                except:
+                    log.warning("WARNING: Instance (%s) failed to start and will not terminate - it may still be running" % (instance.id), exc_info = True)
+                raise ImageFactoryException("Exception encountered when waiting for instance to start")
             if instance.state == u'running':
                 break
             sleep(1)
