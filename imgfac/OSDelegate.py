@@ -25,46 +25,68 @@ class OSDelegate(Interface):
     def builder_should_create_image(self, builder):
         """
         Allow or prohibit a JEOS image to be created and customized with additional packages.
-        
-        @param builder The builder object creating the image.
-    
+
+        @param builder The builder object.
+
         @return bool
         """
 
     def builder_will_create_image(self, builder):
         """
         Invoked just before the installation of a JEOS image.
-        
-        @param builder The builder object creating the image.
+
+        @param builder The builder object.
         """
 
     def builder_did_create_image(self, builder):
         """
         Invoked after the builder has completed the custom package installation.
-        
-        @param builder The builder object creating the image.
+
+        @param builder The builder object.
         """
 
-    def builder_should_generate_icicle(self, builder):
+    def builder_should_install_packages(self, builder):
         """
-        Allow or prohibit generation of an ICICLE document for an image.
-        
-        @param builder The builder creating the ICICLE.
-    
+        Allow or prohibit installation of extra packages.
+
+        @param builder The builder object.
+
         @return bool
         """
-        pass
 
-    def builder_will_generate_icicle(self, builder):
+    def builder_will_install_packages(self, builder):
         """
-        Invoked just before an ICICLE document is generated for an image.
-        
-        @param builder The builder creating the ICICLE.
+        Invoked just before installing packages on the image.
+
+        @param builder The builder object.
         """
 
-    def builder_did_generate_icicle(self, builder):
+    def builder_did_install_packages(self, builder):
         """
-        Invoked after the builder has generated an ICICLE document for an image.
-        
-        @param builder The builder creating the ICICLE.
+        Invoked after installing packages on the image.
+
+        @param builder The builder object.
+        """
+
+    def builder_should_customize_image(self, builder):
+        """
+        Allow or prohibit cloud agnostic image customization.
+
+        @param builder The builder object.
+
+        @return bool
+        """
+
+    def builder_will_customize_image(self, builder):
+        """
+        Invoked just before cloud agnostic image customization.
+
+        @param builder The builder object.
+        """
+
+    def builder_did_customize_image(self, builder):
+        """
+        Invoked after cloud agnostic image customization.
+
+        @param builder The builder object.
         """
