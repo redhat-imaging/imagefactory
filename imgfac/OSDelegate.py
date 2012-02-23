@@ -22,71 +22,24 @@ class OSDelegate(Interface):
     the plugin cares about. Delegation provides a way for the plugin to
     customize the behavior of the builder. """
 
-    def builder_should_create_image(self, builder):
+    def create_image(self, builder):
         """
-        Allow or prohibit a JEOS image to be created and customized with additional packages.
-
-        @param builder The builder object.
-
-        @return bool
-        """
-
-    def builder_will_create_image(self, builder):
-        """
-        Invoked just before the installation of a JEOS image.
+        Create a JEOS image to be used as the basis for customization.
 
         @param builder The builder object.
         """
 
-    def builder_did_create_image(self, builder):
+    def install_packages(self, builder):
         """
-        Invoked after the builder has completed the custom package installation.
+        Installs any packages specified beyond the JEOS and generates an ICICLE
+        document for the image.
 
         @param builder The builder object.
         """
 
-    def builder_should_install_packages(self, builder):
+    def customize_image_for_builder(self, builder):
         """
-        Allow or prohibit installation of extra packages.
-
-        @param builder The builder object.
-
-        @return bool
-        """
-
-    def builder_will_install_packages(self, builder):
-        """
-        Invoked just before installing packages on the image.
-
-        @param builder The builder object.
-        """
-
-    def builder_did_install_packages(self, builder):
-        """
-        Invoked after installing packages on the image.
-
-        @param builder The builder object.
-        """
-
-    def builder_should_customize_image(self, builder):
-        """
-        Allow or prohibit cloud agnostic image customization.
-
-        @param builder The builder object.
-
-        @return bool
-        """
-
-    def builder_will_customize_image(self, builder):
-        """
-        Invoked just before cloud agnostic image customization.
-
-        @param builder The builder object.
-        """
-
-    def builder_did_customize_image(self, builder):
-        """
-        Invoked after cloud agnostic image customization.
+        Performs cloud agnostic customizaion of the image.
 
         @param builder The builder object.
         """
