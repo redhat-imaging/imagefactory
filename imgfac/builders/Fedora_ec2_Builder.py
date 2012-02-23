@@ -509,13 +509,20 @@ class Fedora_ec2_Builder(BaseBuilder):
         for i in range(300):
             if i % 10 == 0:
                 self.log.debug("Waiting for EC2 instance to start: %d/300" % (i))
-            instance.update()
+            try:
+                instance.update()
+            except EC2ResponseError, e:
+                self.log.warning("Exception encountered when querying EC2 instance (%s) - trying to continue" % (instance.id), exc_info = True)
             if instance.state == u'running':
                 break
             sleep(1)
 
         if instance.state != u'running':
             self.status="FAILED"
+            try:
+                self.terminate_instance(instance)
+            except:
+                log.warning("WARNING: Instance (%s) failed to start and will not terminate - it may still be running" % (instance.id), exc_info = True)
             raise ImageFactoryException("Instance failed to start after 300 seconds - stopping")
 
     def correct_remote_manifest(self, guestaddr, manifest):
@@ -631,10 +638,6 @@ class Fedora_ec2_Builder(BaseBuilder):
             raise ImageFactoryException("run_instances did not result in the expected single instance - stopping")
 
         self.instance = reservation.instances[0]
-
-        # We have occasionally seen issues when you immediately query an instance
-        # Give it 10 seconds to settle
-        sleep(10)
 
         self.wait_for_ec2_instance_start(self.instance)
 
@@ -986,10 +989,6 @@ class Fedora_ec2_Builder(BaseBuilder):
             raise ImageFactoryException("run_instances did not result in the expected single instance - stopping")
 
         self.instance = reservation.instances[0]
-
-        # We have occasionally seen issues when you immediately query an instance
-        # Give it 10 seconds to settle
-        sleep(10)
 
         self.wait_for_ec2_instance_start(self.instance)
 
