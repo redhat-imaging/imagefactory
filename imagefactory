@@ -79,7 +79,7 @@ class Application(Singleton):
             sys.exit(0)
 
     def daemonize(self): #based on Python recipe 278731
-        UMASK = 0
+        UMASK = 077
         WORKING_DIRECTORY = '/'
         if self.app_config['debug']:
             IO_REDIRECT = "/var/log/imagefactory.log-stderr_debug"
