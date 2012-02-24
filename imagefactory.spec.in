@@ -69,7 +69,7 @@ python setup.py install -O1 --root=%{buildroot} --skip-build
 sed -i '/\/usr\/bin\/env python/d' %{buildroot}/%{python_sitelib}/imgfac/*.py
 
 %{__install} conf/ec2_fedora_jeos_21_FEB_2012.conf %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
-%{__install} conf/ec2_rhel_jeos_08_JAN_2012.conf %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
+%{__install} conf/ec2_rhel_jeos_23_FEB_2012.conf %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
 %{__install} -m0600 conf/imagefactory.sysconfig %{buildroot}/%{_sysconfdir}/sysconfig/imagefactory
 %{__install} -m0600 conf/imagefactory.logrotate %{buildroot}/%{_sysconfdir}/logrotate.d/imagefactory
 
@@ -101,7 +101,7 @@ fi
 %{_sysconfdir}/imagefactory/jeos_images/ec2_fedora_jeos_21_FEB_2012.conf
 
 %files jeosconf-ec2-rhel
-%{_sysconfdir}/imagefactory/jeos_images/ec2_rhel_jeos_08_JAN_2012.conf
+%{_sysconfdir}/imagefactory/jeos_images/ec2_rhel_jeos_23_FEB_2012.conf
 
 %changelog
 * Thu Sep 15 2011 Ian McLeod <imcleod@redhat.com> - 0.6.1
