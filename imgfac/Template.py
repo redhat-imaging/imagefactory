@@ -107,7 +107,7 @@ class Template(object):
                 return None, None
 
     def __string_is_xml_template(self, text):
-        return (("<template>" in text.lower()) and ("</template>" in text.lower()))
+        return (("<template" in text.lower()) and ("</template>" in text.lower()))
 
     def __fetch_template_with_url(self, url):
         template_id = None
