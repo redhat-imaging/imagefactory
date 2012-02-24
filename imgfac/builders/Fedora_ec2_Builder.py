@@ -486,13 +486,31 @@ class Fedora_ec2_Builder(BaseBuilder):
         for i in range(300):
             if i % 10 == 0:
                 self.log.debug("Waiting for EC2 instance to start: %d/300" % (i))
-            instance.update()
+            try:
+                instance.update()
+            except EC2ResponseError, e:
+                # We occasionally get errors when querying an instance that has just started - ignore them and hope for the best
+                self.log.warning("EC2ResponseError encountered when querying EC2 instance (%s) - trying to continue" % (instance.id), exc_info = True)
+            except:
+                self.log.error("Exception encountered when updating status of instance (%s)" % (instance.id), exc_info = True)
+                self.status="FAILED"
+                try:
+                    self.terminate_instance(instance)
+                except:
+                    log.warning("WARNING: Instance (%s) failed to start and will not terminate - it may still be running" % (instance.id), exc_info = True)
+                    raise ImageFactoryException("Instance (%s) failed to fully start or terminate - it may still be running" % (instance.id))
+                raise ImageFactoryException("Exception encountered when waiting for instance (%s) to start" % (instance.id))
             if instance.state == u'running':
                 break
             sleep(1)
 
         if instance.state != u'running':
             self.status="FAILED"
+            try:
+                self.terminate_instance(instance)
+            except:
+                log.warning("WARNING: Instance (%s) failed to start and will not terminate - it may still be running" % (instance.id), exc_info = True)
+                raise ImageFactoryException("Instance (%s) failed to fully start or terminate - it may still be running" % (instance.id))
             raise ImageFactoryException("Instance failed to start after 300 seconds - stopping")
 
     def correct_remote_manifest(self, guestaddr, manifest):
