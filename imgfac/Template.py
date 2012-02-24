@@ -84,7 +84,7 @@ class Template(object):
 
         if(template_string.lower().startswith("http")):
             return "URL"
-        elif(("<template>" in template_string.lower()) and ("</template>" in template_string.lower())):
+        elif(("<template" in template_string.lower()) and ("</template>" in template_string.lower())):
             return "XML"
         elif(match):
             return "UUID"
