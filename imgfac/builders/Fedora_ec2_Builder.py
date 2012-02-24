@@ -627,10 +627,6 @@ class Fedora_ec2_Builder(BaseBuilder):
 
         self.instance = reservation.instances[0]
 
-        # We have occasionally seen issues when you immediately query an instance
-        # Give it 10 seconds to settle
-        sleep(10)
-
         self.wait_for_ec2_instance_start(self.instance)
 
         # From this point on we must be sure to terminate the instance when we are done
@@ -961,10 +957,6 @@ class Fedora_ec2_Builder(BaseBuilder):
             raise ImageFactoryException("run_instances did not result in the expected single instance - stopping")
 
         self.instance = reservation.instances[0]
-
-        # We have occasionally seen issues when you immediately query an instance
-        # Give it 10 seconds to settle
-        sleep(10)
 
         self.wait_for_ec2_instance_start(self.instance)
 
