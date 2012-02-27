@@ -14,6 +14,7 @@
 #   limitations under the License.
 
 import os
+import stat
 import zope
 import oz.GuestFactory
 import oz.TDL
@@ -242,6 +243,14 @@ class Fedora_rhevm_Builder(BaseBuilder):
         input_image = self.app_config['imgdir'] + "/rhevm-image-" + target_image_id + ".dsk"
         # Grab from Warehouse if it isn't here
         self.retrieve_image(target_image_id, input_image)
+
+        # Make it readable by the KVM group - required for the way we currently do the push to
+        # an export domain - Change group to 36 and make file group readable
+        # Required by the way RHEV-M NFS pushes work
+        # TODO: Look at how to fix this when we move RHEV-M push into Factory proper
+        #       This is just messy
+        os.chown(input_image, 0, 36)
+        os.chmod(input_image, stat.S_IRUSR | stat.S_IRGRP)
 
         # This, it turns out, is the easiest way to give our newly created template the correct name
         image_link = "/tmp/" + str(self.new_image_id)
