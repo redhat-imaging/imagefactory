@@ -90,9 +90,25 @@ _Example:_
     > > __500__ - Error building image
     >
     > *Example:*  
-    > `% curl -d "targets=mock&template=<template> <name>f14jeos</name> <os> <name>Fedora</name> <version>14</version> <arch>x86_64</arch> <install type='url'> <url>http://download.fedoraproject.org/pub/fedora/linux/releases/14/Fedora/x86_64/os/</url> </install> <rootpw>p@55w0rd!</rootpw> </os> <description>Fedora 14</description> </template>" http://imgfac-host:8075/imagefactory/images`
+    >  
+        % curl -d "targets=mock&template=<template><name>f14jeos</name><os>   
+        <name>Fedora</name> <version>14</version> <arch>x86_64</arch> <install  
+        type='url'> <url>http://download.fedoraproject.org/pub/fedora/linux/re  
+        leases/14/Fedora/x86_64/os/</url></install><rootpw>p@55w0rd!</rootpw>  
+        </os><description>Fedora 14</description></template>"  
+        http://imgfac-host:8075/imagefactory/images
     >
-    > `{"_type": "image", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "id": "0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "build": {"target_images": [{"_type": "target_image", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/29085ce6-3e31-4dc4-b8fc-74622f2b5ad7/target_images/569121e2-5c5e-4457-b88c-13a925eee01d", "id": "569121e2-5c5e-4457-b88c-13a925eee01d"}], "_type": "build", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/29085ce6-3e31-4dc4-b8fc-74622f2b5ad7", "id": "29085ce6-3e31-4dc4-b8fc-74622f2b5ad7"}}`
+    >  
+        {"_type": "image", "href": "http://imgfac-host:8075/imagefactory/images  
+        /0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "id": "0e5b4e6b-c658-4a16-bc71-  
+        88293cb1cadf", "build": {"target_images": [{"_type": "target_image", "h  
+        ref": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-b  
+        c71-88293cb1cadf/builds/29085ce6-3e31-4dc4-b8fc-74622f2b5ad7/target_ima  
+        ges/569121e2-5c5e-4457-b88c-13a925eee01d", "id": "569121e2-5c5e-4457-b8  
+        8c-13a925eee01d"}], "_type": "build", "href": "http://imgfac-host:8075/  
+        imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/29085ce  
+        6-3e31-4dc4-b8fc-74622f2b5ad7", "id": "29085ce6-3e31-4dc4-b8fc-74622f2b  
+        5ad7"}}
 
 * __*/imagefactory/images/:image_id*__
     
@@ -118,9 +134,25 @@ _Example:_
     > > __500__ - Error building image
     >
     > *Example:*  
-    > `% curl -d "targets=mock&template=<template> <name>f14jeos</name> <os> <name>Fedora</name> <version>14</version> <arch>x86_64</arch> <install type='url'> <url>http://download.fedoraproject.org/pub/fedora/linux/releases/14/Fedora/x86_64/os/</url> </install> <rootpw>p@55w0rd!</rootpw> </os> <description>Fedora 14</description> </template>" -X PUT http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf`
+    >  
+        % curl -d "targets=mock&template=<template><name>f14jeos</name><os>  
+        <name>Fedora</name><version>14</version><arch>x86_64</arch><install typ  
+        e='url'><url>http://download.fedoraproject.org/pub/fedora/linux/release  
+        s/14/Fedora/x86_64/os/</url></install><rootpw>p@55w0rd!</rootpw></os>  
+        <description>Fedora 14</description></template>" -X PUT  
+        http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-x4a16-bc71-88293cb1cadf
     >
-    > `{"_type": "image", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "id": "0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "build": {"target_images": [{"_type": "target_image", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_images/f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "id": "f721adc4-ea4c-4d20-adf9-1a02153a9cc6"}], "_type": "build", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935", "id": "c68f4d55-0785-4460-9092-07fc7c126935"}}`
+    >  
+        {"_type": "image", "href": "http://imgfac-host:8075/imagefactory/images  
+        /0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "id": "0e5b4e6b-c658-4a16-bc71-  
+        88293cb1cadf", "build": {"target_images": [{"_type": "target_image", "h  
+        ref": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-b  
+        c71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_ima  
+        ges/f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "id": "f721adc4-ea4c-4d20-ad  
+        f9-1a02153a9cc6"}], "_type": "build", "href": "http://imgfac-host:8075/  
+        imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d5  
+        5-0785-4460-9092-07fc7c126935", "id": "c68f4d55-0785-4460-9092-07fc7c12  
+        6935"}}
 
 * __*/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id/provider_images*__
     
@@ -202,9 +234,20 @@ _Example:_
     > > __500__ - Error getting builder details
     >
     > *Example:*  
-    > `% curl http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_images/f721adc4-ea4c-4d20-adf9-1a02153a9cc6`
+    >  
+        % curl http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-b  
+        c71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_ima  
+        ges/f721adc4-ea4c-4d20-adf9-1a02153a9cc6
     >
-    > `{"status": "COMPLETED", "_type": "target_image_status", "completed": 100, "provider_account_identifier": null, "image_id": "0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_images/f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "operation": "build", "id": "f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "build_id": "c68f4d55-0785-4460-9092-07fc7c126935", "target": "mock", "provider": null, "target_image_id": null}`
+    >  
+        {"status": "COMPLETED", "_type": "target_image_status", "completed": 10  
+        0, "provider_account_identifier": null, "image_id": "0e5b4e6b-c658-4a16  
+        -bc71-88293cb1cadf", "href": "http://imgfac-host:8075/imagefactory/imag  
+        es/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-  
+        07fc7c126935/target_images/f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "oper  
+        ation": "build", "id": "f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "build_i  
+        d": "c68f4d55-0785-4460-9092-07fc7c126935", "target": "mock", "provider  
+        ": null, "target_image_id": null}
 
 * __*/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id/status*__
     
@@ -231,9 +274,17 @@ _Example:_
     > > __500__ - Error getting builder details
     >
     > *Example:*  
-    > `% curl http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_images/f721adc4-ea4c-4d20-adf9-1a02153a9cc6/status`
+    >  
+        % curl http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-b  
+        c71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_ima  
+        ges/f721adc4-ea4c-4d20-adf9-1a02153a9cc6/status
     >
-    > `{"status": "COMPLETED", "_type": "target_image_status", "href": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_images/f721adc4-ea4c-4d20-adf9-1a02153a9cc6/status", "id": "f721adc4-ea4c-4d20-adf9-1a02153a9cc6"}`
+    >  
+        {"status": "COMPLETED", "_type": "target_image_status", "href": "http:/  
+        /imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1c  
+        adf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_images/f721adc4-  
+        ea4c-4d20-adf9-1a02153a9cc6/status", "id": "f721adc4-ea4c-4d20-adf9-1a0  
+        2153a9cc6"}
 
 * __*/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id/provider_images/:provider_image_id*__
     
@@ -311,9 +362,30 @@ _Example:_
     > > __500__ - Error getting builder list
     >
     > *Example:*  
-    > `% curl http://imgfac-host:8075/imagefactory/builders`
+    >  
+        % curl http://imgfac-host:8075/imagefactory/builders
     >
-    > `{"_type": "builders", "href": "http://imgfac-host:8075/imagefactory/builders", "builders": [{"status": "COMPLETED", "_type": "builder", "completed": 100, "provider_account_identifier": null, "image_id": "6b558510-15db-4beb-b385-843241ea0639", "href": "http://imgfac-host:8075/imagefactory/builders/acd2e7fd-2dda-4aa1-aee1-23e207782f39", "operation": "build", "id": "acd2e7fd-2dda-4aa1-aee1-23e207782f39", "build_id": "6297c0f7-d6f1-41fc-a87d-4afbc582b57a", "target": "mock", "provider": null, "target_image_id": null}, {"status": "COMPLETED", "_type": "builder", "completed": 100, "provider_account_identifier": null, "image_id": "0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "href": "http://imgfac-host:8075/imagefactory/builders/f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "operation": "build", "id": "f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "build_id": "c68f4d55-0785-4460-9092-07fc7c126935", "target": "mock", "provider": null, "target_image_id": null}, {"status": "COMPLETED", "_type": "builder", "completed": 100, "provider_account_identifier": null, "image_id": "0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "href": "http://imgfac-host:8075/imagefactory/builders/569121e2-5c5e-4457-b88c-13a925eee01d", "operation": "build", "id": "569121e2-5c5e-4457-b88c-13a925eee01d", "build_id": "29085ce6-3e31-4dc4-b8fc-74622f2b5ad7", "target": "mock", "provider": null, "target_image_id": null}]}`
+    >  
+        {"_type": "builders", "href": "http://imgfac-host:8075/imagefactory/bui  
+        lders", "builders": [{"status": "COMPLETED", "_type": "builder", "compl  
+        eted": 100, "provider_account_identifier": null, "image_id": "6b558510-  
+        15db-4beb-b385-843241ea0639", "href": "http://imgfac-host:8075/imagefac  
+        tory/builders/acd2e7fd-2dda-4aa1-aee1-23e207782f39", "operation": "buil  
+        d", "id": "acd2e7fd-2dda-4aa1-aee1-23e207782f39", "build_id": "6297c0f7  
+        -d6f1-41fc-a87d-4afbc582b57a", "target": "mock", "provider": null, "tar  
+        get_image_id": null}, {"status": "COMPLETED", "_type": "builder", "comp  
+        leted": 100, "provider_account_identifier": null, "image_id": "0e5b4e6b  
+        -c658-4a16-bc71-88293cb1cadf", "href": "http://imgfac-host:8075/imagefa  
+        ctory/builders/f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "operation": "bui  
+        ld", "id": "f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "build_id": "c68f4d5  
+        5-0785-4460-9092-07fc7c126935", "target": "mock", "provider": null, "ta  
+        rget_image_id": null}, {"status": "COMPLETED", "_type": "builder", "com  
+        pleted": 100, "provider_account_identifier": null, "image_id": "0e5b4e6  
+        b-c658-4a16-bc71-88293cb1cadf", "href": "http://imgfac-host:8075/imagef  
+        actory/builders/569121e2-5c5e-4457-b88c-13a925eee01d", "operation": "bu  
+        ild", "id": "569121e2-5c5e-4457-b88c-13a925eee01d", "build_id": "29085c  
+        e6-3e31-4dc4-b8fc-74622f2b5ad7", "target": "mock", "provider": null, "t  
+        arget_image_id": null}]}
 
 * __*/imagefactory/builders/:builder_id*__
     
@@ -338,9 +410,17 @@ _Example:_
     > > __500__ - Error getting builder details
     >
     > *Example:*  
-    > `% curl http://imgfac-host:8075/imagefactory/builders/acd2e7fd-2dda-4aa1-aee1-23e207782f39`
+    >  
+        % curl http://imgfac-host:8075/imagefactory/builders/acd2e7fd-2dda-4aa1  
+        -aee1-23e207782f39
     >
-    > `{"status": "COMPLETED", "_type": "builder", "completed": 100, "provider_account_identifier": null, "image_id": "6b558510-15db-4beb-b385-843241ea0639", "href": "http://imgfac-host:8075/imagefactory/builders/acd2e7fd-2dda-4aa1-aee1-23e207782f39", "operation": "build", "id": "acd2e7fd-2dda-4aa1-aee1-23e207782f39", "build_id": "6297c0f7-d6f1-41fc-a87d-4afbc582b57a", "target": "mock", "provider": null, "target_image_id": null}`
+    >  
+        {"status": "COMPLETED", "_type": "builder", "completed": 100, "provider  
+        _account_identifier": null, "image_id": "6b558510-15db-4beb-b385-843241  
+        ea0639", "href": "http://imgfac-host:8075/imagefactory/builders/acd2e7f  
+        d-2dda-4aa1-aee1-23e207782f39", "operation": "build", "id": "acd2e7fd-2  
+        dda-4aa1-aee1-23e207782f39", "build_id": "6297c0f7-d6f1-41fc-a87d-4afbc  
+        582b57a", "target": "mock", "provider": null, "target_image_id": null}
 
 * __*/imagefactory/builders/:builder_id/status*__
     
@@ -365,9 +445,14 @@ _Example:_
     > > __500__ - Error getting builder details
     >
     > *Example:*  
-    > `% curl http://imgfac-host:8075/imagefactory/builders/acd2e7fd-2dda-4aa1-aee1-23e207782f39/status`
+    >  
+        % curl http://imgfac-host:8075/imagefactory/builders/acd2e7fd-2dda-4aa1  
+        -aee1-23e207782f39/status
     >
-    > `{"status": "COMPLETED", "_type": "builder_status", "href": "http://imgfac-host:8075/imagefactory/builders/acd2e7fd-2dda-4aa1-aee1-23e207782f39/status", "id": "acd2e7fd-2dda-4aa1-aee1-23e207782f39"}`
+    >  
+        {"status": "COMPLETED", "_type": "builder_status", "href": "http://imgf  
+        ac-host:8075/imagefactory/builders/acd2e7fd-2dda-4aa1-aee1-23e207782f39  
+        /status", "id": "acd2e7fd-2dda-4aa1-aee1-23e207782f39"}
 
 
 <!-- links -->
