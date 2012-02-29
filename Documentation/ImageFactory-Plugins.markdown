@@ -10,7 +10,6 @@ A symlink from the directory `/etc/imagefactory/plugins.d` to the plugin's .info
 
 The structure of a plugin is generally:
 
-> 
         Example_ifplugin/
                         __init__.py
                         Example_ifplugin.info
@@ -29,8 +28,8 @@ There are two requirements Image Factory plugins need to satisfy.
 
 When Image Factory builds, pushes, or takes a snapshot of an image, delegation is used to allow a plugin to customize the operation. The plugin must specify what class Image Factory should use to instantiate a delegate object. This is done by assigning the class to `delegate_class`.
 
-> *Example-ifplugin/__init__.py:*  
-> 
+*Example-ifplugin/__init__.py:*  
+ 
         from ExampleMain import ExampleMain as delegate_class
 
 In the example above, _ExampleMain_ is a class that implements some or all of the methods defined in the delegate interface of one of the plugin types such as [OS](https://github.com/aeolusproject/imagefactory/blob/master/imgfac/OSDelegate.py) 
@@ -38,8 +37,8 @@ or [Cloud](https://github.com/aeolusproject/imagefactory/blob/master/imgfac/Clou
 
 Here is what the module, ExampleMain.py, might contain.
 
-> *Example-ifplugin/ExampleMain.py:*
-> 
+*Example-ifplugin/ExampleMain.py:*
+ 
         import zope
         from imgfac.CloudDelegate import CloudDelegate
         class ExampleMain(object):
