@@ -9,6 +9,7 @@ Image Factory installs the stock plugins in the Python site-packages directory. 
 A symlink from the directory `/etc/imagefactory/plugins.d` to the plugin's .info file indicates that Image Factory should use the plugin.
 
 The structure of a plugin is generally:
+
 > 
         Example_ifplugin/
                         __init__.py
