@@ -4,15 +4,19 @@ Image Factory offers the ability to extend the support for operating systems and
 
 ## Using ImageFactory Plugins
 
----
-
 Image Factory installs the stock plugins in the Python site-packages directory. If plugins are installed in another location, the path must exist in the PYTHON_PATH environment variable.
 
 A symlink from the directory `/etc/imagefactory/plugins.d` to the plugin's .info file indicates that Image Factory should use the plugin.
 
-## Writing ImageFactory Plugins
+The structure of a plugin is generally:
+> 
+        Example_ifplugin/
+                        __init__.py
+                        Example_ifplugin.info
+                        ExampleMain.py
+                        ...
 
----
+## Writing ImageFactory Plugins
 
 There are two requirements Image Factory plugins need to satisfy.
 
@@ -24,7 +28,7 @@ There are two requirements Image Factory plugins need to satisfy.
 
 When Image Factory builds, pushes, or takes a snapshot of an image, delegation is used to allow a plugin to customize the operation. The plugin must specify what class Image Factory should use to instantiate a delegate object. This is done by assigning the class to `delegate_class`.
 
-> *example_plugin/__init__.py:*  
+> *Example-ifplugin/__init__.py:*  
 > 
         from ExampleMain import ExampleMain as delegate_class
 
@@ -33,7 +37,7 @@ or [Cloud](https://github.com/aeolusproject/imagefactory/blob/master/imgfac/Clou
 
 Here is what the module, ExampleMain.py, might contain.
 
-> *example_plugin/ExampleMain.py:*
+> *Example-ifplugin/ExampleMain.py:*
 > 
         import zope
         from imgfac.CloudDelegate import CloudDelegate
@@ -45,7 +49,7 @@ Here is what the module, ExampleMain.py, might contain.
 
 ### Plugin metadata
 
-A plugin must include a JSON formatted metadata file named _plugin-name_.info. In the example above, this file would be named *example_plugin.info*.
+A plugin must include a JSON formatted metadata file named _plugin-name_.info. In the example above, this file would be named *Example-ifplugin.info*.
 
 The contents of this file are:
 
