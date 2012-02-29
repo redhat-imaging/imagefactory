@@ -6,7 +6,9 @@ Image Factory offers the ability to extend the support for operating systems and
 
 ---
 
-TBD: imcleod drafting this section. To include location, naming, and config.
+Image Factory installs the stock plugins in the Python site-packages directory. If plugins are installed in another location, the path must exist in the PYTHON_PATH environment variable.
+
+A symlink from the directory `/etc/imagefactory/plugins.d` to the plugin's .info file indicates that Image Factory should use the plugin.
 
 ## Writing ImageFactory Plugins
 
@@ -43,19 +45,21 @@ Here is what the module, ExampleMain.py, might contain.
 
 ### Plugin metadata
 
-A plugin must include a JSON formatted file named info.json. The contents of this file are:
+A plugin must include a JSON formatted metadata file named _plugin-name_.info. In the example above, this file would be named *example_plugin.info*.
 
-+ name - A short string identifying the plugin.
-+ description - A long string describing the plugin.
-+ type - Either `os` or `cloud`
-+ maintainer - A dictionary with the following keys:
-    - name - The name of the individual or organization maintaining this plugin.
-    - email - An email address for queries about the plugin.
-    - url - A URL for more information about the plugin.
-+ version - A short string identifying the version.
-+ license - The license this plugin is released under.
-+ targets - A dictionary
+The contents of this file are:
+
++ **identitfier** - A short string identifying the plugin.
++ **description** - A long string describing the plugin.
++ **type** - Either `os` or `cloud`
++ **maintainer** - A dictionary with the following keys:
+    - **name** - The name of the individual or organization maintaining this plugin.
+    - **email** - An email address for queries about the plugin.
+    - **url** - A URL for more information about the plugin.
++ **version** - A short string identifying the version.
++ **license** - The license this plugin is released under.
++ **targets** - A dictionary
     - OS plugins use key/value pairs of os_name/version_list  
-        Ex. "Fedora" : ["14", "15", "16"]
+        *Ex*. "Fedora" : ["14", "15", "16"]
     - Cloud plugins use key/value pairs of cloud_name/types  
-        Ex. "ec2" : ["upload", "snapshot"]
+        *Ex*. "ec2" : ["upload", "snapshot"]
