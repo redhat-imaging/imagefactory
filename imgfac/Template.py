@@ -117,7 +117,10 @@ class Template(object):
         if (match):
             template_id = match.group()
 
-        response_headers, response = httplib2.Http().request(url, "GET", headers={'content-type':'text/plain'})
+        if (not url.startswith(self.warehouse.url)):
+            response_headers, response = httplib2.Http().request(url, "GET", headers={'content-type':'text/plain'})
+        else:
+            response_headers, response = self.warehouse.request(url, "GET")
         if(response and self.__string_is_xml_template(response)):
             return template_id, response
         else:
