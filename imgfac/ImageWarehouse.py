@@ -88,7 +88,7 @@ class ImageWarehouse(object):
         req['oauth_signature'] = sig
         return req.to_header()
 
-    def _http_request(self, url, method, body = None, content_type = 'text/plain'):
+    def request(self, url, method, body = None, content_type = 'text/plain'):
         try:
             headers = self._oauth_headers(url, method) if self.warehouse_oauth else {}
             headers['content-type'] = content_type
@@ -103,16 +103,16 @@ class ImageWarehouse(object):
             raise WarehouseError("Problem encountered trying to reach image warehouse. Please check that iwhd is running and reachable.\nException text: %s" % (e, ))
 
     def _http_get(self, url):
-        return self._http_request(url, 'GET')[1]
+        return self.request(url, 'GET')[1]
 
     def _http_post(self, url, body, content_type):
-        return self._http_request(url, 'POST', body, content_type)[1]
+        return self.request(url, 'POST', body, content_type)[1]
 
     def _http_put(self, url, body = None):
-        self._http_request(url, 'PUT', body)[1]
+        self.request(url, 'PUT', body)[1]
 
     def create_bucket_at_url(self, url):
-        response_headers, response = self._http_request(url, 'PUT')
+        response_headers, response = self.request(url, 'PUT')
         status = int(response_headers["status"])
         if(399 < status < 600):
             # raise RuntimeError("Could not create bucket: %s" % url)
@@ -161,7 +161,7 @@ class ImageWarehouse(object):
         return object_id, the_object, metadata
 
     def delete_object_at_url(self, object_url):
-        response_headers, response = self._http_request(object_url, 'DELETE')
+        response_headers, response = self.request(object_url, 'DELETE')
         status = int(response_headers["status"])
         if(status == 200):
             return True
