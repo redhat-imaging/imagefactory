@@ -62,8 +62,5 @@ The contents of this file are:
     - **url** - A URL for more information about the plugin.
 + **version** - A short string identifying the version.
 + **license** - The license this plugin is released under.
-+ **targets** - A dictionary
-    - OS plugins use key/value pairs of os_name/version_list  
-        *Ex*. "Fedora" : ["14", "15", "16"]
-    - Cloud plugins use key/value pairs of cloud_name/types  
-        *Ex*. "ec2" : ["upload", "snapshot"]
++ **targets** - List of targets as strings.
+    *Ex*. "Fedora14", "Fedora15", "Fedora16"]

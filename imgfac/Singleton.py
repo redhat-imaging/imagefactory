@@ -18,7 +18,7 @@ class Singleton(object):
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             instance = super(Singleton, cls).__new__(cls, *args, **kwargs)
-            instance._singleton_init()
+            instance._singleton_init(*args, **kwargs)
             cls._instance = instance
         elif args or kwargs:
             cls._instance.log.warn('Attempted re-initialize of singleton: %s' % (cls._instance, ))
