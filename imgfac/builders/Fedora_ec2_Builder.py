@@ -1335,8 +1335,8 @@ title #TITLE#
 """
 
     fstab_32bit="""LABEL=/    /         ext3    defaults         1 1
-/dev/xvda2  /mnt      ext3    defaults         1 2
-/dev/xvda3  swap      swap    defaults         0 0
+/dev/xvda2  /mnt      ext3    defaults,nofail         1 2
+/dev/xvda3  swap      swap    defaults,nofail         0 0
 none       /dev/pts  devpts  gid=5,mode=620   0 0
 none       /dev/shm  tmpfs   defaults         0 0
 none       /proc     proc    defaults         0 0
@@ -1344,8 +1344,8 @@ none       /sys      sysfs   defaults         0 0
 """
 
     fstab_64bit="""LABEL=/    /         ext3    defaults         1 1
-/dev/xvdb   /mnt      ext3    defaults         0 0
-/dev/xvdc   /data     ext3    defaults         0 0
+/dev/xvdb   /mnt      ext3    defaults,nofail         0 0
+/dev/xvdc   /data     ext3    defaults,nofail         0 0
 none       /dev/pts  devpts  gid=5,mode=620   0 0
 none       /dev/shm  tmpfs   defaults         0 0
 none       /proc     proc    defaults         0 0
