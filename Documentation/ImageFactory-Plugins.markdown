@@ -53,14 +53,13 @@ A plugin must include a JSON formatted metadata file named _plugin-name_.info. I
 
 The contents of this file are:
 
-+ **identitfier** - A short string identifying the plugin.
-+ **description** - A long string describing the plugin.
 + **type** - Either `os` or `cloud`
++ **targets** - List of targets as strings.
+    *Ex*. ["Fedora14", "Fedora15", "Fedora16"]
++ **description** - A long string describing the plugin.
 + **maintainer** - A dictionary with the following keys:
     - **name** - The name of the individual or organization maintaining this plugin.
     - **email** - An email address for queries about the plugin.
     - **url** - A URL for more information about the plugin.
 + **version** - A short string identifying the version.
 + **license** - The license this plugin is released under.
-+ **targets** - List of targets as strings.
-    *Ex*. "Fedora14", "Fedora15", "Fedora16"]
