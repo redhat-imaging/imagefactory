@@ -56,6 +56,7 @@ class ApplicationConfiguration(Singleton):
         argparser.add_argument('--imgdir', default='/tmp', help='Build image files in location specified. (default: %(default)s)')
         argparser.add_argument('--timeout', type=int, default=3600, help='Set the timeout period for image building in seconds. (default: %(default)s)')
         argparser.add_argument('--tmpdir', default='/tmp', help='Use the specified location for temporary files.  (default: %(default)s)')
+        argparser.add_argument('--plugins', default='/etc/imagefactory/plugins.d', help='Plugin directory. (default: %(default)s)')
 
         group_rest = argparser.add_argument_group(title='RESTful Interface', description=rest_description)
         group_rest.add_argument('--rest', action='store_true', default=False, help='Turn on the RESTful http interface. (default: %(default)s)')
