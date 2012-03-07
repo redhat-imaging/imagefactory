@@ -24,9 +24,9 @@ class Singleton(object):
             cls._instance.log.warn('Attempted re-initialize of singleton: %s' % (cls._instance, ))
         return cls._instance
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         pass
 
-    def _singleton_init(self):
+    def _singleton_init(self, *args, **kwargs):
         """Initialize a singleton instance before it is registered."""
         pass
