@@ -20,21 +20,28 @@ import os.path
 import json
 from Singleton import Singleton
 
-PLUGIN_TYPES = ('os', 'cloud')
+PLUGIN_TYPES = ('OS', 'CLOUD')
 INFO_FILE_EXTENSION = '.info'
 
 class PluginManager(Singleton):
     """ Registers and manages ImageFactory plugins. """
     @property
     def plugins(self):
-        """The property plugins"""
+        """
+        The property plugins
+        """
         return self._plugins
 
     def _singleton_init(self, plugin_path):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        self.path = plugin_path
+        if(os.path.exists(plugin_path)):
+            self.path = plugin_path
+        else:
+            self.log.exception("Plugin path (%s) does not exist! No plugins loaded." % plugin_path)
+            raise Exception("Plugin path (%s) does not exist! No plugins loaded." % plugin_path)
         self._plugins = dict()
         self._targets = dict()
+        self._types = dict().fromkeys(PLUGIN_TYPES, list())
 
     def load(self):
         """
@@ -51,13 +58,34 @@ class PluginManager(Singleton):
                 info_files.append(_file)
 
         for _type in PLUGIN_TYPES:
+            self._plugins[_type] = dict()
             for filename in info_files:
                 plugin_name = filename.rstrip(INFO_FILE_EXTENSION)
                 md = self.metadata_for_plugin(plugin_name)
-                self._plugins[plugin_name] = md
-                if(md['type'] is _type.lower()):
-                    for target in md['targets']:
-                        self._targets[target] = plugin_name
+                try:
+                    if(md['type'].upper() == _type):
+                        for target in md['targets']:
+                            if(not target in self._targets):
+                                self._targets[target] = plugin_name
+                            else:
+                                msg = 'Did not register %s for %s. Plugin %s already registered.' % (plugin_name, target, self._targets[target])
+                                self._register_plugin_with_error(plugin_name, msg)
+                                self.log.warn(msg)
+                        self._plugins[plugin_name] = md
+                        self._types[_type].append(plugin_name)
+                        self.log.info('Plugin (%s) loaded...' % plugin_name)
+                except KeyError as e:
+                    msg = 'Invalid metadata for plugin (%s). Missing entry for %s.' % (plugin_name, e)
+                    self._register_plugin_with_error(plugin_name, msg)
+                    self.log.exception(msg)
+                except Exception as e:
+                    msg = 'Loading plugin (%s) failed with exception: %s' % (plugin_name, e)
+                    self._register_plugin_with_error(plugin_name, msg)
+                    self.log.exception(msg)
+        print self._plugins
+
+    def _register_plugin_with_error(self, plugin_name, error_msg):
+        self._plugins[plugin_name] = dict(ERROR = error_msg)
 
     def metadata_for_plugin(self, plugin):
         """
@@ -70,8 +98,13 @@ class PluginManager(Singleton):
         if(plugin in self._plugins):
             return self._plugins[plugin]
         else:
+            metadata = None
             info_file = plugin + INFO_FILE_EXTENSION
-            fp = open(os.path.join(self.path, info_file), 'r')
-            metadata = json.load(fp)
-            fp.close()
-            return metadata
+            try:
+                fp = open(os.path.join(self.path, info_file), 'r')
+                metadata = json.load(fp)
+            except Exception as e:
+                self.log.exception('Exception caught while loading plugin metadata: %s' % e)
+            finally:
+                fp.close()
+                return metadata
