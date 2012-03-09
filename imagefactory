@@ -20,13 +20,31 @@ import os
 import os.path
 import signal
 import logging
-import guestfs
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.Singleton import Singleton
 from imgfac.rest.bottle import *
 from imgfac.rest.imagefactory import rest_api
 from time import asctime, localtime
+
+# Monkey patch for guestfs threading issue
+# BZ 790528
+# TODO: Remove at some point when the upstream fix is in our supported platforms
+from imgfac.ReservationManager import ReservationManager
+from guestfs import GuestFS as _GuestFS
+
+class GuestFS(_GuestFS):
+    def launch(self):
+        res_mgr = ReservationManager()
+        res_mgr.get_named_lock("libguestfs_launch")
+        try:
+            _GuestFS.launch(self)
+        finally:
+            res_mgr.release_named_lock("libguestfs_launch")
+
+import guestfs
+guestfs.GuestFS = GuestFS
+
 
 class Application(Singleton):
 
@@ -148,8 +166,6 @@ class Application(Singleton):
 
             debug(self.app_config['debug'])
             pem_file = self.app_config['ssl_pem'] if not self.app_config['no_ssl'] else None
-            # TODO: Remove this call and the function def when BZ 790528 is resolved
-            self._init_guestfs()
 
             if self.app_config['debug']:
                 # Mark the start of this run in our stderr/stdout debug redirect
@@ -209,13 +225,6 @@ class Application(Singleton):
                 dispatchers = BuildDispatcher().push_image_to_providers(self.app_config['image'], None, self.app_config['provider'], credentials)
                 for dispatcher in dispatchers:
                     print("Pushing build %s of image %s to provider %s" % (dispatcher.build_id, dispatcher.image_id, dispatcher.provider))
-
-    def _init_guestfs(self):
-        # Doing this once, before going multithreaded, avoids the concurrency issue in BZ 790528
-        g = guestfs.GuestFS()
-        g.add_drive ("/dev/zero")
-        g.launch()
-        del g
 
 if __name__ == "__main__":
     sys.exit(Application().main())
