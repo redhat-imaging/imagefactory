@@ -37,8 +37,9 @@ class PluginManager(Singleton):
         if(os.path.exists(plugin_path)):
             self.path = plugin_path
         else:
-            self.log.exception("Plugin path (%s) does not exist! No plugins loaded." % plugin_path)
-            raise Exception("Plugin path (%s) does not exist! No plugins loaded." % plugin_path)
+            msg = 'Plugin path (%s) does not exist! No plugins loaded.' % plugin_path
+            self.log.exception(msg)
+            raise Exception(msg)
         self._plugins = dict()
         self._targets = dict()
         self._types = dict().fromkeys(PLUGIN_TYPES, list())
