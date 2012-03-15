@@ -51,7 +51,7 @@ License: ASL 2.0
 Requires: %{name} = %{version}-%{release}
 
 %description jeosconf-ec2-rhel
-The configuration file for Fedora EC2 JEOS images.
+The configuration file for RHEL EC2 JEOS images.
 
 %prep
 %setup -q
