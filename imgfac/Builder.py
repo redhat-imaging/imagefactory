@@ -23,7 +23,9 @@ class Builder(object):
     delegate = prop("_delegate")
     os_plugin = prop("_os_plugin")
     cloud_plugin = prop("_cloud_plugin")
-    image = prop("_image")
+    base_image = prop("_base_image")
+    target_image = prop("_target_image")
+    provider_image = prop("_provider_image")
 
     def status():
         doc = "A string value."
@@ -94,38 +96,10 @@ class Builder(object):
 
         @return TODO
         """
-        try:
-            _should_create = self.cloud_plugin.builder_should_create_image(self)
-        except AttributeError:
-            _should_create = True
-        try:
-            if _should_create : self.cloud_plugin.builder_will_create_image(self)
-        except AttributeError:
-            pass
-        if(_should_create):
-            try:
-                self.image = self.os_plugin.create_image(self)
-                self.cloud_plugin.builder_did_create_image(self)
-            except AttributeError:
-                pass
-
-        try:
-            _should_install = self.cloud_plugin.builder_should_install_packages(self)
-        except AttributeError:
-            _should_install = True
-        try:
-            if _should_install : self.cloud_plugin.builder_will_install_packages(self)
-        except AttributeError:
-            pass
-        if(_should_install):
-            try:
-                self.os_plugin.install_packages(self, self.image)
-                self.cloud_plugin.builder_did_install_packages(self)
-            except AttributeError:
-                pass
+        self.base_image = self.os_plugin.create_base_image(self, template)
 
 ##### CUSTOMIZE IMAGE FOR TARGET
-    def customize_image_for_target(self, factory_image, target, target_params):
+    def customize_image_for_target(self, base_image, target, parameters):
         """
         TODO: Docstring for customize_image_for_target
 
@@ -136,23 +110,23 @@ class Builder(object):
         @return TODO
         """
         try:
-            _should_customize = self.cloud_plugin.builder_should_customize_image(self)
+            _should_create = self.cloud_plugin.builder_should_create_target_image(self)
         except AttributeError:
-            _should_customize = True
+            _should_create = True
         try:
-            if _should_customize : self.cloud_plugin.builder_will_customize_image(self)
+            if _should_create : self.cloud_plugin.builder_will_create_target_image(self)
         except AttributeError:
             pass
-        if(_should_customize):
+        if(_should_create):
             try:
-                self.os_plugin.customize_image(self, self.image)
-                self.cloud_plugin.builder_did_customize_image(self)
+                self.target_image = self.os_plugin.create_target_image(self, base_image, target, parameters)
+                self.cloud_plugin.builder_did_create_target_image(self)
             except AttributeError:
                 pass
 
 
 ##### PUSH IMAGE TO PROVIDER
-    def push_image_to_provider(self, image, provider, credentials, provider_params):
+    def push_image_to_provider(self, image, target, provider, credentials, parameters):
         """
         TODO: Docstring for push_image_to_provider
 
@@ -163,10 +137,10 @@ class Builder(object):
 
         @return TODO
         """
-        pass
+        self.provider_image = self.cloud_plugin.push_image_to_provider(self, image, target, provider, parameters)
 
 ##### SNAPSHOT IMAGE
-    def snapshot_image(self, template, target, provider, credentials, snapshot_params):
+    def snapshot_image(self, template, target, provider, credentials, parameters):
         """
         TODO: Docstring for snapshot_image
         
@@ -178,4 +152,4 @@ class Builder(object):
     
         @return TODO
         """
-        pass
+        self.provider_image = self.cloud_plugin.snapshot_image_on_provider(self, imag_id, target, provider, parameters)

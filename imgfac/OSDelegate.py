@@ -22,26 +22,24 @@ class OSDelegate(Interface):
     the plugin cares about. Delegation provides a way for the plugin to
     customize the behavior of the builder. """
 
-    def create_image_using_template(self, template):
+    def create_base_image(self, builder, template):
         """
-        Create a JEOS image to be used as the basis for customization.
+        Create a JEOS image and nstalls any packages specified in the template.
 
+        @param builder The Builder object coordinating image creation.
         @param template A Template object.
 
-        @return A FactoryImage object.
+        @return A BaseImage object.
         """
 
-    def install_packages_in_image(self, image):
+    def create_target_image(self, builder, base_image, target, parameters):
         """
-        Installs any packages specified beyond the JEOS and generates an ICICLE
-        document for the image.
-
-        @param image A FactoryImage object.
-        """
-
-    def customize_image_for_target(self, image, target, target_parameters):
-        """
-        Performs cloud agnostic customizaion of the image.
+        Performs cloud specific customization on the base image.
 
         @param builder The builder object.
+        @param base_image The BaseImage to customize.
+        @param target The cloud type to customize for.
+        @param parameters Dictionary of target specific parameters.
+
+        @return A TargetImage object.
         """
