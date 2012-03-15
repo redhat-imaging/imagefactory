@@ -58,7 +58,7 @@ previously built for a target cloud to the cloud provider.
 
 > > Shows the version information for Image Factory and exits.
 
-> **-v** or **--version**
+> **-v** or **--verbose**
 
 > > Turn on verbose logging.
 
