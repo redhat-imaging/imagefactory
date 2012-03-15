@@ -14,11 +14,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from BaseImage import BaseImage
+from FactoryImage import FactoryImage
 from props import prop
 
-class Image(BaseImage):
-    """ TODO: Docstring for Image  """
+class ProviderImage(FactoryImage):
+    """ TODO: Docstring for ProviderImage  """
 
     target_image = prop("_target_image")
     provider = prop("_provider")
@@ -31,7 +31,7 @@ class Image(BaseImage):
         @param template TODO
         @param target_img_id TODO
         """
-        super(Image, self).init()
+        super(ProviderImage, self).init()
         self.target_image = target_image
         self.provider = provider
         self.credentials = credentials

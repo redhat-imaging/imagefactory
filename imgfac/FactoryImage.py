@@ -14,18 +14,22 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from BaseImage import BaseImage
 from props import prop
+import uuid
 
-class FactoryImage(BaseImage):
-    """ TODO: Docstring for BaseImage  """
+class FactoryImage(object):
+    """ TODO: Docstring for FactoryImage  """
 
-    template = prop("_template")
+    identifier = prop("_identifier")
+    data = prop("_data")
+    icicle = prop("_icicle")
 
     def __init__(self, template):
         """ TODO: Fill me in
         
         @param template TODO
         """
-        super(BaseImage, self).init()
-        self.template = template
+        super(FactoryImage, self).init()
+        self.identifier = uuid.uuid4()
+        self.data = None
+        self.icicle = None
