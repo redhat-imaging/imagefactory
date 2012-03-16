@@ -40,7 +40,6 @@ http://aeolusproject.org/projects/imagefactory for more information.
 %package jeosconf-ec2-fedora
 Summary: Configuration for JEOS images for EC2
 License: ASL 2.0
-Requires: %{name} = %{version}-%{release}
 
 %description jeosconf-ec2-fedora
 The configuration file for Fedora EC2 JEOS images.
@@ -48,7 +47,6 @@ The configuration file for Fedora EC2 JEOS images.
 %package jeosconf-ec2-rhel
 Summary: Configuration for JEOS images for EC2
 License: ASL 2.0
-Requires: %{name} = %{version}-%{release}
 
 %description jeosconf-ec2-rhel
 The configuration file for RHEL EC2 JEOS images.
