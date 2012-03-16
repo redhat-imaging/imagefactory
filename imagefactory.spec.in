@@ -102,6 +102,10 @@ fi
 %{_sysconfdir}/imagefactory/jeos_images/ec2_rhel_jeos_23_FEB_2012.conf
 
 %changelog
+* Fri Mar 16 2012 Ian McLeod <imcleod@redhat.com> - 1.0.0rc10-1
+- Fix typo in subpackage description
+- Remove version-lock from JEOS subpackages
+
 * Thu Sep 15 2011 Ian McLeod <imcleod@redhat.com> - 0.6.1
 - Update Oz requirement to 0.7.0 or later for new target-specific package config
 - Update SPEC file to restart service after an install
