@@ -15,12 +15,17 @@
 #   limitations under the License.
 
 from props import prop
+from NotificationCenter import NotificationCenter
+from Notification import Notification
+
+
+NOTIFICATIONS = ('builder.status',
+                 'builder.percentage')
 
 class Builder(object):
     """ TODO: Docstring for Builder  """
 
 ##### PROPERTIES
-    delegate = prop("_delegate")
     os_plugin = prop("_os_plugin")
     cloud_plugin = prop("_cloud_plugin")
     base_image = prop("_base_image")
@@ -33,24 +38,13 @@ class Builder(object):
             return self._status
 
         def fset(self, value):
-            if(self.delegate):
-                try: #check with the delegate if we should update
-                    _shouldSet = self.delegate.builder_should_update_status(self, self._status, value)
-                except AttributeError: #if the delegate doesn't respond to this method, we'll just go ahead with it
-                    _shouldSet = True
-                try: #give the delegate a chance to intervene on the update
-                    if _shouldSet : value = self.delegate.builder_will_update_status(self, self._status, value)
-                except AttributeError:
-                    pass
-                if(_shouldSet):
-                    _original_status = self._status
-                    self._status = value
-                    try: #tell the delegate that the update occurred
-                        self.delegate.builder_did_update_status(self, _original_status, self._status)
-                    except AttributeError:
-                        pass
-            else:
-                self._status = value
+            old_value = self._status
+            self._status = value
+            notification = Notification(name=NOTIFICATIONS[0],
+                                        sender=self,
+                                        user_info=dict(old_status=old_value, new_status=value))
+            self.notification_center.post_notification(notification)
+
         return locals()
     status = property(**status())
 
@@ -60,32 +54,21 @@ class Builder(object):
             return self._percent_complete
 
         def fset(self, value):
-            if(self.delegate):
-                try: #check with the delegate if we should update
-                    _shouldSet = self.delegate.builder_should_update_percentage(self, self._percent_complete, value)
-                except AttributeError: #if the delegate doesn't respond to this method, we'll just go ahead with it
-                    _shouldSet = True
-                try: #give the delegate a chance to intervene on the update
-                    if _shouldSet : value = self.delegate.builder_will_update_percentage(self, self._percent_complete, value)
-                except AttributeError:
-                    pass
-                if(_shouldSet):
-                    _original_percentage = self._percent_complete
-                    self._percent_complete = value
-                    try: #tell the delegate that the update occurred
-                        self.delegate.builder_did_update_percentage(self, _original_percentage, self._percent_complete)
-                    except AttributeError:
-                        pass
-            else:
-                self._percent_complete = value
+            old_value = self._percent_complete
+            self._percent_complete = value
+            notification = Notification(name=NOTIFICATIONS[1],
+                                        sender=self,
+                                        user_info=dict(old_percentage=old_value, new_percentage=value))
+            self.notification_center.post_notification(notification)
 
         return locals()
     percent_complete = property(**percent_complete())
 
+
 ##### INITIALIZER
     def __init__(self):
-        """ TODO: Fill me in """
         super(Builder, self).init()
+        self.notification_center = NotificationCenter()
 
 #####  BUILD IMAGE
     def build_image_from_template(self, template):
