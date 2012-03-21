@@ -102,6 +102,10 @@ fi
 %{_sysconfdir}/imagefactory/jeos_images/ec2_rhel_jeos.conf
 
 %changelog
+* Wed Mar 21 2012 Ian McLeod <imcleod@redhat.com> - 1.0.0rc11-1
+- Refreshed RHEL5 U8 JEOS [BZ 805231]
+- Remove dates from JEOS config file names
+
 * Fri Mar 16 2012 Ian McLeod <imcleod@redhat.com> - 1.0.0rc10-1
 - Fix typo in subpackage description
 - Remove version-lock from JEOS subpackages
