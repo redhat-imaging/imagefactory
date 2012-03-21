@@ -16,11 +16,7 @@
 
 from props import prop
 from NotificationCenter import NotificationCenter
-from Notification import Notification
 
-
-NOTIFICATIONS = ('builder.status',
-                 'builder.percentage')
 
 class Builder(object):
     """ TODO: Docstring for Builder  """
@@ -31,39 +27,6 @@ class Builder(object):
     base_image = prop("_base_image")
     target_image = prop("_target_image")
     provider_image = prop("_provider_image")
-
-    def status():
-        doc = "A string value."
-        def fget(self):
-            return self._status
-
-        def fset(self, value):
-            old_value = self._status
-            self._status = value
-            notification = Notification(message=NOTIFICATIONS[0],
-                                        sender=self,
-                                        user_info=dict(old_status=old_value, new_status=value))
-            self.notification_center.post_notification(notification)
-
-        return locals()
-    status = property(**status())
-
-    def percent_complete():
-        doc = "The percentage through an operation."
-        def fget(self):
-            return self._percent_complete
-
-        def fset(self, value):
-            old_value = self._percent_complete
-            self._percent_complete = value
-            notification = Notification(message=NOTIFICATIONS[1],
-                                        sender=self,
-                                        user_info=dict(old_percentage=old_value, new_percentage=value))
-            self.notification_center.post_notification(notification)
-
-        return locals()
-    percent_complete = property(**percent_complete())
-
 
 ##### INITIALIZER
     def __init__(self):

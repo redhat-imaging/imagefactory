@@ -16,13 +16,58 @@
 
 from props import prop
 import uuid
+from Notification import Notification
+
+
+STATUS_STRINGS = ('NEW','PENDING', 'COMPLETE', 'FAILED')
+NOTIFICATIONS = ('image.status', 'image.percentage')
+
 
 class FactoryImage(object):
     """ TODO: Docstring for FactoryImage  """
 
+##### PROPERTIES
     identifier = prop("_identifier")
     data = prop("_data")
     icicle = prop("_icicle")
+    status_detail = prop("_status_detail")
+
+    def status():
+        doc = "A string value."
+        def fget(self):
+            return self._status
+
+        def fset(self, value):
+            value = value.upper()
+            if(value in STATUS_STRINGS):
+                old_value = self._status
+                self._status = value
+                notification = Notification(message=NOTIFICATIONS[0],
+                                            sender=self,
+                                            user_info=dict(old_status=old_value, new_status=value))
+                self.notification_center.post_notification(notification)
+            else:
+                raise KeyError('Status (%s) unknown. Use one of %s.' % (value, STATUS_STRINGS))
+
+        return locals()
+    status = property(**status())
+
+    def percent_complete():
+        doc = "The percentage through an operation."
+        def fget(self):
+            return self._percent_complete
+
+        def fset(self, value):
+            old_value = self._percent_complete
+            self._percent_complete = value
+            notification = Notification(message=NOTIFICATIONS[1],
+                                        sender=self,
+                                        user_info=dict(old_percentage=old_value, new_percentage=value))
+            self.notification_center.post_notification(notification)
+
+        return locals()
+    percent_complete = property(**percent_complete())
+##### End PROPERTIES
 
     def __init__(self, template):
         """ TODO: Fill me in
