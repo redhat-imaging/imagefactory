@@ -41,11 +41,10 @@ class NotificationCenter(Singleton):
         @param sender TODO
         """
         self.lock.acquire()
-        _observer = _Observer(observer, method, message, sender)
-        self.observers[message].add(_observer)
+        self.observers[message].add((observer, method, sender))
         self.lock.release()
 
-    def remove_observer(self, observer, message='all', sender=None):
+    def remove_observer(self, observer, method, message='all', sender=None):
         """
         TODO: Docstring for remove_observer
         
@@ -54,10 +53,10 @@ class NotificationCenter(Singleton):
         @param sender TODO
         """
         self.lock.acquire()
-        if observer in self.observers[message]:
-            self.observers[message].remove(observer)
-            if len(self.observers[message] == 0):
-                self.observers.pop(message)
+        _observer = (observer, method, sender)
+        self.observers[message].discard(_observer)
+        if (len(self.observers[message]) == 0):
+            del self.observers[message]
         self.lock.release()
 
     def post_notification(self, notification):
@@ -67,10 +66,12 @@ class NotificationCenter(Singleton):
         @param notification TODO
         """
         self.lock.acquire()
-        for _observer in self.observers[notification.message]:
-            if ((not _observer.sender) or (_observer.sender == notification.sender)):
+        _observers = self.observers['all'].union(self.observers[notification.message])
+        for _observer in _observers:
+            _sender = _observer[2]
+            if ((not _sender) or (_sender == notification.sender)):
                 try:
-                    getattr(_observer.obj, _observer.method)(notification)
+                    getattr(_observer[0], _observer[1])(notification)
                 except AttributeError as e:
                     self.log.exception('Caught exception: posting notification to object (%s) with method (%s)' % (_observer.obj, _observer.method))
         self.lock.release()
@@ -84,15 +85,3 @@ class NotificationCenter(Singleton):
         @param user_info TODO
         """
         self.post_notification(Notification(message, sender, user_info))
-
-class _Observer(object):
-    obj = prop("_obj")
-    method = prop("_method")
-    message = prop("_message")
-    sender = prop("_sender")
-
-    def __init__(self, obj, method, message, sender):
-        self.obj = obj
-        self.method = method
-        self.message = message
-        self.sender = sender
