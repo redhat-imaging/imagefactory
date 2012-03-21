@@ -40,7 +40,7 @@ class Builder(object):
         def fset(self, value):
             old_value = self._status
             self._status = value
-            notification = Notification(name=NOTIFICATIONS[0],
+            notification = Notification(message=NOTIFICATIONS[0],
                                         sender=self,
                                         user_info=dict(old_status=old_value, new_status=value))
             self.notification_center.post_notification(notification)
@@ -56,7 +56,7 @@ class Builder(object):
         def fset(self, value):
             old_value = self._percent_complete
             self._percent_complete = value
-            notification = Notification(name=NOTIFICATIONS[1],
+            notification = Notification(message=NOTIFICATIONS[1],
                                         sender=self,
                                         user_info=dict(old_percentage=old_value, new_percentage=value))
             self.notification_center.post_notification(notification)
