@@ -26,42 +26,38 @@ class NotificationCenter(Singleton):
 
     observers = prop("_observers")
 
-    def __init__(self):
-        """ TODO: Fill me in """
-        super(NotificationCenter, self).init()
-
     def _singleton_init(self, *args, **kwargs):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.observers = defaultdict(set)
         self.lock = RLock()
 
-    def add_observer(self, observer, method, name='all', sender=None):
+    def add_observer(self, observer, method, message='all', sender=None):
         """
         TODO: Docstring for add_observer
         
         @param observer TODO
         @param method TODO
-        @param name TODO
+        @param message TODO
         @param sender TODO
         """
         self.lock.acquire()
-        _observer = dict(obj=observer, method=method, sender=sender)
-        self.observers[name].add(_observer)
+        _observer = _Observer(observer, method, message, sender)
+        self.observers[message].add(_observer)
         self.lock.release()
 
-    def remove_observer(self, observer, name='all', sender=None):
+    def remove_observer(self, observer, message='all', sender=None):
         """
         TODO: Docstring for remove_observer
         
         @param observer TODO
-        @param name TODO
+        @param message TODO
         @param sender TODO
         """
         self.lock.acquire()
-        if observer in self.observers[name]:
-            self.observers[name].remove(observer)
-            if len(self.observers[name] == 0):
-                self.observers.pop(name)
+        if observer in self.observers[message]:
+            self.observers[message].remove(observer)
+            if len(self.observers[message] == 0):
+                self.observers.pop(message)
         self.lock.release()
 
     def post_notification(self, notification):
@@ -71,20 +67,32 @@ class NotificationCenter(Singleton):
         @param notification TODO
         """
         self.lock.acquire()
-        for _observer in self.observers[notification.name]:
-            if ((not _observer['sender']) or (_observer['sender'] == notification.sender)):
+        for _observer in self.observers[notification.message]:
+            if ((not _observer.sender) or (_observer.sender == notification.sender)):
                 try:
-                    getattr(_observer['obj'], _observer['method'])(notification)
+                    getattr(_observer.obj, _observer.method)(notification)
                 except AttributeError as e:
-                    self.log.exception('Caught exception: posting notification to object (%s) with method (%s)' % (_observer['obj'], _observer['method']))
+                    self.log.exception('Caught exception: posting notification to object (%s) with method (%s)' % (_observer.obj, _observer.method))
         self.lock.release()
 
-    def post_notification_with_info(self, name, sender, user_info=None):
+    def post_notification_with_info(self, message, sender, user_info=None):
         """
         TODO: Docstring for post_notification_with_info
         
-        @param name TODO
+        @param message TODO
         @param sender TODO
         @param user_info TODO
         """
-        self.post_notification(Notification(name, sender, user_info))
+        self.post_notification(Notification(message, sender, user_info))
+
+class _Observer(object):
+    obj = prop("_obj")
+    method = prop("_method")
+    message = prop("_message")
+    sender = prop("_sender")
+
+    def __init__(self, obj, method, message, sender):
+        self.obj = obj
+        self.method = method
+        self.message = message
+        self.sender = sender

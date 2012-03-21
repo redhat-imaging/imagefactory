@@ -19,19 +19,17 @@ from props import prop
 class Notification(object):
     """ TODO: Docstring for Notification  """
 
-    name = prop("_name")
+    message = prop("_message")
     sender = prop("_sender")
     user_info = prop("_user_info")
 
-    def __init__(self, name, sender, user_info=None):
+    def __init__(self, message, sender, user_info=None):
         """ TODO: Fill me in
         
-        @param name TODO
+        @param message TODO
         @param sender TODO
         @param user_info TODO
         """
-        super(Notification, self).init()
-        self._name = name
+        self._message = message
         self._sender = sender
         self._user_info = user_info
-        
