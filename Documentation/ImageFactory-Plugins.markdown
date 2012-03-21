@@ -54,8 +54,9 @@ A plugin must include a JSON formatted metadata file named _plugin-name_.info. I
 The contents of this file are:
 
 + **type** - Either `os` or `cloud`
-+ **targets** - List of targets as strings.
-    *Ex*. ["Fedora14", "Fedora15", "Fedora16"]
++ **targets** - List of targets tuples.
+    *Ex - OS plugin*. [["RHEL5", "U8", "x86_64"], ["Fedora", "16", None], ["Fedora", "17", "x86_64"]]
+    *Ex - Cloud plugin*. ["vsphere4", "vsphere5"]
 + **description** - A long string describing the plugin.
 + **maintainer** - A dictionary with the following keys:
     - **name** - The name of the individual or organization maintaining this plugin.

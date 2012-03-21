@@ -66,6 +66,7 @@ class PluginManager(Singleton):
                 try:
                     if(md['type'].upper() == _type):
                         for target in md['targets']:
+                            target = target if isinstance(target, str) else tuple(target)
                             if(not target in self._targets):
                                 self._targets[target] = plugin_name
                             else:
@@ -106,6 +107,7 @@ class PluginManager(Singleton):
                 metadata = json.load(fp)
             except Exception as e:
                 self.log.exception('Exception caught while loading plugin metadata: %s' % e)
+                raise e
             finally:
                 fp.close()
                 return metadata
