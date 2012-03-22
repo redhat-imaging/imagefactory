@@ -58,32 +58,30 @@ class PluginManager(Singleton):
             if _file.endswith(INFO_FILE_EXTENSION):
                 info_files.append(_file)
 
-        for _type in PLUGIN_TYPES:
-            self._plugins[_type] = dict()
-            for filename in info_files:
-                plugin_name = filename.rstrip(INFO_FILE_EXTENSION)
-                md = self.metadata_for_plugin(plugin_name)
-                try:
-                    if(md['type'].upper() == _type):
-                        for target in md['targets']:
-                            target = target if isinstance(target, str) else tuple(target)
-                            if(not target in self._targets):
-                                self._targets[target] = plugin_name
-                            else:
-                                msg = 'Did not register %s for %s. Plugin %s already registered.' % (plugin_name, target, self._targets[target])
-                                self._register_plugin_with_error(plugin_name, msg)
-                                self.log.warn(msg)
-                        self._plugins[plugin_name] = md
-                        self._types[_type].append(plugin_name)
-                        self.log.info('Plugin (%s) loaded...' % plugin_name)
-                except KeyError as e:
-                    msg = 'Invalid metadata for plugin (%s). Missing entry for %s.' % (plugin_name, e)
-                    self._register_plugin_with_error(plugin_name, msg)
-                    self.log.exception(msg)
-                except Exception as e:
-                    msg = 'Loading plugin (%s) failed with exception: %s' % (plugin_name, e)
-                    self._register_plugin_with_error(plugin_name, msg)
-                    self.log.exception(msg)
+        for filename in info_files:
+            plugin_name = filename.rstrip(INFO_FILE_EXTENSION)
+            md = self.metadata_for_plugin(plugin_name)
+            try:
+                if(md['type'].upper() in PLUGIN_TYPES):
+                    for target in md['targets']:
+                        target = target if isinstance(target, str) else tuple(target)
+                        if(not target in self._targets):
+                            self._targets[target] = plugin_name
+                        else:
+                            msg = 'Did not register %s for %s. Plugin %s already registered.' % (plugin_name, target, self._targets[target])
+                            self._register_plugin_with_error(plugin_name, msg)
+                            self.log.warn(msg)
+                    self._plugins[plugin_name] = md
+                    self._types[md['type'].upper()].append(plugin_name)
+                    self.log.info('Plugin (%s) loaded...' % plugin_name)
+            except KeyError as e:
+                msg = 'Invalid metadata for plugin (%s). Missing entry for %s.' % (plugin_name, e)
+                self._register_plugin_with_error(plugin_name, msg)
+                self.log.exception(msg)
+            except Exception as e:
+                msg = 'Loading plugin (%s) failed with exception: %s' % (plugin_name, e)
+                self._register_plugin_with_error(plugin_name, msg)
+                self.log.exception(msg)
         print self._plugins
 
     def _register_plugin_with_error(self, plugin_name, error_msg):
