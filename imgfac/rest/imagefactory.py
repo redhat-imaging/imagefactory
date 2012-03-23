@@ -15,6 +15,7 @@
 
 import logging
 from imgfac.rest.bottle import *
+from imgfac.rest.RESTtools import *
 from imgfac.rest.OAuthTools import oauth_protect
 from traceback import *
 from imgfac.BuildDispatcher import BuildDispatcher
@@ -23,34 +24,6 @@ from imgfac.JobRegistry import JobRegistry
 log = logging.getLogger(__name__)
 
 rest_api = Bottle(catchall=True)
-
-def _form_data_for_content_type(content_type):
-    def dencode(a_dict, encoding='ascii'):
-        new_dict = {}
-        for k,v in a_dict.items():
-            ek = k.encode(encoding)
-            if(isinstance(v, unicode)):
-                new_dict[ek] = v.encode(encoding)
-            elif(isinstance(v, dict)):
-                new_dict[ek] = dencode(v)
-            else:
-                new_dict[ek] = v
-        return new_dict
-
-    try:
-        if(content_type == 'application/json'):
-            keys = request.json.keys()
-            if(len(keys) == 1):
-                request_data = request.json[keys[0]]
-            else:
-                request_data = request.json
-        else:
-            request_data = request.forms
-
-        return dencode(request_data)
-    except Exception as e:
-        log.exception(e)
-        raise HTTPResponse(status=500, output=e)
 
 @rest_api.get('/imagefactory')
 def api_info():
