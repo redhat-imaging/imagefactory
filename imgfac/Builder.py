@@ -15,9 +15,12 @@
 #   limitations under the License.
 
 import uuid
+import Provider
 from threading import Thread
 from props import prop
 from NotificationCenter import NotificationCenter
+from Template import Template
+from PluginManager import PluginManager
 
 
 class Builder(object):
@@ -50,6 +53,8 @@ class Builder(object):
         self.base_thread.start()
 
     def _build_image_from_template(self, template, parameters=None):
+        template = template if(isinstance(template, Template)) else Template(template)
+        self.os_plugin = PluginManager().plugin_for_target((template.os_name, template.os_version, template.os_arch))
         self.base_image = self.os_plugin.create_base_image(self, template, parameters)
 
 ##### CUSTOMIZE IMAGE FOR TARGET
@@ -69,6 +74,14 @@ class Builder(object):
         self.target_thread.start()
 
     def _customize_image_for_target(self, target, image_id=None, template=None, parameters=None):
+        if(image_id and (not template)):
+            # TODO get the template from the base_image
+            pass
+
+        template = template if(isinstance(template, Template)) else Template(template)
+        self.os_plugin = PluginManager().plugin_for_target((template.os_name, template.os_version, template.os_arch))
+        self.cloud_plugin = PluginManager().plugin_for_target(target)
+
         try:
             _should_create = self.cloud_plugin.builder_should_create_target_image(self, target, image_id, template, parameters)
         except AttributeError:
@@ -109,6 +122,7 @@ class Builder(object):
         self.push_thread.start()
 
     def _push_image_to_provider(self, provider, credentials, image_id, template, parameters):
+        self.cloud_plugin = PluginManager().plugin_for_target(Provider.map_provider_to_target(provider))
         target_image = None # TODO: either retrieve the image or build one.
         self.provider_image = self.cloud_plugin.push_image_to_provider(self, provider, credentials, target_image, parameters)
 
@@ -131,4 +145,5 @@ class Builder(object):
         self.snapshot_thread.start()
 
     def _snapshot_image(self, provider, credentials, template, parameters):
+        self.cloud_plugin = PluginManager().plugin_for_target(Provider.map_provider_to_target(provider))
         self.provider_image = self.cloud_plugin.snapshot_image_on_provider(self, provider, credentials, template, parameters)
