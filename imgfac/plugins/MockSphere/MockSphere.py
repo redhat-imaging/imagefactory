@@ -17,6 +17,7 @@
 import logging
 import zope
 from imgfac.CloudDelegate import CloudDelegate
+from imgfac.ProviderImage import ProviderImage
 
 class MockSphere(object):
     zope.interface.implements(CloudDelegate)
@@ -27,9 +28,11 @@ class MockSphere(object):
 
     def push_image_to_provider(self, builder, provider, credentials, target_image, parameters):
         self.log.info('Im N ur MockSphere plugin... Im pushn Ur image providings.')
+        return ProviderImage(target_image, provider, credentials, parameters)
 
     def snapshot_image_on_provider(self, builder, provider, credentials, template, parameters):
         self.log.info('Im N ur MockSphere plugin... Im snapshottin Ur image providings.')
+        return ProviderImage(None, provider, credentials, parameters)
 
     def builder_should_create_target_image(self, builder, target, image_id, template, parameters):
         self.log.info('Im N ur MockSphere plugin... Im dictatin Ur target image creatn.')

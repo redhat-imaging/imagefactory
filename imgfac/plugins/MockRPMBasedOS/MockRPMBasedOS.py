@@ -17,6 +17,8 @@
 import logging
 import zope
 from imgfac.OSDelegate import OSDelegate
+from imgfac.BaseImage import BaseImage
+from imgfac.TargetImage import TargetImage
 
 class MockRPMBasedOS(object):
     zope.interface.implements(OSDelegate)
@@ -26,6 +28,8 @@ class MockRPMBasedOS(object):
 
     def create_base_image(self, builder, template, parameters):
         self.log.info('Im N ur MockRPMBasedOS plugin... Im creatn Ur base image.')
+        return BaseImage(template)
 
     def create_target_image(self, builder, target, base_image, parameters):
         self.log.info('Im N ur MockRPMBasedOS plugin... Im creatn Ur target image.')
+        return TargetImage(base_image, target, parameters)
