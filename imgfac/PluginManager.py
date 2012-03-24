@@ -15,10 +15,14 @@
 #   limitations under the License.
 
 import logging
+import sys
 import os
 import os.path
 import json
 from Singleton import Singleton
+
+# Add the path for built-in plugins
+sys.path.append('%s/imgfac/plugins' % sys.path[0])
 
 PLUGIN_TYPES = ('OS', 'CLOUD')
 INFO_FILE_EXTENSION = '.info'
@@ -134,7 +138,7 @@ class PluginManager(Singleton):
                     if(not plugin_name):
                         _target[-index] = None
                     else:
-                        plugin = __import__(plugin_name, fromlist=['delegate'])
+                        plugin = __import__(plugin_name, fromlist=['delegate_class'])
                         return plugin.delegate()
         except Exception as e:
                 self.log.exception('Exception caught during plugin lookup: %s' % e)
