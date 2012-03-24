@@ -50,7 +50,7 @@ class Template(object):
 
     def _content_at_path(self, path):
         try:
-            return libxml2.parseDoc(self.xml).xpath(path)[0].content
+            return libxml2.parseDoc(self.xml).xpathEval(path)[0].content
         except Exception as e:
             self.log.exception('Could not parse document for path (%s):\n%s' % (path, e))
             return None
