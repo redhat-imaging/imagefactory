@@ -77,7 +77,9 @@ class Builder(object):
         if(image_id and (not template)):
             # TODO get the template from the base_image
             pass
-
+        # TODO: if there is no base_image, we need to wait while one is built.
+        # we can probably use NotificationCenter and threading.Event to wait.
+        
         template = template if(isinstance(template, Template)) else Template(template)
         self.os_plugin = PluginManager().plugin_for_target((template.os_name, template.os_version, template.os_arch))
         self.cloud_plugin = PluginManager().plugin_for_target(target)
@@ -122,6 +124,8 @@ class Builder(object):
         self.push_thread.start()
 
     def _push_image_to_provider(self, provider, credentials, image_id, template, parameters):
+        # TODO: if there is no target_image, we need to wait while one is built.
+        # we can probably use NotificationCenter and threading.Event to wait.
         self.cloud_plugin = PluginManager().plugin_for_target(Provider.map_provider_to_target(provider))
         target_image = None # TODO: either retrieve the image or build one.
         self.provider_image = self.cloud_plugin.push_image_to_provider(self, provider, credentials, target_image, parameters)
