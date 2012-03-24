@@ -52,7 +52,7 @@ class Template(object):
         try:
             return libxml2.parseDoc(self.xml).xpath(path)[0].content
         except Exception as e:
-            self.log.exception('Could not parse document for path (%s): %s\n%s' % (path, self.xml, e))
+            self.log.exception('Could not parse document for path (%s):\n%s' % (path, e))
             return None
 
     def __init__(self, template=None, uuid=None, url=None, xml=None):
