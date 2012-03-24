@@ -14,24 +14,24 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from BaseImage import BaseImage
+from FactoryImage import FactoryImage
 from props import prop
 
-class TargetImage(BaseImage):
+class TargetImage(FactoryImage):
     """ TODO: Docstring for TargetImage  """
 
     factory_image = prop("_factory_image")
     target = prop("_target")
     parameters = prop("_parameters")
 
-    def __init__(self, factory_image, target, parameters):
+    def __init__(self, image, target, parameters):
         """ TODO: Fill me in
         
         @param template TODO
         @param target TODO
         @param parameters TODO
         """
-        super(TargetImage, self).init()
-        self.factory_image = factory_image
+        super(TargetImage, self).__init__()
+        self.base_image = image
         self.target = target
         self.parameters = parameters

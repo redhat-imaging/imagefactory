@@ -31,7 +31,7 @@ class ProviderImage(FactoryImage):
         @param template TODO
         @param target_img_id TODO
         """
-        super(ProviderImage, self).init()
+        super(ProviderImage, self).__init__()
         self.target_image = target_image
         self.provider = provider
         self.credentials = credentials

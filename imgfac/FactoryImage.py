@@ -69,12 +69,11 @@ class FactoryImage(object):
     percent_complete = property(**percent_complete())
 ##### End PROPERTIES
 
-    def __init__(self, template):
+    def __init__(self):
         """ TODO: Fill me in
         
         @param template TODO
         """
-        super(FactoryImage, self).init()
         self.identifier = uuid.uuid4()
         self.data = None
         self.icicle = None

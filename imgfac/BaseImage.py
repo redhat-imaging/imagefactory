@@ -27,5 +27,5 @@ class BaseImage(FactoryImage):
         
         @param template TODO
         """
-        super(FactoryImage, self).init()
+        super(BaseImage, self).__init__()
         self.template = template
