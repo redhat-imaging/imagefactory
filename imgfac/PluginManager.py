@@ -21,9 +21,6 @@ import os.path
 import json
 from Singleton import Singleton
 
-# Add the path for built-in plugins
-sys.path.append('%s/imgfac/plugins' % sys.path[0])
-
 PLUGIN_TYPES = ('OS', 'CLOUD')
 INFO_FILE_EXTENSION = '.info'
 
@@ -38,12 +35,16 @@ class PluginManager(Singleton):
 
     def _singleton_init(self, plugin_path):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        # Add the path for built-in plugins
+        sys.path.append('%s/imgfac/plugins' % sys.path[0])
+
         if(os.path.exists(plugin_path)):
             self.path = plugin_path
         else:
             msg = 'Plugin path (%s) does not exist! No plugins loaded.' % plugin_path
             self.log.exception(msg)
             raise Exception(msg)
+
         self._plugins = dict()
         self._targets = dict()
         self._types = dict().fromkeys(PLUGIN_TYPES, list())
@@ -86,7 +87,6 @@ class PluginManager(Singleton):
                 msg = 'Loading plugin (%s) failed with exception: %s' % (plugin_name, e)
                 self._register_plugin_with_error(plugin_name, msg)
                 self.log.exception(msg)
-        print self._plugins
 
     def _register_plugin_with_error(self, plugin_name, error_msg):
         self._plugins[plugin_name] = dict(ERROR = error_msg)
@@ -130,16 +130,16 @@ class PluginManager(Singleton):
         plugin_name = None
         try:
             if isinstance(target, str): 
-                plugin_name = self.targets.get(target)
+                plugin_name = self._targets.get(target)
             elif(isinstance(target, tuple)):
                 _target = list(target)
                 for index in range(len(target)):
-                    plugin_name = self.targets.get(_target)
+                    plugin_name = self._targets.get(tuple(_target))
                     if(not plugin_name):
                         _target[-index] = None
                     else:
                         plugin = __import__(plugin_name, fromlist=['delegate_class'])
-                        return plugin.delegate()
+                        return plugin.delegate_class()
         except Exception as e:
                 self.log.exception('Exception caught during plugin lookup: %s' % e)
                 return None
