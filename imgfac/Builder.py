@@ -21,6 +21,7 @@ from props import prop
 from NotificationCenter import NotificationCenter
 from Template import Template
 from PluginManager import PluginManager
+from ApplicationConfiguration import ApplicationConfiguration
 
 
 class Builder(object):
@@ -35,8 +36,13 @@ class Builder(object):
 
 ##### INITIALIZER
     def __init__(self):
-        super(Builder, self).init()
+        self.app_config = ApplicationConfiguration().configuration
         self.notification_center = NotificationCenter()
+        self._os_plugin = None
+        self._cloud_plugin = None
+        self._base_image = None
+        self._target_image = None
+        self._provider_image = None
 
 #####  BUILD IMAGE
     def build_image_from_template(self, template, parameters=None):
@@ -49,12 +55,13 @@ class Builder(object):
         """
         thread_name = str(uuid.uuid4())[0:8]
         thread_kwargs = {'template':template, 'parameters':parameters}
-        self.base_thread = Thread(target=self._build_image_from_template, name=thread_name, args=None, kwargs=thread_kwargs)
+        self.base_thread = Thread(target=self._build_image_from_template, name=thread_name, args=(), kwargs=thread_kwargs)
         self.base_thread.start()
 
     def _build_image_from_template(self, template, parameters=None):
         template = template if(isinstance(template, Template)) else Template(template)
-        self.os_plugin = PluginManager().plugin_for_target((template.os_name, template.os_version, template.os_arch))
+        plugin_mgr = PluginManager(self.app_config['plugins'])
+        self.os_plugin = plugin_mgr.plugin_for_target((template.os_name, template.os_version, template.os_arch))
         self.base_image = self.os_plugin.create_base_image(self, template, parameters)
 
 ##### CUSTOMIZE IMAGE FOR TARGET
@@ -70,7 +77,7 @@ class Builder(object):
         """
         thread_name = str(uuid.uuid4())[0:8]
         thread_kwargs = {'target':target, 'image_id':image_id, 'template':template, 'parameters':parameters}
-        self.target_thread = Thread(target=self._customize_image_for_target, name=thread_name, args=None, kwargs=thread_kwargs)
+        self.target_thread = Thread(target=self._customize_image_for_target, name=thread_name, args=(), kwargs=thread_kwargs)
         self.target_thread.start()
 
     def _customize_image_for_target(self, target, image_id=None, template=None, parameters=None):
@@ -81,8 +88,9 @@ class Builder(object):
         # we can probably use NotificationCenter and threading.Event to wait.
         
         template = template if(isinstance(template, Template)) else Template(template)
-        self.os_plugin = PluginManager().plugin_for_target((template.os_name, template.os_version, template.os_arch))
-        self.cloud_plugin = PluginManager().plugin_for_target(target)
+        plugin_mgr = PluginManager(self.app_config['plugins'])
+        self.os_plugin = plugin_mgr.plugin_for_target((template.os_name, template.os_version, template.os_arch))
+        self.cloud_plugin = plugin_mgr.plugin_for_target(target)
 
         try:
             _should_create = self.cloud_plugin.builder_should_create_target_image(self, target, image_id, template, parameters)
@@ -120,13 +128,14 @@ class Builder(object):
         """
         thread_name = str(uuid.uuid4())[0:8]
         thread_kwargs = {'provider':provider, 'credentials':credentials, 'image_id':image_id, 'template':template, 'parameters':parameters}
-        self.push_thread = Thread(target=self._push_image_to_provider, name=thread_name, args=None, kwargs=thread_kwargs)
+        self.push_thread = Thread(target=self._push_image_to_provider, name=thread_name, args=(), kwargs=thread_kwargs)
         self.push_thread.start()
 
     def _push_image_to_provider(self, provider, credentials, image_id, template, parameters):
         # TODO: if there is no target_image, we need to wait while one is built.
         # we can probably use NotificationCenter and threading.Event to wait.
-        self.cloud_plugin = PluginManager().plugin_for_target(Provider.map_provider_to_target(provider))
+        plugin_mgr = PluginManager(self.app_config['plugins'])
+        self.cloud_plugin = plugin_mgr.plugin_for_target(Provider.map_provider_to_target(provider))
         target_image = None # TODO: either retrieve the image or build one.
         self.provider_image = self.cloud_plugin.push_image_to_provider(self, provider, credentials, target_image, parameters)
 
@@ -145,9 +154,10 @@ class Builder(object):
         """
         thread_name = str(uuid.uuid4())[0:8]
         thread_kwargs = {'provider':provider, 'credentials':credentials, 'template':template, 'parameters':parameters}
-        self.snapshot_thread = Thread(target=self._snapshot_image, name=thread_name, args=None, kwargs=thread_kwargs)
+        self.snapshot_thread = Thread(target=self._snapshot_image, name=thread_name, args=(), kwargs=thread_kwargs)
         self.snapshot_thread.start()
 
     def _snapshot_image(self, provider, credentials, template, parameters):
-        self.cloud_plugin = PluginManager().plugin_for_target(Provider.map_provider_to_target(provider))
+        plugin_mgr = PluginManager(self.app_config['plugins'])
+        self.cloud_plugin = plugin_mgr.plugin_for_target(Provider.map_provider_to_target(provider))
         self.provider_image = self.cloud_plugin.snapshot_image_on_provider(self, provider, credentials, template, parameters)
