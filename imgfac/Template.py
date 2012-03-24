@@ -19,6 +19,7 @@ import httplib2
 import re
 import os.path
 import props
+import libxml2
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageWarehouse import ImageWarehouse
 
@@ -28,13 +29,31 @@ class Template(object):
     identifier = props.prop("_identifier", "The identifier property.")
     url = props.prop("_url", "The url property.")
     xml = props.prop("_xml", "The xml property.")
-
+    @property
+    def os_name(self):
+        """The property os_name"""
+        return self._content_at_path('/template/os/name')
+    @property
+    def os_version(self):
+        """The property os_version"""
+        return self._content_at_path('/template/os/version')
+    @property
+    def os_arch(self):
+        """The property os_arch"""
+        return self._content_at_path('/template/os/arch')
 
     def __repr__(self):
         if(self.xml):
             return self.xml
         else:
             return super(Template, self).__repr__
+
+    def _content_at_path(self, path):
+        try:
+            return libxml2.parseDoc(self.xml).xpath(path)[0].content
+        except Exception as e:
+            self.log.exception('Could not parse document for path (%s): %s\n%s' % (path, self.xml, e))
+            return None
 
     def __init__(self, template=None, uuid=None, url=None, xml=None):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
