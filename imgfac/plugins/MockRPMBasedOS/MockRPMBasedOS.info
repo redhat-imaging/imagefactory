@@ -1,12 +1,12 @@
 {
-    'type': 'os',
-    'targets': [['FedoraMock',None,None], ['RHELMock',None,None]],
-    'description': 'Mock OS plugin for testing imagefactory plugin code',
-    'maintainer': {
-        'name': 'Red Hat, Inc.',
-        'email': 'aeolus-devel@lists.fedorahosted.org',
-        'url': 'http://www.aeolusproject.org/imagefactory.html'
+    "type": "os",
+    "targets": [["FedoraMock",null,null], ["RHELMock","1","x86_64"]],
+    "description": "Mock OS plugin for testing imagefactory plugin code",
+    "maintainer": {
+        "name": "Red Hat, Inc.",
+        "email": "aeolus-devel@lists.fedorahosted.org",
+        "url": "http://www.aeolusproject.org/imagefactory.html"
     },
-    'version': '1.0',
-    'license': 'Copyright 2012 Red Hat, Inc. - http://www.apache.org/licenses/LICENSE-2.0'
+    "version": "1.0",
+    "license": "Copyright 2012 Red Hat, Inc. - http://www.apache.org/licenses/LICENSE-2.0"
 }
