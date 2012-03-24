@@ -14,6 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import uuid
+from threading import Thread
 from props import prop
 from NotificationCenter import NotificationCenter
 
@@ -42,6 +44,12 @@ class Builder(object):
 
         @return TODO
         """
+        thread_name = str(uuid.uuid4())[0:8]
+        thread_kwargs = {'template':template, 'parameters':parameters}
+        self.base_thread = Thread(target=self._build_image_from_template, name=thread_name, args=None, kwargs=thread_kwargs)
+        self.base_thread.start()
+
+    def _build_image_from_template(self, template, parameters=None):
         self.base_image = self.os_plugin.create_base_image(self, template, parameters)
 
 ##### CUSTOMIZE IMAGE FOR TARGET
@@ -55,6 +63,12 @@ class Builder(object):
 
         @return TODO
         """
+        thread_name = str(uuid.uuid4())[0:8]
+        thread_kwargs = {'target':target, 'image_id':image_id, 'template':template, 'parameters':parameters}
+        self.target_thread = Thread(target=self._customize_image_for_target, name=thread_name, args=None, kwargs=thread_kwargs)
+        self.target_thread.start()
+
+    def _customize_image_for_target(self, target, image_id=None, template=None, parameters=None):
         try:
             _should_create = self.cloud_plugin.builder_should_create_target_image(self, target, image_id, template, parameters)
         except AttributeError:
@@ -75,7 +89,7 @@ class Builder(object):
         if(parameters.get('snapshot', False)):
             self.snapshot_image_on_provider(provider, credentials, template, parameters)
         else:
-            self.push_image_to_provider(provider, credentials, image, template, parameters)
+            self.push_image_to_provider(provider, credentials, image_id, template, parameters)
 
 ##### PUSH IMAGE TO PROVIDER
     def push_image_to_provider(self, provider, credentials, image_id, template, parameters):
@@ -89,6 +103,12 @@ class Builder(object):
 
         @return TODO
         """
+        thread_name = str(uuid.uuid4())[0:8]
+        thread_kwargs = {'provider':provider, 'credentials':credentials, 'image_id':image_id, 'template':template, 'parameters':parameters}
+        self.push_thread = Thread(target=self._push_image_to_provider, name=thread_name, args=None, kwargs=thread_kwargs)
+        self.push_thread.start()
+
+    def _push_image_to_provider(self, provider, credentials, image_id, template, parameters):
         target_image = None # TODO: either retrieve the image or build one.
         self.provider_image = self.cloud_plugin.push_image_to_provider(self, provider, credentials, target_image, parameters)
 
@@ -105,4 +125,10 @@ class Builder(object):
     
         @return TODO
         """
+        thread_name = str(uuid.uuid4())[0:8]
+        thread_kwargs = {'provider':provider, 'credentials':credentials, 'template':template, 'parameters':parameters}
+        self.snapshot_thread = Thread(target=self._snapshot_image, name=thread_name, args=None, kwargs=thread_kwargs)
+        self.snapshot_thread.start()
+
+    def _snapshot_image(self, provider, credentials, template, parameters):
         self.provider_image = self.cloud_plugin.snapshot_image_on_provider(self, provider, credentials, template, parameters)
