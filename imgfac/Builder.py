@@ -34,7 +34,7 @@ class Builder(object):
         self.notification_center = NotificationCenter()
 
 #####  BUILD IMAGE
-    def build_image_from_template(self, template):
+    def build_image_from_template(self, template, parameters=None):
         """
         TODO: Docstring for build_image_from_template
 
@@ -42,10 +42,10 @@ class Builder(object):
 
         @return TODO
         """
-        self.base_image = self.os_plugin.create_base_image(self, template)
+        self.base_image = self.os_plugin.create_base_image(self, template, parameters)
 
 ##### CUSTOMIZE IMAGE FOR TARGET
-    def customize_image_for_target(self, base_image, target, parameters):
+    def customize_image_for_target(self, target, image_id=None, template=None, parameters=None):
         """
         TODO: Docstring for customize_image_for_target
 
@@ -56,23 +56,29 @@ class Builder(object):
         @return TODO
         """
         try:
-            _should_create = self.cloud_plugin.builder_should_create_target_image(self)
+            _should_create = self.cloud_plugin.builder_should_create_target_image(self, target, image_id, template, parameters)
         except AttributeError:
             _should_create = True
         try:
-            if _should_create : self.cloud_plugin.builder_will_create_target_image(self)
+            if _should_create : self.cloud_plugin.builder_will_create_target_image(self, target, image_id, template, parameters)
         except AttributeError:
             pass
         if(_should_create):
             try:
-                self.target_image = self.os_plugin.create_target_image(self, base_image, target, parameters)
-                self.cloud_plugin.builder_did_create_target_image(self)
+                self.target_image = self.os_plugin.create_target_image(self, target, image, parameters)
+                self.cloud_plugin.builder_did_create_target_image(self, target, image, template, parameters)
             except AttributeError:
                 pass
 
+##### CREATE PROVIDER IMAGE
+    def create_image_on_provider(self, provider, credentials, image_id=None, template=None, parameters=None):
+        if(parameters.get('snapshot', False)):
+            self.snapshot_image_on_provider(provider, credentials, template, parameters)
+        else:
+            self.push_image_to_provider(provider, credentials, image, template, parameters)
 
 ##### PUSH IMAGE TO PROVIDER
-    def push_image_to_provider(self, image, target, provider, credentials, parameters):
+    def push_image_to_provider(self, provider, credentials, image_id, template, parameters):
         """
         TODO: Docstring for push_image_to_provider
 
@@ -83,10 +89,11 @@ class Builder(object):
 
         @return TODO
         """
-        self.provider_image = self.cloud_plugin.push_image_to_provider(self, image, target, provider, parameters)
+        target_image = None # TODO: either retrieve the image or build one.
+        self.provider_image = self.cloud_plugin.push_image_to_provider(self, provider, credentials, target_image, parameters)
 
 ##### SNAPSHOT IMAGE
-    def snapshot_image(self, template, target, provider, credentials, parameters):
+    def snapshot_image(self, provider, credentials, template, parameters):
         """
         TODO: Docstring for snapshot_image
         
@@ -98,4 +105,4 @@ class Builder(object):
     
         @return TODO
         """
-        self.provider_image = self.cloud_plugin.snapshot_image_on_provider(self, imag_id, target, provider, parameters)
+        self.provider_image = self.cloud_plugin.snapshot_image_on_provider(self, provider, credentials, template, parameters)

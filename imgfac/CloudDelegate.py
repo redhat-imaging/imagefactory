@@ -22,7 +22,7 @@ class CloudDelegate(Interface):
     the plugin cares about. Delegation provides a way for the plugin to
     customize the behavior of the builder. """
 
-    def push_image_to_provider(self, builder, image, target, provider, parameters):
+    def push_image_to_provider(self, builder, provider, credentials, target_image, parameters):
         """
         Prepare the image for use on and upload to a specified provider.
 
@@ -35,7 +35,7 @@ class CloudDelegate(Interface):
         @return A ProviderImage object.
         """
 
-    def snapshot_image_on_provider(self, builder, imag_id, target, provider, parameters):
+    def snapshot_image_on_provider(self, builder, provider, credentials, template, parameters):
         """
         Create a ProviderImage by taking a snapshot of an existing image on the provider.
 
@@ -48,7 +48,7 @@ class CloudDelegate(Interface):
         @return A ProviderImage object.
         """
 
-    def builder_should_create_target_image(self, builder):
+    def builder_should_create_target_image(self, builder, target, image_id, template, parameters):
         """
         Allows the delegate to decide if a TargetImage should be created.
 
@@ -57,14 +57,14 @@ class CloudDelegate(Interface):
         @return bool
         """
 
-    def builder_will_create_target_image(self, builder):
+    def builder_will_create_target_image(self, builder, target, image_id, template, parameters):
         """
         Called just before a TargetImage is created.
 
         @param builder The Builder object coordinating image creation.
         """
     
-    def builder_did_create_target_image(self, builder):
+    def builder_did_create_target_image(self, builder, target, image_id, template, parameters):
         """
         Called just after a TargetImage has been created.
 

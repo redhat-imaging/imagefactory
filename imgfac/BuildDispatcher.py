@@ -26,6 +26,7 @@ from imgfac.Template import Template
 from imgfac.JobRegistry import JobRegistry
 # Yes - we already import libxml2 - xml is built in - there is no harm here and I like the API
 from xml.etree.ElementTree import fromstring
+from Builder import Builder
 
 class BuildDispatcher(Singleton):
 
@@ -33,6 +34,29 @@ class BuildDispatcher(Singleton):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration['warehouse'])
         self.job_registry = JobRegistry()
+        self.builders = dict()
+
+##### BEGIN new BuildDispatcher code for plugins and no warehouse #####
+
+    def builder_for_base_image(self, template, parameters=None):
+        builder = Builder()
+        builder.build_image_from_template(template)
+        self.builders[builder.base_image.identifier] = builder
+        return builder
+
+    def builder_for_target_image(self, target, image_id=None, template=None, parameters=None):
+        builder = Builder()
+        builder.customize_image_for_target(target, image_id, template, parameters)
+        self.builders[builder.target_image.identidier] = builder
+        return builder
+
+    def builder_for_provider_image(self, provider, credentials, image_id=None, template=None, parameters=None):
+        builder = Builder()
+        builder.create_image_on_provider(provider, credentials, image_id, template, parameters)
+        self.builders[builder.provider_image.identifier] = builder
+        return builder
+
+##### END new BuildDispatcher code
 
     def import_image(self, image_id, build_id, target_identifier, image_desc, target, provider):
         image_id = self._ensure_image(image_id, image_desc)
