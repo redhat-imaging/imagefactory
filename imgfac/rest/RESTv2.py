@@ -35,7 +35,7 @@ def api_info():
 @rest_api.get('/imagefactory/target_images/:target_image_id/provider_images')
 @oauth_protect
 def list_images(base_image_id=None, target_image_id=None):
-    pass
+    raise HTTPResponse(status=501)
 
 @rest_api.post('/imagefactory/base_images')
 @rest_api.post('/imagefactory/target_images')
@@ -45,7 +45,7 @@ def list_images(base_image_id=None, target_image_id=None):
 @rest_api.post('/imagefactory/target_images/:target_image_id/provider_images')
 @oauth_protect
 def create_image(base_image_id=None, target_image_id=None):
-    pass
+    raise HTTPResponse(status=501)
 
 @rest_api.get('/imagefactory/base_images/:base_image_id')
 @rest_api.get('/imagefactory/target_images/:target_image_id')
@@ -54,7 +54,7 @@ def create_image(base_image_id=None, target_image_id=None):
 @rest_api.get('/imagefactory/base_images/:base_image_id/target_images/:target_image_id/provider_images/:provider_image_id')
 @oauth_protect
 def image_with_id(base_image_id=None, target_image_id=None, provider_image_id=None):
-    pass
+    raise HTTPResponse(status=501)
 
 # Things we have not yet implemented
 @rest_api.delete('/imagefactory/base_images/:base_image_id')
