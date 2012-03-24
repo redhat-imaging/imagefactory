@@ -109,3 +109,33 @@ class PluginManager(Singleton):
             finally:
                 fp.close()
                 return metadata
+
+    def plugin_for_target(self, target):
+        """
+        Looks up the plugin for a given target and returns an instance of the 
+        delegate class or None if no plugin is registered for the given target.
+        Matches are done from left to right, ie. ('Fedora', '16', 'x86_64') will
+        match a plugin with a target of ('Fedora', None, None) but not
+        ('Fedora', None, 'x86_64')
+        
+        @param target A list or string matching the target field of the
+        plugin's .info file.
+    
+        @return An instance of the delegate class of the plugin or None.
+        """
+        plugin_name = None
+        try:
+            if isinstance(target, str): 
+                plugin_name = self.targets.get(target)
+            elif(isinstance(target, tuple)):
+                _target = list(target)
+                for index in range(len(target)):
+                    plugin_name = self.targets.get(_target)
+                    if(not plugin_name):
+                        _target[-index] = None
+                    else:
+                        plugin = __import__(plugin_name, fromlist=['delegate'])
+                        return plugin.delegate()
+        except Exception as e:
+                self.log.exception('Exception caught during plugin lookup: %s' % e)
+                return None
