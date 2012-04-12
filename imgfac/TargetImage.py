@@ -17,21 +17,18 @@
 from PersistentImage import PersistentImage
 from props import prop
 
+
+METADATA = ('base_image_id', 'target', 'parameters')
+
 class TargetImage(PersistentImage):
     """ TODO: Docstring for TargetImage  """
 
-    base_image = prop("_base_image")
+    base_image_id = prop("_base_image_id")
     target = prop("_target")
     parameters = prop("_parameters")
 
-    def __init__(self, image, target, parameters):
-        """ TODO: Fill me in
-        
-        @param template TODO
-        @param target TODO
-        @param parameters TODO
-        """
-        super(TargetImage, self).__init__()
-        self.base_image = image
-        self.target = target
-        self.parameters = parameters
+    def __init__(self, image_id=None):
+        super(TargetImage, self).__init__(image_id)
+        self.base_image_id = None
+        self.target = None
+        self.parameters = None
