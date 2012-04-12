@@ -14,10 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from FactoryImage import FactoryImage
+from PersistentImage import PersistentImage
 from props import prop
 
-class TargetImage(FactoryImage):
+class TargetImage(PersistentImage):
     """ TODO: Docstring for TargetImage  """
 
     factory_image = prop("_factory_image")

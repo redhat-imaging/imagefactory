@@ -16,17 +16,36 @@
 
 from props import prop
 import uuid
+import logging
 from Notification import Notification
+from NotificationCenter import NotificationCenter
 
 
+METADATA =  ('identifier', 'data', 'icicle', 'status_detail', 'status', 'percent_complete')
 STATUS_STRINGS = ('NEW','PENDING', 'COMPLETE', 'FAILED')
 NOTIFICATIONS = ('image.status', 'image.percentage')
 
 
-class FactoryImage(object):
-    """ TODO: Docstring for FactoryImage  """
+class PersistentImage(object):
+    """ TODO: Docstring for PersistentImage  """
 
 ##### PROPERTIES
+    def metadata():
+        """Persistent properties tuple"""
+        def fget(self):
+            parent = super(self.__class__, self)
+            if(isinstance(parent, PersistentImage)):
+                return frozenset(parent.metadata + METADATA)
+            else:
+                return frozenset(METADATA)
+        def fset(self, value):
+            pass
+        def fdel(self):
+            pass
+        return locals()
+    metadata = property(**metadata())
+
+    persistence_manager = prop("_persistence_manager")
     identifier = prop("_identifier")
     data = prop("_data")
     icicle = prop("_icicle")
@@ -69,11 +88,13 @@ class FactoryImage(object):
     percent_complete = property(**percent_complete())
 ##### End PROPERTIES
 
-    def __init__(self):
-        """ TODO: Fill me in
-        
-        @param template TODO
-        """
-        self.identifier = uuid.uuid4()
+    def __init__(self, image_id=None):
+        self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        self.notification_center = NotificationCenter()
+        self.identifier = image_id if image_id else uuid.uuid4()
+        self.persistence_manager = None
         self.data = None
+        self.status_detail = None
+        self.status = None
+        self.percent_complete = None
         self.icicle = None
