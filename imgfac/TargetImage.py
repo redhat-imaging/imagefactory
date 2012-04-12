@@ -20,7 +20,7 @@ from props import prop
 class TargetImage(PersistentImage):
     """ TODO: Docstring for TargetImage  """
 
-    factory_image = prop("_factory_image")
+    base_image = prop("_base_image")
     target = prop("_target")
     parameters = prop("_parameters")
 
