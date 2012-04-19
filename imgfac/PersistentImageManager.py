@@ -67,10 +67,11 @@ class PersistentImageManager(object):
             self.log.debug('Exception caught: %s' % e)
             return None
 
-        image_class = __import__(metadata['type'], globals(), locals(), [metadata['type']], -1)
+        image_module = __import__(metadata['type'], globals(), locals(), [metadata['type']], -1)
+        image_class = getattr(image_module, metadata['type'])
         image = image_class(image_id)
 
-        for key in frozenset(metadata.keys() + image.metadata):
+        for key in image.metadata.union(metadata.keys()):
             setattr(image, key, metadata.get(key))
 
         self.add_image(image)
@@ -98,6 +99,8 @@ class PersistentImageManager(object):
                 self.log.debug('Created file %s' % body_path)
         except IOError as e:
             self.log.debug('Exception caught: %s' % e)
+
+        self.save_image(image)
 
     def save_image(self, image):
         """
