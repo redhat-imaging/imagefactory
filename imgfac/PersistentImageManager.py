@@ -24,7 +24,7 @@ from ImageFactoryException import ImageFactoryException
 class PersistentImageManager(object):
     """ Abstract base class for the Persistence managers  """
 
-    def __init__(self, storage_path=STORAGE_PATH):
+    def __init__(self, storage_path = None):
         raise ImageFactoryException("PersistentImageManager is an abstract class.  You must instantiate a real manager.")
 
     def image_with_id(self, image_id):

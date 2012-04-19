@@ -20,6 +20,7 @@ import os.path
 import json
 from props import prop
 from ImageFactoryException import ImageFactoryException
+from PersistentImageManager import PersistentImageManager
 
 STORAGE_PATH = '/var/lib/imagefactory/storage'
 METADATA_EXT = '.meta'
