@@ -15,11 +15,10 @@
 #   limitations under the License.
 
 import logging
+import re
 import os
 import os.path
 import json
-import pymongo
-from copy import copy
 from props import prop
 from ImageFactoryException import ImageFactoryException
 from PersistentImageManager import PersistentImageManager
@@ -27,11 +26,8 @@ from PersistentImageManager import PersistentImageManager
 STORAGE_PATH = '/var/lib/imagefactory/storage'
 METADATA_EXT = '.meta'
 BODY_EXT = '.body'
-DB_NAME = "factory_db"
-COLLECTION_NAME = "factory_collection"
 
-
-class MongoPersistentImageManager(PersistentImageManager):
+class FilePersistentImageManager(PersistentImageManager):
     """ TODO: Docstring for PersistentImageManager  """
 
     storage_path = prop("_storage_path")
@@ -47,25 +43,7 @@ class MongoPersistentImageManager(PersistentImageManager):
             # TODO: verify that we can write to this location
             pass
         self.storage_path = storage_path
-        self.con = pymongo.Connection()
-        self.db = self.con[DB_NAME]
-        self.collection = self.db[COLLECTION_NAME]
 
-    def _to_mongo_meta(self, meta):
-        # Take our view of the metadata and make the mongo view
-        # Use our "identifier" as the mongo "_id"
-        # Explicitly recommended here: http://www.mongodb.org/display/DOCS/Object+IDs
-        # TODO: Pack UUID into BSON representation
-        mongometa = copy(meta)
-        mongometa['_id'] = meta['identifier']
-        return mongometa
-
-    def _from_mongo_meta(self, mongometa):
-        # Take mongo metadata and return the internal view
-        meta = copy(mongometa)
-        # This is just a duplicate
-        del meta['_id']
-        return meta
 
     def _image_from_metadata(self, metadata):
         # Given the retrieved metadata from mongo, return a PersistentImage type object
@@ -81,14 +59,17 @@ class MongoPersistentImageManager(PersistentImageManager):
         for key in image.metadata.union(metadata.keys()):
             setattr(image, key, metadata.get(key))
 
-        #I don't think we want this as it will overwrite the "data" element
-        #read from the store.
-        #self.add_image(image)
-
-        #just set ourselves as the manager
+        #set ourselves as the manager
         image.persistent_manager = self
 
         return image
+
+
+    def _metadata_from_file(self, metadatafile):
+        mdf = open(metadatafile, 'r')
+        metadata = json.load(mdf)
+        mdf.close()
+        return metadata
 
 
     def image_with_id(self, image_id):
@@ -99,53 +80,57 @@ class MongoPersistentImageManager(PersistentImageManager):
 
         @return TODO
         """
+        metadatafile = self.storage_path + '/' + image_id + METADATA_EXT
         try:
-            metadata = self._from_mongo_meta(self.collection.find_one( { "_id": image_id } ))
+            metadata = self._metadata_from_file(metadatafile)
         except Exception as e:
             self.log.debug('Exception caught: %s' % e)
             return None
-
-        if not metadata:
-            raise ImageFactoryException("Unable to retrieve object metadata in Mongo for ID (%s)" % (image_id))
 
         return self._image_from_metadata(metadata)
 
 
     def images_from_query(self, query):
         images = [ ]
-        for image_meta in self.collection.find(query):
-            if "type" in image_meta:
-                images.append(self._image_from_metadata(image_meta))
-            else:
-                self.log.warn("Found mongo record with no 'type' key - id (%s)" % (image_meta['_id']))
-        return images 
+        for storefileshortname in os.listdir(self.storage_path):
+            storefilename = self.storage_path + '/' + storefileshortname
+            if re.search(METADATA_EXT, storefilename):
+                try:
+                    metadata = self._metadata_from_file(storefilename)
+                    for querykey in query:
+                        if metadata[querykey] != query[querykey]:
+                            continue
+                    images.append(self._image_from_metadata(metadata))
+                except:
+                    self.log.warn("Could not extract image metadata from file (%s)" % (storefilename))
+
+        return images              
+
 
     def add_image(self, image):
         """
-        Add a PersistentImage-type object to this PersistenImageManager
-        This should only be called with an image that has not yet been added to the store.
-        To retrieve a previously persisted image use image_with_id() or image_query()
+        TODO: Docstring for add_image
 
         @param image TODO 
 
         @return TODO
         """
-        metadata = self.collection.find_one( { "_id": image.identifier } )
-        if metadata:
-            raise ImageFactoryException("Image %s already managed, use image_with_id() and save_image()" % (image.identifier))
-
         image.persistent_manager = self
         basename = self.storage_path + '/' + str(image.identifier)
+        metadata_path = basename + METADATA_EXT
         body_path = basename + BODY_EXT
         image.data = body_path
         try:
+            if not os.path.isfile(metadata_path):
+                open(metadata_path, 'w').close()
+                self.log.debug('Created file %s' % metadata_path)
             if not os.path.isfile(body_path):
                 open(body_path, 'w').close()
                 self.log.debug('Created file %s' % body_path)
         except IOError as e:
             self.log.debug('Exception caught: %s' % e)
 
-        self._save_image(image)
+        self.save_image(image)
 
     def save_image(self, image):
         """
@@ -156,20 +141,17 @@ class MongoPersistentImageManager(PersistentImageManager):
         @return TODO
         """
         image_id = str(image.identifier)
-        metadata = self._from_mongo_meta(self.collection.find_one( { "_id": image_id } ))
-        if not metadata:
+        metadata_path = self.storage_path + '/' + image_id + METADATA_EXT
+        if not os.path.isfile(metadata_path):
             raise ImageFactoryException('Image %s not managed, use "add_image()" first.' % image_id)
-        self._save_image(image)
-
-    def _save_image(self, image):
         try:
             meta = {'type': type(image).__name__}
             for mdprop in image.metadata:
                 meta[mdprop] = getattr(image, mdprop, None)
-            # Set upsert to true - allows this function to do the initial insert for add_image
-            # We check existence for save_image() already
-            self.collection.update( { '_id': image.identifier}, self._to_mongo_meta(meta), upsert=True )
-            self.log.debug("Saved metadata for image (%s): %s" % (image.identifier, meta))
+            mdf = open(metadata_path, 'w')
+            json.dump(meta, mdf)
+            mdf.close()
+            self.log.debug("Saved metadata for image (%s): %s" % (image_id, meta))
         except Exception as e:
             self.log.debug('Exception caught: %s' % e)
             raise ImageFactoryException('Unable to save image metadata: %s' % e)
@@ -183,13 +165,10 @@ class MongoPersistentImageManager(PersistentImageManager):
         @return TODO
         """
         basename = self.storage_path + '/' + image_id
+        metadata_path = basename + METADATA_EXT
         body_path = basename + BODY_EXT
         try:
+            os.remove(metadata_path)
             os.remove(body_path)
         except Exception as e:
             self.log.warn('Unable to delete file: %s' % e)
-
-        try:
-            self.collection.remove(image_id)
-        except Exception as e:
-            self.log.warn('Unable to remove mongo record: %s' % e)

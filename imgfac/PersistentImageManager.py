@@ -21,34 +21,11 @@ import json
 from props import prop
 from ImageFactoryException import ImageFactoryException
 
-STORAGE_PATH = '/var/lib/imagefactory/storage'
-METADATA_EXT = '.meta'
-BODY_EXT = '.body'
-
 class PersistentImageManager(object):
-    """ TODO: Docstring for PersistentImageManager  """
+    """ Abstract base class for the Persistence managers  """
 
-    _default_manager = None
-
-    storage_path = prop("_storage_path")
-
-    @classmethod
-    def default_manager(cls):
-        if not cls._default_manager:
-            cls._default_manager = super(PersistentImageManager, cls).__new__(cls, *args, **kwargs)
-        return cls._default_manager
-
-    def __init__(self, storage_path=STORAGE_PATH):
-        self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        if not os.path.exists(storage_path):
-            self.log.debug("Creating directory (%s) for persistent storage" % (storage_path))
-            os.makedirs(storage_path)
-        elif not os.path.isdir(storage_path):
-            raise ImageFactoryException("Storage location (%s) already exists and is not a directory - cannot init persistence" % (storage_path))
-        else:
-            # TODO: verify that we can write to this location
-            pass
-        self.storage_path = storage_path
+    def __init__(self, storage_path = None):
+        raise NotImplementedError("PersistentImageManager is an abstract class.  You must instantiate a real manager.")
 
     def image_with_id(self, image_id):
         """
@@ -58,24 +35,18 @@ class PersistentImageManager(object):
 
         @return TODO
         """
-        metadata_path = self.storage_path + '/' + image_id + METADATA_EXT
-        try:
-            mdf = open(metadata_path, 'r')
-            metadata = json.load(mdf)
-            mdf.close()
-        except Exception as e:
-            self.log.debug('Exception caught: %s' % e)
-            return None
+        raise NotImplementedError("image_with_id() not implemented - cannot continue")
 
-        image_module = __import__(metadata['type'], globals(), locals(), [metadata['type']], -1)
-        image_class = getattr(image_module, metadata['type'])
-        image = image_class(image_id)
+    def images_from_query(self, query):
+        """
+        TODO: Docstring for images_from_query
 
-        for key in image.metadata.union(metadata.keys()):
-            setattr(image, key, metadata.get(key))
+        @param image_id TODO 
 
-        self.add_image(image)
-        return image
+        @return TODO
+        """
+        raise NotImplementedError("images_from_query() not implemented - cannot continue")
+
 
     def add_image(self, image):
         """
@@ -85,22 +56,7 @@ class PersistentImageManager(object):
 
         @return TODO
         """
-        image.persistent_manager = self
-        basename = self.storage_path + '/' + str(image.identifier)
-        metadata_path = basename + METADATA_EXT
-        body_path = basename + BODY_EXT
-        image.data = body_path
-        try:
-            if not os.path.isfile(metadata_path):
-                open(metadata_path, 'w').close()
-                self.log.debug('Created file %s' % metadata_path)
-            if not os.path.isfile(body_path):
-                open(body_path, 'w').close()
-                self.log.debug('Created file %s' % body_path)
-        except IOError as e:
-            self.log.debug('Exception caught: %s' % e)
-
-        self.save_image(image)
+        raise NotImplementedError("add_image() not implemented - cannot continue")
 
     def save_image(self, image):
         """
@@ -110,21 +66,7 @@ class PersistentImageManager(object):
 
         @return TODO
         """
-        image_id = str(image.identifier)
-        metadata_path = self.storage_path + '/' + image_id + METADATA_EXT
-        if not os.path.isfile(metadata_path):
-            raise ImageFactoryException('Image %s not managed, use "add_image()" first.' % image_id)
-        try:
-            meta = {'type': type(image).__name__}
-            for mdprop in image.metadata:
-                meta[mdprop] = getattr(image, mdprop, None)
-            mdf = open(metadata_path, 'w')
-            json.dump(meta, mdf)
-            mdf.close()
-            self.log.debug("Saved metadata for image (%s): %s" % (image_id, meta))
-        except Exception as e:
-            self.log.debug('Exception caught: %s' % e)
-            raise ImageFactoryException('Unable to save image metadata: %s' % e)
+        raise NotImplementedError("save_image() not implemented - cannot continue")
 
     def delete_image_with_id(self, image_id):
         """
@@ -134,11 +76,4 @@ class PersistentImageManager(object):
 
         @return TODO
         """
-        basename = self.storage_path + '/' + image_id
-        metadata_path = basename + METADATA_EXT
-        body_path = basename + BODY_EXT
-        try:
-            os.remove(metadata_path)
-            os.remove(body_path)
-        except Exception as e:
-            self.log.warn('Unable to delete file: %s' % e)
+        raise NotImplementedError("delete_image_with_id() not implemented - cannot continue")

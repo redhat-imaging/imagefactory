@@ -91,10 +91,13 @@ class PersistentImage(object):
     def __init__(self, image_id=None):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.notification_center = NotificationCenter()
-        self.identifier = image_id if image_id else uuid.uuid4()
+        # We have never had use for the UUID object itself - make this a string
+        # TODO: Root out all places where were str() convert this elsewhere
+        self.identifier = image_id if image_id else str(uuid.uuid4())
         self.persistence_manager = None
         self.data = None
         self.status_detail = None
-        self.status = None
-        self.percent_complete = None
+        # Setting these to None or setting initial value via the properties breaks the prop code above
+        self._status = "NEW"
+        self._percent_complete = 0
         self.icicle = None
