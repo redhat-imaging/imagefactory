@@ -67,6 +67,30 @@ class MongoPersistentImageManager(PersistentImageManager):
         del meta['_id']
         return meta
 
+    def _image_from_metadata(self, metadata):
+        # Given the retrieved metadata from mongo, return a PersistentImage type object
+        # with us as the persistent_manager.
+
+        image_module = __import__(metadata['type'], globals(), locals(), [metadata['type']], -1)
+        image_class = getattr(image_module, metadata['type'])
+        image = image_class(metadata['identifier'])
+
+        # We don't actually want a 'type' property in the resulting PersistentImage object
+        del metadata['type']
+
+        for key in image.metadata.union(metadata.keys()):
+            setattr(image, key, metadata.get(key))
+
+        #I don't think we want this as it will overwrite the "data" element
+        #read from the store.
+        #self.add_image(image)
+
+        #just set ourselves as the manager
+        image.persistent_manager = self
+
+        return image
+
+
     def image_with_id(self, image_id):
         """
         TODO: Docstring for image_with_id
@@ -84,24 +108,17 @@ class MongoPersistentImageManager(PersistentImageManager):
         if not metadata:
             raise ImageFactoryException("Unable to retrieve object metadata in Mongo for ID (%s)" % (image_id))
 
-        image_module = __import__(metadata['type'], globals(), locals(), [metadata['type']], -1)
-        image_class = getattr(image_module, metadata['type'])
-        image = image_class(image_id)
+        return self._image_from_metadata(metadata)
 
-        # We don't actually want a 'type' property in the resulting PersistentImage object
-        del metadata['type']
 
-        for key in image.metadata.union(metadata.keys()):
-            setattr(image, key, metadata.get(key))
-
-        #I don't think we want this as it will overwrite the "data" element
-        #read from the store.
-        #self.add_image(image)
-
-        #just set ourselves as the manager
-        image.persistent_manager = self
-
-        return image
+    def images_from_query(self, query):
+        images = [ ]
+        for image_meta in self.collection.find(query):
+            if "type" in image_meta:
+                images.append(self._image_from_metadata(image_meta))
+            else:
+                self.log.warn("Found mongo record with no 'type' key - id (%s)" % (image_meta['_id']))
+        return images 
 
     def add_image(self, image):
         """

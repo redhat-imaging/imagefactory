@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import logging
+import re
 import os
 import os.path
 import json
@@ -43,6 +44,38 @@ class FilePersistentImageManager(PersistentImageManager):
             pass
         self.storage_path = storage_path
 
+
+    def _image_from_metadata(self, metadata):
+        # Given the retrieved metadata from mongo, return a PersistentImage type object
+        # with us as the persistent_manager.
+
+        image_module = __import__(metadata['type'], globals(), locals(), [metadata['type']], -1)
+        image_class = getattr(image_module, metadata['type'])
+        image = image_class(metadata['identifier'])
+
+        # We don't actually want a 'type' property in the resulting PersistentImage object
+        del metadata['type']
+
+        for key in image.metadata.union(metadata.keys()):
+            setattr(image, key, metadata.get(key))
+
+        #I don't think we want this as it will overwrite the "data" element
+        #read from the store.
+        #self.add_image(image)
+
+        #just set ourselves as the manager
+        image.persistent_manager = self
+
+        return image
+
+
+    def _metadata_from_file(self, metadatafile):
+        mdf = open(metadatafile, 'r')
+        metadata = json.load(mdf)
+        mdf.close()
+        return metadata
+
+
     def image_with_id(self, image_id):
         """
         TODO: Docstring for image_with_id
@@ -51,24 +84,32 @@ class FilePersistentImageManager(PersistentImageManager):
 
         @return TODO
         """
-        metadata_path = self.storage_path + '/' + image_id + METADATA_EXT
+        metadatafile = self.storage_path + '/' + image_id + METADATA_EXT
         try:
-            mdf = open(metadata_path, 'r')
-            metadata = json.load(mdf)
-            mdf.close()
+            metadata = self._metadata_from_file(metadatafile)
         except Exception as e:
             self.log.debug('Exception caught: %s' % e)
             return None
 
-        image_module = __import__(metadata['type'], globals(), locals(), [metadata['type']], -1)
-        image_class = getattr(image_module, metadata['type'])
-        image = image_class(image_id)
+        return self._image_from_metadata(metadata)
 
-        for key in image.metadata.union(metadata.keys()):
-            setattr(image, key, metadata.get(key))
 
-        self.add_image(image)
-        return image
+    def images_from_query(self, query):
+        images = [ ]
+        for storefileshortname in os.listdir(self.storage_path):
+            storefilename = self.storage_path + '/' + storefileshortname
+            if re.search(METADATA_EXT, storefilename):
+                try:
+                    metadata = self._metadata_from_file(storefilename)
+                    for querykey in query:
+                        if metadata[querykey] != query[querykey]:
+                            continue
+                    images.append(self._image_from_metadata(metadata))
+                except:
+                    self.log.warn("Could not extract image metadata from file (%s)" % (storefilename))
+
+        return images              
+
 
     def add_image(self, image):
         """
