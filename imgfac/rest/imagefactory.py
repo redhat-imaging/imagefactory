@@ -13,81 +13,17 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import sys
 import logging
-import oauth2 as oauth
-from bottle import *
+from imgfac.rest.bottle import *
+from imgfac.rest.RESTtools import *
+from imgfac.rest.OAuthTools import oauth_protect
 from traceback import *
 from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.JobRegistry import JobRegistry
-from imgfac.ApplicationConfiguration import ApplicationConfiguration
 
 log = logging.getLogger(__name__)
 
-sys.path.append('%s/imgfac/rest' % sys.path[0])
-
 rest_api = Bottle(catchall=True)
-
-oauth_server = oauth.Server(signature_methods={'HMAC-SHA1':oauth.SignatureMethod_HMAC_SHA1()})
-
-class Consumer(object):
-    def __init__(self, key):
-        consumers = ApplicationConfiguration().configuration['clients']
-        self.key = key
-        self.secret = consumers.get(key) if consumers else None
-
-def validate_two_leg_oauth():
-    try:
-        auth_header_key = 'Authorization'
-        auth_header = {}
-        if auth_header_key in request.headers:
-            auth_header.update({auth_header_key:request.headers[auth_header_key]})
-        req = oauth.Request.from_request(request.method,
-                                         request.url,
-                                         headers=auth_header,
-                                         parameters=request.params)
-        oauth_consumer = Consumer(request.params['oauth_consumer_key'])
-        oauth_server.verify_request(req, oauth_consumer, None)
-        return True
-    except Exception as e:
-        log.exception(e)
-        raise HTTPResponse(status=500, output='OAuth validation failed: %s' % e)
-
-def oauth_protect(f):
-    def decorated_function(*args, **kwargs):
-        if(not ApplicationConfiguration().configuration['no_oauth']):
-            validate_two_leg_oauth()
-        return f(*args, **kwargs)
-    decorated_function.__name__ = f.__name__
-    return decorated_function
-
-def _request_data_for_content_type(content_type):
-    def dencode(a_dict, encoding='ascii'):
-        new_dict = {}
-        for k,v in a_dict.items():
-            ek = k.encode(encoding)
-            if(isinstance(v, unicode)):
-                new_dict[ek] = v.encode(encoding)
-            elif(isinstance(v, dict)):
-                new_dict[ek] = dencode(v)
-            else:
-                new_dict[ek] = v
-        return new_dict
-
-    try:
-        if(content_type == 'application/json'):
-            keys = request.json.keys()
-            if(len(keys) == 1):
-                request_data = request.json[keys[0]]
-            else:
-                request_data = request.json
-        else:
-            request_data = request.forms
-
-        return dencode(request_data)
-    except Exception as e:
-        log.exception(e)
-        raise HTTPResponse(status=500, output=e)
 
 @rest_api.get('/imagefactory')
 def api_info():
@@ -100,7 +36,7 @@ def build_image(image_id=None):
     help_txt = """To build a new target image, supply a template and list of targets to build for.
 To import an image, supply target_name, provider_name, target_identifier, and image_descriptor."""
 
-    _request_data = _request_data_for_content_type(request.headers.get('Content-Type'))
+    _request_data = _form_data_for_content_type(request.headers.get('Content-Type'))
     # build image arguments
     template = _request_data.get('template')
     targets = _request_data.get('targets')
@@ -185,7 +121,7 @@ To import an image, supply target_name, provider_name, target_identifier, and im
 @oauth_protect
 def push_image(image_id, build_id, target_image_id):
     try:
-        _request_data = _request_data_for_content_type(request.headers.get('Content-Type'))
+        _request_data = _form_data_for_content_type(request.headers.get('Content-Type'))
         provider = _request_data['provider']
         credentials = _request_data['credentials']
         job = BuildDispatcher().push_image_to_providers(image_id, build_id, (provider, ), credentials)[0]
@@ -205,7 +141,7 @@ def push_image(image_id, build_id, target_image_id):
 @oauth_protect
 def create_provider_image():
     try:
-        _request_data = _request_data_for_content_type(request.headers.get('Content-Type'))
+        _request_data = _form_data_for_content_type(request.headers.get('Content-Type'))
         image_id = _request_data.get('image_id')
         build_id = _request_data.get('build_id')
         target_image_id = _request_data.get('target_image_id')

@@ -25,6 +25,7 @@ from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.Singleton import Singleton
 from imgfac.rest.bottle import *
 from imgfac.rest.imagefactory import rest_api
+from imgfac.PluginManager import PluginManager
 from time import asctime, localtime
 
 # Monkey patch for guestfs threading issue
@@ -164,6 +165,9 @@ class Application(Singleton):
             else:
                 logging.warning("Failed to launch as daemon...")
 
+            self.plugin_mgr = PluginManager(self.app_config['plugins'])
+            self.plugin_mgr.load()
+
             debug(self.app_config['debug'])
             pem_file = self.app_config['ssl_pem'] if not self.app_config['no_ssl'] else None
 
@@ -195,6 +199,9 @@ class Application(Singleton):
         else:
             self.app_config['foreground'] = True
             self.setup_logging()
+
+            self.plugin_mgr = PluginManager(self.app_config['plugins'])
+            self.plugin_mgr.load()
 
             if self.app_config['target_image'] and self.app_config['target'] and self.app_config['provider']:
                 if len(self.app_config['target']) != 1:

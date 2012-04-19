@@ -1,0 +1,20 @@
+Image Persistence - MiniHOWTO
+
+The various image types are represented inside of the factory by child classes of PersistentImage (PI).  In our current implementation they are always paired with a PersistentImageManager (PIM).
+
+Here's how this is meant to be used.
+
+A PIM is instantiated at application startup time.
+
+As PIs are created they are added to the PIM (and thus persisted to disk) via the add_image() call in the PIM.
+
+Any time a user of the PIM wishes to persist a change to the image metadata they must explicitly call save_image() in the PIM.
+
+When using a PIM, it is given full control over the value of the "data" property in any PIs.  This property is the name of the file on disk to be used for the image data itself.  Users of the PI/PIM structure should never override this value but they may freely modify or overwrite the file that it points to.
+
+Some hypothetical use cases that this allows but that are not currently implemented or documented:
+
+1) Using the PIs without a PIM
+
+2) Having more than one PIM in a given application.
+
