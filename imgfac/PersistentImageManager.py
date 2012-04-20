@@ -14,6 +14,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
+import os
+import os.path
+import json
+from props import prop
+from ImageFactoryException import ImageFactoryException
 
 class PersistentImageManager(object):
     """ Abstract base class for the Persistence managers  """
