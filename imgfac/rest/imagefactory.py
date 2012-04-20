@@ -15,9 +15,8 @@
 
 import logging
 from imgfac.rest.bottle import *
-from imgfac.rest.RESTtools import *
+import imgfac.rest.RESTtools as RESTtools
 from imgfac.rest.OAuthTools import oauth_protect
-from traceback import *
 from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.JobRegistry import JobRegistry
 
@@ -36,7 +35,7 @@ def build_image(image_id=None):
     help_txt = """To build a new target image, supply a template and list of targets to build for.
 To import an image, supply target_name, provider_name, target_identifier, and image_descriptor."""
 
-    _request_data = _form_data_for_content_type(request.headers.get('Content-Type'))
+    _request_data = RESTtools.form_data_for_content_type(request.headers.get('Content-Type'))
     # build image arguments
     template = _request_data.get('template')
     targets = _request_data.get('targets')
@@ -121,7 +120,7 @@ To import an image, supply target_name, provider_name, target_identifier, and im
 @oauth_protect
 def push_image(image_id, build_id, target_image_id):
     try:
-        _request_data = _form_data_for_content_type(request.headers.get('Content-Type'))
+        _request_data = RESTtools.form_data_for_content_type(request.headers.get('Content-Type'))
         provider = _request_data['provider']
         credentials = _request_data['credentials']
         job = BuildDispatcher().push_image_to_providers(image_id, build_id, (provider, ), credentials)[0]
@@ -141,7 +140,7 @@ def push_image(image_id, build_id, target_image_id):
 @oauth_protect
 def create_provider_image():
     try:
-        _request_data = _form_data_for_content_type(request.headers.get('Content-Type'))
+        _request_data = RESTtools.form_data_for_content_type(request.headers.get('Content-Type'))
         image_id = _request_data.get('image_id')
         build_id = _request_data.get('build_id')
         target_image_id = _request_data.get('target_image_id')
