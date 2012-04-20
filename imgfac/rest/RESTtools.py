@@ -18,7 +18,7 @@ from imgfac.rest.bottle import *
 
 log = logging.getLogger(__name__)
 
-def _form_data_for_content_type(content_type):
+def form_data_for_content_type(content_type):
     def dencode(a_dict, encoding='ascii'):
         new_dict = {}
         for k,v in a_dict.items():
@@ -33,15 +33,9 @@ def _form_data_for_content_type(content_type):
 
     try:
         if(content_type == 'application/json'):
-            keys = request.json.keys()
-            if(len(keys) == 1):
-                request_data = request.json[keys[0]]
-            else:
-                request_data = request.json
+            return dencode(request.json)
         else:
-            request_data = request.forms
-
-        return dencode(request_data)
+            return dencode(request.forms)
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
