@@ -59,11 +59,7 @@ class FilePersistentImageManager(PersistentImageManager):
         for key in image.metadata.union(metadata.keys()):
             setattr(image, key, metadata.get(key))
 
-        #I don't think we want this as it will overwrite the "data" element
-        #read from the store.
-        #self.add_image(image)
-
-        #just set ourselves as the manager
+        #set ourselves as the manager
         image.persistent_manager = self
 
         return image

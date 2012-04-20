@@ -25,7 +25,7 @@ class PersistentImageManager(object):
     """ Abstract base class for the Persistence managers  """
 
     def __init__(self, storage_path = None):
-        raise ImageFactoryException("PersistentImageManager is an abstract class.  You must instantiate a real manager.")
+        raise NotImplementedError("PersistentImageManager is an abstract class.  You must instantiate a real manager.")
 
     def image_with_id(self, image_id):
         """
@@ -35,7 +35,7 @@ class PersistentImageManager(object):
 
         @return TODO
         """
-        raise ImageFactoryException("image_with_id() not implemented - cannot continue")
+        raise NotImplementedError("image_with_id() not implemented - cannot continue")
 
     def images_from_query(self, query):
         """
@@ -45,7 +45,7 @@ class PersistentImageManager(object):
 
         @return TODO
         """
-        raise ImageFactoryException("images_from_query() not implemented - cannot continue")
+        raise NotImplementedError("images_from_query() not implemented - cannot continue")
 
 
     def add_image(self, image):
@@ -56,7 +56,7 @@ class PersistentImageManager(object):
 
         @return TODO
         """
-        raise ImageFactoryException("add_image() not implemented - cannot continue")
+        raise NotImplementedError("add_image() not implemented - cannot continue")
 
     def save_image(self, image):
         """
@@ -66,7 +66,7 @@ class PersistentImageManager(object):
 
         @return TODO
         """
-        raise ImageFactoryException("save_image() not implemented - cannot continue")
+        raise NotImplementedError("save_image() not implemented - cannot continue")
 
     def delete_image_with_id(self, image_id):
         """
@@ -76,4 +76,4 @@ class PersistentImageManager(object):
 
         @return TODO
         """
-        raise ImageFactoryException("delete_image_with_id() not implemented - cannot continue")
+        raise NotImplementedError("delete_image_with_id() not implemented - cannot continue")
