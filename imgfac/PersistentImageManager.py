@@ -33,7 +33,6 @@ class PersistentImageManager(object):
     def default_manager(cls):
         if not cls._default_manager:
             appconfig = ApplicationConfiguration().configuration
-            print appconfig
             class_name = appconfig['image_manager'].capitalize() + "PersistentImageManager"
             kwargs = appconfig['image_manager_args'] 
             # The current defaults are 'file' for class name and 
