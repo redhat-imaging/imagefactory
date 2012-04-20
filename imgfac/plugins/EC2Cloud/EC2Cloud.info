@@ -1,0 +1,12 @@
+{
+    "type": "cloud",
+    "targets": [ [ "ec2"] ],
+    "description": "EC2 cloud plugin for imagefactory",
+    "maintainer": {
+        "name": "Red Hat, Inc.",
+        "email": "aeolus-devel@lists.fedorahosted.org",
+        "url": "http://www.aeolusproject.org/imagefactory.html"
+    },
+    "version": "1.0",
+    "license": "Copyright 2012 Red Hat, Inc. - http://www.apache.org/licenses/LICENSE-2.0"
+}

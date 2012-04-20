@@ -20,9 +20,28 @@ import os.path
 import json
 from props import prop
 from ImageFactoryException import ImageFactoryException
+from ApplicationConfiguration import ApplicationConfiguration
+
 
 class PersistentImageManager(object):
     """ Abstract base class for the Persistence managers  """
+
+
+    _default_manager = None
+
+    @classmethod
+    def default_manager(cls):
+        if not cls._default_manager:
+            appconfig = ApplicationConfiguration().configuration
+            print appconfig
+            class_name = appconfig['image_manager'].capitalize() + "PersistentImageManager"
+            kwargs = appconfig['image_manager_args'] 
+            # The current defaults are 'file' for class name and 
+            # { "storage_location": "/var/lib/imagefactory/storage" } for the args
+            pim_module = __import__(class_name, globals(), locals(), [ class_name ], -1)
+            pim_class = getattr(pim_module, class_name)
+            cls._default_manager = pim_class(**kwargs)
+        return cls._default_manager
 
     def __init__(self, storage_path = None):
         raise NotImplementedError("PersistentImageManager is an abstract class.  You must instantiate a real manager.")
