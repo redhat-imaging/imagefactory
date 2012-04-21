@@ -27,6 +27,7 @@ from PersistentImageManager import PersistentImageManager
 from BaseImage import BaseImage
 from TargetImage import TargetImage
 from ProviderImage import ProviderImage
+from ImageFactoryException import ImageFactoryException
 
 class Builder(object):
     """ TODO: Docstring for Builder  """
@@ -50,6 +51,10 @@ class Builder(object):
         self._base_image = None
         self._target_image = None
         self._provider_image = None
+        self.base_thread = None
+        self.target_thread = None
+        self.push_thread = None
+        self.snapshot_thread = None
 
 #####  BUILD IMAGE
     def build_image_from_template(self, template, parameters=None):
@@ -77,8 +82,12 @@ class Builder(object):
 	    plugin_mgr = PluginManager(self.app_config['plugins'])
 	    self.os_plugin = plugin_mgr.plugin_for_target((template.os_name, template.os_version, template.os_arch))
 	    self.os_plugin.create_base_image(self, template, parameters)
+            # This implies a convention where the plugin can never dictate completion and must indicate failure
+            # via an exception
+            self.base_image.status="COMPLETE"
             self.pim.save_image(self.base_image)
         except Exception, e:
+            self.base_image.status="FAILED"
             self.log.error("Exception encountered in _build_image_from_template thread")
             self.log.exception(e)
 
@@ -128,6 +137,7 @@ class Builder(object):
         try:
 	    # If there is an ongoing base build, wait for it to finish
 	    if self.base_thread:
+                self.log.debug("Waiting for our BaseImage builder thread (%s) to finish" % (self.base_thread.getName()))
 		self.base_thread.join()
 
 	    if self.base_image.status == "FAILED":
@@ -145,6 +155,8 @@ class Builder(object):
 		self.os_plugin = plugin_mgr.plugin_for_target((template.os_name, template.os_version, template.os_arch))
 
 	    self.cloud_plugin = plugin_mgr.plugin_for_target(target)
+            if not self.cloud_plugin:
+                self.log.warn("Unable to find cloud plugin for target (%s)" % (target))
 
 	    try:
 		_should_create = self.cloud_plugin.builder_should_create_target_image(self, target, image_id, template, parameters)
@@ -160,8 +172,10 @@ class Builder(object):
 		    self.cloud_plugin.builder_did_create_target_image(self, target, image_id, template, parameters)
 		except AttributeError:
                     pass
+            self.target_image.status = "COMPLETE"
             self.pim.save_image(self.target_image)
         except Exception, e:
+            self.target_image.status = "FAILED"
             self.log.error("Exception encountered in _customize_image_for_target thread")
             self.log.exception(e)
 
@@ -222,6 +236,7 @@ class Builder(object):
         try:
             # If there is an ongoing base build, wait for it to finish
             if self.target_thread:
+                self.log.debug("Waiting for our TargetImage builder thread (%s) to finish" % (self.target_thread.getName()))
                 self.target_thread.join()
 
             if self.target_image.status == "FAILED":
@@ -236,8 +251,10 @@ class Builder(object):
             if not self.cloud_plugin:
 	        self.cloud_plugin = plugin_mgr.plugin_for_target(Provider.map_provider_to_target(provider))
 	    self.provider_image = self.cloud_plugin.push_image_to_provider(self, provider, credentials, image_id, parameters)
+            self.provider_image.status="COMPLETE"
             self.pim.save_image(self.provider_image)
         except Exception, e:
+            self.provider_image.status="FAILED"
             self.log.error("Exception encountered in _push_image_to_provider thread")
             self.log.exception(e)
 
