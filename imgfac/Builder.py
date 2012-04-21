@@ -137,14 +137,16 @@ class Builder(object):
         try:
 	    # If there is an ongoing base build, wait for it to finish
 	    if self.base_thread:
-                self.log.debug("Waiting for our BaseImage builder thread (%s) to finish" % (self.base_thread.getName()))
+                threadname=self.base_thread.getName()
+                self.log.debug("Waiting for our BaseImage builder thread (%s) to finish" % (threadname))
 		self.base_thread.join()
+                self.log.debug("BaseImage builder thread (%s) finished - continuing with TargetImage tasks" % (threadname))
 
 	    if self.base_image.status == "FAILED":
 		raise ImageFactoryException("The BaseImage (%s) for our TargetImage has failed its build.  Cannot continue." % (self.base_image.identifier))
 
 	    if self.base_image.status != "COMPLETE":
-		raise ImageFactoryException("Got to TargetImage build step with a status of (%s).  This should never happen.  Aborting." % (self.base_image.status))
+		raise ImageFactoryException("Got to TargetImage build step with a BaseImage status of (%s).  This should never happen.  Aborting." % (self.base_image.status))
 	     
 	    template = template if(isinstance(template, Template)) else Template(template)
 
@@ -236,14 +238,16 @@ class Builder(object):
         try:
             # If there is an ongoing base build, wait for it to finish
             if self.target_thread:
-                self.log.debug("Waiting for our TargetImage builder thread (%s) to finish" % (self.target_thread.getName()))
+                threadname=self.target_thread.getName()
+                self.log.debug("Waiting for our TargetImage builder thread (%s) to finish" % (threadname))
                 self.target_thread.join()
+                self.log.debug("TargetImage builder thread (%s) finished - continuing with ProviderImage tasks" % (threadname))
 
             if self.target_image.status == "FAILED":
-                raise ImageFactoryException("The BaseImage (%s) for our TargetImage has failed its build.  Cannot continue." % (self.base_image.identifier))
+                raise ImageFactoryException("The TargetImage (%s) for our ProviderImage has failed its build.  Cannot continue." % (self.target_image.identifier))
 
             if self.target_image.status != "COMPLETE":
-                raise ImageFactoryException("Got to TargetImage build step with a status of (%s).  This should never happen.  Aborting." % (self.base_image.status))
+                raise ImageFactoryException("Got to ProviderImage build step with a TargetImage status of (%s).  This should never happen.  Aborting." % (self.target_image.status))
 
             template = template if(isinstance(template, Template)) else Template(template)
 
