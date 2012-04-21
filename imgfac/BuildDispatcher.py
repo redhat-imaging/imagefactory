@@ -45,7 +45,7 @@ class BuildDispatcher(Singleton):
     def builder_for_target_image(self, target, image_id=None, template=None, parameters=None):
         builder = Builder()
         builder.customize_image_for_target(target, image_id, template, parameters)
-        self.builders[builder.target_image.identidier] = builder
+        self.builders[builder.target_image.identifier] = builder
         return builder
 
     def builder_for_provider_image(self, provider, credentials, image_id=None, template=None, parameters=None):
