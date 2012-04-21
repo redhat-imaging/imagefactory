@@ -16,6 +16,7 @@
 
 import logging
 import zope
+import inspect
 from imgfac.CloudDelegate import CloudDelegate
 from imgfac.ProviderImage import ProviderImage
 
@@ -27,18 +28,17 @@ class MockSphere(object):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
 
     def push_image_to_provider(self, builder, provider, credentials, target_image, parameters):
-        self.log.info('Im N ur MockSphere plugin... Im pushn Ur image providings.')
-        return ProviderImage(target_image, provider, credentials, parameters)
+        self.log.info('%s called in MockSphere plugin' % (inspect.stack()[1][3]))
 
     def snapshot_image_on_provider(self, builder, provider, credentials, template, parameters):
-        self.log.info('Im N ur MockSphere plugin... Im snapshottin Ur image providings.')
-        return ProviderImage(None, provider, credentials, parameters)
+        self.log.info('%s called in MockSphere plugin' % (inspect.stack()[1][3]))
 
     def builder_should_create_target_image(self, builder, target, image_id, template, parameters):
-        self.log.info('Im N ur MockSphere plugin... Im dictatin Ur target image creatn.')
+        self.log.info('%s called in MockSphere plugin' % (inspect.stack()[1][3]))
+        return True
 
     def builder_will_create_target_image(self, builder, target, image_id, template, parameters):
-        self.log.info('Im N ur MockSphere plugin... I seen Ur creatn a target image.')
+        self.log.info('%s called in MockSphere plugin' % (inspect.stack()[1][3]))
 
     def builder_did_create_target_image(self, builder, target, image_id, template, parameters):
-        self.log.info('Im N ur MockSphere plugin... I seen U create the target image.')
+        self.log.info('%s called in MockSphere plugin' % (inspect.stack()[1][3]))

@@ -27,9 +27,9 @@ class MockRPMBasedOS(object):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
 
     def create_base_image(self, builder, template, parameters):
-        self.log.info('Im N ur MockRPMBasedOS plugin... Im creatn Ur base image.')
-        return BaseImage(template)
+        self.log.info('create_base_image() called in MockRPMBasedOS')
+        #return BaseImage(template)
 
     def create_target_image(self, builder, target, base_image, parameters):
-        self.log.info('Im N ur MockRPMBasedOS plugin... Im creatn Ur target image.')
-        return TargetImage(base_image, target, parameters)
+        self.log.info('create_target_image() called in MockRPMBasedOS')
+        #return TargetImage(base_image, target, parameters)
