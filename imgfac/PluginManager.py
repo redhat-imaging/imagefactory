@@ -130,15 +130,19 @@ class PluginManager(Singleton):
         plugin_name = None
         try:
             if isinstance(target, str): 
-                plugin_name = self._targets.get(target)
+                self.log.debug("Attempting to match string target (%s)" % (target))
+                plugin_name = self._targets.get(tuple([ target ]))
+                plugin = __import__("imgfac.plugins." + plugin_name, fromlist=['delegate_class'])
+                return plugin.delegate_class()
             elif(isinstance(target, tuple)):
                 _target = list(target)
+                self.log.debug("Attempting to match list target (%s)" % (str(_target)))
                 for index in range(len(target)):
                     plugin_name = self._targets.get(tuple(_target))
                     if(not plugin_name):
                         _target[-index] = None
                     else:
-                        plugin = __import__(plugin_name, fromlist=['delegate_class'])
+                        plugin = __import__("imgfac.plugins." + plugin_name, fromlist=['delegate_class'])
                         return plugin.delegate_class()
         except Exception as e:
                 self.log.exception('Exception caught during plugin lookup: %s' % e)
