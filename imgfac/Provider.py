@@ -46,6 +46,9 @@ from xml.etree.ElementTree import fromstring
 #  - rhevm: encoded in provider string or a key in /etc/rhevm.json
 #
 def map_provider_to_target(provider):
+    # TODO: Add to the cloud plugin delegate interface a method to allow the plugin to "claim"
+    #       a provider name.  Loop through the clouds, find ones that claim it.  Warn if more
+    #       than one.  Error if none.  Success if only one.
     log = logging.getLogger(__name__)
     # Check for dynamic providers first
     provider_data = get_dynamic_provider_data(provider)
@@ -61,6 +64,8 @@ def map_provider_to_target(provider):
         return 'rackspace'
     elif provider.startswith('mock'):
         return 'mock'
+    elif provider.startswith('MockSphere'):
+        return 'MockSphere'
     else:
         log.warn('No matching provider found for %s, using "condorcloud" by default.' % (provider))
         return 'condorcloud' # condorcloud ignores provider
