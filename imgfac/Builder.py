@@ -88,6 +88,7 @@ class Builder(object):
             self.pim.save_image(self.base_image)
         except Exception, e:
             self.base_image.status="FAILED"
+            self.pim.save_image(self.base_image)
             self.log.error("Exception encountered in _build_image_from_template thread")
             self.log.exception(e)
 
@@ -178,6 +179,7 @@ class Builder(object):
             self.pim.save_image(self.target_image)
         except Exception, e:
             self.target_image.status = "FAILED"
+            self.pim.save_image(self.target_image)
             self.log.error("Exception encountered in _customize_image_for_target thread")
             self.log.exception(e)
 
@@ -236,7 +238,7 @@ class Builder(object):
 
     def _push_image_to_provider(self, provider, credentials, image_id, template, parameters):
         try:
-            # If there is an ongoing base build, wait for it to finish
+            # If there is an ongoing target_image build, wait for it to finish
             if self.target_thread:
                 threadname=self.target_thread.getName()
                 self.log.debug("Waiting for our TargetImage builder thread (%s) to finish" % (threadname))
@@ -254,11 +256,12 @@ class Builder(object):
 	    plugin_mgr = PluginManager(self.app_config['plugins'])
             if not self.cloud_plugin:
 	        self.cloud_plugin = plugin_mgr.plugin_for_target(Provider.map_provider_to_target(provider))
-	    self.provider_image = self.cloud_plugin.push_image_to_provider(self, provider, credentials, image_id, parameters)
+	    self.cloud_plugin.push_image_to_provider(self, provider, credentials, image_id, parameters)
             self.provider_image.status="COMPLETE"
             self.pim.save_image(self.provider_image)
         except Exception, e:
             self.provider_image.status="FAILED"
+            self.pim.save_image(self.provider_image)
             self.log.error("Exception encountered in _push_image_to_provider thread")
             self.log.exception(e)
 
@@ -275,6 +278,17 @@ class Builder(object):
     
         @return TODO
         """
+
+        self.provider_image = ProviderImage()
+        self.provider_image.provider = provider
+        self.provider_image.credentials = credentials
+        self.provider_image.target_image_id = image_id
+        self.provider_image.template = template
+        self.pim.add_image(self.provider_image)
+
+        if not template:
+            raise ImageFactoryException("Must specify a template when requesting a snapshot-style build")
+
         thread_name = str(uuid.uuid4())[0:8]
         thread_kwargs = {'provider':provider, 'credentials':credentials, 'template':template, 'parameters':parameters}
         self.snapshot_thread = Thread(target=self._snapshot_image, name=thread_name, args=(), kwargs=thread_kwargs)
@@ -284,7 +298,11 @@ class Builder(object):
         try:
             plugin_mgr = PluginManager(self.app_config['plugins'])
             self.cloud_plugin = plugin_mgr.plugin_for_target(Provider.map_provider_to_target(provider))
-            self.provider_image = self.cloud_plugin.snapshot_image_on_provider(self, provider, credentials, template, parameters)
+            self.cloud_plugin.snapshot_image_on_provider(self, provider, credentials, template, parameters)
+            self.provider_image.status="COMPLETE"
+            self.pim.save_image(self.provider_image)
         except Exception, e:
+            self.provider_image.status="FAILED"
+            self.pim.save_image(self.provider_image)
             self.log.error("Exception encountered in _snapshot_image thread")
             self.log.exception(e)
