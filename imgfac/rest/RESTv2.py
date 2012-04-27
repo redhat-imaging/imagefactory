@@ -113,6 +113,7 @@ def create_image(image_collection, base_image_id=None, target_image_id=None):
 @rest_api.get('/imagefactory/provider_images/<image_id>')
 @rest_api.get('/imagefactory/base_images/<base_image_id>/target_images/<image_id>')
 @rest_api.get('/imagefactory/base_images/<base_image_id>/target_images/<target_image_id>/provider_images/<image_id>')
+@rest_api.get('/imagefactory/target_images/<target_image_id>/provider_images/<image_id>')
 @oauth_protect
 def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
     try:
@@ -136,6 +137,7 @@ def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_i
 @rest_api.delete('/imagefactory/provider_images/<image_id>')
 @rest_api.delete('/imagefactory/base_images/<base_image_id>/target_images/<image_id>')
 @rest_api.delete('/imagefactory/base_images/<base_image_id>/target_images/<target_image_id>/provider_images/<image_id>')
+@rest_api.delete('/imagefactory/target_images/<target_image_id>/provider_images/<image_id>')
 @oauth_protect
 def delete_image_with_id(image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
     try:
