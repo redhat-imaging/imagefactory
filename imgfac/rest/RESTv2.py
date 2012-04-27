@@ -117,6 +117,8 @@ def create_image(image_collection, base_image_id=None, target_image_id=None):
 def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
     try:
         image = PersistentImageManager.default_manager().image_with_id(image_id)
+        if(not image):
+            raise HTTPResponse(status=404, output='No image found with id: %s' % image_id)
         _response = {'_type':type(image).__name__,
                      'id':image.identifier,
                      'href':'%s/%s' % (request.url, image.identifier)}
@@ -125,6 +127,19 @@ def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_i
 
         response.status = 202
         return _response
+    except Exception as e:
+        log.exception(e)
+        raise HTTPResponse(status=500, output=e)
+
+@rest_api.delete('/imagefactory/base_images/<image_id>')
+@rest_api.delete('/imagefactory/target_images/<image_id>')
+@rest_api.delete('/imagefactory/provider_images/<image_id>')
+@rest_api.delete('/imagefactory/base_images/<base_image_id>/target_images/<image_id>')
+@rest_api.delete('/imagefactory/base_images/<base_image_id>/target_images/<target_image_id>/provider_images/<image_id>')
+@oauth_protect
+def delete_image_with_id(image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
+    try:
+        PersistentImageManager.default_manager().delete_image_with_id(image_id)
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
@@ -153,15 +168,6 @@ def get_plugins(plugin_id=None):
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output='%s %s' % (e, traceback.format_exc()))
-
-@rest_api.delete('/imagefactory/<image_collection>/<image_id>')
-@oauth_protect
-def delete_image_with_id(image_collection, image_id):
-    try:
-        PersistentImageManager.default_manager().delete_image_with_id(image_id)
-    except Exception as e:
-        log.exception(e)
-        raise HTTPResponse(status=500, output=e)
 
 # Things we have not yet implemented
 @rest_api.get('/imagefactory/targets')
