@@ -177,10 +177,19 @@ _Example:_
     >
     > *Example:*  
     >  
-        TBD
+        curl -d "template=<template><name>mock</name><os><name>RHELMock</name>  
+        <version>1</version><arch>x86_64</arch><install type='iso'><iso>http:/  
+        /mockhost/RHELMock1-x86_64-DVD.iso</iso></install><rootpw>password</ro  
+        otpw></os><description>Mock Template</description></template>;target=M  
+        ockSphere" http://imgfac-host:8075/imagefactory/target_images
     >
     >  
-        TBD
+        {"status": "NEW", "_type": "TargetImage", "identifier": "4cc3b024-5fe7  
+        -4b0b-934b-c5d463b990b0", "icicle": null, "status_detail": null, "href  
+        ": "http://imgfac-host:8075/imagefactory/target_images/4cc3b024-5fe7-4  
+        b0b-934b-c5d463b990b0", "percent_complete": 0, "data": "/var/lib/image  
+        factory/storage/4cc3b024-5fe7-4b0b-934b-c5d463b990b0.body", "id": "4cc  
+        3b024-5fe7-4b0b-934b-c5d463b990b0"}
 
 #### Provider Images
 
@@ -210,12 +219,6 @@ _Example:_
     > > __404__ - BaseImage or TargetImage not found  
     > > __500__ - Error building image
     >
-    > *Example:*  
-    >  
-        TBD
-    >
-    >  
-        TBD
 
 ### Image Inspection
 
