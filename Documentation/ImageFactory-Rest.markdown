@@ -166,7 +166,7 @@ _Example:_
     > > __base_image_id__ - uuid of the base_image to build from. If not provided, a BaseImage will be built.  
     > > __template__ - TDL document  
     > > __target__ - cloud target name  
-    > > __parameters__ - dictionary of cloud target specific parameters
+    > > __parameters__ - Optional parameters that may change the nature of the image being built.  This may include things such as on-disk format or the build mechanism itself.  Parameters are never required as sensible defaults will always be used and will be made part of the queryable properties of an image.
     >
     > **Responses:**  
     
@@ -201,7 +201,7 @@ _Example:_
     > > __template__ - TDL document  
     > > __provider__ - cloud provider name  
     > > __credentials__ - cloud provider credentials xml  
-    > > __parameters__ - dictionary of cloud provider specific parameters
+    > > __parameters__ - Optional parameters that may change the nature of the image being built.  This may include things such as on-disk format or the build mechanism itself.  Parameters are never required as sensible defaults will always be used and will be made part of the queryable properties of an image.
     >
     > **Responses:**  
     
