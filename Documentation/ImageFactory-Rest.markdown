@@ -163,7 +163,7 @@ _Example:_
     >
     > **Parameters:**  
     
-    > > __base_image_id__ - uuid of the base_image to build from. If not provided, a BaseImage will be built.
+    > > __base_image_id__ - uuid of the base_image to build from. If not provided, a BaseImage will be built.  
     > > __template__ - TDL document  
     > > __target__ - cloud target name  
     > > __parameters__ - dictionary of cloud target specific parameters
@@ -197,7 +197,7 @@ _Example:_
     >
     > **Parameters:**  
     
-    > > __target_image_id__ - uuid of the target image to push. If not provided, a TargetImage will be created.
+    > > __target_image_id__ - uuid of the target image to push. If not provided, a TargetImage will be created.  
     > > __template__ - TDL document  
     > > __provider__ - cloud provider name  
     > > __credentials__ - cloud provider credentials xml  
