@@ -56,6 +56,14 @@ def subprocess_check_output(*popenargs, **kwargs):
         raise ImageFactoryException("'%s' failed(%d): %s" % (cmd, retcode, stderr))
     return (stdout, stderr, retcode)
 
+def activity(activity):
+    # Simple helper function
+    # Activity should be a one line human-readable string indicating the task in progress
+    # We log it at DEBUG and also set it as the status_detail on our active image
+    self.log.debug(activity)
+    self.active_image.status_detail['activity'] = activity
+
+
 # This allows us to use the utility methods in Oz without errors due to lack of libvirt
 class FedoraRemoteGuest(oz.Fedora.FedoraGuest):
     def __init__(self, tdl, config, auto, nicmodel, haverepo, diskbus,
@@ -121,28 +129,31 @@ class EC2Cloud(object):
             self.template = template
             self.target = target
             self.builder = builder
-	    self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml, rootpw_required=True)
-	    # Add in target specific content
-	    self.add_target_content()
+            self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml, rootpw_required=True)
+            # Add in target specific content
+            self.add_target_content()
 
-	    # TODO: This is a convenience variable for refactoring - rename
-	    self.new_image_id = builder.target_image.identifier
+            # TODO: This is a convenience variable for refactoring - rename
+            self.new_image_id = builder.target_image.identifier
 
+            # This lets our logging helper know what image is being operated on
+            self.active_image = self.builder.target_image
+                    
+            activity("Initializing Oz environment")
+            # Create a name combining the TDL name and the UUID for use when tagging EC2 AMIs
+            self.longname = self.tdlobj.name + "-" + self.new_image_id
 
-	    # Create a name combining the TDL name and the UUID for use when tagging EC2 AMIs
-	    self.longname = self.tdlobj.name + "-" + self.new_image_id
-	    # Oz assumes unique names - TDL built for multiple backends guarantees they are not unique
-	    # We don't really care about the name so just force uniqueness
-	    # 18-Jul-2011 - Moved to constructor and modified to change TDL object name itself
-	    #   Oz now uses the tdlobject name property directly in several places so we must change it
-	    self.tdlobj.name = "factory-build-" + self.new_image_id
+            # Oz assumes unique names - TDL built for multiple backends guarantees they are not unique
+            # We don't really care about the name so just force uniqueness
+            self.tdlobj.name = "factory-build-" + self.new_image_id
 
-	    # populate a config object to pass to OZ; this allows us to specify our
-	    # own output dir but inherit other Oz behavior
-	    self.oz_config = ConfigParser.SafeConfigParser()
-	    self.oz_config.read("/etc/oz/oz.cfg")
-	    self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
-	    # make this a property to enable quick cleanup on abort
+            # populate a config object to pass to OZ; this allows us to specify our
+            # own output dir but inherit other Oz behavior
+            self.oz_config = ConfigParser.SafeConfigParser()
+            self.oz_config.read("/etc/oz/oz.cfg")
+            self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
+
+            # make this a property to enable quick cleanup on abort
             self.instance = None
 
             # OK great, we now have a customized KVM image
@@ -153,14 +164,13 @@ class EC2Cloud(object):
             # At this point our builder has a target_image and a base_image
             # First, we populate our target_image bodyfile with the original base image
             # which we do not want to modify in place
+            activity("Copying BaseImage to modifiable TargetImage")
             self.log.debug("Copying base_image file (%s) to new target_image file (%s)" % (builder.base_image.datafile, builder.target_image.datafile))
             shutil.copy2(builder.base_image.datafile, builder.target_image.datafile)
             self.image = builder.target_image.datafile
 
-            # Add the cloud-info file
             self.modify_oz_filesystem()
 
-            self.log.info("Transforming image for use on EC2")
             self.ec2_copy_filesystem()
             self.ec2_modify_filesystem()
 
@@ -177,10 +187,11 @@ class EC2Cloud(object):
         self.log.info('push_image_to_provider() called in EC2Cloud')
 
         # TODO: This is a convenience variable for refactoring - rename
-        self.new_image_id = builder.target_image.identifier
+        self.new_image_id = builder.provider_image.identifier
 
         self.tdlobj = oz.TDL.TDL(xmlstring=builder.target_image.template, rootpw_required=True)
         self.builder = builder
+        self.active_image = self.builder.provider_image
         self.push_image_upload(target_image, provider, credentials)
 
 
@@ -195,6 +206,7 @@ class EC2Cloud(object):
     def log_exc(self):
         self.log.debug("Exception caught in ImageFactory")
         self.log.debug(traceback.format_exc())
+        self.active_image.status_detal['error'] = traceback.format_exc()
 
     def build_image(self, build_id=None):
         try:
@@ -279,7 +291,7 @@ class EC2Cloud(object):
         self.status="COMPLETED"
 
     def modify_oz_filesystem(self):
-        self.log.debug("Doing further Factory specific modification of Oz image")
+        activity("Removing unique identifiers from image - Adding cloud information")
 
         self.log.debug("init guestfs")
         g = guestfs.GuestFS ()
@@ -322,6 +334,7 @@ class EC2Cloud(object):
 
 
     def ec2_copy_filesystem(self):
+        activity("Copying image contents to single flat partition for EC2")
         target_image=self.image + ".tmp"
 
         self.log.debug("init guestfs")
@@ -397,6 +410,7 @@ class EC2Cloud(object):
         # TODO: This would be safer and more robust if done within the running modified
         # guest - in this would require tighter Oz integration
 
+        activity("Modifying flat filesystem with EC2 specific changes")
         g = guestfs.GuestFS ()
 
         g.add_drive(self.image)
@@ -561,6 +575,7 @@ class EC2Cloud(object):
         self.guest.guest_execute_command(guestaddr, "yum -y install euca2ools")
 
     def wait_for_ec2_ssh_access(self, guestaddr):
+        activity("Waiting for SSH access to EC2 instance")
         for i in range(300):
             if i % 10 == 0:
                 self.log.debug("Waiting for EC2 ssh access: %d/300" % (i))
@@ -577,6 +592,7 @@ class EC2Cloud(object):
             raise ImageFactoryException("Unable to gain ssh access after 300 seconds - aborting")
 
     def wait_for_ec2_instance_start(self, instance):
+        activity("Waiting for EC2 instance to become active")
         for i in range(300):
             if i % 10 == 0:
                 self.log.debug("Waiting for EC2 instance to start: %d/300" % (i))
@@ -624,7 +640,19 @@ class EC2Cloud(object):
         else:
             instance.stop()
 
-    def push_image_snapshot_ec2(self, target_image_id, provider, credentials):
+    def snapshot_image_on_provider(self, builder, provider, credentials, template, parameters):
+    #def push_image_snapshot_ec2(self, target_image_id, provider, credentials):
+        self.log.info('snapshot_image_on_provider() called in EC2Cloud')
+
+        # TODO: This is a convenience variable for refactoring - rename
+        self.new_image_id = builder.provider_image.identifier
+
+        # Template must be defined for snapshots
+        self.tdlobj = oz.TDL.TDL(xmlstring=str(template), rootpw_required=True)
+
+        self.builder = builder
+        self.active_image = self.builder.provider_image
+
         def replace(item):
             if item in [self.ec2_access_key, self.ec2_secret_key]:
                 return "REDACTED"
@@ -638,6 +666,7 @@ class EC2Cloud(object):
         self.status="PUSHING"
         self.percent_complete=0
 
+        activity("Preparing EC2 region details")
         region=provider
         # These are the region details for the TARGET region for our new AMI
         region_conf=self.ec2_region_details[region]
@@ -678,6 +707,7 @@ class EC2Cloud(object):
 
 
         # Note that this connection may be to a region other than the target
+        activity("Preparing EC2 JEOS AMI details")
         ec2region = boto.ec2.get_region(build_region_conf['host'], aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key)
         conn = ec2region.connect(aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key)
 
@@ -696,6 +726,7 @@ class EC2Cloud(object):
             instance_type=self.app_config.get('ec2-32bit-util','m1.small')
 
         # Create a use-once SSH-able security group
+        activity("Creating EC2 security group for SSH access to utility image")
         factory_security_group_name = "imagefactory-%s" % (self.new_image_id, )
         factory_security_group_desc = "Temporary ImageFactory generated security group with SSH access"
         self.log.debug("Creating temporary security group (%s)" % (factory_security_group_name))
@@ -703,6 +734,7 @@ class EC2Cloud(object):
         factory_security_group.authorize('tcp', 22, 22, '0.0.0.0/0')
 
         # Create a use-once SSH key
+        activity("Creating EC2 SSH key pair")
         key_name = "fac-tmp-key-%s" % (self.new_image_id)
         key = conn.create_key_pair(key_name)
         # Shove into a named temp file
@@ -712,6 +744,7 @@ class EC2Cloud(object):
         key_file=key_file_object.name
 
         # Now launch it
+        activity("Launching EC2 JEOS image")
         self.log.debug("Starting ami %s with instance_type %s" % (ami_id, instance_type))
         reservation = conn.run_instances(ami_id, instance_type=instance_type, key_name=key_name, security_groups = [ factory_security_group_name ])
 
@@ -739,6 +772,7 @@ class EC2Cloud(object):
             self.log.debug("Waiting 20 seconds for remaining boot tasks")
             sleep(20)
 
+            activity("Customizing running EC2 JEOS instance")
             self.log.debug("Stopping cron and killing any updatedb process that may be running")
             # updatedb interacts poorly with the bundle step - make sure it isn't running
             self.guest.guest_execute_command(guestaddr, "/sbin/service crond stop")
@@ -778,7 +812,7 @@ class EC2Cloud(object):
 
                 # This is needed for uploading and registration
                 # Note that it is excluded from the final image
-                self.log.debug("Uploading cert material")
+                activity("Uploading certificate material for bundling of instance")
                 self.guest.guest_live_upload(guestaddr, self.ec2_cert_file, "/tmp")
                 self.guest.guest_live_upload(guestaddr, self.ec2_key_file, "/tmp")
                 self.guest.guest_live_upload(guestaddr, ec2cert, "/tmp")
@@ -792,6 +826,7 @@ class EC2Cloud(object):
 
                 # We exclude /mnt /tmp and /root/.ssh to avoid embedding our utility key into the image
                 command = "euca-bundle-vol -c /tmp/%s -k /tmp/%s -u %s -e /mnt,/tmp,/root/.ssh --arch %s -d /mnt/bundles --kernel %s -p %s -s 10240 --ec2cert /tmp/cert-ec2.pem --fstab /etc/fstab -v /" % (os.path.basename(self.ec2_cert_file), os.path.basename(self.ec2_key_file), ec2_uid, arch, aki, uuid)
+                activity("Bundling remote instance in-place")
                 self.log.debug("Executing bundle vol command: %s" % (command))
                 stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, command)
                 self.log.debug("Bundle output: %s" % (stdout))
@@ -800,6 +835,7 @@ class EC2Cloud(object):
                 # TODO: This is another copy - make it a function soon please
                 bucket= "imagefactory-" + region + "-" + self.ec2_user_id
 
+                activity("Preparing S3 destination for image bundle")
                 sconn = S3Connection(self.ec2_access_key, self.ec2_secret_key)
                 try:
                     sconn.create_bucket(bucket, location=boto_loc)
@@ -822,6 +858,7 @@ class EC2Cloud(object):
                            '-a', self.ec2_access_key, '-s', self.ec2_secret_key,
                            '-U', upload_url]
                 command_log = map(replace, command)
+                activity("Uploading bundle to S3")
                 self.log.debug("Executing upload bundle command: %s" % (command_log))
                 stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, ' '.join(command))
                 self.log.debug("Upload output: %s" % (stdout))
@@ -833,6 +870,7 @@ class EC2Cloud(object):
                            #'-n', image_name, '-d', image_desc,
                            manifest_s3_loc]
                 command_log = map(replace, command)
+                activity("Registering bundle as a new AMI")
                 self.log.debug("Executing register command: %s" % (command_log))
                 stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr,
                                                                            ' '.join(command))
@@ -843,12 +881,14 @@ class EC2Cloud(object):
                 self.log.debug("Extracted AMI ID: %s " % (new_ami_id))
                 ### End S3 snapshot code
             else:
+                activity("Preparing image for an EBS snapshot")
                 self.log.debug("Performing image prep tasks for EBS backed images")
                 self.ebs_pre_shapshot_tasks(guestaddr)
+                activity("Requesting EBS snapshot creation by EC2")
                 self.log.debug("Creating a new EBS backed image from our running EBS instance")
                 new_ami_id = conn.create_image(self.instance.id, image_name, image_desc)
                 self.log.debug("EUCA creat_image call returned AMI ID: %s" % (new_ami_id))
-                self.log.debug("Now waiting for AMI to become available")
+                activity("Waiting for newly generated AMI to become available")
                 # As with launching an instance we have seen occasional issues when trying to query this AMI right
                 # away - give it a moment to settle
                 sleep(10)
@@ -868,11 +908,12 @@ class EC2Cloud(object):
             if not new_ami_id:
                 raise ImageFactoryException("Failed to produce an AMI ID")
 
-            icicle_id = self.warehouse.store_icicle(self.output_descriptor)
-            metadata = dict(target_image=target_image_id, provider=provider, icicle=icicle_id, target_identifier=new_ami_id, provider_account_identifier=self.ec2_access_key)
-            self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
+            # This replaces our Warehouse calls
+            self.builder.provider_image.icicle = self.output_descriptor
+            self.builder.provider_image.target_identifier = new_ami_id
+            self.builder.provider_account_identifier = self.ec2_access_key
         finally:
-            self.log.debug("Terminating EC2 instance and deleting temp security group")
+            activity("Terminating EC2 instance and deleting security group and SSH key")
             self.terminate_instance(self.instance)
             key_file_object.close()
             conn.delete_key_pair(key_name)
@@ -923,6 +964,7 @@ class EC2Cloud(object):
         return nodes[0].content
 
     def ec2_decode_credentials(self, credentials):
+        activity("Preparing EC2 credentials")
         doc = libxml2.parseDoc(credentials)
 
         self.ec2_user_id = self._ec2_get_xml_node(doc, "account_number")
@@ -1014,6 +1056,7 @@ class EC2Cloud(object):
         res_mgr.get_named_lock(input_image_compressed)
         try:
             if not os.path.isfile(input_image_compressed) or not os.path.isfile(compress_complete_marker):
+                activity("Compressing image file for upload to EC2")
                 self.log.debug("No compressed version of image file found - compressing now")
                 compress_command = 'gzip -c %s > %s' % (input_image, input_image_compressed)
                 self.log.debug("Compressing image file with external gzip cmd: %s" % (compress_command))
@@ -1027,6 +1070,7 @@ class EC2Cloud(object):
         finally:
             res_mgr.release_named_lock(input_image_compressed)
 
+        activity("Preparing EC2 region details")
         region=provider
         region_conf=self.ec2_region_details[region]
         aki = region_conf[self.tdlobj.arch]
@@ -1040,11 +1084,12 @@ class EC2Cloud(object):
         # i386
         instance_type=self.app_config.get('ec2-32bit-util','m1.small')
 
-        self.log.debug("Initializing connection to ec2 region (%s)" % region_conf['host'])
+        activity("Initializing connection to ec2 region (%s)" % region_conf['host'])
         ec2region = boto.ec2.get_region(region_conf['host'], aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key)
         conn = ec2region.connect(aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key)
 
-        # Create a use-once SSH-able security group
+        # Create security group
+        activity("Creating EC2 security group for SSH access to utility image")
         factory_security_group_name = "imagefactory-%s" % (str(self.new_image_id))
         factory_security_group_desc = "Temporary ImageFactory generated security group with SSH access"
         self.log.debug("Creating temporary security group (%s)" % (factory_security_group_name))
@@ -1052,6 +1097,7 @@ class EC2Cloud(object):
         factory_security_group.authorize('tcp', 22, 22, '0.0.0.0/0')
 
         # Create a use-once SSH key
+        activity("Creating SSH key pair for image upload")
         key_name = "fac-tmp-key-%s" % (self.new_image_id)
         key = conn.create_key_pair(key_name)
         # Shove into a named temp file
@@ -1061,6 +1107,7 @@ class EC2Cloud(object):
         key_file=key_file_object.name
 
         # Now launch it
+        activity("Launching EC2 utility image")
         reservation = conn.run_instances(ami_id, instance_type=instance_type, key_name=key_name, security_groups = [ factory_security_group_name ])
 
         if len(reservation.instances) != 1:
@@ -1088,13 +1135,16 @@ class EC2Cloud(object):
             self.log.debug("Waiting 20 seconds for remaining boot tasks")
             sleep(20)
 
-            self.log.debug("Creating 10 GiB volume in (%s)" % (self.instance.placement))
+            activity("Creating 10 GiB volume in (%s) to hold new image" % (self.instance.placement))
             volume = conn.create_volume(10, self.instance.placement)
 
             # Do the upload before testing to see if the volume has completed
             # to get a bit of parallel work
-            self.log.debug("Uploading compressed image file")
+            activity("Uploading compressed image file")
             self.guest.guest_live_upload(guestaddr, input_image_compressed, "/mnt")
+
+            # Don't burden API users with the step-by-step details here
+            activity("Preparing EC2 volume to receive new image")
 
             # Volumes can sometimes take a very long time to create
             # Wait up to 10 minutes for now (plus the time taken for the upload above)
@@ -1135,6 +1185,7 @@ class EC2Cloud(object):
             sleep(20)
 
             # Decompress image into new EBS volume
+            activity("Decompressing image into new volume")
             command = "gzip -dc /mnt/%s | dd of=/dev/xvdh bs=4k\n" % (input_image_compressed_name)
             self.log.debug("Decompressing image file into EBS device via command: %s" % (command))
             self.guest.guest_execute_command(guestaddr, command)
@@ -1143,6 +1194,7 @@ class EC2Cloud(object):
             self.guest.guest_execute_command(guestaddr, "sync")
 
             # Snapshot EBS volume
+            activity("Taking EC2 snapshot of new volume")
             self.log.debug("Taking snapshot of volume (%s)" % (volume.id))
             snapshot = conn.create_snapshot(volume.id, 'Image Factory Snapshot for provider image %s' % self.new_image_id)
 
@@ -1161,6 +1213,7 @@ class EC2Cloud(object):
                 raise ImageFactoryException("Unable to snapshot volume (%s) - aborting" % (volume.id))
 
             # register against snapshot
+            activity("Registering snapshot as a new AMI")
             self.log.debug("Registering snapshot (%s) as new EBS AMI" % (snapshot.id))
             ebs = EBSBlockDeviceType()
             ebs.snapshot_id = snapshot.id
@@ -1194,7 +1247,7 @@ class EC2Cloud(object):
             #sleep(999999)
             raise
         finally:
-            self.log.debug("Terminating EC2 instance and deleting temp security group and volume")
+            activity("Terminating EC2 instance and deleting temp security group and volume")
             self.terminate_instance(self.instance)
             key_file_object.close()
             conn.delete_key_pair(key_name)
@@ -1218,8 +1271,9 @@ class EC2Cloud(object):
                     volume.delete()
 
         # TODO: Add back-reference to ICICLE from base image object
-        metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=ami_id, provider_account_identifier=self.ec2_access_key)
-        self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
+        # This replaces our warehouse calls
+        self.builder.provider_image.target_identifier=ami_id
+        self.builder.provider_image.provider_account_identifier=self.ec2_access_key
 
         self.log.debug("Fedora_ec2_Builder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), target_image_id, self.new_image_id, str(metadata)))
         self.percent_complete=100
@@ -1230,18 +1284,16 @@ class EC2Cloud(object):
                 return "REDACTED"
             return item
 
+        # Image is always here and it is the target_image datafile
+        input_image = self.builder.target_image.datafile
+        input_image_name = os.path.basename(input_image)
+
         self.ec2_decode_credentials(credentials)
-
-        # if the image is already here, great, otherwise grab it from the warehouse
-        input_image_name="ec2-image-" + target_image_id + ".dsk"
-        input_image=self.app_config['imgdir'] + "/" + input_image_name
-
-        self.retrieve_image(target_image_id, input_image)
 
         bundle_destination=self.app_config['imgdir']
 
-        self.percent_complete=10
 
+        activity("Preparing EC2 region details and connection")
         region=provider
         region_conf=self.ec2_region_details[region]
         aki = region_conf[self.tdlobj.arch]
@@ -1283,6 +1335,7 @@ class EC2Cloud(object):
 
         bundle_command_log = map(replace, bundle_command)
 
+        activity("Bundling image locally")
         self.log.debug("Executing bundle command: %s " % (bundle_command_log))
 
         bundle_output = subprocess_check_output(bundle_command)
@@ -1300,6 +1353,7 @@ class EC2Cloud(object):
 
         upload_command_log = map(replace, upload_command)
 
+        activity("Uploading image to EC2")
         self.log.debug("Executing upload command: %s " % (upload_command_log))
         upload_output = subprocess_check_output(upload_command)
         self.log.debug("Upload command output: %s " % (str(upload_output)))
@@ -1311,6 +1365,7 @@ class EC2Cloud(object):
         register_command = [ "euca-register" , "-A", self.ec2_access_key,
                              "-S", self.ec2_secret_key, s3_path ]
         register_command_log = map(replace, register_command)
+        activity("Registering image")
         self.log.debug("Executing register command: %s with environment %s " % (register_command_log, repr(register_env)))
         register_output = subprocess_check_output(register_command, env=register_env)
         self.log.debug("Register command output: %s " % (str(register_output)))
@@ -1322,11 +1377,12 @@ class EC2Cloud(object):
         self.ec2_cert_file_object.close()
         self.ec2_key_file_object.close()
 
-        # Use new warehouse wrapper to do everything
-        # TODO: Generate and store ICICLE
         self.status = "PUSHING"
-        metadata = dict(target_image=target_image_id, provider=provider, icicle="none", target_identifier=ami_id, provider_account_identifier=self.ec2_access_key)
-        self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
+
+        # TODO: Generate and store ICICLE
+        # This replaces our warehouse calls
+        self.builder.provider_image.target_identifier = ami_id
+        self.builder.provider_image.provider_account_identifier = self.ec2_access_key
 
         self.log.debug("Fedora_ec2_Builder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), target_image_id, self.new_image_id, str(metadata)))
         self.percent_complete=100
