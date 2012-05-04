@@ -96,7 +96,11 @@ class PersistentImage(object):
         self.identifier = image_id if image_id else str(uuid.uuid4())
         self.persistence_manager = None
         self.data = None
-        self.status_detail = None
+        # 'activity' should be set to a single line indicating, in as much detail as reasonably possible,
+        #   what it is that the plugin operating on this image is doing at any given time.
+        # 'error' should remain None unless an exception or other fatal error has occurred.  Error may
+        #   be a multiline string
+        self.status_detail = { 'activity': 'Initializing image prior to Cloud/OS customization', 'error':None }
         # Setting these to None or setting initial value via the properties breaks the prop code above
         self._status = "NEW"
         self._percent_complete = 0
