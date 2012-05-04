@@ -36,8 +36,7 @@ class PluginManager(Singleton):
 
     def _singleton_init(self, plugin_path):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        # Add the path for built-in plugins
-        sys.path.append('%s/imgfac/plugins' % sys.path[0])
+        sys.path.append(plugin_path)
 
         if(os.path.exists(plugin_path)):
             self.path = plugin_path
@@ -103,6 +102,7 @@ class PluginManager(Singleton):
         if(plugin in self._plugins):
             return self._plugins[plugin]
         else:
+            fp = None
             metadata = None
             info_file = plugin + INFO_FILE_EXTENSION
             try:
@@ -112,7 +112,8 @@ class PluginManager(Singleton):
                 self.log.exception('Exception caught while loading plugin metadata: %s' % e)
                 raise e
             finally:
-                fp.close()
+                if (fp):
+                    fp.close()
                 return metadata
 
     def plugin_for_target(self, target):
