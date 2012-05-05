@@ -52,15 +52,16 @@ def subprocess_check_output(*popenargs, **kwargs):
     return (stdout, stderr, retcode)
 
 
-def activity(activity):
-    # Simple helper function
-    # Activity should be a one line human-readable string indicating the task in progress
-    # We log it at DEBUG and also set it as the status_detail on our active image
-    self.log.debug(activity)
-    self.active_image.status_detail['activity'] = activity
 
 class FedoraOS(object):
     zope.interface.implements(OSDelegate)
+
+    def activity(self, activity):
+        # Simple helper function
+        # Activity should be a one line human-readable string indicating the task in progress
+        # We log it at DEBUG and also set it as the status_detail on our active image
+        self.log.debug(activity)
+        self.active_image.status_detail['activity'] = activity
 
     ## INTERFACE METHOD
     def create_target_image(self, builder, target, base_image, parameters):
@@ -118,15 +119,15 @@ class FedoraOS(object):
         # Here we are always dealing with a local install
         self.guest = oz.Fedora.get_class(self.tdlobj, self.oz_config, None)
 
-        self.guest.diskimage = self.base_image.datafile
+        self.guest.diskimage = self.base_image.data
         # The remainder comes from the original build_upload(self, build_id)
 
         #self.log.debug("Fedora_ec2_Builder: build_upload() called for target %s with warehouse config %s" % (self.target, self.app_config['warehouse']))
         self.status="BUILDING"
         try:
-            activity("Cleaning up any old Oz guest")
+            self.activity("Cleaning up any old Oz guest")
             self.guest.cleanup_old_guest()
-            activity("Generating JEOS install media")
+            self.activity("Generating JEOS install media")
             self.threadsafe_generate_install_media(self.guest)
             self.percent_complete=10
 
@@ -134,11 +135,11 @@ class FedoraOS(object):
             libvirt_xml=""
 
             try:
-                activity("Generating JEOS disk image")
+                self.activity("Generating JEOS disk image")
                 self.guest.generate_diskimage()
                 # TODO: If we already have a base install reuse it
                 #  subject to some rules about updates to underlying repo
-                activity("Execute JEOS install")
+                self.activity("Execute JEOS install")
                 libvirt_xml = self.guest.install(self.app_config["timeout"])
                 self.image = self.guest.diskimage
                 self.log.debug("Base install complete - Doing customization and ICICLE generation")
@@ -147,7 +148,7 @@ class FedoraOS(object):
                 self.log.debug("Customization and ICICLE generation complete")
                 self.percent_complete = 50
             finally:
-                activity("Cleaning up install artifacts")
+                self.activity("Cleaning up install artifacts")
                 self.guest.cleanup_install()
 
             self.log.debug("Generated disk image (%s)" % (self.guest.diskimage))
