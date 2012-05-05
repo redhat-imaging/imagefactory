@@ -18,13 +18,15 @@ from PersistentImage import PersistentImage
 from props import prop
 
 
-METADATA = ('target_image_id', 'provider', 'parameters')
+METADATA = ('target_image_id', 'provider', 'identifier_on_provider', 'provider_account_identifier', 'parameters')
 
 class ProviderImage(PersistentImage):
     """ TODO: Docstring for ProviderImage  """
 
     target_image_id = prop("_target_image_id")
     provider = prop("_provider")
+    identifier_on_provider = prop("_identifier_on_provider")
+    provider_account_identifier = prop("_provider_account_identifier")
     credentials = prop("_credentials")
     parameters = prop("_parameters")
 
@@ -39,3 +41,12 @@ class ProviderImage(PersistentImage):
         self.provider = None
         self.credentials = None
         self.parameters = None
+
+    def metadata(self):
+        self.log.debug("Executing metadata in class (%s) my metadata is (%s)" % (self.__class__, METADATA))
+        parent = super(self.__class__, self)
+        try:
+            parent_metadata = parent.metadata()
+        except AttributeError:
+            parent_metadata = ( )
+        return frozenset(METADATA + parent_metadata)

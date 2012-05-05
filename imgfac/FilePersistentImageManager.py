@@ -56,7 +56,7 @@ class FilePersistentImageManager(PersistentImageManager):
         # We don't actually want a 'type' property in the resulting PersistentImage object
         del metadata['type']
 
-        for key in image.metadata.union(metadata.keys()):
+        for key in image.metadata().union(metadata.keys()):
             setattr(image, key, metadata.get(key))
 
         #set ourselves as the manager
@@ -146,7 +146,7 @@ class FilePersistentImageManager(PersistentImageManager):
             raise ImageFactoryException('Image %s not managed, use "add_image()" first.' % image_id)
         try:
             meta = {'type': type(image).__name__}
-            for mdprop in image.metadata:
+            for mdprop in image.metadata():
                 meta[mdprop] = getattr(image, mdprop, None)
             mdf = open(metadata_path, 'w')
             json.dump(meta, mdf)

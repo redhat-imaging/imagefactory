@@ -78,7 +78,7 @@ class MongoPersistentImageManager(PersistentImageManager):
         # We don't actually want a 'type' property in the resulting PersistentImage object
         del metadata['type']
 
-        for key in image.metadata.union(metadata.keys()):
+        for key in image.metadata().union(metadata.keys()):
             setattr(image, key, metadata.get(key))
 
         #I don't think we want this as it will overwrite the "data" element
@@ -164,7 +164,7 @@ class MongoPersistentImageManager(PersistentImageManager):
     def _save_image(self, image):
         try:
             meta = {'type': type(image).__name__}
-            for mdprop in image.metadata:
+            for mdprop in image.metadata():
                 meta[mdprop] = getattr(image, mdprop, None)
             # Set upsert to true - allows this function to do the initial insert for add_image
             # We check existence for save_image() already

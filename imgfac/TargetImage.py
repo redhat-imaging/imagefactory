@@ -32,3 +32,12 @@ class TargetImage(PersistentImage):
         self.base_image_id = None
         self.target = None
         self.parameters = None
+
+    def metadata(self):
+        self.log.debug("Executing metadata in class (%s) my metadata is (%s)" % (self.__class__, METADATA))
+        parent = super(self.__class__, self)
+        try:
+            parent_metadata = parent.metadata()
+        except AttributeError:
+            parent_metadata = ( )
+        return frozenset(METADATA + parent_metadata)

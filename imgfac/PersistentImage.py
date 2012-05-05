@@ -21,7 +21,7 @@ from Notification import Notification
 from NotificationCenter import NotificationCenter
 
 
-METADATA =  ('identifier', 'data', 'icicle', 'status_detail', 'status', 'percent_complete')
+METADATA =  ( 'identifier', 'data', 'template', 'icicle', 'status_detail', 'status', 'percent_complete' )
 STATUS_STRINGS = ('NEW','PENDING', 'COMPLETE', 'FAILED')
 NOTIFICATIONS = ('image.status', 'image.percentage')
 
@@ -30,24 +30,10 @@ class PersistentImage(object):
     """ TODO: Docstring for PersistentImage  """
 
 ##### PROPERTIES
-    def metadata():
-        """Persistent properties tuple"""
-        def fget(self):
-            parent = super(self.__class__, self)
-            if(isinstance(parent, PersistentImage)):
-                return frozenset(parent.metadata + METADATA)
-            else:
-                return frozenset(METADATA)
-        def fset(self, value):
-            pass
-        def fdel(self):
-            pass
-        return locals()
-    metadata = property(**metadata())
-
     persistence_manager = prop("_persistence_manager")
     identifier = prop("_identifier")
     data = prop("_data")
+    template = prop("_template")
     icicle = prop("_icicle")
     status_detail = prop("_status_detail")
 
@@ -105,3 +91,7 @@ class PersistentImage(object):
         self._status = "NEW"
         self._percent_complete = 0
         self.icicle = None
+
+    def metadata(self):
+        self.log.debug("Executing metadata in class (%s) my metadata is (%s)" % (self.__class__, METADATA))
+        return METADATA

@@ -18,12 +18,10 @@ from PersistentImage import PersistentImage
 from props import prop
 
 
-METADATA = ('template')
+METADATA = ( )
 
 class BaseImage(PersistentImage):
     """ TODO: Docstring for BaseImage  """
-
-    template = prop("_template")
 
     def __init__(self, image_id=None):
         """ TODO: Fill me in
@@ -32,3 +30,12 @@ class BaseImage(PersistentImage):
         """
         super(BaseImage, self).__init__(image_id)
         self.template = None
+
+    def metadata(self):
+        self.log.debug("Executing metadata in class (%s) my metadata is (%s)" % (self.__class__, METADATA))
+        parent = super(self.__class__, self)
+        try:
+            parent_metadata = parent.metadata()
+        except AttributeError:
+            parent_metadata = ( )
+        return frozenset(METADATA + parent_metadata)
