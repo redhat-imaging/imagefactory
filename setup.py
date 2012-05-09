@@ -12,7 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from distutils.core import setup, Extension
+from distutils.core import setup
 from distutils.command.sdist import sdist as _sdist
 import os
 import os.path
@@ -50,9 +50,9 @@ setup(name='imagefactory',
       description='Image Factory system image generation tool',
       author='Ian McLeod',
       author_email='imcleod@redhat.com',
-      license='GPLv2',
+      license='Apache License, Version 2.0',
       url='http://www.aeolusproject.org/imagefactory.html',
-      packages=['imgfac', 'imgfac.builders', 'imgfac.rest'],
+      packages=['imgfac', 'imgfac.builders', 'imgfac.rest', 'imagefactory-plugins'],
       scripts=['imagefactory'],
       data_files = datafiles,
       cmdclass = {'sdist': sdist}
