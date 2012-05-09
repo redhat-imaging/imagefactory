@@ -136,44 +136,44 @@ class Builder(object):
 
     def _customize_image_for_target(self, target, image_id=None, template=None, parameters=None):
         try:
-	    # If there is an ongoing base build, wait for it to finish
-	    if self.base_thread:
+            # If there is an ongoing base build, wait for it to finish
+            if self.base_thread:
                 threadname=self.base_thread.getName()
                 self.log.debug("Waiting for our BaseImage builder thread (%s) to finish" % (threadname))
-		self.base_thread.join()
+                self.base_thread.join()
                 self.log.debug("BaseImage builder thread (%s) finished - continuing with TargetImage tasks" % (threadname))
 
-	    if self.base_image.status == "FAILED":
-		raise ImageFactoryException("The BaseImage (%s) for our TargetImage has failed its build.  Cannot continue." % (self.base_image.identifier))
+            if self.base_image.status == "FAILED":
+                raise ImageFactoryException("The BaseImage (%s) for our TargetImage has failed its build.  Cannot continue." % (self.base_image.identifier))
 
-	    if self.base_image.status != "COMPLETE":
-		raise ImageFactoryException("Got to TargetImage build step with a BaseImage status of (%s).  This should never happen.  Aborting." % (self.base_image.status))
-	     
-	    template = template if(isinstance(template, Template)) else Template(template)
+            if self.base_image.status != "COMPLETE":
+                raise ImageFactoryException("Got to TargetImage build step with a BaseImage status of (%s).  This should never happen.  Aborting." % (self.base_image.status))
 
-	    plugin_mgr = PluginManager(self.app_config['plugins'])
+            template = template if(isinstance(template, Template)) else Template(template)
 
-	    # It's possible this has already been set by the base_image creation above
-	    if not self.os_plugin:
-		self.os_plugin = plugin_mgr.plugin_for_target((template.os_name, template.os_version, template.os_arch))
+            plugin_mgr = PluginManager(self.app_config['plugins'])
 
-	    self.cloud_plugin = plugin_mgr.plugin_for_target(target)
+            # It's possible this has already been set by the base_image creation above
+            if not self.os_plugin:
+                self.os_plugin = plugin_mgr.plugin_for_target((template.os_name, template.os_version, template.os_arch))
+
+            self.cloud_plugin = plugin_mgr.plugin_for_target(target)
             if not self.cloud_plugin:
                 self.log.warn("Unable to find cloud plugin for target (%s)" % (target))
 
-	    try:
-		_should_create = self.cloud_plugin.builder_should_create_target_image(self, target, image_id, template, parameters)
-	    except AttributeError:
-		_should_create = True
-	    try:
-		if _should_create : self.cloud_plugin.builder_will_create_target_image(self, target, image_id, template, parameters)
-	    except AttributeError:
-		pass
-	    if(_should_create):
-		try:
-		    self.os_plugin.create_target_image(self, target, image_id, parameters)
-		    self.cloud_plugin.builder_did_create_target_image(self, target, image_id, template, parameters)
-		except AttributeError:
+            try:
+                _should_create = self.cloud_plugin.builder_should_create_target_image(self, target, image_id, template, parameters)
+            except AttributeError as e:
+                _should_create = True
+            try:
+                if _should_create : self.cloud_plugin.builder_will_create_target_image(self, target, image_id, template, parameters)
+            except AttributeError as e:
+                pass
+            if(_should_create):
+                try:
+                    self.os_plugin.create_target_image(self, target, image_id, parameters)
+                    self.cloud_plugin.builder_did_create_target_image(self, target, image_id, template, parameters)
+                except AttributeError as e:
                     pass
             self.target_image.status = "COMPLETE"
             self.pim.save_image(self.target_image)
@@ -253,10 +253,10 @@ class Builder(object):
 
             template = template if(isinstance(template, Template)) else Template(template)
 
-	    plugin_mgr = PluginManager(self.app_config['plugins'])
+            plugin_mgr = PluginManager(self.app_config['plugins'])
             if not self.cloud_plugin:
-	        self.cloud_plugin = plugin_mgr.plugin_for_target(Provider.map_provider_to_target(provider))
-	    self.cloud_plugin.push_image_to_provider(self, provider, credentials, image_id, parameters)
+                self.cloud_plugin = plugin_mgr.plugin_for_target(Provider.map_provider_to_target(provider))
+                self.cloud_plugin.push_image_to_provider(self, provider, credentials, image_id, parameters)
             self.provider_image.status="COMPLETE"
             self.pim.save_image(self.provider_image)
         except Exception, e:
@@ -275,7 +275,7 @@ class Builder(object):
         @param provider TODO
         @param credentials TODO
         @param snapshot_params TODO
-    
+
         @return TODO
         """
 

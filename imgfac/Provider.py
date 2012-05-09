@@ -57,6 +57,7 @@ def map_provider_to_target(provider):
             return provider_data['target']
         except KeyError as e:
             log.debug('Provider data does not specify target!\n%s' % provider_data)
+            log.exception(e)
             raise Exception('Provider data does not specify target!\n%s' % provider_data)
     elif provider.startswith('ec2-'):
         return 'ec2'

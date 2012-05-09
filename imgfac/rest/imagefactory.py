@@ -131,6 +131,7 @@ def push_image(image_id, build_id, target_image_id):
                 'href':'%s/%s' % (request.url, provider_image_id)}
 
     except KeyError as e:
+        log.exception(e)
         raise HTTPResponse(status=400, output="Missing either 'provider' or 'credentials' in request: %s" % e)
     except Exception as e:
         log.exception(e)
@@ -146,6 +147,7 @@ def create_provider_image():
         target_image_id = _request_data.get('target_image_id')
         return push_image(image_id, build_id, target_image_id)
     except KeyError as e:
+        log.exception(e)
         raise HTTPResponse(status=400, output="Missing one or more of 'image_id', 'build_id', or 'target_image_id': %s" % e)
     except Exception as e:
         log.exception(e)
@@ -206,6 +208,7 @@ def builder_detail(builder_id=None, image_id=None, build_id=None, target_image_i
                 'provider_account_identifier':job.provider_account_identifier,
                 '_type':_type}
     except KeyError as e:
+        log.exception(e)
         raise HTTPResponse(status=404, output="No builder found with uuid %s" % _id)
     except Exception as e:
         log.exception(e)
@@ -235,6 +238,7 @@ def builder_status(builder_id=None, image_id=None, build_id=None, target_image_i
                 'href':request.url,
                 'status':job.status}
     except KeyError as e:
+        log.exception(e)
         raise HTTPResponse(status=404, output="No builder found with uuid %s" % _id)
     except Exception as e:
         log.exception(e)
