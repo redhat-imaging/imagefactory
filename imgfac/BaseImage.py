@@ -15,7 +15,7 @@
 #   limitations under the License.
 
 from PersistentImage import PersistentImage
-from props import prop
+#from props import prop
 
 
 METADATA = ( )
@@ -32,10 +32,5 @@ class BaseImage(PersistentImage):
         self.template = None
 
     def metadata(self):
-        self.log.debug("Executing metadata in class (%s) my metadata is (%s)" % (self.__class__, METADATA))
-        parent = super(self.__class__, self)
-        try:
-            parent_metadata = parent.metadata()
-        except AttributeError:
-            parent_metadata = ( )
-        return frozenset(METADATA + parent_metadata)
+        self.log.debug("Getting metadata in class (%s) my metadata is (%s)" % (self.__class__, METADATA))
+        return frozenset(METADATA + super(self.__class__, self).metadata())
