@@ -23,6 +23,7 @@ from Singleton import Singleton
 
 PLUGIN_TYPES = ('OS', 'CLOUD')
 INFO_FILE_EXTENSION = '.info'
+PKG_STR = 'imagefactory-plugins'
 
 class PluginManager(Singleton):
     """ Registers and manages ImageFactory plugins. """
@@ -35,8 +36,7 @@ class PluginManager(Singleton):
 
     def _singleton_init(self, plugin_path):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        # Add the path for built-in plugins
-        sys.path.append('%s/imgfac/plugins' % sys.path[0])
+        sys.path.append(plugin_path)
 
         if(os.path.exists(plugin_path)):
             self.path = plugin_path
@@ -102,6 +102,7 @@ class PluginManager(Singleton):
         if(plugin in self._plugins):
             return self._plugins[plugin]
         else:
+            fp = None
             metadata = None
             info_file = plugin + INFO_FILE_EXTENSION
             try:
@@ -111,7 +112,8 @@ class PluginManager(Singleton):
                 self.log.exception('Exception caught while loading plugin metadata: %s' % e)
                 raise e
             finally:
-                fp.close()
+                if (fp):
+                    fp.close()
                 return metadata
 
     def plugin_for_target(self, target):
@@ -129,10 +131,10 @@ class PluginManager(Singleton):
         """
         plugin_name = None
         try:
-            if isinstance(target, str): 
+            if isinstance(target, str):
                 self.log.debug("Attempting to match string target (%s)" % (target))
                 plugin_name = self._targets.get(tuple([ target ]))
-                plugin = __import__("imgfac.plugins." + plugin_name, fromlist=['delegate_class'])
+                plugin = __import__('%s.%s' % (PKG_STR, plugin_name), fromlist=['delegate_class'])
                 return plugin.delegate_class()
             elif(isinstance(target, tuple)):
                 _target = list(target)
@@ -142,7 +144,7 @@ class PluginManager(Singleton):
                     if(not plugin_name):
                         _target[-index] = None
                     else:
-                        plugin = __import__("imgfac.plugins." + plugin_name, fromlist=['delegate_class'])
+                        plugin = __import__('%s.%s' % (PKG_STR, plugin_name), fromlist=['delegate_class'])
                         return plugin.delegate_class()
         except Exception as e:
                 self.log.exception('Exception caught during plugin lookup: %s' % e)
