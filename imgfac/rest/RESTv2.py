@@ -20,6 +20,7 @@ from imgfac.rest.OAuthTools import oauth_protect
 from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.PluginManager import PluginManager
 from imgfac.PersistentImageManager import PersistentImageManager
+from imgfac.Version import VERSION as VERSION
 
 log = logging.getLogger(__name__)
 
@@ -27,8 +28,7 @@ rest_api = Bottle(catchall=True)
 
 @rest_api.get('/imagefactory')
 def api_info():
-    # TODO: Change this so 'version' is pulled from Application
-    return {'name':'imagefactory', 'version':'1.1','api_version':'2.0'}
+    return {'name':'imagefactory', 'version':VERSION, 'api_version':'2.0'}
 
 @rest_api.get('/imagefactory/<image_collection>')
 @rest_api.get('/imagefactory/base_images/<base_image_id>/<image_collection>')
