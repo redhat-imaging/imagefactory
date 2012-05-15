@@ -21,7 +21,7 @@ import subprocess
 version_file_path = "imgfac/Version.py"
 version_file = open(version_file_path, 'w')
 pkg_version = subprocess.check_output('/usr/bin/git describe | tr - _', shell=True).rstrip('\n')
-version_file.write('VERSION = %s' % pkg_version)
+version_file.write('VERSION = "%s"' % pkg_version)
 version_file.close()
 
 datafiles=[('share/man/man1', ['Documentation/man/imagefactory.1']),
