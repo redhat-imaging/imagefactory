@@ -21,6 +21,7 @@ import json
 import logging
 import props
 from Singleton import Singleton
+from imgfac.Version import VERSION as VERSION
 
 class ApplicationConfiguration(Singleton):
     configuration = props.prop("_configuration", "The configuration property.")
@@ -46,9 +47,8 @@ class ApplicationConfiguration(Singleton):
         ec2_description = """Options specifying EC2 instance types to use for various functions"""
         rest_description = """Enable the RESTful interface."""
 
-        argparser = argparse.ArgumentParser(description=main_description, prog='imagefactory')
-        argparser.add_argument('--version', action='version', version='%(prog)s 0.1', help='Version info')
-        argparser.add_argument('-v', '--verbose', action='store_true', default=False, help='Set verbose logging.')
+        argparser = argparse.ArgumentParser(description=main_description, prog='imagefactory', version=VERSION)
+        argparser.add_argument('--verbose', action='store_true', default=False, help='Set verbose logging.')
         argparser.add_argument('--debug', action='store_true', default=False, help='Set really verbose logging for debugging.')
         argparser.add_argument('--image', help='UUID of iwhd image object to rebuild or push')
         argparser.add_argument('--foreground', action='store_true', default=False, help='Stay in the foreground and avoid launching a daemon. (default: %(default)s)')
