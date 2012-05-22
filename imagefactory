@@ -51,6 +51,7 @@ class Application(Singleton):
 
     def _singleton_init(self):
         super(Application, self)._singleton_init()
+        logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(levelname)s %(name)s thread(%(threadName)s) Message: %(message)s')
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.daemon = False
         self.pid_file_path = "/var/run/imagefactory.pid"
