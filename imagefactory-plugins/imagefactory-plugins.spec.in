@@ -1,0 +1,52 @@
+Summary: Default plugins for the Image Factory system image generation tool
+Name: imagefactory-plugins
+Version: @VERSION@
+Release: 1%{?dist}
+Source0: http://repos.fedorapeople.org/repos/aeolus/imagefactory/%{version}/tarball/%{name}-%{version}.tar.gz
+License: ASL 2.0
+Group: Applications/System
+URL: http://www.aeolusproject.org/imagefactory.html
+BuildArch: noarch
+BuildRequires: python-setuptools
+
+%description
+This is a placeholder top level package for a collection of plugins for the Image Factory
+cloud system image generation tool.
+
+imagefactory allows the creation of system images for multiple virtualization
+and cloud providers from a single template definition. See 
+http://aeolusproject.org/projects/imagefactory for more information.
+
+%package FedoraOS
+Summary: OS plugin for Fedora
+License: ASL 2.0
+
+%description FedoraOS
+An OS plugin to support Fedora OSes
+
+%package EC2Cloud
+Summary: Cloud plugin for EC2
+License: ASL 2.0
+
+%description EC2Cloud
+A Cloud plugin to support EC2
+
+%prep
+%setup -q
+
+%build
+python setup.py build
+
+%install
+python setup.py install -O1 --root=%{buildroot} --skip-build
+
+%files
+%dir %{python_sitelib}/imagefactory-plugins
+%{python_sitelib}/imagefactory_plugins*.egg-info
+
+%files FedoraOS
+%{python_sitelib}/imagefactory-plugins/FedoraOS/*
+
+%files EC2Cloud
+%{python_sitelib}/imagefactory-plugins/EC2Cloud/*
+
