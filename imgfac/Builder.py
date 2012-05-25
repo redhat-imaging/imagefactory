@@ -15,7 +15,6 @@
 #   limitations under the License.
 
 import uuid
-import Provider
 import logging
 from threading import Thread
 from props import prop
@@ -184,14 +183,14 @@ class Builder(object):
             self.log.exception(e)
 
 ##### CREATE PROVIDER IMAGE
-    def create_image_on_provider(self, provider, credentials, image_id=None, template=None, parameters=None):
+    def create_image_on_provider(self, provider, credentials, target, image_id=None, template=None, parameters=None):
         if(parameters and parameters.get('snapshot', False)):
-            self.snapshot_image_on_provider(provider, credentials, template, parameters)
+            self.snapshot_image_on_provider(provider, credentials, target, image_id, template, parameters)
         else:
-            self.push_image_to_provider(provider, credentials, image_id, template, parameters)
+            self.push_image_to_provider(provider, credentials, target, image_id, template, parameters)
 
 ##### PUSH IMAGE TO PROVIDER
-    def push_image_to_provider(self, provider, credentials, image_id, template, parameters):
+    def push_image_to_provider(self, provider, credentials, target, image_id, template, parameters):
         """
         TODO: Docstring for push_image_to_provider
 
@@ -222,7 +221,7 @@ class Builder(object):
         elif template and image_id:
             raise ImageFactoryException("Must specify either a template or a TargetImage ID, not both")
         elif template:
-            self.customize_image_for_target(target = Provider.map_provider_to_target(provider), image_id=None, template=template, parameters=parameters)
+            self.customize_image_for_target(target=target , image_id=None, template=template, parameters=parameters)
             # Populate the target_image value of our provider image properly
             # (The ID value is always available immediately after the call above)
             # self.base_image is created in cascading fashion from the above call
@@ -232,11 +231,11 @@ class Builder(object):
             raise ImageFactoryException("Asked to create a ProviderImage without a TargetImage or a template")
 
         thread_name = str(uuid.uuid4())[0:8]
-        thread_kwargs = {'provider':provider, 'credentials':credentials, 'image_id':image_id, 'template':template, 'parameters':parameters}
+        thread_kwargs = {'provider':provider, 'credentials':credentials, 'target':target, 'image_id':image_id, 'template':template, 'parameters':parameters}
         self.push_thread = Thread(target=self._push_image_to_provider, name=thread_name, args=(), kwargs=thread_kwargs)
         self.push_thread.start()
 
-    def _push_image_to_provider(self, provider, credentials, image_id, template, parameters):
+    def _push_image_to_provider(self, provider, credentials, target, image_id, template, parameters):
         try:
             # If there is an ongoing target_image build, wait for it to finish
             if self.target_thread:
@@ -255,8 +254,8 @@ class Builder(object):
 
             plugin_mgr = PluginManager(self.app_config['plugins'])
             if not self.cloud_plugin:
-                self.cloud_plugin = plugin_mgr.plugin_for_target(Provider.map_provider_to_target(provider))
-                self.cloud_plugin.push_image_to_provider(self, provider, credentials, image_id, parameters)
+                self.cloud_plugin = plugin_mgr.plugin_for_target(target)
+                self.cloud_plugin.push_image_to_provider(self, provider, credentials, target, image_id, parameters)
             self.provider_image.status="COMPLETE"
             self.pim.save_image(self.provider_image)
         except Exception, e:
@@ -266,7 +265,7 @@ class Builder(object):
             self.log.exception(e)
 
 ##### SNAPSHOT IMAGE
-    def snapshot_image(self, provider, credentials, template, parameters):
+    def snapshot_image(self, provider, credentials, target, image_id, template, parameters):
         """
         TODO: Docstring for snapshot_image
         
@@ -290,15 +289,15 @@ class Builder(object):
             raise ImageFactoryException("Must specify a template when requesting a snapshot-style build")
 
         thread_name = str(uuid.uuid4())[0:8]
-        thread_kwargs = {'provider':provider, 'credentials':credentials, 'template':template, 'parameters':parameters}
+        thread_kwargs = {'provider':provider, 'credentials':credentials, 'target':target, 'image_id':image_id, 'template':template, 'parameters':parameters}
         self.snapshot_thread = Thread(target=self._snapshot_image, name=thread_name, args=(), kwargs=thread_kwargs)
         self.snapshot_thread.start()
 
-    def _snapshot_image(self, provider, credentials, template, parameters):
+    def _snapshot_image(self, provider, credentials, target, image_id, template, parameters):
         try:
             plugin_mgr = PluginManager(self.app_config['plugins'])
-            self.cloud_plugin = plugin_mgr.plugin_for_target(Provider.map_provider_to_target(provider))
-            self.cloud_plugin.snapshot_image_on_provider(self, provider, credentials, template, parameters)
+            self.cloud_plugin = plugin_mgr.plugin_for_target(target)
+            self.cloud_plugin.snapshot_image_on_provider(self, provider, credentials, target, image_id, template, parameters)
             self.provider_image.status="COMPLETE"
             self.pim.save_image(self.provider_image)
         except Exception, e:

@@ -48,9 +48,9 @@ class BuildDispatcher(Singleton):
         self.builders[builder.target_image.identifier] = builder
         return builder
 
-    def builder_for_provider_image(self, provider, credentials, image_id=None, template=None, parameters=None):
+    def builder_for_provider_image(self, provider, credentials, target, image_id=None, template=None, parameters=None):
         builder = Builder()
-        builder.create_image_on_provider(provider, credentials, image_id, template, parameters)
+        builder.create_image_on_provider(provider, credentials, target, image_id, template, parameters)
         self.builders[builder.provider_image.identifier] = builder
         return builder
 
