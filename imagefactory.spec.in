@@ -7,25 +7,37 @@ License: ASL 2.0
 Group: Applications/System
 URL: http://www.aeolusproject.org/imagefactory.html
 BuildArch: noarch
-Requires: oz >= 0.7.0
-Requires: euca2ools
+#Commenting out requirements that have moved to plugins
+#Leaving them temporarily to aid in testing
+#
+#Moved to EC2Cloud
+# Requires: euca2ools
+# Requires: python-boto >= 2.0
+#
+#Moved to FedoraOS (and possibly other OS plugins)
+# Requires: oz >= 0.7.0
+#
+#To be moved to vsphere/ESX
+#Requires: VMDKstream
+#Requires: python-suds >= 0.4.1
+#Requires: python-psphere
+#
+#To be moved to RackSpace
+#Requires: python-cloudservers
+#
+#To be moved/removed in RHEV-M
+# We need this for dc-rhev-image
+# TODO: Remove this requirement when move pushing internal to the factory
+#Requires: iwhd >= 1.2
+#Requires: qemu-img
 Requires: python-pycurl
 Requires: python-libguestfs
 Requires: python-zope-interface
-Requires: python-boto >= 2.0
 Requires: libxml2-python
 Requires: python-httplib2
 Requires: python-argparse
-Requires: python-cloudservers
-Requires: python-psphere
-Requires: VMDKstream
-Requires: python-suds >= 0.4.1
 Requires: python-paste-deploy
 Requires: python-oauth2
-Requires: qemu-img
-# We need this for dc-rhev-image
-# TODO: Remove this requirement when move pushing internal to the factory
-Requires: iwhd >= 1.2
 Requires(post): chkconfig
 Requires(preun): chkconfig
 # This is for /sbin/service
