@@ -57,6 +57,9 @@ class ApplicationConfiguration(Singleton):
         argparser.add_argument('--timeout', type=int, default=3600, help='Set the timeout period for image building in seconds. (default: %(default)s)')
         argparser.add_argument('--tmpdir', default='/tmp', help='Use the specified location for temporary files.  (default: %(default)s)')
         argparser.add_argument('--plugins', default='/etc/imagefactory/plugins.d', help='Plugin directory. (default: %(default)s)')
+        argparser.add_argument('--jeos_imgdir', default='/etc/imagefactory/jeos_images/', help='JeOS image files in location specified. (default: %(default)s)')
+        argparser.add_argument('--test_jeos_imgdir', default='conf/', help='JeOS image files when testing without installation. (default: %(default)s)')
+
 
         group_rest = argparser.add_argument_group(title='RESTful Interface', description=rest_description)
         group_rest.add_argument('--rest', action='store_true', default=False, help='Turn on the RESTful http interface. (default: %(default)s)')
@@ -160,8 +163,12 @@ class ApplicationConfiguration(Singleton):
 
     def __parse_jeos_images(self):
         # Loop through all JEOS configuration files to populate our jeos_images dictionary
-        # TODO: Make this path itself configurable?
-        config_path = '/etc/imagefactory/jeos_images/'
+        self.appconfig = self.configuration
+        if os.path.exists(self.appconfig['jeos_imgdir']):
+            config_path = self.appconfig['jeos_imgdir'] 
+        else:
+            # test path to allow for testing without install
+            config_path = self.appconfig['test_jeos_imgdir']
         listing = os.listdir(config_path)
         for infile in listing:
             fileIN = open(config_path + infile, "r")
