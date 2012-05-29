@@ -1,0 +1,21 @@
+OpenStack supports two distinct image storage services.  However only one, Glance,
+seems to be widely deployed or supported.
+
+Glance provides a REST API, a python binding to this API and a command line
+tool that uses the binding.
+
+Glance does not inspect uploaded images.  It is the responsibility of the uploader
+to correctly tag image details, including the image format, at the time the image is
+added.
+
+OpenStack itself is designed to suport a wide variety of hypervisors, not all of which
+use compatible image formats.
+
+To get things started I'm going to write a plugin to support the default hypervisor
+which happens to be KVM.  This is convenient as we use KVM internally to create
+base_images.
+
+Currently I have an extremely simple upload utility that uses the bindings from
+the python-glance package.
+
+glance_upload.py
