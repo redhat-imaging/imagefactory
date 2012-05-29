@@ -13,9 +13,8 @@
 #   limitations under the License.
 
 import libxml2
-import os.path
-import json
 import logging
+import Provider
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.BuildJob import BuildJob
 from imgfac.BuildWatcher import BuildWatcher
@@ -24,8 +23,8 @@ from imgfac.PushWatcher import PushWatcher
 from imgfac.Singleton import Singleton
 from imgfac.Template import Template
 from imgfac.JobRegistry import JobRegistry
-# Yes - we already import libxml2 - xml is built in - there is no harm here and I like the API
-from xml.etree.ElementTree import fromstring
+from Builder import Builder
+
 
 class BuildDispatcher(Singleton):
 
@@ -33,6 +32,29 @@ class BuildDispatcher(Singleton):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration['warehouse'])
         self.job_registry = JobRegistry()
+        self.builders = dict()
+
+##### BEGIN new BuildDispatcher code for plugins and no warehouse #####
+
+    def builder_for_base_image(self, template, parameters=None):
+        builder = Builder()
+        builder.build_image_from_template(template)
+        self.builders[builder.base_image.identifier] = builder
+        return builder
+
+    def builder_for_target_image(self, target, image_id=None, template=None, parameters=None):
+        builder = Builder()
+        builder.customize_image_for_target(target, image_id, template, parameters)
+        self.builders[builder.target_image.identifier] = builder
+        return builder
+
+    def builder_for_provider_image(self, provider, credentials, image_id=None, template=None, parameters=None):
+        builder = Builder()
+        builder.create_image_on_provider(provider, credentials, image_id, template, parameters)
+        self.builders[builder.provider_image.identifier] = builder
+        return builder
+
+##### END new BuildDispatcher code
 
     def import_image(self, image_id, build_id, target_identifier, image_desc, target, provider):
         image_id = self._ensure_image(image_id, image_desc)
@@ -74,7 +96,7 @@ class BuildDispatcher(Singleton):
 
         jobs = []
         for provider in providers:
-            target = self._map_provider_to_target(provider)
+            target = Provider.map_provider_to_target(provider)
 
             target_image_id = self._target_image_for_build_and_target(build_id, target)
 
@@ -87,42 +109,6 @@ class BuildDispatcher(Singleton):
         self.job_registry.register(jobs)
 
         return jobs
-
-    def get_dynamic_provider_data(self, provider):
-        # Get provider details for RHEV-M or VSphere
-        # First try to interpret this as an ad-hoc/dynamic provider def
-        # If this fails, try to find it in one or the other of the config files
-        # If this all fails return None
-        # We use this in the builders as well so I have made it "public"
-
-        try:
-            xml_et = fromstring(provider)
-            return xml_et.attrib
-        except Exception as e:
-            self.log.debug('Testing provider for XML: %s' % e)
-            pass
-
-        try:
-            jload = json.loads(provider)
-            return jload
-        except ValueError as e:
-            self.log.debug('Testing provider for JSON: %s' % e)
-            pass
-
-        rhevm_data = self._return_dynamic_provider_data(provider, "rhevm")
-        if rhevm_data:
-            rhevm_data['target'] = "rhevm"
-            rhevm_data['name'] = provider
-            return rhevm_data
-
-        vsphere_data = self._return_dynamic_provider_data(provider, "vsphere")
-        if vsphere_data:
-            vsphere_data['target'] = "vsphere"
-            vsphere_data['name'] = provider
-            return vsphere_data
-        
-        # It is not there
-        return None
 
     def _xml_node(self, xml, xpath):
         nodes = libxml2.parseDoc(xml).xpathEval(xpath)
@@ -236,54 +222,3 @@ class BuildDispatcher(Singleton):
         if not build_id:
             build_id = self._latest_unpushed(image_id)
         return self._template_for_build_id(build_id) if build_id else None
-
-    def _return_dynamic_provider_data(self, provider, filebase):
-        provider_json = '/etc/imagefactory/%s.json' % (filebase)
-        if not os.path.exists(provider_json):
-            return False
-
-        provider_sites = {}
-        f = open(provider_json, 'r')
-        try:
-            provider_sites = json.loads(f.read())
-        finally:
-            f.close()
-
-        if provider in provider_sites:
-            return provider_sites[provider]
-        else:
-            return None
-
-    # FIXME: this is a hack; conductor is the only one who really
-    #        knows this mapping, so perhaps it should provide it?
-    #        e.g. pass a provider => target dict into push_image
-    #        rather than just a list of providers. Perhaps just use
-    #        this heuristic for the command line?
-    #
-    # provider semantics, per target:
-    #  - ec2: region, one of ec2-us-east-1, ec2-us-west-1, ec2-ap-southeast-1, ec2-ap-northeast-1, ec2-eu-west-1
-    #  - condorcloud: ignored
-    #  - mock: any provider with 'mock' prefix
-    #  - rackspace: provider is rackspace
-    # UPDATE - Sept 13, 2011 for dynamic providers
-    #  - vpshere: encoded in provider string or a key in /etc/vmware.json
-    #  - rhevm: encoded in provider string or a key in /etc/rhevm.json
-    #
-    def _map_provider_to_target(self, provider):
-        # Check for dynamic providers first
-        provider_data = self.get_dynamic_provider_data(provider)
-        if provider_data:
-            try:
-                return provider_data['target']
-            except KeyError as e:
-                self.log.debug('Provider data does not specify target!\n%s' % provider_data)
-                raise Exception('Provider data does not specify target!\n%s' % provider_data)
-        elif provider.startswith('ec2-'):
-            return 'ec2'
-        elif provider == 'rackspace':
-            return 'rackspace'
-        elif provider.startswith('mock'):
-            return 'mock'
-        else:
-            self.log.warn('No matching provider found for %s, using "condorcloud" by default.' % (provider))
-            return 'condorcloud' # condorcloud ignores provider

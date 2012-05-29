@@ -12,21 +12,17 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from distutils.core import setup, Extension
+from distutils.core import setup
 from distutils.command.sdist import sdist as _sdist
 import os
 import os.path
 import subprocess
 
-version_file_name = "version.txt"
-try:
-    if(not os.path.exists(version_file_name)):
-        subprocess.call('/usr/bin/git describe | tr - _ > %s' % (version_file_name, ), shell=True)
-    version_file = open(version_file_name, "r")
-    VERSION = version_file.read()[0:-1]
-    version_file.close()
-except Exception, e:
-    raise RuntimeError("ERROR: version.txt could not be found.  Run 'git describe > version.txt' to get the correct version info.")
+version_file_path = "imgfac/Version.py"
+version_file = open(version_file_path, 'w')
+pkg_version = subprocess.check_output('/usr/bin/git describe | tr - _', shell=True).rstrip('\n')
+version_file.write('VERSION = "%s"' % pkg_version)
+version_file.close()
 
 datafiles=[('share/man/man1', ['Documentation/man/imagefactory.1']),
            ('/etc/imagefactory', ['imagefactory.conf']),
@@ -37,22 +33,19 @@ datafiles=[('share/man/man1', ['Documentation/man/imagefactory.1']),
 
 class sdist(_sdist):
     """ custom sdist command to prepare imagefactory.spec file """
-
     def run(self):
-        cmd = (""" sed -e "s/@VERSION@/%s/g" < imagefactory.spec.in """ %
-               VERSION) + " > imagefactory.spec"
+        cmd = (""" sed -e "s/@VERSION@/%s/g" < imagefactory.spec.in """ % pkg_version) + " > imagefactory.spec"
         os.system(cmd)
-
         _sdist.run(self)
 
 setup(name='imagefactory',
-      version=VERSION,
+      version=pkg_version,
       description='Image Factory system image generation tool',
       author='Ian McLeod',
       author_email='imcleod@redhat.com',
-      license='GPLv2',
+      license='Apache License, Version 2.0',
       url='http://www.aeolusproject.org/imagefactory.html',
-      packages=['imgfac', 'imgfac.builders', 'imgfac.rest'],
+      packages=['imgfac', 'imgfac.builders', 'imgfac.rest', 'imagefactory-plugins'],
       scripts=['imagefactory'],
       data_files = datafiles,
       cmdclass = {'sdist': sdist}

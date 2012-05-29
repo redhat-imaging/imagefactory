@@ -1,4 +1,4 @@
-% IMAGEFACTORY REST API(1) Version 1.0 - February 10, 2012
+% IMAGEFACTORY REST API(1) Version 2.0 - April 27, 2012
 
 Image Factory is the ideal system image creation engine for any application that needs to support a variety of virtualization and cloud services. Our REST API provides developers with a straightforward and easy way to develop solutions on top of Image Factory. This document describes the Image Factory REST API for building and pushing images as well as getting the status of builder operations.
 
@@ -47,6 +47,8 @@ _Example:_
 
 ---
 
+### API Information
+
 * __*/imagefactory*__  
     **Methods:**
     
@@ -62,398 +64,305 @@ _Example:_
     >
     > **Responses:**  
       
-    > > __200__ - Name and version of the API  
+    > > __200__ - Image Factory version (version), API name (name), API version (api_version)  
     >
     > *Example:*  
     > `% curl http://imgfac-host:8075/imagefactory`
     > 
-    > `{"version": "1.0", "name": "imagefactory"}`
+    > `{"version": "1.1", "name": "imagefactory", "api_version": "2.0"}`
 
-* __*/imagefactory/images*__  
+### Listing Images
+
+* __*/imagefactory/base_images*__
+* __*/imagefactory/base_images/:base_image_id/target_images*__
+* __*/imagefactory/base_images/:base_image_id/target_images/:target_image_id/provider_images*__
+* __*/imagefactory/target_images*__
+* __*/imagefactory/target_images/:target_image_id/provider_images*__
+* __*/imagefactory/provider_images*__
+    **Methods:**
+
+    * **GET**
+    
+    >  **Description:** Lists the image collection
+    >
+    > **OAuth protected:** YES
+    >
+    > **Responses:**  
+    
+    > > __200__ - Image list 
+    > > __500__ - Server error
+    >
+    > *Example:*  
+    > 
+        % curl http://imgfac-host:8075/imagefactory/base_images 
+    >
+    >  
+        {"base_images": [{"status": "COMPLETE", "_type": "BaseImage", "identif  
+        ier": "20942760-2c5c-4fd2-8d5a-40f5533a11ec", "icicle": null, "status_  
+        detail": null, "href": "http://imgfac-host:8075/imagefactory/base_imag  
+        es/20942760-2c5c-4fd2-8d5a-40f5533a11ec", "percent_complete": 0, "data  
+        ": "/var/lib/imagefactory/storage/20942760-2c5c-4fd2-8d5a-40f5533a11ec  
+        .body", "id": "20942760-2c5c-4fd2-8d5a-40f5533a11ec"}, {"status": "FAI  
+        LED", "_type": "BaseImage", "identifier": "27860416-b6ca-49a4-9668-09c  
+        69f419a4d", "icicle": null, "status_detail": null, "href": "http://img  
+        fac-host:8075/imagefactory/base_images/27860416-b6ca-49a4-9668-09c69f4  
+        19a4d", "percent_complete": 0, "data": "/var/lib/imagefactory/storage/  
+        27860416-b6ca-49a4-9668-09c69f419a4d.body", "id": "27860416-b6ca-49a4-  
+        9668-09c69f419a4d"}]}
+
+### Image Creation
+
+#### Base Images
+
+* __*/imagefactory/base_images*__  
     **Methods:**
 
     * **POST**
     
-    >  **Description:** Builds a new target image.
+    >  **Description:** Builds a new BaseImage.
     >
     > **OAuth protected:** YES
     >
     > **Parameters:**  
     
-    > > __targets__ - comma separated string  
-    > > __template__ - string representation of XML document, UUID, or URL
+    > > __template__ - TDL document
     >
     > **Responses:**  
     
     > > __202__ - New image  
     > > __400__ - Missing parameters  
-    > > __500__ - Error building image
+    > > __500__ - Server error
     >
     > *Example:*  
     >  
-        % curl -d "targets=mock&template=<template><name>f14jeos</name><os>   
-        <name>Fedora</name> <version>14</version> <arch>x86_64</arch> <install  
-        type='url'> <url>http://download.fedoraproject.org/pub/fedora/linux/re  
-        leases/14/Fedora/x86_64/os/</url></install><rootpw>p@55w0rd!</rootpw>  
-        </os><description>Fedora 14</description></template>"  
-        http://imgfac-host:8075/imagefactory/images
+        curl -d "template=<template><name>mock</name><os><name>RHELMock</name>  
+        <version>1</version><arch>x86_64</arch><install type='iso'><iso>http:/  
+        /mockhost/RHELMock1-x86_64-DVD.iso</iso></install><rootpw>password</ro  
+        otpw></os><description>Mock Template</description></template>" http://  
+        imgfac-host:8075/imagefactory/base_images
     >
     >  
-        {"_type": "image", "href": "http://imgfac-host:8075/imagefactory/images  
-        /0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "id": "0e5b4e6b-c658-4a16-bc71-  
-        88293cb1cadf", "build": {"target_images": [{"_type": "target_image", "h  
-        ref": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-b  
-        c71-88293cb1cadf/builds/29085ce6-3e31-4dc4-b8fc-74622f2b5ad7/target_ima  
-        ges/569121e2-5c5e-4457-b88c-13a925eee01d", "id": "569121e2-5c5e-4457-b8  
-        8c-13a925eee01d"}], "_type": "build", "href": "http://imgfac-host:8075/  
-        imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/29085ce  
-        6-3e31-4dc4-b8fc-74622f2b5ad7", "id": "29085ce6-3e31-4dc4-b8fc-74622f2b  
-        5ad7"}}
+        {"status": "NEW", "_type": "BaseImage", "identifier": "20942760-2c5c-4  
+        fd2-8d5a-40f5533a11ec", "icicle": null, "status_detail": null, "href":  
+        "http://imgfac-host:8075/imagefactory/base_images/20942  
+        760-2c5c-4fd2-8d5a-40f5533a11ec", "percent_complete": 0, "data": "/var  
+        /lib/imagefactory/storage/20942760-2c5c-4fd2-8d5a-40f5533a11ec.body",   
+        "id": "20942760-2c5c-4fd2-8d5a-40f5533a11ec"}
 
-* __*/imagefactory/images/:image_id*__
-    
-    > __image_id__ - uuid of the image to be rebuilt  
+#### Target Images
 
+* __*/imagefactory/target_images*__  
+* __*/imagefactory/base_images/:base_image_id/target_images*__  
     **Methods:**
+
+    * **POST**
     
-    * **PUT**
-    
-    >  **Description:** Rebuild an existing target image
+    >  **Description:** Builds a new TargetImage.
     >
     > **OAuth protected:** YES
     >
     > **Parameters:**  
     
-    > > __targets__ - comma separated string  
-    > > __template__ - string representation of XML document, UUID, or URL
+    > > __base_image_id__ - uuid of the base_image to build from. If not provided, a BaseImage will be built.  
+    > > __template__ - TDL document  
+    > > __target__ - cloud target name  
+    > > __parameters__ - Optional parameters that may change the nature of the image being built.  This may include things such as on-disk format or the build mechanism itself.  Parameters are never required as sensible defaults will always be used and will be made part of the queryable properties of an image.
     >
     > **Responses:**  
     
     > > __202__ - New image  
     > > __400__ - Missing parameters  
+    > > __404__ - BaseImage not found  
     > > __500__ - Error building image
     >
     > *Example:*  
     >  
-        % curl -d "targets=mock&template=<template><name>f14jeos</name><os>  
-        <name>Fedora</name><version>14</version><arch>x86_64</arch><install typ  
-        e='url'><url>http://download.fedoraproject.org/pub/fedora/linux/release  
-        s/14/Fedora/x86_64/os/</url></install><rootpw>p@55w0rd!</rootpw></os>  
-        <description>Fedora 14</description></template>" -X PUT  
-        http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-x4a16-bc71-88293cb1cadf
+        curl -d "template=<template><name>mock</name><os><name>RHELMock</name>  
+        <version>1</version><arch>x86_64</arch><install type='iso'><iso>http:/  
+        /mockhost/RHELMock1-x86_64-DVD.iso</iso></install><rootpw>password</ro  
+        otpw></os><description>Mock Template</description></template>;target=M  
+        ockSphere" http://imgfac-host:8075/imagefactory/target_images
     >
     >  
-        {"_type": "image", "href": "http://imgfac-host:8075/imagefactory/images  
-        /0e5b4e6b-c658-4a16-bc71-88293cb1cadf", "id": "0e5b4e6b-c658-4a16-bc71-  
-        88293cb1cadf", "build": {"target_images": [{"_type": "target_image", "h  
-        ref": "http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-b  
-        c71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_ima  
-        ges/f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "id": "f721adc4-ea4c-4d20-ad  
-        f9-1a02153a9cc6"}], "_type": "build", "href": "http://imgfac-host:8075/  
-        imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d5  
-        5-0785-4460-9092-07fc7c126935", "id": "c68f4d55-0785-4460-9092-07fc7c12  
-        6935"}}
+        {"status": "NEW", "_type": "TargetImage", "identifier": "4cc3b024-5fe7  
+        -4b0b-934b-c5d463b990b0", "icicle": null, "status_detail": null, "href  
+        ": "http://imgfac-host:8075/imagefactory/target_images/4cc3b024-5fe7-4  
+        b0b-934b-c5d463b990b0", "percent_complete": 0, "data": "/var/lib/image  
+        factory/storage/4cc3b024-5fe7-4b0b-934b-c5d463b990b0.body", "id": "4cc  
+        3b024-5fe7-4b0b-934b-c5d463b990b0"}
 
-* __*/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id/provider_images*__
-    
-    > __image_id__ - uuid of the image  
-    > __build_id__ - uuid of the image build  
-    > __target_image_id__ - uuid of the target image to push
-    
+#### Provider Images
+
+* __*/imagefactory/provider_images*__  
+* __*/imagefactory/target_images/:target_image_id/provider_images*__  
+* __*/imagefactory/base_images/:base_image_id/target_images/:target_image_id/provider_images*__  
     **Methods:**
 
-    * **POST**  
+    * **POST**
     
-    > **Description:** Creates a provider image using the specified target image and pushes it up to a cloud provider using the given credentials.
+    >  **Description:** Builds a new ProviderImage
     >
     > **OAuth protected:** YES
     >
     > **Parameters:**  
     
-    > > __provider__ - provider name as a string  
-    > > __credentials__ - XML string representation of credentials for the given provider
+    > > __target_image_id__ - uuid of the target image to push. If not provided, a TargetImage will be created.  
+    > > __template__ - TDL document  
+    > > __provider__ - cloud provider name  
+    > > __credentials__ - cloud provider credentials xml  
+    > > __parameters__ - Optional parameters that may change the nature of the image being built.  This may include things such as on-disk format or the build mechanism itself.  Parameters are never required as sensible defaults will always be used and will be made part of the queryable properties of an image.
     >
     > **Responses:**  
     
-    > > __202__ - New provider image  
+    > > __202__ - New image  
     > > __400__ - Missing parameters  
-    > > __500__ - Error pushing image
+    > > __404__ - BaseImage or TargetImage not found  
+    > > __500__ - Error building image
     >
-    > *Example:*
-    > `To be filled in...`
 
-* __*/imagefactory/provider_images*__
+### Image Inspection
+
+* __*/imagefactory/base_images/:image_id*__
+* __*/imagefactory/base_images/:base_image_id/target_images/:image_id*__
+* __*/imagefactory/base_images/:base_image_id/target_images/:target_image_id/provider_images/:image_id*__
+* __*/imagefactory/target_images/:image_id*__
+* __*/imagefactory/target_images/:target_image_id/provider_images/:image_id*__
+* __*/imagefactory/provider_images/:image_id*__
+    
+    > __image_id__ - uuid of the image to inspect  
 
     **Methods:**
     
-    * **POST**  
+    * **GET**
     
-    > **Description:** Creates a provider image using the specified target image and pushes it up to a cloud provider using the given credentials. This is an alternate URI for the resource above.
+    >  **Description:** Get image details
     >
     > **OAuth protected:** YES
     >
-    > **Parameters:**  
-    
-    > > __image_id__ - uuid of the image  
-    > > __build_id__ - uuid of the image build  
-    > > __target_image_id__ - uuid of the target image to push  
-    > > __provider__ - provider name as a string  
-    > > __credentials__ - XML string representation of credentials for the given provider
-    >
     > **Responses:**  
     
-    > > __202__ - New provider image  
-    > > __400__ - Missing parameters  
-    > > __500__ - Error pushing image
-    >
-    > *Example:*
-    > `To be filled in...`
-
-* __*/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id*__
-    
-    > __image_id__ - uuid of the image  
-    > __build_id__ - uuid of the image build  
-    > __target_image_id__ - uuid of the target image being built
-
-    **Methods:**
-    
-    * **GET**  
-    
-    > **Description:** Displays the details of the Image Factory builder object responsible for building the target image.
-    >
-    > **OAuth protected:** NO
-    >
-    > **Parameters:**  
-    
-    > > __None__
-    >
-    > **Responses:**  
-    
-    > > __200__ - Builder details  
-    > > __400__ - Missing parameters  
-    > > __500__ - Error getting builder details
+    > > __200__ - Image  
+    > > __404__ - Image Not Found  
+    > > __500__ - Server error
     >
     > *Example:*  
     >  
-        % curl http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-b  
-        c71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_ima  
-        ges/f721adc4-ea4c-4d20-adf9-1a02153a9cc6
+        curl http://imgfac-host:8075/imagefactory/base_images/20942760-2c5c-4f  
+        d2-8d5a-40f5533a11ec
     >
     >  
-        {"status": "COMPLETED", "_type": "target_image_status", "completed": 10  
-        0, "provider_account_identifier": null, "image_id": "0e5b4e6b-c658-4a16  
-        -bc71-88293cb1cadf", "href": "http://imgfac-host:8075/imagefactory/imag  
-        es/0e5b4e6b-c658-4a16-bc71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-  
-        07fc7c126935/target_images/f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "oper  
-        ation": "build", "id": "f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "build_i  
-        d": "c68f4d55-0785-4460-9092-07fc7c126935", "target": "mock", "provider  
-        ": null, "target_image_id": null}
+        {"status": "COMPLETE", "_type": "BaseImage", "identifier": "20942760-2  
+        c5c-4fd2-8d5a-40f5533a11ec", "icicle": null, "status_detail": null, "h  
+        ref": "http://imgfac-host:8075/imagefactory/base_images/20942760-2c5c-  
+        4fd2-8d5a-40f5533a11ec/20942760-2c5c-4fd2-8d5a-40f5533a11ec", "percent  
+        _complete": 0, "data": "/var/lib/imagefactory/storage/20942760-2c5c-4f  
+        d2-8d5a-40f5533a11ec.body", "id": "20942760-2c5c-4fd2-8d5a-40f5533a11e  
+        c"}
 
-* __*/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id/status*__
+### Image Deletion
+
+* __*/imagefactory/base_images/:image_id*__
+* __*/imagefactory/base_images/:base_image_id/target_images/:image_id*__
+* __*/imagefactory/base_images/:base_image_id/target_images/:target_image_id/provider_images/:image_id*__
+* __*/imagefactory/target_images/:image_id*__
+* __*/imagefactory/target_images/:target_image_id/provider_images/:image_id*__
+* __*/imagefactory/provider_images/:image_id*__
     
-    > __image_id__ - uuid of the image  
-    > __build_id__ - uuid of the image build  
-    > __target_image_id__ - uuid of the target image being built
+    > __image_id__ - uuid of the image to delete  
 
     **Methods:**
     
-    * **GET**  
+    * **DELETE**
     
-    > **Description:** Displays just the status of the Image Factory builder object responsible for building the target image.
+    >  **Description:** Delete the image specified with *image_id*
     >
-    > **OAuth protected:** NO
-    >
-    > **Parameters:**  
-    
-    > > __None__
+    > **OAuth protected:** YES
     >
     > **Responses:**  
     
-    > > __200__ - Builder status  
-    > > __400__ - Missing parameters  
-    > > __500__ - Error getting builder details
+    > > __200__  
+    > > __404__ - Image Not Found  
+    > > __500__ - Server error
     >
     > *Example:*  
     >  
-        % curl http://imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-b  
-        c71-88293cb1cadf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_ima  
-        ges/f721adc4-ea4c-4d20-adf9-1a02153a9cc6/status
+        curl -X DELETE http://imgfac-host:8075/imagefactory/base_images/209427  
+        60-2c5c-4fd2-8d5a-40f5533a11ec
     >
     >  
-        {"status": "COMPLETED", "_type": "target_image_status", "href": "http:/  
-        /imgfac-host:8075/imagefactory/images/0e5b4e6b-c658-4a16-bc71-88293cb1c  
-        adf/builds/c68f4d55-0785-4460-9092-07fc7c126935/target_images/f721adc4-  
-        ea4c-4d20-adf9-1a02153a9cc6/status", "id": "f721adc4-ea4c-4d20-adf9-1a0  
-        2153a9cc6"}
 
-* __*/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id/provider_images/:provider_image_id*__
-    
-    > __image_id__ - uuid of the image  
-    > __build_id__ - uuid of the image build  
-    > __target_image_id__ - uuid of the target image  
-    > __provider_image_id__ - uuid of the provider image being pushed
+### Plugins
 
+* __*/imagefactory/plugins*__
     **Methods:**
+
+    * **GET**
     
-    * **GET**  
-    
-    > **Description:** Displays the details of the Image Factory builder object responsible for pushing the provider image.
+    >  **Description:** Lists the loaded plugins
     >
-    > **OAuth protected:** NO
-    >
-    > **Parameters:**  
-    
-    > > __None__
+    > **OAuth protected:** YES
     >
     > **Responses:**  
     
-    > > __200__ - Builder details  
-    > > __400__ - Missing parameters  
-    > > __500__ - Error getting builder details
+    > > __200__ - Plugin list 
+    > > __500__ - Server error
     >
     > *Example:*  
-    > `To be filled in...`
+    > 
+        % curl http://imgfac-host:8075/imagefactory/plugins 
+    >
+    >  
+        {"plugins": [{"_type": "plugin", "maintainer": {"url": "http://www.aeo  
+        lusproject.org/imagefactory.html", "name": "Red Hat, Inc.", "email": "  
+        aeolus-devel@lists.fedorahosted.org"}, "description": "Mock cloud plug  
+        in for testing imagefactory plugin code", "license": "Copyright 2012 R  
+        ed Hat, Inc. - http://www.apache.org/licenses/LICENSE-2.0", "href": "h  
+        ttp://imgfac-host:8075/imagefactory/plugins/MockSphere", "id": "MockSp  
+        here", "version": "1.0", "type": "cloud", "targets": ["MockSphere"]},   
+        {"_type": "plugin", "maintainer": {"url": "http://www.aeolusproject.or  
+        g/imagefactory.html", "name": "Red Hat, Inc.", "email": "aeolus-devel@  
+        lists.fedorahosted.org"}, "description": "Mock OS plugin for testing i  
+        magefactory plugin code", "license": "Copyright 2012 Red Hat, Inc. - h  
+        ttp://www.apache.org/licenses/LICENSE-2.0", "href": "http://imgfac-hos  
+        t:8075/imagefactory/plugins/MockRPMBasedOS", "id": "MockRPMBasedOS", "  
+        version": "1.0", "type": "os", "targets": [["FedoraMock", null, null],  
+        ["RHELMock", "1", "x86_64"]]}]}
 
-* __*/imagefactory/images/:image_id/builds/:build_id/target_images/:target_image_id/provider_images/:provider_image_id/status*__
-    
-    > __image_id__ - uuid of the image  
-    > __build_id__ - uuid of the image build  
-    > __target_image_id__ - uuid of the target image  
-    > __provider_image_id__ - uuid of the provider image being pushed
-
+* __*/imagefactory/plugins/:plugin_id*__
     **Methods:**
+
+    * **GET**
     
-    * **GET**  
-    
-    > **Description:** Displays just the status of the Image Factory builder object responsible for pushing the provider image.
+    >  **Description:** Get the details for plugin with a given id.
     >
-    > **OAuth protected:** NO
-    >
-    > **Parameters:**  
-    
-    > > __None__
+    > **OAuth protected:** YES
     >
     > **Responses:**  
     
-    > > __200__ - Builder status  
-    > > __400__ - Missing parameters  
-    > > __500__ - Error getting builder details
+    > > __200__ - Plugin 
+    > > __500__ - Server error
     >
     > *Example:*  
-    > `To be filled in...`
+    > 
+        % curl http://imgfac-host:8075/imagefactory/plugins/MockSphere 
+    >
+    >  
+        {"_type": "plugin", "maintainer": {"url": "http://www.aeolusproject.or  
+        g/imagefactory.html", "name": "Red Hat, Inc.", "email": "aeolus-devel@  
+        lists.fedorahosted.org"}, "description": "Mock cloud plugin for testin  
+        g imagefactory plugin code", "license": "Copyright 2012 Red Hat, Inc.   
+        - http://www.apache.org/licenses/LICENSE-2.0", "targets": ["MockSphere  
+        "], "href": "http://imgfac-host:8075/imagefactory/plugins/MockSphere/M  
+        ockSphere", "version": "1.0", "type": "cloud", "id": "MockSphere"}
 
-* __*/imagefactory/builders*__
-    
-    **Methods:**
-    
-    * **GET**  
-    
-    > **Description:** Displays a list of all current Image Factory builder objects.
-    >
-    > **OAuth protected:** NO
-    >
-    > **Parameters:**  
-    
-    > > __None__
-    >
-    > **Responses:**  
-    
-    > > __200__ - Builder list  
-    > > __500__ - Error getting builder list
-    >
-    > *Example:*  
-    >  
-        % curl http://imgfac-host:8075/imagefactory/builders
-    >
-    >  
-        {"_type": "builders", "href": "http://imgfac-host:8075/imagefactory/bui  
-        lders", "builders": [{"status": "COMPLETED", "_type": "builder", "compl  
-        eted": 100, "provider_account_identifier": null, "image_id": "6b558510-  
-        15db-4beb-b385-843241ea0639", "href": "http://imgfac-host:8075/imagefac  
-        tory/builders/acd2e7fd-2dda-4aa1-aee1-23e207782f39", "operation": "buil  
-        d", "id": "acd2e7fd-2dda-4aa1-aee1-23e207782f39", "build_id": "6297c0f7  
-        -d6f1-41fc-a87d-4afbc582b57a", "target": "mock", "provider": null, "tar  
-        get_image_id": null}, {"status": "COMPLETED", "_type": "builder", "comp  
-        leted": 100, "provider_account_identifier": null, "image_id": "0e5b4e6b  
-        -c658-4a16-bc71-88293cb1cadf", "href": "http://imgfac-host:8075/imagefa  
-        ctory/builders/f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "operation": "bui  
-        ld", "id": "f721adc4-ea4c-4d20-adf9-1a02153a9cc6", "build_id": "c68f4d5  
-        5-0785-4460-9092-07fc7c126935", "target": "mock", "provider": null, "ta  
-        rget_image_id": null}, {"status": "COMPLETED", "_type": "builder", "com  
-        pleted": 100, "provider_account_identifier": null, "image_id": "0e5b4e6  
-        b-c658-4a16-bc71-88293cb1cadf", "href": "http://imgfac-host:8075/imagef  
-        actory/builders/569121e2-5c5e-4457-b88c-13a925eee01d", "operation": "bu  
-        ild", "id": "569121e2-5c5e-4457-b88c-13a925eee01d", "build_id": "29085c  
-        e6-3e31-4dc4-b8fc-74622f2b5ad7", "target": "mock", "provider": null, "t  
-        arget_image_id": null}]}
+### Cloud Targets and Providers
 
-* __*/imagefactory/builders/:builder_id*__
-    
-    > __builder_id__ - uuid of the builder
-    
-    **Methods:**
-    
-    * **GET**  
-    
-    > **Description:** Displays the details for a specific builder object.
-    >
-    > **OAuth protected:** NO
-    >
-    > **Parameters:**  
-    
-    > > __None__
-    >
-    > **Responses:**  
-    
-    > > __200__ - Builder detail  
-    > > __404__ - Builder not found  
-    > > __500__ - Error getting builder details
-    >
-    > *Example:*  
-    >  
-        % curl http://imgfac-host:8075/imagefactory/builders/acd2e7fd-2dda-4aa1  
-        -aee1-23e207782f39
-    >
-    >  
-        {"status": "COMPLETED", "_type": "builder", "completed": 100, "provider  
-        _account_identifier": null, "image_id": "6b558510-15db-4beb-b385-843241  
-        ea0639", "href": "http://imgfac-host:8075/imagefactory/builders/acd2e7f  
-        d-2dda-4aa1-aee1-23e207782f39", "operation": "build", "id": "acd2e7fd-2  
-        dda-4aa1-aee1-23e207782f39", "build_id": "6297c0f7-d6f1-41fc-a87d-4afbc  
-        582b57a", "target": "mock", "provider": null, "target_image_id": null}
+* __*/imagefactory/targets*__
+* __*/imagefactory/targets/:target_id*__
+* __*/imagefactory/targets/:target_id/providers*__
+* __*/imagefactory/targets/:target_id/providers/:provider_id*__
 
-* __*/imagefactory/builders/:builder_id/status*__
-    
-    > __builder_id__ - uuid of the builder
-    
-    **Methods:**
-    
-    * **GET**  
-    
-    > **Description:** Displays just the status for a specific builder object.
-    >
-    > **OAuth protected:** NO
-    >
-    > **Parameters:**  
-    
-    > > __None__
-    >
-    > **Responses:**  
-    
-    > > __200__ - Builder status  
-    > > __404__ - Builder not found  
-    > > __500__ - Error getting builder details
-    >
-    > *Example:*  
-    >  
-        % curl http://imgfac-host:8075/imagefactory/builders/acd2e7fd-2dda-4aa1  
-        -aee1-23e207782f39/status
-    >
-    >  
-        {"status": "COMPLETED", "_type": "builder_status", "href": "http://imgf  
-        ac-host:8075/imagefactory/builders/acd2e7fd-2dda-4aa1-aee1-23e207782f39  
-        /status", "id": "acd2e7fd-2dda-4aa1-aee1-23e207782f39"}
-
+    **NOT IMPLEMENTED**
 
 <!-- links -->
 [resources]: #resources (Resources)

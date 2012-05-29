@@ -16,9 +16,26 @@ License: MIT (see LICENSE.txt for details)
 from __future__ import with_statement
 
 __author__ = 'Marcel Hellkamp'
-__version__ = '0.10.dev'
+__version__ = '0.10.9'
 __license__ = 'MIT'
 
+# The gevent server adapter needs to patch some modules before they are imported
+# This is why we parse the commandline parameters here but handle them later
+if __name__ == '__main__':
+    from optparse import OptionParser
+    _cmd_parser = OptionParser(usage="usage: %prog [options] package.module:app")
+    _opt = _cmd_parser.add_option
+    _opt("--version", action="store_true", help="show version number.")
+    _opt("-b", "--bind", metavar="ADDRESS", help="bind socket to ADDRESS.")
+    _opt("-s", "--server", default='wsgiref', help="use SERVER as backend.")
+    _opt("-p", "--plugin", action="append", help="install additional plugin/s.")
+    _opt("--debug", action="store_true", help="start server in debug mode.")
+    _opt("--reload", action="store_true", help="auto-reload on file changes.")
+    _cmd_options, _cmd_args = _cmd_parser.parse_args()
+    if _cmd_options.server and _cmd_options.server.startswith('gevent'):
+        import gevent.monkey; gevent.monkey.patch_all()
+
+import sys
 import base64
 import cgi
 import email.utils
@@ -31,7 +48,6 @@ import mimetypes
 import os
 import re
 import subprocess
-import sys
 import tempfile
 import thread
 import threading
@@ -39,8 +55,9 @@ import time
 import warnings
 
 from Cookie import SimpleCookie
+from datetime import date as datedate, datetime, timedelta
 from tempfile import TemporaryFile
-from traceback import format_exc
+from traceback import format_exc, print_exc
 from urlparse import urljoin, SplitResult as UrlSplitResult
 
 # Workaround for a bug in some versions of lib2to3 (fixed on CPython 2.7 and 3.2)
@@ -53,9 +70,9 @@ try: from collections import MutableMapping as DictMixin
 except ImportError: # pragma: no cover
     from UserDict import DictMixin
 
-try: from urlparse import parse_qs
+try: from urlparse import parse_qsl
 except ImportError: # pragma: no cover
-    from cgi import parse_qs
+    from cgi import parse_qsl
 
 try: import cPickle as pickle
 except ImportError: # pragma: no cover
@@ -73,6 +90,10 @@ except ImportError: # pragma: no cover
 
 py3k = sys.version_info >= (3,0,0)
 NCTextIOWrapper = None
+
+if sys.version_info < (2,6,0):
+    msg = "Python 2.5 support may be dropped in future versions of Bottle."
+    warnings.warn(msg, DeprecationWarning)
 
 if py3k: # pragma: no cover
     json_loads = lambda s: json_lds(touni(s))
@@ -99,17 +120,16 @@ def tob(data, enc='utf8'):
     """ Convert anything to bytes """
     return data.encode(enc) if isinstance(data, unicode) else bytes(data)
 
-# Convert strings and unicode to native strings
-if  py3k:
-    tonat = touni
-else:
-    tonat = tob
+tonat = touni if py3k else tob
 tonat.__doc__ = """ Convert anything to native strings """
 
+def try_update_wrapper(wrapper, wrapped, *a, **ka):
+    try: # Bug: functools breaks if wrapper is an instane method
+        functools.update_wrapper(wrapper, wrapped, *a, **ka)
+    except AttributeError: pass
 
 # Backward compatibility
-def depr(message, critical=False):
-    if critical: raise DeprecationWarning(message)
+def depr(message):
     warnings.warn(message, DeprecationWarning, stacklevel=3)
 
 
@@ -143,6 +163,7 @@ class DictProperty(object):
     def __delete__(self, obj):
         if self.read_only: raise AttributeError("Read-Only property.")
         del getattr(obj, self.attr)[self.key]
+
 
 class CachedProperty(object):
     ''' A property that is only computed once per instance and then replaces
@@ -212,7 +233,7 @@ class HTTPError(HTTPResponse):
         self.traceback = traceback
 
     def __repr__(self):
-        return template(ERROR_PAGE_TEMPLATE, e=self)
+        return tonat(template(ERROR_PAGE_TEMPLATE, e=self))
 
 
 
@@ -232,14 +253,13 @@ class RouteReset(BottleException):
     """ If raised by a plugin or request handler, the route is reset and all
         plugins are re-applied. """
 
+class RouterUnknownModeError(RouteError): pass
 
 class RouteSyntaxError(RouteError):
     """ The route parser found something not supported by this router """
 
-
 class RouteBuildError(RouteError):
     """ The route could not been built """
-
 
 class Router(object):
     ''' A Router is an ordered collection of route->target pairs. It is used to
@@ -249,80 +269,153 @@ class Router(object):
         and a HTTP method.
 
         The path-rule is either a static path (e.g. `/contact`) or a dynamic
-        path that contains wildcards (e.g. `/wiki/:page`). By default, wildcards
-        consume characters up to the next slash (`/`). To change that, you may
-        add a regular expression pattern (e.g. `/wiki/:page#[a-z]+#`).
-
-        For performance reasons, static routes (rules without wildcards) are
-        checked first. Dynamic routes are searched in order. Try to avoid
-        ambiguous or overlapping rules.
-
-        The HTTP method string matches only on equality, with two exceptions:
-          * ´GET´ routes also match ´HEAD´ requests if there is no appropriate
-            ´HEAD´ route installed.
-          * ´ANY´ routes do match if there is no other suitable route installed.
-
-        An optional ``name`` parameter is used by :meth:`build` to identify
-        routes.
+        path that contains wildcards (e.g. `/wiki/<page>`). The wildcard syntax
+        and details on the matching order are described in docs:`routing`.
     '''
 
-    default = '[^/]+'
+    default_pattern = '[^/]+'
+    default_filter   = 're'
+    #: Sorry for the mess. It works. Trust me.
+    rule_syntax = re.compile('(\\\\*)'\
+        '(?:(?::([a-zA-Z_][a-zA-Z_0-9]*)?()(?:#(.*?)#)?)'\
+          '|(?:<([a-zA-Z_][a-zA-Z_0-9]*)?(?::([a-zA-Z_]*)'\
+            '(?::((?:\\\\.|[^\\\\>]+)+)?)?)?>))')
 
-    @lazy_attribute
-    def syntax(cls):
-        return re.compile(r'(?<!\\):([a-zA-Z_][a-zA-Z_0-9]*)?(?:#(.*?)#)?')
+    def __init__(self, strict=False):
+        self.rules    = {} # A {rule: Rule} mapping
+        self.builder  = {} # A rule/name->build_info mapping
+        self.static   = {} # Cache for static routes: {path: {method: target}}
+        self.dynamic  = [] # Cache for dynamic routes. See _compile()
+        #: If true, static routes are no longer checked first.
+        self.strict_order = strict
+        self.filters = {'re': self.re_filter, 'int': self.int_filter,
+                        'float': self.float_filter, 'path': self.path_filter}
 
-    def __init__(self):
-        self.routes = {}  # A {rule: {method: target}} mapping
-        self.rules  = []  # An ordered list of rules
-        self.named  = {}  # A name->(rule, build_info) mapping
-        self.static = {}  # Cache for static routes: {path: {method: target}}
-        self.dynamic = [] # Cache for dynamic routes. See _compile()
+    def re_filter(self, conf):
+        return conf or self.default_pattern, None, None
+
+    def int_filter(self, conf):
+        return r'-?\d+', int, lambda x: str(int(x))
+
+    def float_filter(self, conf):
+        return r'-?[\d.]+', float, lambda x: str(float(x))
+
+    def path_filter(self, conf):
+        return r'.*?', None, None
+    
+    def add_filter(self, name, func):
+        ''' Add a filter. The provided function is called with the configuration
+        string as parameter and must return a (regexp, to_python, to_url) tuple.
+        The first element is a string, the last two are callables or None. '''
+        self.filters[name] = func
+    
+    def parse_rule(self, rule):
+        ''' Parses a rule into a (name, filter, conf) token stream. If mode is
+            None, name contains a static rule part. '''
+        offset, prefix = 0, ''
+        for match in self.rule_syntax.finditer(rule):
+            prefix += rule[offset:match.start()]
+            g = match.groups()
+            if len(g[0])%2: # Escaped wildcard
+                prefix += match.group(0)[len(g[0]):]
+                offset = match.end()
+                continue
+            if prefix: yield prefix, None, None
+            name, filtr, conf = g[1:4] if not g[2] is None else g[4:7]
+            if not filtr: filtr = self.default_filter
+            yield name, filtr, conf or None
+            offset, prefix = match.end(), ''
+        if offset <= len(rule) or prefix:
+            yield prefix+rule[offset:], None, None
 
     def add(self, rule, method, target, name=None):
         ''' Add a new route or replace the target for an existing route. '''
+        if rule in self.rules:
+            self.rules[rule][method] = target
+            if name: self.builder[name] = self.builder[rule]
+            return
 
-        if rule in self.routes:
-            self.routes[rule][method.upper()] = target
-        else:
-            self.routes[rule] = {method.upper(): target}
-            self.rules.append(rule)
-            if self.static or self.dynamic: # Clear precompiler cache.
-                self.static, self.dynamic = {}, {}
-        if name:
-            self.named[name] = (rule, None)
+        target = self.rules[rule] = {method: target}
 
-    def build(self, _name, *anon, **args):
-        ''' Return a string that matches a named route. Use keyword arguments
-            to fill out named wildcards. Remaining arguments are appended as a
-            query string. Raises RouteBuildError or KeyError.'''
-        if _name not in self.named:
-            raise RouteBuildError("No route with that name.", _name)
-        rule, pairs = self.named[_name]
-        if not pairs:
-            token = self.syntax.split(rule)
-            parts = [p.replace('\\:',':') for p in token[::3]]
-            names = token[1::3]
-            if len(parts) > len(names): names.append(None)
-            pairs = zip(parts, names)
-            self.named[_name] = (rule, pairs)
+        # Build pattern and other structures for dynamic routes
+        anons = 0      # Number of anonymous wildcards
+        pattern = ''   # Regular expression  pattern
+        filters = []   # Lists of wildcard input filters
+        builder = []   # Data structure for the URL builder
+        is_static = True
+        for key, mode, conf in self.parse_rule(rule):
+            if mode:
+                is_static = False
+                mask, in_filter, out_filter = self.filters[mode](conf)
+                if key:
+                    pattern += '(?P<%s>%s)' % (key, mask)
+                else:
+                    pattern += '(?:%s)' % mask
+                    key = 'anon%d' % anons; anons += 1
+                if in_filter: filters.append((key, in_filter))
+                builder.append((key, out_filter or str))
+            elif key:
+                pattern += re.escape(key)
+                builder.append((None, key))
+        self.builder[rule] = builder
+        if name: self.builder[name] = builder
+
+        if is_static and not self.strict_order:
+            self.static[self.build(rule)] = target
+            return
+
+        def fpat_sub(m):
+            return m.group(0) if len(m.group(1)) % 2 else m.group(1) + '(?:'
+        flat_pattern = re.sub(r'(\\*)(\(\?P<[^>]*>|\((?!\?))', fpat_sub, pattern)
+
         try:
-            anon = list(anon)
-            url = [s if k is None
-                   else s+str(args.pop(k)) if k else s+str(anon.pop())
-                   for s, k in pairs]
-        except IndexError:
-            msg = "Not enough arguments to fill out anonymous wildcards."
-            raise RouteBuildError(msg)
-        except KeyError, e:
-            raise RouteBuildError(*e.args)
+            re_match = re.compile('^(%s)$' % pattern).match
+        except re.error, e:
+            raise RouteSyntaxError("Could not add Route: %s (%s)" % (rule, e))
 
-        if args: url += ['?', urlencode(args)]
-        return ''.join(url)
+        def match(path):
+            """ Return an url-argument dictionary. """
+            url_args = re_match(path).groupdict()
+            for name, wildcard_filter in filters:
+                try:
+                    url_args[name] = wildcard_filter(url_args[name])
+                except ValueError:
+                    raise HTTPError(400, 'Path has wrong format.')
+            return url_args
+
+        try:
+            combined = '%s|(^%s$)' % (self.dynamic[-1][0].pattern, flat_pattern)
+            self.dynamic[-1] = (re.compile(combined), self.dynamic[-1][1])
+            self.dynamic[-1][1].append((match, target))
+        except (AssertionError, IndexError), e: # AssertionError: Too many groups
+            self.dynamic.append((re.compile('(^%s$)' % flat_pattern),
+                                [(match, target)]))
+        return match
+
+    def build(self, _name, *anons, **query):
+        ''' Build an URL by filling the wildcards in a rule. '''
+        builder = self.builder.get(_name)
+        if not builder: raise RouteBuildError("No route with that name.", _name)
+        try:
+            for i, value in enumerate(anons): query['anon%d'%i] = value
+            url = ''.join([f(query.pop(n)) if n else f for (n,f) in builder])
+            return url if not query else url+'?'+urlencode(query)
+        except KeyError, e:
+            raise RouteBuildError('Missing URL argument: %r' % e.args[0])
 
     def match(self, environ):
-        ''' Return a (target, url_agrs) tuple or raise HTTPError(404/405). '''
-        targets, urlargs = self._match_path(environ)
+        ''' Return a (target, url_agrs) tuple or raise HTTPError(400/404/405). '''
+        path, targets, urlargs = environ['PATH_INFO'] or '/', None, {}
+        if path in self.static:
+            targets = self.static[path]
+        else:
+            for combined, rules in self.dynamic:
+                match = combined.match(path)
+                if not match: continue
+                getargs, targets = rules[match.lastindex - 1]
+                urlargs = getargs(path) if getargs else {}
+                break
+
         if not targets:
             raise HTTPError(404, "Not found: " + repr(environ['PATH_INFO']))
         method = environ['REQUEST_METHOD'].upper()
@@ -338,71 +431,14 @@ class Router(object):
         raise HTTPError(405, "Method not allowed.",
                         header=[('Allow',",".join(allowed))])
 
-    def _match_path(self, environ):
-        ''' Optimized PATH_INFO matcher. '''
-        path = environ['PATH_INFO'] or '/'
-        # Assume we are in a warm state. Search compiled rules first.
-        match = self.static.get(path)
-        if match: return match, {}
-        for combined, rules in self.dynamic:
-            match = combined.match(path)
-            if not match: continue
-            gpat, match = rules[match.lastindex - 1]
-            return match, gpat(path).groupdict() if gpat else {}
-        # Lazy-check if we are really in a warm state. If yes, stop here.
-        if self.static or self.dynamic or not self.routes: return None, {}
-        # Cold state: We have not compiled any rules yet. Do so and try again.
-        if not environ.get('wsgi.run_once'):
-            self._compile()
-            return self._match_path(environ)
-        # For run_once (CGI) environments, don't compile. Just check one by one.
-        epath = path.replace(':','\\:') # Turn path into its own static rule.
-        match = self.routes.get(epath) # This returns static rule only.
-        if match: return match, {}
-        for rule in self.rules:
-            #: Skip static routes to reduce re.compile() calls.
-            if rule.count(':') < rule.count('\\:'): continue
-            match = self._compile_pattern(rule).match(path)
-            if match: return self.routes[rule], match.groupdict()
-        return None, {}
-
-    def _compile(self):
-        ''' Prepare static and dynamic search structures. '''
-        self.static = {}
-        self.dynamic = []
-        def fpat_sub(m):
-            return m.group(0) if len(m.group(1)) % 2 else m.group(1) + '(?:'
-        for rule in self.rules:
-            target = self.routes[rule]
-            if not self.syntax.search(rule):
-                self.static[rule.replace('\\:',':')] = target
-                continue
-            gpat = self._compile_pattern(rule)
-            fpat = re.sub(r'(\\*)(\(\?P<[^>]*>|\((?!\?))', fpat_sub, gpat.pattern)
-            gpat = gpat.match if gpat.groupindex else None
-            try:
-                combined = '%s|(%s)' % (self.dynamic[-1][0].pattern, fpat)
-                self.dynamic[-1] = (re.compile(combined), self.dynamic[-1][1])
-                self.dynamic[-1][1].append((gpat, target))
-            except (AssertionError, IndexError), e: # AssertionError: Too many groups
-                self.dynamic.append((re.compile('(^%s$)'%fpat),
-                                    [(gpat, target)]))
-            except re.error, e:
-                raise RouteSyntaxError("Could not add Route: %s (%s)" % (rule, e))
-
-    def _compile_pattern(self, rule):
-        ''' Return a regular expression with named groups for each wildcard. '''
-        out = ''
-        for i, part in enumerate(self.syntax.split(rule)):
-            if i%3 == 0:   out += re.escape(part.replace('\\:',':'))
-            elif i%3 == 1: out += '(?P<%s>' % part if part else '(?:'
-            else:          out += '%s)' % (part or '[^/]+')
-        return re.compile('^%s$'%out)
 
 
 class Route(object):
     ''' This class wraps a route callback along with route specific metadata and
-        configuration and applies Plugins on demand. '''
+        configuration and applies Plugins on demand. It is also responsible for
+        turing an URL path rule into a regular expression usable by the Router.
+    '''
+
 
     def __init__(self, app, rule, method, callback, name=None,
                  plugins=None, skiplist=None, **config):
@@ -434,7 +470,7 @@ class Route(object):
     @cached_property
     def call(self):
         ''' The route callback with all plugins applied. This property is
-            created on demand and then cached to speed ub subsequent requests.'''
+            created on demand and then cached to speed up subsequent requests.'''
         return self._make_callback()
 
     def reset(self):
@@ -476,7 +512,8 @@ class Route(object):
                     callback = plugin(callback)
             except RouteReset: # Try again with changed configuration.
                 return self._make_callback()
-            functools.update_wrapper(callback, self.callback)
+            if not callback is self.callback:
+                try_update_wrapper(callback, self.callback)
         return callback
 
 
@@ -502,8 +539,8 @@ class Bottle(object):
 
         self.error_handler = {}
         #: If true, most exceptions are catched and returned as :exc:`HTTPError`
-        self.catchall = catchall
         self.config = ConfigDict(config or {})
+        self.catchall = catchall
         #: An instance of :class:`HooksPlugin`. Empty by default.
         self.hooks = HooksPlugin()
         self.install(self.hooks)
@@ -540,10 +577,10 @@ class Bottle(object):
                 rs = BaseResponse([], 200)
                 def start_response(status, header):
                     rs.status = status
-                    [rs.add_header(name, value) for name, value in header]
-                    return lambda x: out.append(x)
-                rs.body.extend(app(request.environ, start_response))
-                return HTTPResponse(rs.body, rs.status, rs.headers)
+                    for name, value in header: rs.add_header(name, value)
+                    return rs.body.append
+                rs.body = itertools.chain(rs.body, app(request.environ, start_response))
+                return HTTPResponse(rs.body, rs.status_code, rs.headers)
             finally:
                 request.path_shift(-path_depth)
 
@@ -599,8 +636,7 @@ class Bottle(object):
         """ Search for a matching route and return a (:class:`Route` , urlargs)
             tuple. The second value is a dictionary with parameters extracted
             from the URL. Raise :exc:`HTTPError` (404/405) on a non-match."""
-        route, args = self.router.match(environ)
-        return route, args
+        return self.router.match(environ)
 
     def get_url(self, routename, **kargs):
         """ Return a string that matches a named route """
@@ -695,7 +731,7 @@ class Bottle(object):
 
     def _handle(self, environ):
         try:
-            route, args = self.match(environ)
+            route, args = self.router.match(environ)
             environ['route.handle'] = environ['bottle.route'] = route
             environ['route.url_args'] = args
             return route.call(**args)
@@ -798,12 +834,14 @@ class Bottle(object):
         except Exception, e:
             if not self.catchall: raise
             err = '<h1>Critical error while processing request: %s</h1>' \
-                  % environ.get('PATH_INFO', '/')
+                  % html_escape(environ.get('PATH_INFO', '/'))
             if DEBUG:
-                err += '<h2>Error:</h2>\n<pre>%s</pre>\n' % repr(e)
-                err += '<h2>Traceback:</h2>\n<pre>%s</pre>\n' % format_exc(10)
-            environ['wsgi.errors'].write(err) #TODO: wsgi.error should not get html
-            start_response('500 INTERNAL SERVER ERROR', [('Content-Type', 'text/html')])
+                err += '<h2>Error:</h2>\n<pre>\n%s\n</pre>\n' \
+                       '<h2>Traceback:</h2>\n<pre>\n%s\n</pre>\n' \
+                       % (html_escape(repr(e)), html_escape(format_exc(10)))
+            environ['wsgi.errors'].write(err)
+            headers = [('Content-Type', 'text/html; charset=UTF-8')]
+            start_response('500 INTERNAL SERVER ERROR', headers)
             return [tob(err)]
 
     def __call__(self, environ, start_response):
@@ -826,6 +864,8 @@ class BaseRequest(DictMixin):
 
     #: Maximum size of memory buffer for :attr:`body` in bytes.
     MEMFILE_MAX = 102400
+    #: Maximum number pr GET or POST parameters per request
+    MAX_PARAMS  = 100
 
     def __init__(self, environ):
         """ Wrap a WSGI environ dictionary. """
@@ -851,12 +891,17 @@ class BaseRequest(DictMixin):
             HTTP request headers. '''
         return WSGIHeaderDict(self.environ)
 
+    def get_header(self, name, default=None):
+        ''' Return the value of a request header, or a given default value. '''
+        return self.headers.get(name, default)
+
     @DictProperty('environ', 'bottle.request.cookies', read_only=True)
     def cookies(self):
         """ Cookies parsed into a :class:`FormsDict`. Signed cookies are NOT
             decoded. Use :meth:`get_cookie` if you expect signed cookies. """
         cookies = SimpleCookie(self.environ.get('HTTP_COOKIE',''))
-        return FormsDict((c.key, c.value) for c in cookies.itervalues())
+        cookies = list(cookies.values())[:self.MAX_PARAMS]
+        return FormsDict((c.key, c.value) for c in cookies)
 
     def get_cookie(self, key, default=None, secret=None):
         """ Return the content of a cookie. To read a `Signed Cookie`, the
@@ -875,11 +920,10 @@ class BaseRequest(DictMixin):
             values are sometimes called "URL arguments" or "GET parameters", but
             not to be confused with "URL wildcards" as they are provided by the
             :class:`Router`. '''
-        data = parse_qs(self.query_string, keep_blank_values=True)
+        pairs = parse_qsl(self.query_string, keep_blank_values=True)
         get = self.environ['bottle.get'] = FormsDict()
-        for key, values in data.iteritems():
-            for value in values:
-                get[key] = value
+        for key, value in pairs[:self.MAX_PARAMS]:
+            get[key] = value
         return get
 
     @DictProperty('environ', 'bottle.request.forms', read_only=True)
@@ -981,7 +1025,7 @@ class BaseRequest(DictMixin):
         else:
             fb = self.body
         data = cgi.FieldStorage(fp=fb, environ=safe_env, keep_blank_values=True)
-        for item in data.list or []:
+        for item in (data.list or [])[:self.MAX_PARAMS]:
             post[item.name] = item if item.filename else item.value
         return post
 
@@ -1220,8 +1264,8 @@ class BaseResponse(object):
         self._status_line = status or ('%d Unknown' % code)
 
     def _get_status(self):
-        depr('BaseReuqest.status will change to return a string in 0.11. Use'\
-             'status_line and status_code to make sure.') #0.10
+        depr('BaseRequest.status will change to return a string in 0.11. Use'\
+             ' status_line and status_code to make sure.') #0.10
         return self._status_code
 
     status = property(_get_status, _set_status, None,
@@ -1268,7 +1312,7 @@ class BaseResponse(object):
         headers = self._headers.iteritems()
         bad_headers = self.bad_headers.get(self.status_code)
         if bad_headers:
-            headers = (h for h in headers if h[0] not in bad_headers)
+            headers = [h for h in headers if h[0] not in bad_headers]
         for name, values in headers:
             for value in values:
                 yield name, value
@@ -1304,11 +1348,11 @@ class BaseResponse(object):
             self._cookies = SimpleCookie()
         return self._cookies
 
-    def set_cookie(self, key, value, secret=None, **options):
+    def set_cookie(self, name, value, secret=None, **options):
         ''' Create a new cookie or replace an old one. If the `secret` parameter is
             set, create a `Signed Cookie` (described below).
 
-            :param key: the name of the cookie.
+            :param name: the name of the cookie.
             :param value: the value of the cookie.
             :param secret: a signature key required for signed cookies.
 
@@ -1319,7 +1363,7 @@ class BaseResponse(object):
             :param expires: a datetime object or UNIX timestamp. (default: None)
             :param domain: the domain that is allowed to read the cookie.
               (default: current domain)
-            :param path: limits the cookie to a given path (default: ``/``)
+            :param path: limits the cookie to a given path (default: current path)
             :param secure: limit the cookie to HTTPS connections (default: off).
             :param httponly: prevents client-side javascript to read this cookie
               (default: off, requires Python 2.6 or newer).
@@ -1341,14 +1385,24 @@ class BaseResponse(object):
             self._cookies = SimpleCookie()
 
         if secret:
-            value = touni(cookie_encode((key, value), secret))
+            value = touni(cookie_encode((name, value), secret))
         elif not isinstance(value, basestring):
             raise TypeError('Secret key missing for non-string Cookie.')
 
         if len(value) > 4096: raise ValueError('Cookie value to long.')
-        self._cookies[key] = value
-        for k, v in options.iteritems():
-            self._cookies[key][k.replace('_', '-')] = v
+        self._cookies[name] = value
+
+        for key, value in options.iteritems():
+            if key == 'max_age':
+                if isinstance(value, timedelta):
+                    value = value.seconds + value.days * 24 * 3600
+            if key == 'expires':
+                if isinstance(value, (datedate, datetime)):
+                    value = value.timetuple()
+                elif isinstance(value, (int, float)):
+                    value = time.gmtime(value)
+                value = time.strftime("%a, %d %b %Y %H:%M:%S GMT", value)
+            self._cookies[name][key.replace('_', '-')] = value
 
     def delete_cookie(self, key, **kwargs):
         ''' Delete a cookie. Be sure to use the same `domain` and `path`
@@ -1558,9 +1612,6 @@ class MultiDict(DictMixin):
             pass
         return default
 
-    #: Alias for :meth:`get` to mimic other multi-dict APIs (Django)
-    getone = get
-
     def append(self, key, value):
         ''' Add a new value to the list of values for this key. '''
         self.dict.setdefault(key, []).append(value)
@@ -1573,6 +1624,11 @@ class MultiDict(DictMixin):
         ''' Return a (possibly empty) list of values for a key. '''
         return self.dict.get(key) or []
 
+    #: Aliases for WTForms to mimic other multi-dict APIs (Django)
+    getone = get
+    getlist = getall
+
+
 
 class FormsDict(MultiDict):
     ''' This :class:`MultiDict` subclass is used to store request form data.
@@ -1580,7 +1636,7 @@ class FormsDict(MultiDict):
         unmodified data as native strings), this container also supports
         attribute-like access to its values. Attribues are automatiically de- or
         recoded to match :attr:`input_encoding` (default: 'utf8'). Missing
-        attributes default to ``None``. '''
+        attributes default to an empty string. '''
 
     #: Encoding used for attribute values.
     input_encoding = 'utf8'
@@ -1596,7 +1652,7 @@ class FormsDict(MultiDict):
         except UnicodeError, e:
             return default
 
-    __getattr__ = getunicode
+    def __getattr__(self, name): return self.getunicode(name, default=u'')
 
 
 class HeaderDict(MultiDict):
@@ -1686,9 +1742,9 @@ class ConfigDict(dict):
     '''
 
     def __getattr__(self, key):
-        if key in self: return self[key]
-        if key[0].isupper(): return self.setdefault(key, ConfigDict())
-        return
+        if key not in self and key[0].isupper():
+            self[key] = ConfigDict()
+        return self.get(key)
 
     def __setattr__(self, key, value):
         if hasattr(dict, key):
@@ -1848,7 +1904,7 @@ def _lscmp(a, b):
 def cookie_encode(data, key):
     ''' Encode and sign a pickle-able object. Return a (byte) string '''
     msg = base64.b64encode(pickle.dumps(data, -1))
-    sig = base64.b64encode(hmac.new(key, msg).digest())
+    sig = base64.b64encode(hmac.new(tob(key), msg).digest())
     return tob('!') + sig + tob('?') + msg
 
 
@@ -1857,7 +1913,7 @@ def cookie_decode(data, key):
     data = tob(data)
     if cookie_is_encoded(data):
         sig, msg = data.split(tob('?'), 1)
-        if _lscmp(sig[1:], base64.b64encode(hmac.new(key, msg).digest())):
+        if _lscmp(sig[1:], base64.b64encode(hmac.new(tob(key), msg).digest())):
             return pickle.loads(base64.b64decode(msg))
     return None
 
@@ -1936,8 +1992,10 @@ def validate(**vkargs):
     Validates and manipulates keyword arguments by user defined callables.
     Handles ValueError and missing arguments by raising HTTPError(403).
     """
+    depr('Use route wildcard filters instead.')
     def decorator(func):
-        def wrapper(**kargs):
+        @functools.wraps(func)
+        def wrapper(*args, **kargs):
             for key, value in vkargs.iteritems():
                 if key not in kargs:
                     abort(403, 'Missing parameter: %s' % key)
@@ -1945,7 +2003,7 @@ def validate(**vkargs):
                     kargs[key] = value(kargs[key])
                 except ValueError:
                     abort(403, 'Wrong parameter format for: %s' % key)
-            return func(**kargs)
+            return func(*args, **kargs)
         return wrapper
     return decorator
 
@@ -2083,9 +2141,7 @@ class FapwsServer(ServerAdapter):
 class TornadoServer(ServerAdapter):
     """ The super hyped asynchronous server by facebook. Untested. """
     def run(self, handler): # pragma: no cover
-        import tornado.wsgi
-        import tornado.httpserver
-        import tornado.ioloop
+        import tornado.wsgi, tornado.httpserver, tornado.ioloop
         container = tornado.wsgi.WSGIContainer(handler)
         server = tornado.httpserver.HTTPServer(container)
         server.listen(port=self.port)
@@ -2248,16 +2304,15 @@ def load_app(target):
         application object. See :func:`load` for the target parameter. """
     global NORUN; NORUN, nr_old = True, NORUN
     try:
-        tmp = app.push() # Create a new "default application"
+        tmp = default_app.push() # Create a new "default application"
         rv = load(target) # Import the target module
-        app.remove(tmp) # Remove the temporary added default application
-        return rv if isinstance(rv, Bottle) else tmp
+        return rv if callable(rv) else tmp
     finally:
+        default_app.remove(tmp) # Remove the temporary added default application
         NORUN = nr_old
 
-
 def run(app=None, server='wsgiref', host='127.0.0.1', port=8080,
-        interval=1, reloader=False, quiet=False, **kargs):
+        interval=1, reloader=False, quiet=False, plugins=None, **kargs):
     """ Start a server instance. This method blocks until the server terminates.
 
         :param app: WSGI application or target string supported by
@@ -2275,114 +2330,114 @@ def run(app=None, server='wsgiref', host='127.0.0.1', port=8080,
         :param options: Options passed to the server adapter.
      """
     if NORUN: return
-    app = app or default_app()
-    if isinstance(app, basestring):
-        app = load_app(app)
-    if isinstance(server, basestring):
-        server = server_names.get(server)
-    if isinstance(server, type):
-        server = server(host=host, port=port, **kargs)
-    if not isinstance(server, ServerAdapter):
-        raise RuntimeError("Server must be a subclass of ServerAdapter")
-    server.quiet = server.quiet or quiet
-    if not server.quiet and not os.environ.get('BOTTLE_CHILD'):
-        print "Bottle server starting up (using %s)..." % repr(server)
-        print "Listening on http://%s:%d/" % (server.host, server.port)
-        print "Use Ctrl-C to quit."
-        print
+    if reloader and not os.environ.get('BOTTLE_CHILD'):
+        try:
+            fd, lockfile = tempfile.mkstemp(prefix='bottle.', suffix='.lock')
+            os.close(fd) # We only need this file to exist. We never write to it
+            while os.path.exists(lockfile):
+                args = [sys.executable] + sys.argv
+                environ = os.environ.copy()
+                environ['BOTTLE_CHILD'] = 'true'
+                environ['BOTTLE_LOCKFILE'] = lockfile
+                p = subprocess.Popen(args, env=environ)
+                while p.poll() is None: # Busy wait...
+                    os.utime(lockfile, None) # I am alive!
+                    time.sleep(interval)
+                if p.poll() != 3:
+                    if os.path.exists(lockfile): os.unlink(lockfile)
+                    sys.exit(p.poll())
+        except KeyboardInterrupt:
+            pass
+        finally:
+            if os.path.exists(lockfile):
+                os.unlink(lockfile)
+        return
+
+    stderr = sys.stderr.write
+
     try:
+        app = app or default_app()
+        if isinstance(app, basestring):
+            app = load_app(app)
+        if not callable(app):
+            raise ValueError("Application is not callable: %r" % app)
+
+        for plugin in plugins or []:
+            app.install(plugin)
+
+        if server in server_names:
+            server = server_names.get(server)
+        if isinstance(server, basestring):
+            server = load(server)
+        if isinstance(server, type):
+            server = server(host=host, port=port, **kargs)
+        if not isinstance(server, ServerAdapter):
+            raise ValueError("Unknown or unsupported server: %r" % server)
+
+        server.quiet = server.quiet or quiet
+        if not server.quiet:
+            stderr("Bottle server starting up (using %s)...\n" % repr(server))
+            stderr("Listening on http://%s:%d/\n" % (server.host, server.port))
+            stderr("Hit Ctrl-C to quit.\n\n")
+
         if reloader:
-            interval = min(interval, 1)
-            if os.environ.get('BOTTLE_CHILD'):
-                _reloader_child(server, app, interval)
-            else:
-                _reloader_observer(server, app, interval)
+            lockfile = os.environ.get('BOTTLE_LOCKFILE')
+            bgcheck = FileCheckerThread(lockfile, interval)
+            with bgcheck:
+                server.run(app)
+            if bgcheck.status == 'reload':
+                sys.exit(3)
         else:
             server.run(app)
     except KeyboardInterrupt:
         pass
-    if not server.quiet and not os.environ.get('BOTTLE_CHILD'):
-        print "Shutting down..."
+    except (SyntaxError, ImportError):
+        if not reloader: raise
+        if not getattr(server, 'quiet', False): print_exc()
+        sys.exit(3)
+    finally:
+        if not getattr(server, 'quiet', False): stderr('Shutdown...\n')
 
 
 class FileCheckerThread(threading.Thread):
-    ''' Thread that periodically checks for changed module files. '''
+    ''' Interrupt main-thread as soon as a changed module file is detected,
+        the lockfile gets deleted or gets to old. '''
 
     def __init__(self, lockfile, interval):
         threading.Thread.__init__(self)
         self.lockfile, self.interval = lockfile, interval
-        #1: lockfile to old; 2: lockfile missing
-        #3: module file changed; 5: external exit
-        self.status = 0
+        #: Is one of 'reload', 'error' or 'exit'
+        self.status = None
 
     def run(self):
         exists = os.path.exists
         mtime = lambda path: os.stat(path).st_mtime
         files = dict()
+
         for module in sys.modules.values():
             path = getattr(module, '__file__', '')
             if path[-4:] in ('.pyo', '.pyc'): path = path[:-1]
             if path and exists(path): files[path] = mtime(path)
+
         while not self.status:
+            if not exists(self.lockfile)\
+            or mtime(self.lockfile) < time.time() - self.interval - 5:
+                self.status = 'error'
+                thread.interrupt_main()
             for path, lmtime in files.iteritems():
                 if not exists(path) or mtime(path) > lmtime:
-                    self.status = 3
-            if not exists(self.lockfile):
-                self.status = 2
-            elif mtime(self.lockfile) < time.time() - self.interval - 5:
-                self.status = 1
-            if not self.status:
-                time.sleep(self.interval)
-        if self.status != 5:
-            thread.interrupt_main()
-
-
-def _reloader_child(server, app, interval):
-    ''' Start the server and check for modified files in a background thread.
-        As soon as an update is detected, KeyboardInterrupt is thrown in
-        the main thread to exit the server loop. The process exists with status
-        code 3 to request a reload by the observer process. If the lockfile
-        is not modified in 2*interval second or missing, we assume that the
-        observer process died and exit with status code 1 or 2.
-    '''
-    lockfile = os.environ.get('BOTTLE_LOCKFILE')
-    bgcheck = FileCheckerThread(lockfile, interval)
-    try:
-        bgcheck.start()
-        server.run(app)
-    except KeyboardInterrupt:
-        pass
-    bgcheck.status, status = 5, bgcheck.status
-    bgcheck.join() # bgcheck.status == 5 --> silent exit
-    if status: sys.exit(status)
-
-
-def _reloader_observer(server, app, interval):
-    ''' Start a child process with identical commandline arguments and restart
-        it as long as it exists with status code 3. Also create a lockfile and
-        touch it (update mtime) every interval seconds.
-    '''
-    fd, lockfile = tempfile.mkstemp(prefix='bottle-reloader.', suffix='.lock')
-    os.close(fd) # We only need this file to exist. We never write to it
-    try:
-        while os.path.exists(lockfile):
-            args = [sys.executable] + sys.argv
-            environ = os.environ.copy()
-            environ['BOTTLE_CHILD'] = 'true'
-            environ['BOTTLE_LOCKFILE'] = lockfile
-            p = subprocess.Popen(args, env=environ)
-            while p.poll() is None: # Busy wait...
-                os.utime(lockfile, None) # I am alive!
-                time.sleep(interval)
-            if p.poll() != 3:
-                if os.path.exists(lockfile): os.unlink(lockfile)
-                sys.exit(p.poll())
-            elif not server.quiet:
-                print "Reloading server..."
-    except KeyboardInterrupt:
-        pass
-    if os.path.exists(lockfile): os.unlink(lockfile)
-
+                    self.status = 'reload'
+                    thread.interrupt_main()
+                    break
+            time.sleep(self.interval)
+    
+    def __enter__(self):
+        self.start()
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if not self.status: self.status = 'exit' # silent exit
+        self.join()
+        return issubclass(exc_type, KeyboardInterrupt)
 
 
 
@@ -2548,7 +2603,6 @@ class SimpleTALTemplate(BaseTemplate):
 
     def render(self, *args, **kwargs):
         from simpletal import simpleTALES
-        from StringIO import StringIO
         for dictarg in args: kwargs.update(dictarg)
         # TODO: maybe reuse a context instead of always creating one
         context = simpleTALES.Context()
@@ -2606,7 +2660,7 @@ class SimpleTemplate(BaseTemplate):
         ptrbuffer = [] # Buffer for printable strings and token tuple instances
         codebuffer = [] # Buffer for generated python code
         multiline = dedent = oneline = False
-        template = self.source if self.source else open(self.filename).read()
+        template = self.source or open(self.filename, 'rb').read()
 
         def yield_tokens(line):
             for i, part in enumerate(re.split(r'\{\{(.*?)\}\}', line)):
@@ -2640,11 +2694,12 @@ class SimpleTemplate(BaseTemplate):
             lineno += 1
             line = line if isinstance(line, unicode)\
                         else unicode(line, encoding=self.encoding)
+            sline = line.lstrip()
             if lineno <= 2:
                 m = re.search(r"%.*coding[:=]\s*([-\w\.]+)", line)
                 if m: self.encoding = m.group(1)
                 if m: line = line.replace('coding','coding (removed)')
-            if line.strip()[:2].count('%') == 1:
+            if sline and sline[0] == '%' and sline[:2] != '%%':
                 line = line.split('%',1)[1].lstrip() # Full line following the %
                 cline = self.split_comment(line).strip()
                 cmd = re.split(r'[^a-zA-Z0-9_]', cline)[0]
@@ -2789,6 +2844,10 @@ NORUN = False # If set, run() does nothing. Used by load_app()
 #: A dict to map HTTP status codes (e.g. 404) to phrases (e.g. 'Not Found')
 HTTP_CODES = httplib.responses
 HTTP_CODES[418] = "I'm a teapot" # RFC 2324
+HTTP_CODES[428] = "Precondition Required"
+HTTP_CODES[429] = "Too Many Requests"
+HTTP_CODES[431] = "Request Header Fields Too Large"
+HTTP_CODES[511] = "Network Authentication Required"
 _HTTP_STATUS_LINES = dict((k, '%d %s'%(k,v)) for (k,v) in HTTP_CODES.iteritems())
 
 #: The default template used for error pages. Override with @error()
@@ -2846,36 +2905,27 @@ app.push()
 #: Example: ``import bottle.ext.sqlite`` actually imports `bottle_sqlite`.
 ext = _ImportRedirect(__name__+'.ext', 'bottle_%s').module
 
-def main():
-    from optparse import OptionParser
-    parser = OptionParser(usage="usage: %prog [options] package.module:application")
-    add = parser.add_option
-    add("-b", "--bind", metavar="ADDRESS", help="bind socket to ADDRESS.")
-    add("-s", "--server", help="use SERVER as backend. (default: wsgiref)")
-    add("-p", "--plugin", action="append", help="install additinal plugin/s.")
-    add("--debug", action="store_true", help="start server in debug mode.")
-    add("--reload", action="store_true", help="auto-reload on file changes.")
-    opt, args = parser.parse_args()
-    debug(opt.debug)
-
-    if len(args) != 1: parser.error('No application specified.')
+if __name__ == '__main__':
+    opt, args, parser = _cmd_options, _cmd_args, _cmd_parser
+    if opt.version:
+        print 'Bottle', __version__; sys.exit(0)
+    if not args:
+        parser.print_help()
+        print '\nError: No application specified.\n'
+        sys.exit(1)
 
     try:
         sys.path.insert(0, '.')
         sys.modules.setdefault('bottle', sys.modules['__main__'])
-        app = load_app(args[0])
-        for plugin in opt.plugin or []: app.install(plugin)
     except (AttributeError, ImportError), e:
         parser.error(e.args[0])
 
-    if opt.bind and ':' in opt.bind: host, port = opt.bind.rsplit(':', 1)
-    else:                            host, port = opt.bind or 'localhost', 8080
-    if not app.routes: parser.error('App does not define any routes.')
-    if opt.server not in server_names: parser.error('Unknown server backend.')
-    run(app, host=host, port=port, server=opt.server or 'wsgiref',
-        reloader=opt.reload)
+    if opt.bind and ':' in opt.bind:
+        host, port = opt.bind.rsplit(':', 1)
+    else:
+        host, port = (opt.bind or 'localhost'), 8080
 
-if __name__ == '__main__':
-    main()
+    debug(opt.debug)
+    run(args[0], host=host, port=port, server=opt.server, reloader=opt.reload, plugins=opt.plugin)
 
 # THE END

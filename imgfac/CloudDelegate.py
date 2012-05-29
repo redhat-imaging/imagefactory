@@ -22,71 +22,52 @@ class CloudDelegate(Interface):
     the plugin cares about. Delegation provides a way for the plugin to
     customize the behavior of the builder. """
 
-    def builder_should_create_image(self, builder):
+    def push_image_to_provider(self, builder, provider, credentials, target_image, parameters):
         """
-        Allow or prohibit a JEOS image to be created and customized with additional packages.
+        Prepare the image for use on and upload to a specified provider.
 
-        @param builder The builder object.
+        @param builder The Builder object coordinating image creation.
+        @param image The TargetImage to be pushed.
+        @param target The cloud target to which the provider belongs.
+        @param provider The cloud provider to which the image will be pushed.
+        @param parameters The cloud provider specific parameters for pushing.
+
+        @return A ProviderImage object.
+        """
+
+    def snapshot_image_on_provider(self, builder, provider, credentials, template, parameters):
+        """
+        Create a ProviderImage by taking a snapshot of an existing image on the provider.
+
+        @param builder The Builder object coordinating image creation.
+        @param image_id The provider identifier of the image to snapshot.
+        @param target The cloud target to which the provider belongs.
+        @param provider The cloud provider to which the image will be pushed.
+        @param parameters The cloud provider specific parameters for pushing.
+
+        @return A ProviderImage object.
+        """
+
+    def builder_should_create_target_image(self, builder, target, image_id, template, parameters):
+        """
+        Allows the delegate to decide if a TargetImage should be created.
+
+        @param builder The Builder object coordinating image creation.
 
         @return bool
         """
 
-    def builder_will_create_image(self, builder):
+    def builder_will_create_target_image(self, builder, target, image_id, template, parameters):
         """
-        Invoked just before the installation of a JEOS image.
+        Called just before a TargetImage is created.
 
-        @param builder The builder object.
+        @param builder The Builder object coordinating image creation.
         """
-
-    def builder_did_create_image(self, builder):
+    
+    def builder_did_create_target_image(self, builder, target, image_id, template, parameters):
         """
-        Invoked after the builder has completed the custom package installation.
+        Called just after a TargetImage has been created.
 
-        @param builder The builder object.
-        """
-
-    def builder_should_install_packages(self, builder):
-        """
-        Allow or prohibit installation of extra packages.
-
-        @param builder The builder object.
-
-        @return bool
+        @param builder The Builder object coordinating image creation.
         """
 
-    def builder_will_install_packages(self, builder):
-        """
-        Invoked just before installing packages on the image.
-
-        @param builder The builder object.
-        """
-
-    def builder_did_install_packages(self, builder):
-        """
-        Invoked after installing packages on the image.
-
-        @param builder The builder object.
-        """
-
-    def builder_should_customize_image(self, builder):
-        """
-        Allow or prohibit cloud agnostic image customization.
-
-        @param builder The builder object.
-
-        @return bool
-        """
-
-    def builder_will_customize_image(self, builder):
-        """
-        Invoked just before cloud agnostic image customization.
-
-        @param builder The builder object.
-        """
-
-    def builder_did_customize_image(self, builder):
-        """
-        Invoked after cloud agnostic image customization.
-
-        @param builder The builder object.
-        """
