@@ -49,20 +49,6 @@ imagefactory allows the creation of system images for multiple virtualization
 and cloud providers from a single template definition. See 
 http://aeolusproject.org/projects/imagefactory for more information.
 
-%package jeosconf-ec2-fedora
-Summary: Configuration for JEOS images for EC2
-License: ASL 2.0
-
-%description jeosconf-ec2-fedora
-The configuration file for Fedora EC2 JEOS images.
-
-%package jeosconf-ec2-rhel
-Summary: Configuration for JEOS images for EC2
-License: ASL 2.0
-
-%description jeosconf-ec2-rhel
-The configuration file for RHEL EC2 JEOS images.
-
 %prep
 %setup -q
 
@@ -78,8 +64,6 @@ python setup.py install -O1 --root=%{buildroot} --skip-build
 
 sed -i '/\/usr\/bin\/env python/d' %{buildroot}/%{python_sitelib}/imgfac/*.py
 
-%{__install} conf/ec2_fedora_jeos.conf %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
-%{__install} conf/ec2_rhel_jeos.conf %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
 %{__install} -m0600 conf/imagefactory.sysconfig %{buildroot}/%{_sysconfdir}/sysconfig/imagefactory
 %{__install} -m0600 conf/imagefactory.logrotate %{buildroot}/%{_sysconfdir}/logrotate.d/imagefactory
 
@@ -106,12 +90,6 @@ fi
 %{python_sitelib}/imagefactory-*.egg-info
 %{_bindir}/imagefactory
 %{_mandir}/man1/*
-
-%files jeosconf-ec2-fedora
-%{_sysconfdir}/imagefactory/jeos_images/ec2_fedora_jeos.conf
-
-%files jeosconf-ec2-rhel
-%{_sysconfdir}/imagefactory/jeos_images/ec2_rhel_jeos.conf
 
 %changelog
 * Thu Sep 15 2011 Ian McLeod <imcleod@redhat.com> - 0.6.1

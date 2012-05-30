@@ -24,12 +24,13 @@ pkg_version = subprocess.check_output('/usr/bin/git describe | tr - _', shell=Tr
 #version_file.write('VERSION = "%s"' % pkg_version)
 #version_file.close()
 
-#datafiles=[('share/man/man1', ['Documentation/man/imagefactory.1']),
+datafiles=[('/etc/imagefactory/jeos_images', ['conf/ec2_fedora_jeos.conf', 'conf/ec2_rhel_jeos.conf'])]
 #           ('/etc/imagefactory', ['imagefactory.conf']),
 #           ('/etc/pki/imagefactory', ['cert-ec2.pem']),
 #           ('/etc/sysconfig', ['imagefactory']),
 #           ('/etc/logrotate.d', ['imagefactory']),
 #           ('/etc/rc.d/init.d', ['scripts/imagefactory'])]
+
 
 class sdist(_sdist):
     """ custom sdist command to prepare imagefactory-plugins.spec file """
@@ -46,6 +47,8 @@ setup(name='imagefactory-plugins',
       license='Apache License, Version 2.0',
       url='http://www.aeolusproject.org/imagefactory.html',
       package_dir = {'imagefactory-plugins': ''},
-      packages=['imagefactory-plugins.EC2Cloud', 'imagefactory-plugins.FedoraOS'],
-      cmdclass = {'sdist': sdist}
+      packages=['imagefactory-plugins.EC2Cloud', 'imagefactory-plugins.FedoraOS','imagefactory-plugins.MockSphere',
+                'imagefactory-plugins.MockRPMBasedOS'],
+      cmdclass = {'sdist': sdist},
+      data_files = datafiles
       )
