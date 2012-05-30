@@ -7,25 +7,37 @@ License: ASL 2.0
 Group: Applications/System
 URL: http://www.aeolusproject.org/imagefactory.html
 BuildArch: noarch
-Requires: oz >= 0.7.0
-Requires: euca2ools
+#Commenting out requirements that have moved to plugins
+#Leaving them temporarily to aid in testing
+#
+#Moved to EC2Cloud
+# Requires: euca2ools
+# Requires: python-boto >= 2.0
+#
+#Moved to FedoraOS (and possibly other OS plugins)
+# Requires: oz >= 0.7.0
+#
+#To be moved to vsphere/ESX
+#Requires: VMDKstream
+#Requires: python-suds >= 0.4.1
+#Requires: python-psphere
+#
+#To be moved to RackSpace
+#Requires: python-cloudservers
+#
+#To be moved/removed in RHEV-M
+# We need this for dc-rhev-image
+# TODO: Remove this requirement when move pushing internal to the factory
+#Requires: iwhd >= 1.2
+#Requires: qemu-img
 Requires: python-pycurl
 Requires: python-libguestfs
 Requires: python-zope-interface
-Requires: python-boto >= 2.0
 Requires: libxml2-python
 Requires: python-httplib2
 Requires: python-argparse
-Requires: python-cloudservers
-Requires: python-psphere
-Requires: VMDKstream
-Requires: python-suds >= 0.4.1
 Requires: python-paste-deploy
 Requires: python-oauth2
-Requires: qemu-img
-# We need this for dc-rhev-image
-# TODO: Remove this requirement when move pushing internal to the factory
-Requires: iwhd >= 1.2
 Requires(post): chkconfig
 Requires(preun): chkconfig
 # This is for /sbin/service
@@ -36,20 +48,6 @@ BuildRequires: python-setuptools
 imagefactory allows the creation of system images for multiple virtualization
 and cloud providers from a single template definition. See 
 http://aeolusproject.org/projects/imagefactory for more information.
-
-%package jeosconf-ec2-fedora
-Summary: Configuration for JEOS images for EC2
-License: ASL 2.0
-
-%description jeosconf-ec2-fedora
-The configuration file for Fedora EC2 JEOS images.
-
-%package jeosconf-ec2-rhel
-Summary: Configuration for JEOS images for EC2
-License: ASL 2.0
-
-%description jeosconf-ec2-rhel
-The configuration file for RHEL EC2 JEOS images.
 
 %prep
 %setup -q
@@ -66,8 +64,6 @@ python setup.py install -O1 --root=%{buildroot} --skip-build
 
 sed -i '/\/usr\/bin\/env python/d' %{buildroot}/%{python_sitelib}/imgfac/*.py
 
-%{__install} conf/ec2_fedora_jeos.conf %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
-%{__install} conf/ec2_rhel_jeos.conf %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
 %{__install} -m0600 conf/imagefactory.sysconfig %{buildroot}/%{_sysconfdir}/sysconfig/imagefactory
 %{__install} -m0600 conf/imagefactory.logrotate %{buildroot}/%{_sysconfdir}/logrotate.d/imagefactory
 
@@ -94,12 +90,6 @@ fi
 %{python_sitelib}/imagefactory-*.egg-info
 %{_bindir}/imagefactory
 %{_mandir}/man1/*
-
-%files jeosconf-ec2-fedora
-%{_sysconfdir}/imagefactory/jeos_images/ec2_fedora_jeos.conf
-
-%files jeosconf-ec2-rhel
-%{_sysconfdir}/imagefactory/jeos_images/ec2_rhel_jeos.conf
 
 %changelog
 * Thu Sep 15 2011 Ian McLeod <imcleod@redhat.com> - 0.6.1
