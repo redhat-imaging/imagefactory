@@ -18,7 +18,6 @@ import logging
 import zope
 import inspect
 from imgfac.CloudDelegate import CloudDelegate
-from imgfac.ProviderImage import ProviderImage
 
 class MockSphere(object):
     zope.interface.implements(CloudDelegate)
@@ -27,10 +26,10 @@ class MockSphere(object):
     def __init__(self):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
 
-    def push_image_to_provider(self, builder, provider, credentials, target_image, parameters):
+    def push_image_to_provider(self, builder, provider, credentials, target, target_image, parameters):
         self.log.info('%s called in MockSphere plugin' % (inspect.stack()[1][3]))
 
-    def snapshot_image_on_provider(self, builder, provider, credentials, template, parameters):
+    def snapshot_image_on_provider(self, builder, provider, credentials, target, template, parameters):
         self.log.info('%s called in MockSphere plugin' % (inspect.stack()[1][3]))
 
     def builder_should_create_target_image(self, builder, target, image_id, template, parameters):

@@ -89,6 +89,7 @@ def create_image(image_collection, base_image_id=None, target_image_id=None):
         elif(image_collection == 'provider_images'):
             builder = BuildDispatcher().builder_for_provider_image(provider=request_data.get('provider'),
                                                                    credentials=request_data.get('credentials'),
+                                                                   target=request_data.get('target'),
                                                                    image_id=target_img_id,
                                                                    template=request_data.get('template'),
                                                                    parameters=request_data.get('parameters'))
