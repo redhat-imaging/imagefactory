@@ -22,7 +22,7 @@ class CloudDelegate(Interface):
     the plugin cares about. Delegation provides a way for the plugin to
     customize the behavior of the builder. """
 
-    def push_image_to_provider(self, builder, provider, credentials, target_image, parameters):
+    def push_image_to_provider(self, builder, provider, credentials, target, target_image, parameters):
         """
         Prepare the image for use on and upload to a specified provider.
 
@@ -35,7 +35,7 @@ class CloudDelegate(Interface):
         @return A ProviderImage object.
         """
 
-    def snapshot_image_on_provider(self, builder, provider, credentials, template, parameters):
+    def snapshot_image_on_provider(self, builder, provider, credentials, target, template, parameters):
         """
         Create a ProviderImage by taking a snapshot of an existing image on the provider.
 
