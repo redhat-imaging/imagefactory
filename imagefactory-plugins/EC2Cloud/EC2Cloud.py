@@ -1241,7 +1241,10 @@ class EC2Cloud(object):
             ami_id = str(result)
             self.log.debug("Extracted AMI ID: %s " % (ami_id))
         except:
-            self.log.debug("EBS image upload failed on exception", exc_info = True)
+            self.log.debug("EBS image upload failed on exception")
+            #DANGER!!! Uncomment at your own risk!
+            #This is for deep debugging of the EBS utility instance - don't forget to shut it down manually
+            #self.log.debug("EBS image upload failed on exception", exc_info = True)
             #self.log.debug("Waiting more or less forever to allow inspection of the instance")
             #self.log.debug("run this: ssh -i %s root@%s" % (key_file, self.instance.public_dns_name))
             #sleep(999999)
