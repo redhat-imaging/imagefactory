@@ -36,7 +36,7 @@ class OpenStackCloud(object):
         super(OpenStackCloud, self).__init__()
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
 
-    def push_image_to_provider(self, builder, provider, credentials, target_image, parameters):
+    def push_image_to_provider(self, builder, provider, credentials, target, target_image, parameters):
         # Our target_image is already a raw KVM image.  All we need to do is upload to glance
         self.openstack_decode_credentials(credentials)
 
