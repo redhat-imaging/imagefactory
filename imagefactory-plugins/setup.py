@@ -23,7 +23,7 @@ import subprocess
 # If your plugin follows the standard format, all you should need to do is add the name
 # here.  If this doesn't work, you'll have to dig into the details below
 
-plugins = ['EC2Cloud', 'FedoraOS','MockSphere','MockRPMBasedOS']
+plugins = ['EC2Cloud', 'FedoraOS','MockSphere','MockRPMBasedOS', 'OpenStackCloud']
 
 
 # Required for Python 2.6 backwards compat
