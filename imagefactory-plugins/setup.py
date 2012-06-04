@@ -14,9 +14,17 @@
 
 from distutils.core import setup
 from distutils.command.sdist import sdist as _sdist
+from distutils.sysconfig import get_python_lib
 import os
 import os.path
 import subprocess
+
+# ****** IF ADDING A NEW PLUGIN ******
+# If your plugin follows the standard format, all you should need to do is add the name
+# here.  If this doesn't work, you'll have to dig into the details below
+
+plugins = ['EC2Cloud', 'FedoraOS','MockSphere','MockRPMBasedOS']
+
 
 # Required for Python 2.6 backwards compat
 def subprocess_check_output(*popenargs, **kwargs):
@@ -38,13 +46,13 @@ pkg_version = pkg_version.rstrip('\n')
 #version_file.write('VERSION = "%s"' % pkg_version)
 #version_file.close()
 
-datafiles=[('/etc/imagefactory/jeos_images', ['conf/ec2_fedora_jeos.conf', 'conf/ec2_rhel_jeos.conf'])]
-#           ('/etc/imagefactory', ['imagefactory.conf']),
-#           ('/etc/pki/imagefactory', ['cert-ec2.pem']),
-#           ('/etc/sysconfig', ['imagefactory']),
-#           ('/etc/logrotate.d', ['imagefactory']),
-#           ('/etc/rc.d/init.d', ['scripts/imagefactory'])]
+site_pkgs = get_python_lib()
+datafiles = [('/etc/imagefactory/jeos_images', ['conf/ec2_fedora_jeos.conf', 'conf/ec2_rhel_jeos.conf'])]
+packages = [ ]
 
+for plugin in plugins:
+    datafiles.append( (site_pkgs + '/imagefactory-plugins/' + plugin, [ plugin + '/' + plugin + '.info' ]) )
+    packages.append( "imagefactory-plugins." + plugin )
 
 class sdist(_sdist):
     """ custom sdist command to prepare imagefactory-plugins.spec file """
@@ -61,8 +69,7 @@ setup(name='imagefactory-plugins',
       license='Apache License, Version 2.0',
       url='http://www.aeolusproject.org/imagefactory.html',
       package_dir = {'imagefactory-plugins': ''},
-      packages=['imagefactory-plugins.EC2Cloud', 'imagefactory-plugins.FedoraOS','imagefactory-plugins.MockSphere',
-                'imagefactory-plugins.MockRPMBasedOS'],
+      packages=packages,
       cmdclass = {'sdist': sdist},
       data_files = datafiles
       )
