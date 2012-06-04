@@ -183,7 +183,7 @@ class EC2Cloud(object):
         self.status="COMPLETED"
 
 
-    def push_image_to_provider(self, builder, provider, credentials, target_image, parameters):
+    def push_image_to_provider(self, builder, provider, credentials, target, target_image, parameters):
         self.log.info('push_image_to_provider() called in EC2Cloud')
 
         # TODO: This is a convenience variable for refactoring - rename
@@ -640,7 +640,7 @@ class EC2Cloud(object):
         else:
             instance.stop()
 
-    def snapshot_image_on_provider(self, builder, provider, credentials, template, parameters):
+    def snapshot_image_on_provider(self, builder, provider, credentials, target, template, parameters):
     #def push_image_snapshot_ec2(self, target_image_id, provider, credentials):
         self.log.info('snapshot_image_on_provider() called in EC2Cloud')
 
