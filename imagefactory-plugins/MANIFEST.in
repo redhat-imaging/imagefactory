@@ -1,0 +1,2 @@
+include */*.info
+recursive-include conf *
