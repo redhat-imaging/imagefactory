@@ -25,6 +25,14 @@ Requires: oz >= 0.7.0
 %description FedoraOS
 An OS plugin to support Fedora OSes
 
+%package OpenStackCloud
+Summary: Cloud plugin for OpenStack running on KVM
+License: ASL 2.0
+Requires: python-glance
+
+%description OpenStackCloud
+A Cloud plugin to support OpenStack running on top of KVM.
+
 %package EC2Cloud
 Summary: Cloud plugin for EC2
 License: ASL 2.0
@@ -73,6 +81,9 @@ python setup.py install -O1 --root=%{buildroot} --skip-build
 
 %files FedoraOS
 %{python_sitelib}/imagefactory-plugins/FedoraOS/*
+
+%files OpenStackCloud
+%{python_sitelib}/imagefactory-plugins/OpenStackCloud/*
 
 %files EC2Cloud
 %{python_sitelib}/imagefactory-plugins/EC2Cloud/*
