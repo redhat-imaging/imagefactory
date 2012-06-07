@@ -14,6 +14,7 @@
 #   limitations under the License.
 
 import logging
+import os.path
 from imgfac.rest.bottle import *
 import imgfac.rest.RESTtools as RESTtools
 from imgfac.rest.OAuthTools import oauth_protect
@@ -55,7 +56,8 @@ def list_images(image_collection, base_image_id=None, target_image_id=None):
                          'id':image.identifier,
                          'href':'%s/%s' % (request.url, image.identifier)}
             for key in image.metadata:
-                resp_item[key] = getattr(image, key, None)
+                if key not in ('identifier', 'data'):
+                    resp_item[key] = getattr(image, key, None)
             images.append(resp_item)
 
         return {image_collection:images}
@@ -101,7 +103,8 @@ def create_image(image_collection, base_image_id=None, target_image_id=None):
                      'id':image.identifier,
                      'href':'%s/%s' % (request.url, image.identifier)}
         for key in image.metadata:
-            _response[key] = getattr(image, key, None)
+            if key not in ('identifier', 'data'):
+                _response[key] = getattr(image, key, None)
 
         response.status = 202
         return _response
@@ -125,10 +128,29 @@ def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_i
                      'id':image.identifier,
                      'href':'%s/%s' % (request.url, image.identifier)}
         for key in image.metadata:
-            _response[key] = getattr(image, key, None)
+            if key not in ('identifier', 'data'):
+                _response[key] = getattr(image, key, None)
 
         response.status = 202
         return _response
+    except Exception as e:
+        log.exception(e)
+        raise HTTPResponse(status=500, output=e)
+
+@rest_api.get('/imagefactory/base_images/<image_id>/raw_image')
+@rest_api.get('/imagefactory/target_images/<image_id>/raw_image')
+@rest_api.get('/imagefactory/provider_images/<image_id>/raw_image')
+@rest_api.get('/imagefactory/base_images/<base_image_id>/target_images/<image_id>/raw_image')
+@rest_api.get('/imagefactory/base_images/<base_image_id>/target_images/<target_image_id>/provider_images/<image_id>/raw_image')
+@rest_api.get('/imagefactory/target_images/<target_image_id>/provider_images/<image_id>/raw_image')
+@oauth_protect
+def get_image_file(image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
+    try:
+        image = PersistentImageManager.default_manager().image_with_id(image_id)
+        if(not image):
+            raise HTTPResponse(status=404, output='No image found with id: %s' % image_id)
+        path, filename = os.path.split(image.metadata['data'])
+        return static_file(filename, path, download=True)
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
