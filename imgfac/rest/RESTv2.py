@@ -55,7 +55,7 @@ def list_images(image_collection, base_image_id=None, target_image_id=None):
             resp_item = {'_type':type(image).__name__,
                          'id':image.identifier,
                          'href':'%s/%s' % (request.url, image.identifier)}
-            for key in image.metadata:
+            for key in image.metadata():
                 if key not in ('identifier', 'data'):
                     resp_item[key] = getattr(image, key, None)
             images.append(resp_item)
@@ -102,7 +102,7 @@ def create_image(image_collection, base_image_id=None, target_image_id=None):
         _response = {'_type':type(image).__name__,
                      'id':image.identifier,
                      'href':'%s/%s' % (request.url, image.identifier)}
-        for key in image.metadata:
+        for key in image.metadata():
             if key not in ('identifier', 'data'):
                 _response[key] = getattr(image, key, None)
 
@@ -127,7 +127,7 @@ def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_i
         _response = {'_type':type(image).__name__,
                      'id':image.identifier,
                      'href':'%s/%s' % (request.url, image.identifier)}
-        for key in image.metadata:
+        for key in image.metadata():
             if key not in ('identifier', 'data'):
                 _response[key] = getattr(image, key, None)
 
@@ -149,7 +149,7 @@ def get_image_file(image_id, base_image_id=None, target_image_id=None, provider_
         image = PersistentImageManager.default_manager().image_with_id(image_id)
         if(not image):
             raise HTTPResponse(status=404, output='No image found with id: %s' % image_id)
-        path, filename = os.path.split(image.metadata['data'])
+        path, filename = os.path.split(image.metadata()['data'])
         return static_file(filename, path, download=True)
     except Exception as e:
         log.exception(e)
