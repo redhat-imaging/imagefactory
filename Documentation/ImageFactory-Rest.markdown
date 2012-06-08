@@ -97,18 +97,14 @@ _Example:_
         % curl http://imgfac-host:8075/imagefactory/base_images 
     >
     >  
-        {"base_images": [{"status": "COMPLETE", "_type": "BaseImage", "identif  
-        ier": "20942760-2c5c-4fd2-8d5a-40f5533a11ec", "icicle": null, "status_  
-        detail": null, "href": "http://imgfac-host:8075/imagefactory/base_imag  
-        es/20942760-2c5c-4fd2-8d5a-40f5533a11ec", "percent_complete": 0, "data  
-        ": "/var/lib/imagefactory/storage/20942760-2c5c-4fd2-8d5a-40f5533a11ec  
-        .body", "id": "20942760-2c5c-4fd2-8d5a-40f5533a11ec"}, {"status": "FAI  
-        LED", "_type": "BaseImage", "identifier": "27860416-b6ca-49a4-9668-09c  
-        69f419a4d", "icicle": null, "status_detail": null, "href": "http://img  
-        fac-host:8075/imagefactory/base_images/27860416-b6ca-49a4-9668-09c69f4  
-        19a4d", "percent_complete": 0, "data": "/var/lib/imagefactory/storage/  
-        27860416-b6ca-49a4-9668-09c69f419a4d.body", "id": "27860416-b6ca-49a4-  
-        9668-09c69f419a4d"}]}
+        {"base_images": [{"status": "COMPLETE", "_type": "BaseImage", "icicle"  
+        : null, "status_detail": null, "href": "http://imgfac-host:8075/imagef  
+        actory/base_images/20942760-2c5c-4fd2-8d5a-40f5533a11ec", "percent_com  
+        plete": 0, "id": "20942760-2c5c-4fd2-8d5a-40f5533a11ec"}, {"status":    
+        "FAILED", "_type": "BaseImage", "icicle": null, "status_detail": null,  
+        "href": "http://imgfac-host:8075/imagefactory/base_images/27860416-b6c  
+        a-49a4-9668-09c69f419a4d", "percent_complete": 0, "id": "27860416-b6ca  
+        -49a4-9668-09c69f419a4d"}]}
 
 ### Image Creation
 
@@ -142,12 +138,10 @@ _Example:_
         imgfac-host:8075/imagefactory/base_images
     >
     >  
-        {"status": "NEW", "_type": "BaseImage", "identifier": "20942760-2c5c-4  
-        fd2-8d5a-40f5533a11ec", "icicle": null, "status_detail": null, "href":  
-        "http://imgfac-host:8075/imagefactory/base_images/20942  
-        760-2c5c-4fd2-8d5a-40f5533a11ec", "percent_complete": 0, "data": "/var  
-        /lib/imagefactory/storage/20942760-2c5c-4fd2-8d5a-40f5533a11ec.body",   
-        "id": "20942760-2c5c-4fd2-8d5a-40f5533a11ec"}
+        {"status": "NEW", "_type": "BaseImage", "icicle": null, "status_detail  
+        ": null, "href": "http://imgfac-host:8075/imagefactory/base_images/209  
+        42760-2c5c-4fd2-8d5a-40f5533a11ec", "percent_complete": 0, "id": "2094  
+        2760-2c5c-4fd2-8d5a-40f5533a11ec"}
 
 #### Target Images
 
@@ -184,12 +178,10 @@ _Example:_
         ockSphere" http://imgfac-host:8075/imagefactory/target_images
     >
     >  
-        {"status": "NEW", "_type": "TargetImage", "identifier": "4cc3b024-5fe7  
-        -4b0b-934b-c5d463b990b0", "icicle": null, "status_detail": null, "href  
-        ": "http://imgfac-host:8075/imagefactory/target_images/4cc3b024-5fe7-4  
-        b0b-934b-c5d463b990b0", "percent_complete": 0, "data": "/var/lib/image  
-        factory/storage/4cc3b024-5fe7-4b0b-934b-c5d463b990b0.body", "id": "4cc  
-        3b024-5fe7-4b0b-934b-c5d463b990b0"}
+        {"status": "NEW", "_type": "TargetImage", "icicle": null, "status_deta  
+        il": null, "href": "http://imgfac-host:8075/imagefactory/target_images  
+        /4cc3b024-5fe7-4b0b-934b-c5d463b990b0", "percent_complete": 0, "id": "  
+        4cc3b024-5fe7-4b0b-934b-c5d463b990b0"}
 
 #### Provider Images
 
@@ -251,13 +243,11 @@ _Example:_
         d2-8d5a-40f5533a11ec
     >
     >  
-        {"status": "COMPLETE", "_type": "BaseImage", "identifier": "20942760-2  
-        c5c-4fd2-8d5a-40f5533a11ec", "icicle": null, "status_detail": null, "h  
-        ref": "http://imgfac-host:8075/imagefactory/base_images/20942760-2c5c-  
-        4fd2-8d5a-40f5533a11ec/20942760-2c5c-4fd2-8d5a-40f5533a11ec", "percent  
-        _complete": 0, "data": "/var/lib/imagefactory/storage/20942760-2c5c-4f  
-        d2-8d5a-40f5533a11ec.body", "id": "20942760-2c5c-4fd2-8d5a-40f5533a11e  
-        c"}
+        {"status": "COMPLETE", "_type": "BaseImage", "icicle": null, "status_d  
+        etail": null, "href": "http://imgfac-host:8075/imagefactory/base_image  
+        s/20942760-2c5c-4fd2-8d5a-40f5533a11ec/20942760-2c5c-4fd2-8d5a-40f5533  
+        a11ec", "percent_complete": 0, "id": "20942760-2c5c-4fd2-8d5a-40f5533a  
+        11ec"}
 
 ### Image Deletion
 
