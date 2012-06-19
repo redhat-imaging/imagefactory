@@ -57,9 +57,6 @@ def list_images(image_collection, base_image_id=None, target_image_id=None):
             resp_item = {'_type':type(image).__name__,
                          'id':image.identifier,
                          'href':'%s/%s' % (request.url, image.identifier)}
-            #for key in image.metadata():
-            #    if key not in ('identifier', 'data'):
-            #        resp_item[key] = getattr(image, key, None)
             images.append(resp_item)
 
         return {image_collection:images}
