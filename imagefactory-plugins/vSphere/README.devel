@@ -1,0 +1,14 @@
+The only OS-specific change in vSphere can be found in the RHEL5 builder class.
+
+RHEL5 requires that we explicitly add the mptscsi module to the initrd.
+
+RHEL6 and the more recent Fedoras that we support have a boot environment that is
+smart enough to deal with this.
+
+Our approach in Factory v1 was to modify the ks.cfg used to create the JEOS that eventually
+became the vSphere image.  This is not going to be possible in v2, as we explicitly re-use a
+fully generic base_image for all builds.  We will need to make the initrd change by booting
+the base_image and doing further customization via a "mkinitrd" command within the running
+image.
+
+This will hook in nicely with our re-implementation of target specific packages and repos.

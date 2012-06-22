@@ -23,7 +23,8 @@ import subprocess
 # If your plugin follows the standard format, all you should need to do is add the name
 # here.  If this doesn't work, you'll have to dig into the details below
 
-plugins = ['EC2Cloud', 'FedoraOS','MockSphere','MockRPMBasedOS', 'OpenStackCloud']
+plugins = ['EC2Cloud', 'FedoraOS','MockSphere','MockRPMBasedOS', 'OpenStackCloud',
+           'RHEVM', 'vSphere']
 
 
 # Required for Python 2.6 backwards compat
@@ -48,11 +49,11 @@ pkg_version = pkg_version.rstrip('\n')
 
 site_pkgs = get_python_lib()
 datafiles = [('/etc/imagefactory/jeos_images', ['conf/ec2_fedora_jeos.conf', 'conf/ec2_rhel_jeos.conf'])]
-packages = [ ]
+packages = [ 'imagefactory_plugins' ]
 
 for plugin in plugins:
-    datafiles.append( (site_pkgs + '/imagefactory-plugins/' + plugin, [ plugin + '/' + plugin + '.info' ]) )
-    packages.append( "imagefactory-plugins." + plugin )
+    datafiles.append( (site_pkgs + '/imagefactory_plugins/' + plugin, [ plugin + '/' + plugin + '.info' ]) )
+    packages.append( "imagefactory_plugins." + plugin )
 
 class sdist(_sdist):
     """ custom sdist command to prepare imagefactory-plugins.spec file """
@@ -68,7 +69,7 @@ setup(name='imagefactory-plugins',
       author_email='imcleod@redhat.com',
       license='Apache License, Version 2.0',
       url='http://www.aeolusproject.org/imagefactory.html',
-      package_dir = {'imagefactory-plugins': ''},
+      package_dir = {'imagefactory_plugins': ''},
       packages=packages,
       cmdclass = {'sdist': sdist},
       data_files = datafiles

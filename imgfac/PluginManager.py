@@ -23,7 +23,7 @@ from Singleton import Singleton
 
 PLUGIN_TYPES = ('OS', 'CLOUD')
 INFO_FILE_EXTENSION = '.info'
-PKG_STR = 'imagefactory-plugins'
+PKG_STR = 'imagefactory_plugins'
 
 class PluginManager(Singleton):
     """ Registers and manages ImageFactory plugins. """

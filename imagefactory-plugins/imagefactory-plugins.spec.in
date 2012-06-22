@@ -66,6 +66,20 @@ License: ASL 2.0
 This plugin mimcs some of the behaviour of a real cloud plugin without needing any real external infra.
 For testing use only.
 
+%package RHEVM
+Summary: RHEVM Cloud plugin
+License: ASL 2.0
+
+%description RHEVM
+A plugin for RHEVM "clouds"
+
+%package vSphere
+Summary: vSphere Cloud plugin
+License: ASL 2.0
+
+%description vSphere
+A plugin for vSphere "clouds"
+
 %prep
 %setup -q
 
@@ -76,24 +90,31 @@ python setup.py build
 python setup.py install -O1 --root=%{buildroot} --skip-build
 
 %files
-%dir %{python_sitelib}/imagefactory-plugins
+%dir %{python_sitelib}/imagefactory_plugins
+%{python_sitelib}/imagefactory_plugins/__init__.py*
 %{python_sitelib}/imagefactory_plugins*.egg-info
 
 %files FedoraOS
-%{python_sitelib}/imagefactory-plugins/FedoraOS/*
+%{python_sitelib}/imagefactory_plugins/FedoraOS/*
 
 %files OpenStackCloud
-%{python_sitelib}/imagefactory-plugins/OpenStackCloud/*
+%{python_sitelib}/imagefactory_plugins/OpenStackCloud/*
 
 %files EC2Cloud
-%{python_sitelib}/imagefactory-plugins/EC2Cloud/*
+%{python_sitelib}/imagefactory_plugins/EC2Cloud/*
 
 %files EC2Cloud-JEOS-images
 %{_sysconfdir}/imagefactory/jeos_images/ec2_fedora_jeos.conf
 %{_sysconfdir}/imagefactory/jeos_images/ec2_rhel_jeos.conf
 
 %files MockRPMBasedOS
-%{python_sitelib}/imagefactory-plugins/MockRPMBasedOS/*
+%{python_sitelib}/imagefactory_plugins/MockRPMBasedOS/*
 
 %files MockSphere
-%{python_sitelib}/imagefactory-plugins/MockSphere/*
+%{python_sitelib}/imagefactory_plugins/MockSphere/*
+
+%files RHEVM
+%{python_sitelib}/imagefactory_plugins/RHEVM/*
+
+%files vSphere
+%{python_sitelib}/imagefactory_plugins/vSphere/*
