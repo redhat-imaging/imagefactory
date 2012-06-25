@@ -36,7 +36,8 @@ class testReservationManager(unittest.TestCase):
     def setUp(self):
         self.test_path = '/tmp/imagefactory.unittest.ReservationManager'
         self.test_file = '%s/reservation.test' % self.test_path
-        os.mkdir(self.test_path)
+        if not os.path.exists(self.test_path):
+            os.mkdir(self.test_path)
         fstat = os.statvfs(self.test_path)
         self.max_free = fstat.f_bavail * fstat.f_frsize
         self.min_free = self.max_free / 2

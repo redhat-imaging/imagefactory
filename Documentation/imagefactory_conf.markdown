@@ -111,4 +111,10 @@ Settings for using the Aeolus Image Warehouse (iwhd) component.
 + **provider_bucket**
     - _Description:_ Name of warehouse bucket to look in for provider image instances.
     - _Default:_ provider_images
++ **_jeos_imgdir**
+    -_Description:_ Path to JeOS images
+    -_Default:_ "/etc/imagefactory/jeos_images/"
++ **test_jeos_imgdir**
+    -_Description:_ Path to JeOS images when testing, i.e. 'make unittests'. Allows successful test run without installation.
+    -_Default:_ "conf/"
 
