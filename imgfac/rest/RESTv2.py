@@ -42,10 +42,12 @@ def list_images(image_collection, base_image_id=None, target_image_id=None):
             fetch_spec['type'] = 'BaseImage'
         elif(image_collection == 'target_images'):
             fetch_spec['type'] = 'TargetImage'
-            fetch_spec['base_image_id'] = base_image_id
+            if base_image_id:
+                fetch_spec['base_image_id'] = base_image_id
         elif(image_collection == 'provider_images'):
             fetch_spec['type'] = 'ProviderImage'
-            fetch_spec['target_image_id'] = target_image_id
+            if target_image_id:
+                fetch_spec['target_image_id'] = target_image_id
         else:
             raise HTTPResponse(status=404, output='%s not found' % image_collection)
 
@@ -55,9 +57,6 @@ def list_images(image_collection, base_image_id=None, target_image_id=None):
             resp_item = {'_type':type(image).__name__,
                          'id':image.identifier,
                          'href':'%s/%s' % (request.url, image.identifier)}
-            for key in image.metadata():
-                if key not in ('identifier', 'data'):
-                    resp_item[key] = getattr(image, key, None)
             images.append(resp_item)
 
         return {image_collection:images}
@@ -124,12 +123,35 @@ def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_i
         image = PersistentImageManager.default_manager().image_with_id(image_id)
         if(not image):
             raise HTTPResponse(status=404, output='No image found with id: %s' % image_id)
-        _response = {'_type':type(image).__name__,
+        _type = type(image).__name__
+        _response = {'_type':_type,
                      'id':image.identifier,
-                     'href':'%s/%s' % (request.url, image.identifier)}
+                     'href':request.url}
         for key in image.metadata():
-            if key not in ('identifier', 'data'):
+            if key not in ('identifier', 'data', 'base_image_id', 'target_image_id'):
                 _response[key] = getattr(image, key, None)
+
+        if(_type == "BaseImage"):
+            _response['target_images'] = self.list_images('target_images', base_image_id = image.identifier)
+        elif(_type == "TargetImage"):
+            base_image_id = image.metadata()['base_image_id']
+            if(base_image_id):
+                base_image_href = '%s://%s/imagefactory/base_images/%s' % (request.urlparts[0], request.urlparts[1], base_image_id)
+                base_image_dict = {'_type': 'BaseImage', 'id': base_image_id, 'href': base_image_href}
+                _response['base_image'] = base_image_dict
+            else:
+                _response['base_image'] = None
+            _response['provider_images'] = self.list_images('provider_images', target_image_id = image.identifier)
+        elif(_type == "ProviderImage"):
+            target_image_id = image.metadata()['target_image_id']
+            if(target_image_id):
+                target_image_href = '%s://%s/imagefactory/target_images/%s' % (request.urlparts[0], request.urlparts[1], target_image_id)
+                target_image_dict = {'_type': 'TargetImage', 'id': target_image_id, 'href': target_image_href}
+                _response['target_image'] = target_image_dict
+            else:
+                _response['target_image'] = None
+        else:
+            log.warn("Unknown image type: %s" % _type)
 
         response.status = 202
         return _response
