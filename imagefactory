@@ -67,10 +67,16 @@ class Application(Singleton):
         pass
 
     def setup_logging(self):
-        if (self.app_config['foreground']):
-            logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(levelname)s %(name)s thread(%(threadName)s) Message: %(message)s')
-        else:
-            logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(levelname)s %(name)s thread(%(threadName)s) Message: %(message)s', filename='/var/log/imagefactory.log')
+        if (not self.app_config['foreground']):
+            # We can no longer use the basicconfig convenience function to do this so do so manually
+            logger = logging.getLogger() 
+            currhandler = logger.handlers[0]  # stdout is the only handler initially
+            filehandler = logging.FileHandler('/var/log/imagefactory.log')
+            formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s thread(%(threadName)s) Message: %(message)s')
+            filehandler.setFormatter(formatter)
+            logger.addHandler(filehandler)
+            logger.removeHandler(currhandler)
+            self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         if (self.app_config['debug']):
             logging.getLogger('').setLevel(logging.DEBUG)
         elif (self.app_config['verbose']):
