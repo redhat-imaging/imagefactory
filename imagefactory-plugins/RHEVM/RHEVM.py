@@ -35,6 +35,7 @@ from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.BuildDispatcher import BuildDispatcher
 from copy import deepcopy
 from imgfac.CloudDelegate import CloudDelegate
+from xml.etree.ElementTree import fromstring
 
 def subprocess_check_output(*popenargs, **kwargs):
     if 'stdout' in kwargs:
@@ -212,20 +213,22 @@ class RHEVM(object):
         # We now call the RHEVM push command from iwhd directly without making a REST call
 
         # BuildDispatcher is now the only location for the logic to map a provider to its data and target
-        provider_data = BuildDispatcher().get_dynamic_provider_data(provider)
+        provider_data = self.get_dynamic_provider_data(provider)
         if provider_data is None:
             raise ImageFactoryException("RHEV-M instance not found in local configuration file /etc/imagefactory/rhevm.json or as XML or JSON")
 
-        if provider_data['target'] != 'rhevm':
-            raise ImageFactoryException("Got a non-rhevm target in the vsphere builder.  This should never happen.")
+        #if provider_data['target'] != 'rhevm':
+        #    raise ImageFactoryException("Got a non-rhevm target in the vsphere builder.  This should never happen.")
 
-        self.generic_decode_credentials(credentials, provider_data)
+        self.generic_decode_credentials(credentials, provider_data, "rhevm")
 
         # Deal with case where these are not set in the config file
         # or are overridden via the credentials argument
         # note - rhevm external util wants no dashes
         provider_data['apiuser'] = self.username
         provider_data['apipass'] = self.password
+
+        self.log.debug("Username: %s - Password: %s" % (self.username, self.password))
 
         # Fix some additional dashes
         # This is silly but I don't want to change the format at this point
@@ -313,12 +316,12 @@ class RHEVM(object):
         self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
         self.percent_complete = 100
 
-    def generic_decode_credentials(self, credentials, provider_data):
+    def generic_decode_credentials(self, credentials, provider_data, target):
         # convenience function for simple creds (rhev-m and vmware currently)
         doc = libxml2.parseDoc(credentials)
 
         self.username = None
-        _usernodes = doc.xpathEval("//provider_credentials/%s_credentials/username" % (self.target))
+        _usernodes = doc.xpathEval("//provider_credentials/%s_credentials/username" % (target))
         if len(_usernodes) > 0:
             self.username = _usernodes[0].content
         else:
@@ -328,7 +331,7 @@ class RHEVM(object):
                 raise ImageFactoryException("No username specified in config file or in push call")
         self.provider_account_identifier = self.username
 
-        _passnodes = doc.xpathEval("//provider_credentials/%s_credentials/password" % (self.target))
+        _passnodes = doc.xpathEval("//provider_credentials/%s_credentials/password" % (target))
         if len(_passnodes) > 0:
             self.password = _passnodes[0].content
         else:
@@ -338,6 +341,29 @@ class RHEVM(object):
                 raise ImageFactoryException("No password specified in config file or in push call")
 
         doc.freeDoc()
+
+    def get_dynamic_provider_data(self, provider):
+        # Get provider details for RHEV-M or VSphere
+        # First try to interpret this as an ad-hoc/dynamic provider def
+        # If this fails, try to find it in one or the other of the config files
+        # If this all fails return None
+        # We use this in the builders as well so I have made it "public"
+
+        try:
+            xml_et = fromstring(provider)
+            return xml_et.attrib
+        except Exception as e:
+            self.log.debug('Testing provider for XML: %s' % e)
+            pass
+
+        try:
+            jload = json.loads(provider)
+            return jload
+        except ValueError as e:
+            self.log.debug('Testing provider for JSON: %s' % e)
+            pass
+
+        return None
 
     def abort(self):
         pass
