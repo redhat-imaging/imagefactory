@@ -218,7 +218,7 @@ class vSphere(object):
         vm_name = "factory-image-" + self.new_image_id
         helper = VSphereHelper(provider_data['api-url'], self.username, self.password)
         helper.create_vm(input_image, vm_name, provider_data['compute_resource'], provider_data['datastore'], 
-                         str((10*1024*1024 + 2)/1024 ) + "KB", [ { "network_name": provider_data['network_name'], "type": "VirtualE1000"} ], 
+                         str(10*1024*1024 + 2) + "KB", [ { "network_name": provider_data['network_name'], "type": "VirtualE1000"} ], 
                          "512MB", 1, 'otherLinux64Guest')
         self.builder.provider_image.identifier_on_provider = vm_name
         self.builder.provider_account_identifier = self.username
