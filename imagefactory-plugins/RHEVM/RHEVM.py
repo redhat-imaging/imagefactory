@@ -35,6 +35,8 @@ from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.BuildDispatcher import BuildDispatcher
 from copy import deepcopy
 from imgfac.CloudDelegate import CloudDelegate
+from xml.etree.ElementTree import fromstring
+from RHEVMHelper import RHEVMHelper
 
 def subprocess_check_output(*popenargs, **kwargs):
     if 'stdout' in kwargs:
@@ -209,116 +211,35 @@ class RHEVM(object):
         self.status = "COMPLETED"
 
     def rhevm_push_image_upload(self, target_image_id, provider, credentials):
-        # We now call the RHEVM push command from iwhd directly without making a REST call
-
-        # BuildDispatcher is now the only location for the logic to map a provider to its data and target
-        provider_data = BuildDispatcher().get_dynamic_provider_data(provider)
+        provider_data = self.get_dynamic_provider_data(provider)
         if provider_data is None:
             raise ImageFactoryException("RHEV-M instance not found in local configuration file /etc/imagefactory/rhevm.json or as XML or JSON")
 
-        if provider_data['target'] != 'rhevm':
-            raise ImageFactoryException("Got a non-rhevm target in the vsphere builder.  This should never happen.")
+        self.generic_decode_credentials(credentials, provider_data, "rhevm")
 
-        self.generic_decode_credentials(credentials, provider_data)
+        self.log.debug("Username: %s" % (self.username))
 
-        # Deal with case where these are not set in the config file
-        # or are overridden via the credentials argument
-        # note - rhevm external util wants no dashes
-        provider_data['apiuser'] = self.username
-        provider_data['apipass'] = self.password
-
-        # Fix some additional dashes
-        # This is silly but I don't want to change the format at this point
-        provider_data['nfsdir'] = provider_data['nfs-dir']
-        provider_data['nfshost'] = provider_data['nfs-host']
-        provider_data['nfspath'] = provider_data['nfs-path']
-        provider_data['apiurl'] = provider_data['api-url']
-
-        del provider_data['nfs-dir']
-        del provider_data['nfs-host']
-        del provider_data['nfs-path']
-        del provider_data['api-url']
-
-        #provider_data['site'] = provider_data['name']
-
-        # We no longer need the name or target values in this dict and they may confuse the POST
-        #del provider_data['name']
-        #del provider_data['target']
-
+        helper = RHEVMHelper(url=provider_data['api-url'], username=self.username, password=self.password)
         # Image is always here and it is the target_image datafile
         input_image = self.builder.target_image.data
-
-        # Make it readable by the KVM group - required for the way we currently do the push to
-        # an export domain - Change group to 36 and make file group readable
-        # Required by the way RHEV-M NFS pushes work
-        # TODO: Look at how to fix this when we move RHEV-M push into Factory proper
-        #       This is just messy
-        os.chown(input_image, 0, 36)
-        os.chmod(input_image, stat.S_IRUSR | stat.S_IRGRP)
-
-        # This, it turns out, is the easiest way to give our newly created template the correct name
-        image_link = "/tmp/" + str(self.new_image_id)
-        os.symlink(input_image, image_link)
-
-        # iwhd 0.99 and above expect this to be set
-        # we default to 30 minutes as these copies can sometimes take a long time
-        if not 'timeout' in provider_data:
-            provider_data['timeout'] = 1800
-
-        # Populate the last field we need in our JSON command file
-        provider_data['image'] = image_link
-
-        # Redact password when logging
-        provider_data_log = deepcopy(provider_data)
-        provider_data_log['apipass'] = "REDACTED"
-        provider_json_log = json.dumps(provider_data_log, sort_keys=True, indent=4)
-        self.log.debug("Produced provider json: \n%s" % (provider_json_log))
-
-        # Shove into a named temporary file
-        provider_json = json.dumps(provider_data, sort_keys=True, indent=4)
-        json_file_object = NamedTemporaryFile()
-        json_file_object.write(provider_json)
-        json_file_object.flush()
-
-        # TODO: Test for presence of this at the very start and fail right away if it is not there
-        rhevm_push_cname = "/usr/bin/dc-rhev-image"
-        rhevm_push_command = [ rhevm_push_cname, json_file_object.name ]
-        self.log.debug("Executing external RHEV-M push command (%s)" % (str(rhevm_push_command)))
-
-        (stdout, stderr, retcode) = subprocess_check_output(rhevm_push_command)
-        json_file_object.close()
-        os.unlink(image_link)
-
-        self.log.debug("Command retcode %s" % (retcode))
-        self.log.debug("Command stdout: (%s)" % (stdout))
-        self.log.debug("Command stderr: (%s)" % (stderr))
-
-        m = re.match("^IMAGE ([a-fA-F0-9-]+)", stdout)
-
-        rhevm_uuid = None
-        # I had no luck getting re.MULTILINE to work - so we loop
-        for line in split(stdout, "\n"):
-            m = re.match(r"IMAGE ([a-fA-F0-9-]+)", line)
-            if m:
-                rhevm_uuid =  m.group(1)
-                break
+        rhevm_uuid = helper.import_template(input_image, provider_data['nfs-host'], provider_data['nfs-path'], 
+                                            provider_data['nfs-dir'], provider_data['cluster'])
 
         if rhevm_uuid is None:
-            raise ImageFactoryException("Failed to extract RHEV-M UUID from command stdout: %s" % (stdout))
+            raise ImageFactoryException("Failed to obtain RHEV-M UUID from helper")
 
-        self.log.debug("Extracted RHEVM UUID: %s " % (rhevm_uuid))
+        self.log.debug("New RHEVM Template UUID: %s " % (rhevm_uuid))
 
-        # Create the provdier image
-        metadata = dict(target_image=target_image_id, provider=provider_data['name'], icicle="none", target_identifier=rhevm_uuid, provider_account_identifier=self.username)
-        self.warehouse.create_provider_image(self.new_image_id, metadata=metadata)
+        self.builder.provider_image.identifier_on_provider = rhevm_uuid
+        self.builder.provider_account_identifier = self.username
         self.percent_complete = 100
 
-    def generic_decode_credentials(self, credentials, provider_data):
+    def generic_decode_credentials(self, credentials, provider_data, target):
         # convenience function for simple creds (rhev-m and vmware currently)
         doc = libxml2.parseDoc(credentials)
 
         self.username = None
-        _usernodes = doc.xpathEval("//provider_credentials/%s_credentials/username" % (self.target))
+        _usernodes = doc.xpathEval("//provider_credentials/%s_credentials/username" % (target))
         if len(_usernodes) > 0:
             self.username = _usernodes[0].content
         else:
@@ -328,7 +249,7 @@ class RHEVM(object):
                 raise ImageFactoryException("No username specified in config file or in push call")
         self.provider_account_identifier = self.username
 
-        _passnodes = doc.xpathEval("//provider_credentials/%s_credentials/password" % (self.target))
+        _passnodes = doc.xpathEval("//provider_credentials/%s_credentials/password" % (target))
         if len(_passnodes) > 0:
             self.password = _passnodes[0].content
         else:
@@ -338,6 +259,29 @@ class RHEVM(object):
                 raise ImageFactoryException("No password specified in config file or in push call")
 
         doc.freeDoc()
+
+    def get_dynamic_provider_data(self, provider):
+        # Get provider details for RHEV-M or VSphere
+        # First try to interpret this as an ad-hoc/dynamic provider def
+        # If this fails, try to find it in one or the other of the config files
+        # If this all fails return None
+        # We use this in the builders as well so I have made it "public"
+
+        try:
+            xml_et = fromstring(provider)
+            return xml_et.attrib
+        except Exception as e:
+            self.log.debug('Testing provider for XML: %s' % e)
+            pass
+
+        try:
+            jload = json.loads(provider)
+            return jload
+        except ValueError as e:
+            self.log.debug('Testing provider for JSON: %s' % e)
+            pass
+
+        return None
 
     def abort(self):
         pass
