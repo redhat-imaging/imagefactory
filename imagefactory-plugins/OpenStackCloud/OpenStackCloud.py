@@ -40,13 +40,10 @@ class OpenStackCloud(object):
         # Our target_image is already a raw KVM image.  All we need to do is upload to glance
         self.openstack_decode_credentials(credentials)
 
-        provider_data = BuildDispatcher().get_dynamic_provider_data(provider)
+        provider_data = self.get_dynamic_provider_data("openstack-kvm")
         if provider_data is None:
             raise ImageFactoryException("OpenStack KVM instance not found in local configuration file /etc/imagefactory/openstack-kvm.json or as XML or JSON")
 
-        if provider_data['target'] != 'openstack-kvm':
-            raise ImageFactoryException("Got a non-openstack target in the openstack builder.  This should never happen.")
-        
         # Image is always here and it is the target_image datafile
         input_image = self.builder.target_image.datafile
         input_image_name = os.path.basename(input_image)
@@ -90,3 +87,21 @@ class OpenStackCloud(object):
 
     def builder_did_create_target_image(self, builder, target, image_id, template, parameters):
         pass
+
+    def get_dynamic_provider_data(self, provider):
+        try:
+            xml_et = fromstring(provider)
+            return xml_et.attrib
+        except Exception as e:
+            self.log.debug('Testing provider for XML: %s' % e)
+            pass
+
+        try:
+            jload = json.loads(provider)
+            return jload
+        except ValueError as e:
+            self.log.debug('Testing provider for JSON: %s' % e)
+            pass
+
+        return None
+
