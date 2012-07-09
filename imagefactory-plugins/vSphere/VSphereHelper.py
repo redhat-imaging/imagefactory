@@ -19,6 +19,7 @@ import time
 import os
 import pycurl
 import logging
+import urllib2
 from psphere import config, template
 from psphere.client import Client
 from psphere.errors import TemplateNotFoundError
@@ -28,8 +29,12 @@ from time import sleep, time
 logging.getLogger('suds').setLevel(logging.INFO)
 
 class VSphereHelper:
-    def __init__(self, server, username, password):
+    def __init__(self, url, username, password):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        if(url.startswith('http://') or url.startswith('https://')):
+            server = urllib2.Request(url).get_host()
+        else:
+            server = url
         self.client = Client(server=server, username=username, password=password)
 
     def curl_progress(self, download_t, download_d, upload_t, upload_d):
@@ -138,6 +143,9 @@ class VSphereHelper:
 
         disk = self.create_disk(datastore=ds_to_use, disksize_kb=disksize_kb)
         vm_devices.append(disk)
+
+        cdrom = self.create_cdrom(datastore=ds_to_use)
+        vm_devices.append(cdrom)
         
         for nic in nics:
             nic_spec = self.create_nic(target, nic)
@@ -299,6 +307,37 @@ class VSphereHelper:
         disk_spec.operation = operation.add
 
         return disk_spec
+
+    def create_cdrom(self, datastore):
+        # Convenience variable
+        client = self.client
+        # This creates what is essentially a virtual CDROM drive with no disk in it
+        # Adding this greatly simplifies the process of adding a custom ISO via deltacloud
+        connectable = client.create('VirtualDeviceConnectInfo')
+        connectable.allowGuestControl = True
+        connectable.connected = True
+        connectable.startConnected = True
+        #connectable.status = None
+
+        backing = client.create('VirtualCdromIsoBackingInfo')
+        backing.datastore = None
+        backing.fileName = '[%s]' % datastore.summary.name
+
+        cdrom = client.create('VirtualCdrom')
+        cdrom.connectable = connectable
+        cdrom.backing = backing
+        # 201 is the second built in IDE controller
+        cdrom.controllerKey = 201
+        cdrom.key = 10
+        cdrom.unitNumber = 0
+
+        cdrom_spec = client.create('VirtualDeviceConfigSpec')
+        cdrom_spec.fileOperation = None
+        cdrom_spec.device = cdrom
+        operation = client.create('VirtualDeviceConfigSpecOperation')
+        cdrom_spec.operation = operation.add
+
+        return cdrom_spec
 
     def delete_vm(self, name):
         vm = self.client.find_entity_view("VirtualMachine", filter={"name":name})
