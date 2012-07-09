@@ -25,9 +25,11 @@ import json
 import ConfigParser
 import logging
 import shutil
+from xml.etree.ElementTree import fromstring
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
-from imgfac.VMWare import VMImport
+#from imgfac.VMWare import VMImport
+from VSphereHelper import VSphereHelper
 from imgfac.BuildDispatcher import BuildDispatcher
 from VMDKstream import convert_to_stream
 from imgfac.CloudDelegate import CloudDelegate
@@ -200,14 +202,11 @@ class vSphere(object):
 
     def vmware_push_image_upload(self, target_image_id, provider, credentials):
         # BuildDispatcher is now the only location for the logic to map a provider to its data and target
-        provider_data = BuildDispatcher().get_dynamic_provider_data(provider)
+        provider_data = self.get_dynamic_provider_data(provider)
         if provider_data is None:
             raise ImageFactoryException("VMWare instance not found in local configuration file /etc/imagefactory/vsphere.json or as XML or JSON")
 
-        if provider_data['target'] != 'vsphere':
-            raise ImageFactoryException("Got a non-vsphere target in the vsphere builder.  This should never happen.")
-
-        self.generic_decode_credentials(credentials, provider_data)
+        self.generic_decode_credentials(credentials, provider_data, "vsphere")
 
         # Image is always here and it is the target_image datafile
         input_image = self.builder.target_image.data
@@ -217,11 +216,12 @@ class vSphere(object):
         #       "datastore": "datastore1", "network_name": "VM Network" } }
 
         vm_name = "factory-image-" + self.new_image_id
-        vm_import = VMImport(provider_data['api-url'], self.username, self.password)
-        vm_import.import_vm(datastore=provider_data['datastore'], network_name = provider_data['network_name'],
-                       name=vm_name, disksize_kb = (10*1024*1024 + 2 ), memory=512, num_cpus=1,
-                       guest_id='otherLinux64Guest', imagefilename=input_image)
-
+        helper = VSphereHelper(provider_data['api-url'], self.username, self.password)
+        helper.create_vm(input_image, vm_name, provider_data['compute_resource'], provider_data['datastore'], 
+                         str((10*1024*1024 + 2)/1024 ) + "KB", [ { "network_name": provider_data['network_name'], "type": "VirtualE1000"} ], 
+                         "512MB", 1, 'otherLinux64Guest')
+        self.builder.provider_image.identifier_on_provider = vm_name
+        self.builder.provider_account_identifier = self.username
         self.percent_complete = 100
 
 
@@ -237,12 +237,12 @@ class vSphere(object):
             raise
         self.status="COMPLETED"
 
-    def generic_decode_credentials(self, credentials, provider_data):
+    def generic_decode_credentials(self, credentials, provider_data, target):
         # convenience function for simple creds (rhev-m and vmware currently)
         doc = libxml2.parseDoc(credentials)
 
         self.username = None
-        _usernodes = doc.xpathEval("//provider_credentials/%s_credentials/username" % (self.target))
+        _usernodes = doc.xpathEval("//provider_credentials/%s_credentials/username" % (target))
         if len(_usernodes) > 0:
             self.username = _usernodes[0].content
         else:
@@ -252,7 +252,7 @@ class vSphere(object):
                 raise ImageFactoryException("No username specified in config file or in push call")
         self.provider_account_identifier = self.username
 
-        _passnodes = doc.xpathEval("//provider_credentials/%s_credentials/password" % (self.target))
+        _passnodes = doc.xpathEval("//provider_credentials/%s_credentials/password" % (target))
         if len(_passnodes) > 0:
             self.password = _passnodes[0].content
         else:
@@ -263,23 +263,28 @@ class vSphere(object):
 
         doc.freeDoc()
 
-    def retrieve_image(self, target_image_id, local_image_file):
-        # Grab target_image_id from warehouse unless it is already present as local_image_file
-        # TODO: Use Warehouse class instead
-        if not os.path.isfile(local_image_file):
-            if not (self.app_config['warehouse']):
-                raise ImageFactoryException("No warehouse configured - cannot retrieve image")
-            url = "%simages/%s" % (self.app_config['warehouse'], target_image_id)
-            self.log.debug("Image %s not present locally - Fetching from %s" % (local_image_file, url))
-            fp = open(local_image_file, "wb")
-            curl = pycurl.Curl()
-            curl.setopt(pycurl.URL, url)
-            curl.setopt(pycurl.WRITEDATA, fp)
-            curl.perform()
-            curl.close()
-            fp.close()
-        else:
-            self.log.debug("Image file %s already present - skipping warehouse download" % (local_image_file))
+    def get_dynamic_provider_data(self, provider):
+        # Get provider details for RHEV-M or VSphere
+        # First try to interpret this as an ad-hoc/dynamic provider def
+        # If this fails, try to find it in one or the other of the config files
+        # If this all fails return None
+        # We use this in the builders as well so I have made it "public"
+
+        try:
+            xml_et = fromstring(provider)
+            return xml_et.attrib
+        except Exception as e:
+            self.log.debug('Testing provider for XML: %s' % e)
+            pass
+
+        try:
+            jload = json.loads(provider)
+            return jload
+        except ValueError as e:
+            self.log.debug('Testing provider for JSON: %s' % e)
+            pass
+
+        return None
 
     def abort(self):
         pass

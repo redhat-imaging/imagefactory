@@ -24,7 +24,8 @@ from psphere.client import Client
 from psphere.errors import TemplateNotFoundError
 from psphere.soap import VimFault
 from time import sleep, time
-from pprint import pprint
+
+logging.getLogger('suds').setLevel(logging.INFO)
 
 class VSphereHelper:
     def __init__(self, server, username, password):
@@ -74,7 +75,7 @@ class VSphereHelper:
         # Convenience variable
         client = self.client
 
-        print("Creating VM %s" % name)
+        self.log.debug("Creating VM %s" % name)
         # If the host is not set, use the ComputeResource as the target
         if host is None:
             target = client.find_entity_view("ComputeResource",
@@ -86,8 +87,7 @@ class VSphereHelper:
 
         disksize_pattern = re.compile("^\d+[KMG]B")
         if disksize_pattern.match(disksize) is None:
-            print("Disk size %s is invalid. Try \"12G\" or similar" % disksize)
-            sys.exit(1)
+            raise Exception("Disk size %s is invalid. Try \"12G\" or similar" % disksize)
 
         if disksize.endswith("GB"):
             disksize_kb = int(disksize[:-2]) * 1024 * 1024
@@ -96,12 +96,11 @@ class VSphereHelper:
         elif disksize.endswith("KB"):
             disksize_kb = int(disksize[:-2])
         else:
-            print("Disk size %s is invalid. Try \"12G\" or similar" % disksize)
+            raise Exception("Disk size %s is invalid. Try \"12G\" or similar" % disksize)
 
         memory_pattern = re.compile("^\d+[KMG]B")
         if memory_pattern.match(memory) is None:
-            print("Memory size %s is invalid. Try \"12G\" or similar" % memory)
-            sys.exit(1)
+            raise Exception("Memory size %s is invalid. Try \"12G\" or similar" % memory)
 
         if memory.endswith("GB"):
             memory_mb = int(memory[:-2]) * 1024
@@ -110,7 +109,7 @@ class VSphereHelper:
         elif memory.endswith("KB"):
             memory_mb = int(memory[:-2]) / 1024
         else:
-            print("Memory size %s is invalid. Try \"12G\" or similar" % memory)
+            raise Exception("Memory size %s is invalid. Try \"12G\" or similar" % memory)
 
         # A list of devices to be assigned to the VM
         vm_devices = []
@@ -126,19 +125,16 @@ class VSphereHelper:
                 break
 
         if ds_to_use is None:
-            print("Could not find datastore on %s with name %s" %
+            raise Exception("Could not find datastore on %s with name %s" %
                   (target.name, datastore))
-            sys.exit(1)
 
         # Ensure the datastore is accessible and has enough space
         if ds_to_use.summary.accessible is not True:
-            print("Datastore (%s) exists, but is not accessible" %
+            raise Exception("Datastore (%s) exists, but is not accessible" %
                   ds_to_use.summary.name)
-            sys.exit(1)
         if ds_to_use.summary.freeSpace < disksize_kb * 1024:
-            print("Datastore (%s) exists, but does not have sufficient"
+            raise Exception("Datastore (%s) exists, but does not have sufficient"
                   " free space." % ds_to_use.summary.name)
-            sys.exit(1)
 
         disk = self.create_disk(datastore=ds_to_use, disksize_kb=disksize_kb)
         vm_devices.append(disk)
@@ -146,8 +142,7 @@ class VSphereHelper:
         for nic in nics:
             nic_spec = self.create_nic(target, nic)
             if nic_spec is None:
-                print("Could not create spec for NIC")
-                sys.exit(1)
+                raise Exception("Could not create spec for NIC")
 
             # Append the nic spec to the vm_devices list
             vm_devices.append(nic_spec)
@@ -179,15 +174,16 @@ class VSphereHelper:
 
         # Lease takes a bit of time to initialize
         for i in range(1000):
-            print lease.state
             #print lease.error
             if lease.state == "ready":
                 break
+            if lease.state == "error":
+                raise Exception("Our HttpNFCLease failed to initialize")
             sleep(5)
             lease.update_view_data(properties=["state"])
 
-        print "For debug and general info, here is the lease info"
-        pprint(lease.info)
+        #print "For debug and general info, here is the lease info"
+        #pprint(lease.info)
 
         url = None
         for url in lease.info.deviceUrl:
@@ -197,8 +193,7 @@ class VSphereHelper:
         if not url:
             raise Exception("Unable to extract disk upload URL from HttpNfcLease")
 
-        print("Extracted URL (%s)" % (url))
-
+        self.log.debug("Extracted image upload URL (%s) from lease" % (url))
 
         lease_timeout = lease.info.leaseTimeout
         self.time_at_last_poke = time()
