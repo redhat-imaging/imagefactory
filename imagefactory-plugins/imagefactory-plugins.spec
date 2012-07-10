@@ -1,0 +1,164 @@
+%define auto_register_macro_post() # create it if it doesn't already exist as a link \
+# If it is an existing file other than a link, do nothing \
+[ -L %{_sysconfdir}/imagefactory/plugins.d/%1.info ] || \
+[ -e %{_sysconfdir}/imagefactory/plugins.d/%1.info ] || \
+ln -s %{python_sitelib}/imagefactory_plugins/%1/%1.info %{_sysconfdir}/imagefactory/plugins.d/%1.info \
+exit 0 
+
+%define auto_register_macro_postun() if [ "\$1" = "0" ]; then \
+  # clean up the link if it exists - if it doesn't or if this is a regular file, do nothing \
+  [ -L %{_sysconfdir}/imagefactory/plugins.d/%1.info ] && rm -f  %{_sysconfdir}/imagefactory/plugins.d/%1.info \
+fi \
+exit 0
+
+
+Summary: Default plugins for the Image Factory system image generation tool
+Name: imagefactory-plugins
+Version: 1.1.2_145_gf83f54c
+Release: 1%{?dist}
+Source0: http://repos.fedorapeople.org/repos/aeolus/imagefactory/%{version}/tarball/%{name}-%{version}.tar.gz
+License: ASL 2.0
+Group: Applications/System
+URL: http://www.aeolusproject.org/imagefactory.html
+BuildArch: noarch
+BuildRequires: python-setuptools
+
+%description
+This is a placeholder top level package for a collection of plugins for the Image Factory
+cloud system image generation tool.
+
+imagefactory allows the creation of system images for multiple virtualization
+and cloud providers from a single template definition. See 
+http://aeolusproject.org/projects/imagefactory for more information.
+
+%package FedoraOS
+Summary: OS plugin for Fedora
+License: ASL 2.0
+Requires: oz >= 0.7.0
+
+%description FedoraOS
+An OS plugin to support Fedora OSes
+
+%package OpenStackCloud
+Summary: Cloud plugin for OpenStack running on KVM
+License: ASL 2.0
+Requires: python-glance
+
+%description OpenStackCloud
+A Cloud plugin to support OpenStack running on top of KVM.
+
+%package EC2Cloud
+Summary: Cloud plugin for EC2
+License: ASL 2.0
+Requires: euca2ools
+Requires: python-boto >= 2.0
+
+%description EC2Cloud
+A Cloud plugin to support EC2
+
+%package EC2Cloud-JEOS-images
+Summary: JEOS images for various OSes to support EC2 snapshot builds
+Requires: imagefactory-plugins-EC2Cloud
+
+%description EC2Cloud-JEOS-images
+These configuration files point to existing JEOS AMIs on EC2 that can be used to do
+"snapshot" style builds.
+
+%package MockRPMBasedOS
+Summary: Mock OS plugin
+License: ASL 2.0
+
+%description MockRPMBasedOS
+This plugin mimcs some of the behaviour of the RPM based OS plugins without actually doing a build.
+For testing use only.
+
+%package MockSphere
+Summary: Mock Cloud plugin
+License: ASL 2.0
+
+%description MockSphere
+This plugin mimcs some of the behaviour of a real cloud plugin without needing any real external infra.
+For testing use only.
+
+%package RHEVM
+Summary: RHEVM Cloud plugin
+License: ASL 2.0
+
+%description RHEVM
+A plugin for RHEVM "clouds"
+
+%package vSphere
+Summary: vSphere Cloud plugin
+License: ASL 2.0
+
+%description vSphere
+A plugin for vSphere "clouds"
+
+%prep
+%setup -q
+
+%build
+python setup.py build
+
+%install
+python setup.py install -O1 --root=%{buildroot} --skip-build
+
+%post FedoraOS
+%auto_register_macro_post FedoraOS
+%postun FedoraOS
+%auto_register_macro_postun FedoraOS
+
+%post OpenStackCloud
+%auto_register_macro_post OpenStackCloud
+%postun OpenStackCloud
+%auto_register_macro_postun OpenStackCloud
+
+%post EC2Cloud
+%auto_register_macro_post EC2Cloud
+%postun EC2Cloud
+%auto_register_macro_postun EC2Cloud
+
+%post MockRPMBasedOS
+%auto_register_macro_post MockRPMBasedOS
+%postun MockRPMBasedOS
+%auto_register_macro_postun MockRPMBasedOS
+
+%post RHEVM
+%auto_register_macro_post RHEVM
+%postun RHEVM
+%auto_register_macro_postun RHEVM
+
+%post vSphere
+%auto_register_macro_post vSphere
+%postun vSphere
+%auto_register_macro_postun vSphere
+
+%files
+%dir %{python_sitelib}/imagefactory_plugins
+%{python_sitelib}/imagefactory_plugins/__init__.py*
+%{python_sitelib}/imagefactory_plugins*.egg-info
+
+%files FedoraOS
+%{python_sitelib}/imagefactory_plugins/FedoraOS/*
+
+%files OpenStackCloud
+%{python_sitelib}/imagefactory_plugins/OpenStackCloud/*
+
+%files EC2Cloud
+%{python_sitelib}/imagefactory_plugins/EC2Cloud/*
+
+%files EC2Cloud-JEOS-images
+%{_sysconfdir}/imagefactory/jeos_images/ec2_fedora_jeos.conf
+%{_sysconfdir}/imagefactory/jeos_images/ec2_rhel_jeos.conf
+
+%files MockRPMBasedOS
+%{python_sitelib}/imagefactory_plugins/MockRPMBasedOS/*
+
+%files MockSphere
+%{python_sitelib}/imagefactory_plugins/MockSphere/*
+
+%files RHEVM
+%{python_sitelib}/imagefactory_plugins/RHEVM/*
+
+%files vSphere
+%{python_sitelib}/imagefactory_plugins/vSphere/*
