@@ -89,6 +89,23 @@ python setup.py build
 %install
 python setup.py install -O1 --root=%{buildroot} --skip-build
 
+%post FedoraOS
+if [ "$1" = "1" ]; then
+  # Initial install - always create the link
+  ln -s %{python_sitelib}/imagefactory_plugins/FedoraOS/FedoraOS.info %{_sysconfdir}/imagefactory/plugins.d/FedoraOS.info
+elif [ "$1" = "2" ]; then
+  # Upgrade - create it if it doesn't already exist
+  [ -e %{_sysconfdir}/imagefactory/plugins.d/FedoraOS.info ] || \
+  ln -s %{python_sitelib}/imagefactory_plugins/FedoraOS/FedoraOS.info %{_sysconfdir}/imagefactory/plugins.d/FedoraOS.info
+fi
+
+%postun FedoraOS
+if [ "$1" = "0" ]; then
+  # Final removal - clean up the link
+  [ -e %{_sysconfdir}/imagefactory/plugins.d/FedoraOS.info ] && rm -f  %{_sysconfdir}/imagefactory/plugins.d/FedoraOS.info
+fi
+
+
 %files
 %dir %{python_sitelib}/imagefactory_plugins
 %{python_sitelib}/imagefactory_plugins/__init__.py*
