@@ -132,7 +132,7 @@ def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_i
                 _response[key] = getattr(image, key, None)
 
         if(_type == "BaseImage"):
-            _response['target_images'] = self.list_images('target_images', base_image_id = image.identifier)
+            _response['target_images'] = list_images('target_images', base_image_id = image.identifier)
         elif(_type == "TargetImage"):
             base_image_id = image.metadata()['base_image_id']
             if(base_image_id):
@@ -141,7 +141,7 @@ def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_i
                 _response['base_image'] = base_image_dict
             else:
                 _response['base_image'] = None
-            _response['provider_images'] = self.list_images('provider_images', target_image_id = image.identifier)
+            _response['provider_images'] = list_images('provider_images', target_image_id = image.identifier)
         elif(_type == "ProviderImage"):
             target_image_id = image.metadata()['target_image_id']
             if(target_image_id):
