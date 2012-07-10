@@ -60,6 +60,7 @@ python setup.py install -O1 --root=%{buildroot} --skip-build
 
 %{__install} -d %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
 %{__install} -d %{buildroot}/%{_localstatedir}/lib/imagefactory/images
+%{__install} -d %{buildroot}/%{_sysconfdir}/imagefactory/plugins.d
 %{__install} -d %{buildroot}/%{_sysconfdir}/logrotate.d
 
 sed -i '/\/usr\/bin\/env python/d' %{buildroot}/%{python_sitelib}/imgfac/*.py
@@ -84,6 +85,7 @@ fi
 %config(noreplace) %{_sysconfdir}/logrotate.d/%{name}
 %dir %attr(0755, root, root) %{_sysconfdir}/pki/imagefactory/
 %dir %attr(0755, root, root) %{_sysconfdir}/imagefactory/jeos_images/
+%dir %attr(0755, root, root) %{_sysconfdir}/imagefactory/plugins.d/
 %dir %attr(0755, root, root) %{_localstatedir}/lib/imagefactory/images
 %config %{_sysconfdir}/pki/imagefactory/cert-ec2.pem
 %{python_sitelib}/imgfac
