@@ -1,3 +1,17 @@
+%define auto_register_macro_post() # create it if it doesn't already exist as a link \
+# If it is an existing file other than a link, do nothing \
+[ -L %{_sysconfdir}/imagefactory/plugins.d/%1.info ] || \
+[ -e %{_sysconfdir}/imagefactory/plugins.d/%1.info ] || \
+ln -s %{python_sitelib}/imagefactory_plugins/%1/%1.info %{_sysconfdir}/imagefactory/plugins.d/%1.info \
+exit 0 
+
+%define auto_register_macro_postun() if [ "\$1" = "0" ]; then \
+  # clean up the link if it exists - if it doesn't or if this is a regular file, do nothing \
+  [ -L %{_sysconfdir}/imagefactory/plugins.d/%1.info ] && rm -f  %{_sysconfdir}/imagefactory/plugins.d/%1.info \
+fi \
+exit 0
+
+
 Summary: Default plugins for the Image Factory system image generation tool
 Name: imagefactory-plugins
 Version: @VERSION@
@@ -90,21 +104,34 @@ python setup.py build
 python setup.py install -O1 --root=%{buildroot} --skip-build
 
 %post FedoraOS
-if [ "$1" = "1" ]; then
-  # Initial install - always create the link
-  ln -s %{python_sitelib}/imagefactory_plugins/FedoraOS/FedoraOS.info %{_sysconfdir}/imagefactory/plugins.d/FedoraOS.info
-elif [ "$1" = "2" ]; then
-  # Upgrade - create it if it doesn't already exist
-  [ -e %{_sysconfdir}/imagefactory/plugins.d/FedoraOS.info ] || \
-  ln -s %{python_sitelib}/imagefactory_plugins/FedoraOS/FedoraOS.info %{_sysconfdir}/imagefactory/plugins.d/FedoraOS.info
-fi
-
+%auto_register_macro_post FedoraOS
 %postun FedoraOS
-if [ "$1" = "0" ]; then
-  # Final removal - clean up the link
-  [ -e %{_sysconfdir}/imagefactory/plugins.d/FedoraOS.info ] && rm -f  %{_sysconfdir}/imagefactory/plugins.d/FedoraOS.info
-fi
+%auto_register_macro_postun FedoraOS
 
+%post OpenStackCloud
+%auto_register_macro_post OpenStackCloud
+%postun OpenStackCloud
+%auto_register_macro_postun OpenStackCloud
+
+%post EC2Cloud
+%auto_register_macro_post EC2Cloud
+%postun EC2Cloud
+%auto_register_macro_postun EC2Cloud
+
+%post MockRPMBasedOS
+%auto_register_macro_post MockRPMBasedOS
+%postun MockRPMBasedOS
+%auto_register_macro_postun MockRPMBasedOS
+
+%post RHEVM
+%auto_register_macro_post RHEVM
+%postun RHEVM
+%auto_register_macro_postun RHEVM
+
+%post vSphere
+%auto_register_macro_post vSphere
+%postun vSphere
+%auto_register_macro_postun vSphere
 
 %files
 %dir %{python_sitelib}/imagefactory_plugins
