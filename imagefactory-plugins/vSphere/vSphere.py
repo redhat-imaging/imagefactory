@@ -71,7 +71,7 @@ class vSphere(object):
         pass
 
     def builder_should_create_target_image(self, builder, target, image_id, template, parameters):
-        self.log.info('builder_should_create_target_image() called on EC2Cloud plugin - returning True')
+        self.log.info('builder_should_create_target_image() called on vSphere plugin - returning True')
         return True
 
     def builder_will_create_target_image(self, builder, target, image_id, template, parameters):
@@ -79,7 +79,7 @@ class vSphere(object):
         pass
 
     def builder_did_create_target_image(self, builder, target, image_id, template, parameters):
-        self.log.info('builder_did_create_target_image() called in RHEVM plugin')
+        self.log.info('builder_did_create_target_image() called in vSphere plugin')
         self.status="BUILDING"
 
         # TODO: This is a convenience variable for refactoring - rename
@@ -183,7 +183,7 @@ class vSphere(object):
 
 
     def push_image_to_provider(self, builder, provider, credentials, target, target_image, parameters):
-        self.log.info('push_image_to_provider() called in RHEVM')
+        self.log.info('push_image_to_provider() called in vSphere')
 
         # TODO: This is a convenience variable for refactoring - rename
         self.new_image_id = builder.provider_image.identifier
