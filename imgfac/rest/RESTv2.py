@@ -25,6 +25,8 @@ from imgfac.Version import VERSION as VERSION
 
 log = logging.getLogger(__name__)
 
+sys.path.append('%s/imgfac/rest' % sys.path[0])
+
 rest_api = Bottle(catchall=True)
 
 @rest_api.get('/imagefactory')
