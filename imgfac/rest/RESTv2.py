@@ -134,7 +134,7 @@ def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_i
         if(_type == "BaseImage"):
             _response['target_images'] = list_images('target_images', base_image_id = image.identifier)
         elif(_type == "TargetImage"):
-            base_image_id = image.metadata()['base_image_id']
+            base_image_id = image.base_image_id
             if(base_image_id):
                 base_image_href = '%s://%s/imagefactory/base_images/%s' % (request.urlparts[0], request.urlparts[1], base_image_id)
                 base_image_dict = {'_type': 'BaseImage', 'id': base_image_id, 'href': base_image_href}
@@ -143,7 +143,7 @@ def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_i
                 _response['base_image'] = None
             _response['provider_images'] = list_images('provider_images', target_image_id = image.identifier)
         elif(_type == "ProviderImage"):
-            target_image_id = image.metadata()['target_image_id']
+            target_image_id = image.target_image_id
             if(target_image_id):
                 target_image_href = '%s://%s/imagefactory/target_images/%s' % (request.urlparts[0], request.urlparts[1], target_image_id)
                 target_image_dict = {'_type': 'TargetImage', 'id': target_image_id, 'href': target_image_href}
@@ -171,7 +171,7 @@ def get_image_file(image_id, base_image_id=None, target_image_id=None, provider_
         image = PersistentImageManager.default_manager().image_with_id(image_id)
         if(not image):
             raise HTTPResponse(status=404, output='No image found with id: %s' % image_id)
-        path, filename = os.path.split(image.metadata()['data'])
+        path, filename = os.path.split(image.data)
         return static_file(filename, path, download=True)
     except Exception as e:
         log.exception(e)
