@@ -97,10 +97,13 @@ class FilePersistentImageManager(PersistentImageManager):
             if re.search(METADATA_EXT, storefilename):
                 try:
                     metadata = self._metadata_from_file(storefilename)
+                    match = True
                     for querykey in query:
                         if metadata[querykey] != query[querykey]:
-                            continue
-                    images.append(self._image_from_metadata(metadata))
+                            match = False
+                            break
+                    if match:
+                        images.append(self._image_from_metadata(metadata))
                 except:
                     self.log.warn("Could not extract image metadata from file (%s)" % (storefilename))
 
