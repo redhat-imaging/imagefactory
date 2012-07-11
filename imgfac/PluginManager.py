@@ -146,6 +146,9 @@ class PluginManager(Singleton):
                     else:
                         plugin = __import__('%s.%s' % (PKG_STR, plugin_name), fromlist=['delegate_class'])
                         return plugin.delegate_class()
+        except ImportError as e:
+            self.log.error('ERROR: Unable to find plugin for target - %s/n%s' % (target, e))
+            return None
         except Exception as e:
-                self.log.exception('Exception caught during plugin lookup: %s' % e)
-                return None
+            self.log.exception('Exception caught during plugin lookup: %s' % e)
+            return None
