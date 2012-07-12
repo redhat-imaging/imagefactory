@@ -37,7 +37,7 @@ def api_info():
 @rest_api.get('/imagefactory/base_images/<base_image_id>/<image_collection>')
 @rest_api.get('/imagefactory/target_images/<target_image_id>/<image_collection>')
 @oauth_protect
-def list_images(image_collection, base_image_id=None, target_image_id=None):
+def list_images(image_collection, base_image_id=None, target_image_id=None, list_url=None):
     try:
         fetch_spec = {}
         if(image_collection == 'base_images'):
@@ -55,10 +55,11 @@ def list_images(image_collection, base_image_id=None, target_image_id=None):
 
         fetched_images = PersistentImageManager.default_manager().images_from_query(fetch_spec)
         images = list()
+        _url = list_url if list_url else request.url
         for image in fetched_images:
             resp_item = {'_type':type(image).__name__,
                          'id':image.identifier,
-                         'href':'%s/%s' % (request.url, image.identifier)}
+                         'href':'%s/%s' % (_url, image.identifier)}
             images.append(resp_item)
 
         return {image_collection:images}
@@ -133,21 +134,27 @@ def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_i
             if key not in ('identifier', 'data', 'base_image_id', 'target_image_id'):
                 _response[key] = getattr(image, key, None)
 
+        api_url = '%s://%s/imagefactory' % (request.urlparts[0], request.urlparts[1])
+
         if(_type == "BaseImage"):
-            _response['target_images'] = list_images('target_images', base_image_id = image.identifier)
+            _response['target_images'] = list_images('target_images',
+                                                     base_image_id = image.identifier,
+                                                     list_url='%s/target_images' % api_url)
         elif(_type == "TargetImage"):
             base_image_id = image.base_image_id
             if(base_image_id):
-                base_image_href = '%s://%s/imagefactory/base_images/%s' % (request.urlparts[0], request.urlparts[1], base_image_id)
+                base_image_href = '%s/base_images/%s' % (api_url, base_image_id)
                 base_image_dict = {'_type': 'BaseImage', 'id': base_image_id, 'href': base_image_href}
                 _response['base_image'] = base_image_dict
             else:
                 _response['base_image'] = None
-            _response['provider_images'] = list_images('provider_images', target_image_id = image.identifier)
+            _response['provider_images'] = list_images('provider_images',
+                                                        target_image_id = image.identifier,
+                                                        list_url = '%s/provider_images' % api_url)
         elif(_type == "ProviderImage"):
             target_image_id = image.target_image_id
             if(target_image_id):
-                target_image_href = '%s://%s/imagefactory/target_images/%s' % (request.urlparts[0], request.urlparts[1], target_image_id)
+                target_image_href = '%s/target_images/%s' % (api_url, target_image_id)
                 target_image_dict = {'_type': 'TargetImage', 'id': target_image_id, 'href': target_image_href}
                 _response['target_image'] = target_image_dict
             else:
