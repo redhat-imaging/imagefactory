@@ -48,6 +48,16 @@ class CloudDelegate(Interface):
         @return A ProviderImage object.
         """
 
+    def delete_from_provider(self, builder, provider, credentials, target, parameters):
+        """
+        Delete the image from the provider.
+
+        @param builder The Builder object with the provider image to delete.
+        @param target The cloud target to which the provider belongs.
+        @param provider The cloud provider from which the image will be deleted.
+        @param parameters The cloud provider specific parameters for deletion.
+        """
+
     def builder_should_create_target_image(self, builder, target, image_id, template, parameters):
         """
         Allows the delegate to decide if a TargetImage should be created.
