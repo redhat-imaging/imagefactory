@@ -198,8 +198,9 @@ _Example:_
     >
     > **Parameters:**  
     
-    > > __target_image_id__ - uuid of the target image to push. If not provided, a TargetImage will be created.  
+    > > __target_image_id__ - uuid of the target image to push. If not provided and not an image snapshot, a TargetImage will be created.  
     > > __template__ - TDL document  
+    > > __target__ - The target to which the provider belongs. This would be the same target used for building a TargetImage.  
     > > __provider__ - cloud provider name  
     > > __credentials__ - cloud provider credentials xml  
     > > __parameters__ - Optional parameters that may change the nature of the image being built.  This may include things such as on-disk format or the build mechanism itself.  Parameters are never required as sensible defaults will always be used and will be made part of the queryable properties of an image.
