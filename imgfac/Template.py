@@ -21,7 +21,6 @@ import os.path
 import props
 import libxml2
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
-from imgfac.ImageWarehouse import ImageWarehouse
 
 class Template(object):
     uuid_pattern = '([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})'
@@ -57,7 +56,6 @@ class Template(object):
 
     def __init__(self, template=None, uuid=None, url=None, xml=None):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        self.warehouse = ImageWarehouse(ApplicationConfiguration().configuration["warehouse"])
 
         self.identifier = None
         self.url = None
@@ -112,38 +110,8 @@ class Template(object):
         else:
             raise ValueError("'template_string' must be a UUID, URL, or XML document...\n--- TEMPLATE STRING ---\n%s\n-----------------" % (template_string, ))
 
-    def __fetch_template_for_uuid(self, uuid_string):
-        xml_string, metadata = self.warehouse.template_with_id(uuid_string)
-        if(xml_string and self.__string_is_xml_template(xml_string)):
-            return uuid_string, xml_string
-        else:
-            self.log.debug("Unable to fetch a valid template given template id %s:\n%s\nWill try fetching template id from a target image with this id..." % (uuid_string, self.__abbreviated_template(xml_string)))
-            template_id, xml_string, metadata = self.warehouse.template_for_target_image_id(uuid_string)
-            if(template_id and xml_string and self.__string_is_xml_template(xml_string)):
-                return template_id, xml_string
-            else:
-                self.log.debug("Unable to fetch a valid template given a target image id %s:\n%s\n" % (uuid_string, self.__abbreviated_template(xml_string)))
-                return None, None
-
     def __string_is_xml_template(self, text):
         return (("<template" in text.lower()) and ("</template>" in text.lower()))
-
-    def __fetch_template_with_url(self, url):
-        template_id = None
-        regex = re.compile(Template.uuid_pattern)
-        match = regex.search(url)
-
-        if (match):
-            template_id = match.group()
-
-        if (not url.startswith(self.warehouse.url)):
-            response_headers, response = httplib2.Http().request(url, "GET", headers={'content-type':'text/plain'})
-        else:
-            response_headers, response = self.warehouse.request(url, "GET")
-        if(response and self.__string_is_xml_template(response)):
-            return template_id, response
-        else:
-            raise RuntimeError("Recieved status %s fetching a template from %s!\n--- Response Headers:\n%s\n--- Response:\n%s" % (response_headers["status"], url, response_headers, response))
 
     def __abbreviated_template(self, template_string):
         lines = template_string.splitlines(True)

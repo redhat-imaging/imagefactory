@@ -122,7 +122,6 @@ class FedoraOS(object):
         self.guest.diskimage = self.base_image.data
         # The remainder comes from the original build_upload(self, build_id)
 
-        #self.log.debug("Fedora_ec2_Builder: build_upload() called for target %s with warehouse config %s" % (self.target, self.app_config['warehouse']))
         self.status="BUILDING"
         try:
             self.activity("Cleaning up any old Oz guest")
@@ -163,24 +162,6 @@ class FedoraOS(object):
         self.log.debug("Exception caught in ImageFactory")
         self.log.debug(traceback.format_exc())
         self.active_image.status_detal['error'] = traceback.format_exc()
-
-    ## INTERFACE METHOD
-    def build_snapshot(self, build_id):
-        # All we need do here is store the relevant bits in the Warehouse
-        self.status = "BUILDING"
-        self.log.debug("Building Linux for non-upload cloud (%s)" % (self.target))
-        self.image = "%s/placeholder-linux-image-%s" % (self.app_config['imgdir'], self.new_image_id)
-        image_file = open(self.image, 'w')
-        image_file.write("Placeholder for non upload cloud Linux image")
-        image_file.close()
-        self.output_descriptor = None
-        self.log.debug("Storing placeholder object for non upload cloud image")
-        self.store_image(build_id)
-        self.percent_complete = 100
-        self.status = "COMPLETED"
-        self.log.debug("Completed placeholder warehouse object for linux non-upload image...")
-        sleep(5)
-
 
     def threadsafe_generate_install_media(self, guest):
         # Oz caching of install media and modified install media is not thread safe
