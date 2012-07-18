@@ -22,6 +22,7 @@ from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.PluginManager import PluginManager
 from imgfac.PersistentImageManager import PersistentImageManager
 from imgfac.Version import VERSION as VERSION
+from imgfac.ApplicationConfiguration import ApplicationConfiguration
 
 log = logging.getLogger(__name__)
 
@@ -29,13 +30,23 @@ sys.path.append('%s/imgfac/rest' % sys.path[0])
 
 rest_api = Bottle(catchall=True)
 
+def log_request(f):
+    def decorated_function(*args, **kwargs):
+        if(ApplicationConfiguration().configuration['debug']):
+            log.debug('Handling HTTP %s REQUEST: %s' % (request.method, request.body.read()))
+        return f(*args, **kwargs)
+    decorated_function.__name__ = f.__name__
+    return decorated_function
+
 @rest_api.get('/imagefactory')
+@log_request
 def api_info():
     return {'name':'imagefactory', 'version':VERSION, 'api_version':'2.0'}
 
 @rest_api.get('/imagefactory/<image_collection>')
 @rest_api.get('/imagefactory/base_images/<base_image_id>/<image_collection>')
 @rest_api.get('/imagefactory/target_images/<target_image_id>/<image_collection>')
+@log_request
 @oauth_protect
 def list_images(image_collection, base_image_id=None, target_image_id=None, list_url=None):
     try:
@@ -71,6 +82,7 @@ def list_images(image_collection, base_image_id=None, target_image_id=None, list
 @rest_api.post('/imagefactory/base_images/<base_image_id>/<image_collection>')
 @rest_api.post('/imagefactory/base_images/<base_image_id>/target_images/<target_image_id>/<image_collection>')
 @rest_api.post('/imagefactory/target_images/<target_image_id>/<image_collection>')
+@log_request
 @oauth_protect
 def create_image(image_collection, base_image_id=None, target_image_id=None):
     try:
@@ -120,6 +132,7 @@ def create_image(image_collection, base_image_id=None, target_image_id=None):
 @rest_api.get('/imagefactory/base_images/<base_image_id>/target_images/<image_id>')
 @rest_api.get('/imagefactory/base_images/<base_image_id>/target_images/<target_image_id>/provider_images/<image_id>')
 @rest_api.get('/imagefactory/target_images/<target_image_id>/provider_images/<image_id>')
+@log_request
 @oauth_protect
 def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
     try:
@@ -174,6 +187,7 @@ def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_i
 @rest_api.get('/imagefactory/base_images/<base_image_id>/target_images/<image_id>/raw_image')
 @rest_api.get('/imagefactory/base_images/<base_image_id>/target_images/<target_image_id>/provider_images/<image_id>/raw_image')
 @rest_api.get('/imagefactory/target_images/<target_image_id>/provider_images/<image_id>/raw_image')
+@log_request
 @oauth_protect
 def get_image_file(image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
     try:
@@ -192,6 +206,7 @@ def get_image_file(image_id, base_image_id=None, target_image_id=None, provider_
 @rest_api.delete('/imagefactory/base_images/<base_image_id>/target_images/<image_id>')
 @rest_api.delete('/imagefactory/base_images/<base_image_id>/target_images/<target_image_id>/provider_images/<image_id>')
 @rest_api.delete('/imagefactory/target_images/<target_image_id>/provider_images/<image_id>')
+@log_request
 @oauth_protect
 def delete_image_with_id(image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
     try:
@@ -203,6 +218,7 @@ def delete_image_with_id(image_id, base_image_id=None, target_image_id=None, pro
 @rest_api.get('/imagefactory/plugins')
 @rest_api.get('/imagefactory/plugins/')
 @rest_api.get('/imagefactory/plugins/<plugin_id>')
+@log_request
 @oauth_protect
 def get_plugins(plugin_id=None):
     try:
@@ -232,6 +248,7 @@ def get_plugins(plugin_id=None):
 @rest_api.get('/imagefactory/targets/<target_id>/providers/<provider_id>')
 @rest_api.get('/imagefactory/jeos')
 @rest_api.get('/imagefactory/jeos/<jeos_id>')
+@log_request
 def method_not_implemented(**kw):
     """
     @return 501 Not Implemented
