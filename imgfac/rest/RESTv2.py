@@ -89,7 +89,12 @@ def list_images(image_collection, base_image_id=None, target_image_id=None, list
 @oauth_protect
 def create_image(image_collection, base_image_id=None, target_image_id=None):
     try:
-        request_data = RESTtools.form_data_for_content_type(request.headers.get('Content-Type'))
+        parsed_request = RESTtools.form_data_for_content_type(request.headers.get('Content-Type'))
+        if(len(parsed_request) == 1):
+            request_data = parsed_request.values()[0]
+        else:
+            request_data = parsed_request
+
         req_base_img_id = request_data.get('base_image_id')
         req_target_img_id = request_data.get('target_image_id')
         base_img_id = req_base_img_id if req_base_img_id else base_image_id
@@ -114,7 +119,7 @@ def create_image(image_collection, base_image_id=None, target_image_id=None):
                                                                    parameters=request_data.get('parameters'))
             image = builder.provider_image
         else:
-            raise HTTPResponse(status=400, output="'image_collection' is None")
+            raise HTTPResponse(status=400, output="Collection (%s) is unknown..." % image_collection)
 
         _response = {'_type':type(image).__name__,
                      'id':image.identifier,
