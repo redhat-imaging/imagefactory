@@ -33,7 +33,7 @@ rest_api = Bottle(catchall=True)
 def log_request(f):
     def decorated_function(*args, **kwargs):
         if(ApplicationConfiguration().configuration['debug']):
-            log.debug('Handling %s HTTP %s REQUEST: %s' % (request.content_type, request.method, request.body.read()))
+            log.debug('Handling %s HTTP %s REQUEST: %s' % (request.headers.get('Content-Type'), request.method, request.body.read()))
         return f(*args, **kwargs)
     decorated_function.__name__ = f.__name__
     return decorated_function
