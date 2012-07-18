@@ -13,9 +13,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import sys
+sys.path.insert(1, '%s/imgfac/rest' % sys.path[0])
+
 import logging
 import os.path
-from imgfac.rest.bottle import *
+from bottle import *
 import imgfac.rest.RESTtools as RESTtools
 from imgfac.rest.OAuthTools import oauth_protect
 from imgfac.BuildDispatcher import BuildDispatcher
@@ -25,8 +28,6 @@ from imgfac.Version import VERSION as VERSION
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 
 log = logging.getLogger(__name__)
-
-sys.path.append('%s/imgfac/rest' % sys.path[0])
 
 rest_api = Bottle(catchall=True)
 
@@ -78,7 +79,6 @@ def list_images(image_collection, base_image_id=None, target_image_id=None, list
                         }
             images.append(resp_item)
 
-        #return {image_collection:images}
         return images
     except Exception as e:
         log.exception(e)
@@ -132,7 +132,7 @@ def create_image(image_collection, base_image_id=None, target_image_id=None):
                 _response[key] = getattr(image, key, None)
 
         response.status = 202
-        return _response
+        return {image_collection[0:-1]:_response}
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
@@ -161,10 +161,12 @@ def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_i
         api_url = '%s://%s/imagefactory' % (request.urlparts[0], request.urlparts[1])
 
         if(_type == "BaseImage"):
+            _objtype = 'base_image'
             _response['target_images'] = list_images('target_images',
                                                      base_image_id = image.identifier,
                                                      list_url='%s/target_images' % api_url)
         elif(_type == "TargetImage"):
+            _objtype = 'target_image'
             base_image_id = image.base_image_id
             if(base_image_id):
                 base_image_href = '%s/base_images/%s' % (api_url, base_image_id)
@@ -176,6 +178,7 @@ def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_i
                                                         target_image_id = image.identifier,
                                                         list_url = '%s/provider_images' % api_url)
         elif(_type == "ProviderImage"):
+            _objtype = 'provider_image'
             target_image_id = image.target_image_id
             if(target_image_id):
                 target_image_href = '%s/target_images/%s' % (api_url, target_image_id)
@@ -187,7 +190,7 @@ def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_i
             log.warn("Unknown image type: %s" % _type)
 
         response.status = 202
-        return _response
+        return {_objtype:_response}
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
@@ -222,6 +225,7 @@ def get_image_file(image_id, base_image_id=None, target_image_id=None, provider_
 def delete_image_with_id(image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
     try:
         PersistentImageManager.default_manager().delete_image_with_id(image_id)
+        response.status = 204
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
