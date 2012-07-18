@@ -132,7 +132,7 @@ def create_image(image_collection, base_image_id=None, target_image_id=None):
                 _response[key] = getattr(image, key, None)
 
         response.status = 202
-        return _response
+        return {image_collection[0:-1]:_response}
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
@@ -161,10 +161,12 @@ def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_i
         api_url = '%s://%s/imagefactory' % (request.urlparts[0], request.urlparts[1])
 
         if(_type == "BaseImage"):
+            _objtype = 'base_image'
             _response['target_images'] = list_images('target_images',
                                                      base_image_id = image.identifier,
                                                      list_url='%s/target_images' % api_url)
         elif(_type == "TargetImage"):
+            _objtype = 'target_image'
             base_image_id = image.base_image_id
             if(base_image_id):
                 base_image_href = '%s/base_images/%s' % (api_url, base_image_id)
@@ -176,6 +178,7 @@ def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_i
                                                         target_image_id = image.identifier,
                                                         list_url = '%s/provider_images' % api_url)
         elif(_type == "ProviderImage"):
+            _objtype = 'provider_image'
             target_image_id = image.target_image_id
             if(target_image_id):
                 target_image_href = '%s/target_images/%s' % (api_url, target_image_id)
@@ -187,7 +190,7 @@ def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_i
             log.warn("Unknown image type: %s" % _type)
 
         response.status = 202
-        return _response
+        return {_objtype:_response}
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
@@ -222,6 +225,7 @@ def get_image_file(image_id, base_image_id=None, target_image_id=None, provider_
 def delete_image_with_id(image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
     try:
         PersistentImageManager.default_manager().delete_image_with_id(image_id)
+        response.status = 204
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
