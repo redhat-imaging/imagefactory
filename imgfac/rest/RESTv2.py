@@ -71,12 +71,15 @@ def list_images(image_collection, base_image_id=None, target_image_id=None, list
         images = list()
         _url = list_url if list_url else request.url
         for image in fetched_images:
-            resp_item = {'_type':type(image).__name__,
-                         'id':image.identifier,
-                         'href':'%s/%s' % (_url, image.identifier)}
+            resp_item = {image_collection[0:-1]:
+                            {'_type':type(image).__name__,
+                            'id':image.identifier,
+                            'href':'%s/%s' % (_url, image.identifier)}
+                        }
             images.append(resp_item)
 
-        return {image_collection:images}
+        #return {image_collection:images}
+        return images
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
