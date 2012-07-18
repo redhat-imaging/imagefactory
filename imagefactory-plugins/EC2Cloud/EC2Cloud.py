@@ -799,7 +799,7 @@ class EC2Cloud(object):
                 manifest_s3_loc = "%s/%s.manifest.xml" % (bucket, uuid)
 
                 command = ['euca-register', '-U', register_url,
-                           '-A', self.ec2_access_key, '-S', self.ec2_secret_key,
+                           '-A', self.ec2_access_key, '-S', self.ec2_secret_key, '-a', self.tdlobj.arch
                            #'-n', image_name, '-d', image_desc,
                            manifest_s3_loc]
                 command_log = map(replace, command)
@@ -1273,7 +1273,7 @@ class EC2Cloud(object):
 
         register_env = { 'EC2_URL':register_url }
         register_command = [ "euca-register" , "-A", self.ec2_access_key,
-                             "-S", self.ec2_secret_key, s3_path ]
+                             "-S", self.ec2_secret_key, "-a", self.tdlobj.arch, s3_path ]
         register_command_log = map(replace, register_command)
         self.activity("Registering image")
         self.log.debug("Executing register command: %s with environment %s " % (register_command_log, repr(register_env)))
