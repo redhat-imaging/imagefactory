@@ -43,7 +43,6 @@ class ApplicationConfiguration(Singleton):
                                 and does not connect to a qpidd."""
         cli_build_description = """Build specified system and exit."""
         cli_push_description = """Push an image and exit."""
-        warehouse_description = """Options for specifying Image Warehouse (http://aeolusproject.org/imagewarehouse.html) base URL and bucket names."""
         ec2_description = """Options specifying EC2 instance types to use for various functions"""
         rest_description = """Enable the RESTful interface."""
 
@@ -84,15 +83,6 @@ class ApplicationConfiguration(Singleton):
         group_build = argparser.add_argument_group(title='Image importing', description=cli_build_description)
         group_build.add_argument('--target-image', help='Target specific identifier for the image to import.')
         group_build.add_argument('--image-desc', help='XML document describing the imported image.')
-
-        group_warehouse = argparser.add_argument_group(title='Image Warehouse', description=warehouse_description)
-        group_warehouse.add_argument('--warehouse', default='http://localhost:9090/', help='URL of the warehouse location to store images. (default: %(default)s)')
-        group_warehouse.add_argument('--image_bucket', help='Name of warehouse bucket to look in images. (default: %(default)s)')
-        group_warehouse.add_argument('--build_bucket', help='Name of warehouse bucket to look in builds. (default: %(default)s)')
-        group_warehouse.add_argument('--target_bucket', help='Name of warehouse bucket to look in for target images. (default: %(default)s)')
-        group_warehouse.add_argument('--template_bucket', help='Name of warehouse bucket to look in for templates. (default: %(default)s)')
-        group_warehouse.add_argument('--icicle_bucket', help='Name of warehouse bucket to look in for icicles. (default: %(default)s)')
-        group_warehouse.add_argument('--provider_bucket', help='Name of warehouse bucket to look in for provider image instances. (default: %(default)s)')
 
         return argparser
 
