@@ -223,73 +223,6 @@ class EC2Cloud(object):
             self.status="FAILED"
             raise
 
-    def build_snapshot(self, build_id):
-        # All we need do here is store the relevant bits in the Warehouse
-        self.status = "BUILDING"
-        self.log.debug("Building Linux for non-upload cloud (%s)" % (self.target))
-        self.image = "%s/placeholder-linux-image-%s" % (self.app_config['imgdir'], self.new_image_id)
-        image_file = open(self.image, 'w')
-        image_file.write("Placeholder for non upload cloud Linux image")
-        image_file.close()
-        self.output_descriptor = None
-        self.log.debug("Storing placeholder object for non upload cloud image")
-        self.store_image(build_id)
-        self.percent_complete = 100
-        self.status = "COMPLETED"
-        self.log.debug("Completed placeholder warehouse object for linux non-upload image...")
-        sleep(5)
-
-    def build_upload(self, build_id):
-        self.log.debug("Fedora_ec2_Builder: build_upload() called for target %s with warehouse config %s" % (self.target, self.app_config['warehouse']))
-        self.status="BUILDING"
-        try:
-            self.guest.cleanup_old_guest()
-            self.threadsafe_generate_install_media(self.guest)
-            self.percent_complete=10
-
-            # We want to save this later for use by RHEV-M and Condor clouds
-            libvirt_xml=""
-
-            try:
-                self.guest.generate_diskimage()
-                # TODO: If we already have a base install reuse it
-                #  subject to some rules about updates to underlying repo
-                self.log.debug("Doing base install via Oz")
-                libvirt_xml = self.guest.install(self.app_config["timeout"])
-                self.image = self.guest.diskimage
-                self.log.debug("Base install complete - Doing customization and ICICLE generation")
-                self.percent_complete = 30
-                self.output_descriptor = self.guest.customize_and_generate_icicle(libvirt_xml)
-                self.log.debug("Customization and ICICLE generation complete")
-                self.percent_complete = 50
-            finally:
-                self.guest.cleanup_install()
-
-            self.log.debug("Generated disk image (%s)" % (self.guest.diskimage))
-            # OK great, we now have a customized KVM image
-            # Now we do some target specific transformation
-
-            # Add the cloud-info file
-            self.modify_oz_filesystem()
-
-            self.log.info("Transforming image for use on EC2")
-            self.ec2_copy_filesystem(self.app_config['imgdir'])
-            self.ec2_modify_filesystem()
-
-            if (self.app_config['warehouse']):
-                self.log.debug("Storing Fedora image at %s..." % (self.app_config['warehouse'], ))
-                target_parameters="No target parameters for cloud type %s" % (self.target)
-
-                self.store_image(build_id, target_parameters)
-                self.log.debug("Image warehouse storage complete")
-        except:
-            self.log_exc()
-            self.status="FAILED"
-            raise
-
-        self.percent_complete=100
-        self.status="COMPLETED"
-
     def modify_oz_filesystem(self):
         self.activity("Removing unique identifiers from image - Adding cloud information")
 
@@ -1000,32 +933,6 @@ class EC2Cloud(object):
         self.ec2_key_file_object.write(ec2_key)
         self.ec2_key_file_object.flush()
         self.ec2_key_file=self.ec2_key_file_object.name
-
-
-    def retrieve_image(self, target_image_id, local_image_file):
-        # Grab target_image_id from warehouse unless it is already present as local_image_file
-        # TODO: Use Warehouse class instead
-        # This is another place where we are guaranteed to get multiple threads pulling the same
-        # file at the same time.  Protect with a lock
-        res_mgr = ReservationManager()
-        res_mgr.get_named_lock(local_image_file)
-        try:
-            if not os.path.isfile(local_image_file):
-                if not (self.app_config['warehouse']):
-                    raise ImageFactoryException("No warehouse configured - cannot retrieve image")
-                url = "%simages/%s" % (self.app_config['warehouse'], target_image_id)
-                self.log.debug("Image %s not present locally - Fetching from %s" % (local_image_file, url))
-                fp = open(local_image_file, "wb")
-                curl = pycurl.Curl()
-                curl.setopt(pycurl.URL, url)
-                curl.setopt(pycurl.WRITEDATA, fp)
-                curl.perform()
-                curl.close()
-                fp.close()
-            else:
-                self.log.debug("Image file %s already present - skipping warehouse download" % (local_image_file))
-        finally:
-            res_mgr.release_named_lock(local_image_file)
 
     def ec2_push_image_upload_ebs(self, target_image_id, provider, credentials):
         # TODO: Merge with ec2_push_image_upload and/or factor out duplication
