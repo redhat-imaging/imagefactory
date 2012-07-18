@@ -13,9 +13,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import sys
+sys.path.insert(1, '%s/imgfac/rest' % sys.path[0])
+
 import logging
 import os.path
-from imgfac.rest.bottle import *
+from bottle import *
 import imgfac.rest.RESTtools as RESTtools
 from imgfac.rest.OAuthTools import oauth_protect
 from imgfac.BuildDispatcher import BuildDispatcher
@@ -25,8 +28,6 @@ from imgfac.Version import VERSION as VERSION
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 
 log = logging.getLogger(__name__)
-
-sys.path.append('%s/imgfac/rest' % sys.path[0])
 
 rest_api = Bottle(catchall=True)
 
@@ -78,7 +79,6 @@ def list_images(image_collection, base_image_id=None, target_image_id=None, list
                         }
             images.append(resp_item)
 
-        #return {image_collection:images}
         return images
     except Exception as e:
         log.exception(e)
