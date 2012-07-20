@@ -122,7 +122,7 @@ def create_image(image_collection, base_image_id=None, target_image_id=None):
                                                                    parameters=request_data.get('parameters'))
             image = builder.provider_image
         else:
-            raise HTTPResponse(status=400, output="Collection (%s) is unknown..." % image_collection)
+            raise HTTPResponse(status=404, output="%s not found" % image_collection)
 
         _response = {'_type':type(image).__name__,
                      'id':image.identifier,
@@ -133,6 +133,9 @@ def create_image(image_collection, base_image_id=None, target_image_id=None):
 
         response.status = 202
         return {image_collection[0:-1]:_response}
+    except KeyError as e:
+        log.exception(e)
+        raise HTTPResponse(status=400, output='Missing value for key: %s' % e)
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
@@ -187,9 +190,10 @@ def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_i
             else:
                 _response['target_image'] = None
         else:
-            log.warn("Unknown image type: %s" % _type)
+            log.error("Returning HTTP status 500 due to unknown image type: %s" % _type)
+            raise HTTPResponse(status=500, output='Bad type for found object: %s' % _type)
 
-        response.status = 202
+        response.status = 200
         return {_objtype:_response}
     except Exception as e:
         log.exception(e)
