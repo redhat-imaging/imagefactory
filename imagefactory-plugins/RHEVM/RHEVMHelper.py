@@ -68,9 +68,18 @@ class RHEVMHelper(object):
     # These are the only two genuinley public methods
     # What we create is a VM template
 
-    def import_template(self, image_filename, nfs_host, nfs_path, nfs_dir, cluster):
+    def import_template(self, image_filename, nfs_host, nfs_path, nfs_dir, cluster,
+                        ovf_name = None, ovf_desc = None):
+        if not ovf_desc:
+            self.ovf_desc = "Imported by Image Factory"
+        else:
+            self.ovf_desc = ovf_desc
         self.log.debug("Preparing for RHEVM template import of image file (%s)" % (image_filename))
         self.init_vm_import(image_filename, nfs_host, nfs_path, nfs_dir, cluster)
+        if not ovf_name:
+            self.ovf_name=str(self.tpl_uuid)
+        else:
+            self.ovf_name = ovf_name
         self.log.debug("Staging files")
         self.stage_files()
         self.log.debug("Moving files to final export domain location")
@@ -376,7 +385,7 @@ class RHEVMHelper(object):
 	etfile.set('ovf:id', str(self.vol_uuid))
 	etfile.set('ovf:size', str(self.vol_size))
         # TODO: Bulk this up a bit
-	etfile.set('ovf:description', os.path.basename(self.image_filename))
+	etfile.set('ovf:description', self.ovf_name)
 	etref.append(etfile)
 
 	etroot.append(etref)
@@ -422,7 +431,7 @@ class RHEVMHelper(object):
 	etcon.set('ovf:id', "out")
 
 	ete = ElementTree.Element('Name')
-	ete.text = str(self.img_uuid)
+	ete.text = self.ovf_name
 	etcon.append(ete)
 
 	ete = ElementTree.Element('TemplateId')
@@ -432,7 +441,7 @@ class RHEVMHelper(object):
 	# spec also has 'TemplateName'
 
 	ete = ElementTree.Element('Description')
-	ete.text = "Template imported by Image Factory"
+	ete.text = self.ovf_desc
 	etcon.append(ete)
 
 	ete = ElementTree.Element('Domain')

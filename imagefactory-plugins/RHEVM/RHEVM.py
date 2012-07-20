@@ -223,7 +223,8 @@ class RHEVM(object):
         # Image is always here and it is the target_image datafile
         input_image = self.builder.target_image.data
         rhevm_uuid = helper.import_template(input_image, provider_data['nfs-host'], provider_data['nfs-path'], 
-                                            provider_data['nfs-dir'], provider_data['cluster'])
+                                            provider_data['nfs-dir'], provider_data['cluster'], ovf_name=str(self.new_image_id), 
+                                            ovf_desc = "Template name (%s) from base image (%s)" % (self.tdlobj.name, str(self.builder.base_image.identifier)) )
 
         if rhevm_uuid is None:
             raise ImageFactoryException("Failed to obtain RHEV-M UUID from helper")
