@@ -34,6 +34,9 @@ def validate_two_leg_oauth():
         auth_header = {}
         if auth_header_key in request.headers:
             auth_header.update({auth_header_key:request.headers[auth_header_key]})
+        else:
+            response.set_header('WWW-Authenticate', 'OAuth')
+            raise HTTPResponse(status=401, output='Unauthorized: missing authorization')
         req = oauth.Request.from_request(request.method,
                                          request.url,
                                          headers=auth_header,
@@ -41,8 +44,12 @@ def validate_two_leg_oauth():
         oauth_consumer = Consumer(request.params['oauth_consumer_key'])
         oauth_server.verify_request(req, oauth_consumer, None)
         return True
+    except AttributeError as e:
+        log.debug('Returning HTTP 401 (Unauthorized: authorization failed) on exception: %s' % e)
+        response.set_header('WWW-Authenticate', 'OAuth')
+        raise HTTPResponse(status=401, output='Unauthorized: authorization failed')
     except Exception as e:
-        log.exception(e)
+        log.exception('Returning HTTP 500 (OAuth validation failed) on exception: %s' % e)
         raise HTTPResponse(status=500, output='OAuth validation failed: %s' % e)
 
 def oauth_protect(f):
