@@ -235,6 +235,21 @@ class RHEVM(object):
         self.builder.provider_account_identifier = self.username
         self.percent_complete = 100
 
+    def delete_from_provider(self, builder, provider, credentials, target, parameters):
+        self.log.debug("Deleting RHEVM template (%s)" % (self.builder.provider_image.identifier_on_provider))
+        provider_data = self.get_dynamic_provider_data(provider)
+        if provider_data is None:
+            raise ImageFactoryException("RHEV-M instance not found in local configuration file /etc/imagefactory/rhevm.json or as XML or JSON")
+
+        self.generic_decode_credentials(credentials, provider_data, "rhevm")
+
+        self.log.debug("Username: %s" % (self.username))
+
+        helper = RHEVMHelper(url=provider_data['api-url'], username=self.username, password=self.password)
+        if not helper.delete_template(self.builder.provider_image.identifier_on_provider):
+            raise ImageFactoryException("Delete of template failed")
+
+
     def generic_decode_credentials(self, credentials, provider_data, target):
         # convenience function for simple creds (rhev-m and vmware currently)
         doc = libxml2.parseDoc(credentials)
