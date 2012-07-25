@@ -63,6 +63,17 @@ class vSphere(object):
             self.status="FAILED"
             raise
 
+    def delete_from_provider(self, builder, provider, credentials, target, parameters):
+        self.log.debug("Deleting vSphere image (%s)" % (self.builder.provider_image.identifier_on_provider))
+
+        provider_data = self.get_dynamic_provider_data(provider)
+        if provider_data is None:
+            raise ImageFactoryException("VMWare instance not found in local configuration file /etc/imagefactory/vsphere.json or as XML or JSON")
+        self.generic_decode_credentials(credentials, provider_data, "vsphere")
+        helper = VSphereHelper(provider_data['api-url'], self.username, self.password)
+        # This call raises an exception on error
+        helper.delete_vm(self.builder.provider_image.identifier_on_provider)
+
     def builder_cleanup(self):
         # Sub-classes may need an opportunity to do their own cleanup
         pass
