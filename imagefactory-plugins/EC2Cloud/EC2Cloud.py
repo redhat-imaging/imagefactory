@@ -799,7 +799,7 @@ class EC2Cloud(object):
                 manifest_s3_loc = "%s/%s.manifest.xml" % (bucket, uuid)
 
                 command = ['euca-register', '-U', register_url,
-                           '-A', self.ec2_access_key, '-S', self.ec2_secret_key, '-a', self.tdlobj.arch
+                           '-A', self.ec2_access_key, '-S', self.ec2_secret_key, '-a', self.tdlobj.arch,
                            #'-n', image_name, '-d', image_desc,
                            manifest_s3_loc]
                 command_log = map(replace, command)
