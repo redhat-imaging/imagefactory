@@ -41,3 +41,6 @@ class MockSphere(object):
 
     def builder_did_create_target_image(self, builder, target, image_id, template, parameters):
         self.log.info('%s called in MockSphere plugin' % (inspect.stack()[1][3]))
+
+    def delete_from_provider(self, builder, provider, credentials, target, parameters):
+        self.log.info('%s called in MockSphere plugin' % (inspect.stack()[1][3]))
