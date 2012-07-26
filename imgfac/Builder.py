@@ -347,3 +347,38 @@ class Builder(object):
         finally:
             # We only shut the workers down after a known-final state change
             self._shutdown_callback_workers(self.provider_image, parameters['callbacks'], self._provider_image_cbws)
+
+##### DELETE IMAGE
+    def delete_image_on_provider(self, provider, credentials, target, image_object, parameters):
+        """
+        Delete an image on the given provider - We only need plugin-specific methods to delete ProviderImages
+        Both TargetImages and BaseImages can be deleted directly at the PersistentImageManager layer.
+        
+        @param provider - XML or JSON provider definition
+        @param credentials - Credentials for the given provider
+        @param target - Target type for this provider
+        @param image_object - Already-retrieved and populated ProviderImage object
+        @param parameters TODO
+
+        @return TODO
+        """
+
+        thread_name = str(uuid.uuid4())[0:8]
+        thread_kwargs = {'provider':provider, 'credentials':credentials, 'target':target, 'image_object':image_object, 'parameters':parameters}
+        self.delete_thread = Thread(target=self._delete_image_on_provider, name=thread_name, args=(), kwargs=thread_kwargs)
+        self.delete_thread.start()
+
+
+    def _delete_image_on_provider(self, provider, credentials, target, image_object, parameters):
+        try:
+            plugin_mgr = PluginManager(self.app_config['plugins'])
+            self.cloud_plugin = plugin_mgr.plugin_for_target(target)
+            self.cloud_plugin.delete_from_provider(self, provider, credentials, target, parameters)
+            self.provider_image.status="DELETED"
+            self.pim.save_image(image_object)
+            # TODO: Perhaps wait a modest amount of time (a few minutes) before actually deleting the object
+        except Exception, e:
+            self.provider_image.status="DELETEFAILED"
+            self.pim.save_image(image_object)
+            self.log.error("Exception encountered in _delete_image_on_provider thread")
+            self.log.exception(e)
