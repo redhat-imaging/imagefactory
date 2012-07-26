@@ -12,40 +12,56 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import libxml2
 import logging
-import Provider
-from imgfac.ApplicationConfiguration import ApplicationConfiguration
-from imgfac.BuildJob import BuildJob
-from imgfac.BuildWatcher import BuildWatcher
-from imgfac.PushWatcher import PushWatcher
 from imgfac.Singleton import Singleton
-from imgfac.Template import Template
-from imgfac.JobRegistry import JobRegistry
 from Builder import Builder
-
+from imgfac.NotificationCenter import NotificationCenter
+from threading import BoundedSemaphore
 
 class BuildDispatcher(Singleton):
 
     def _singleton_init(self):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        self.job_registry = JobRegistry()
         self.builders = dict()
+        self.builders_lock = BoundedSemaphore()
+        NotificationCenter().add_observer(self, 'handle_state_change', 'image.status')
+
+    def handle_state_change(self, notification):
+        if(notification.user_info['new_status'] in ('COMPLETED', 'FAILED', 'DELETED', 'DELETEFAILED')):
+            self.builders_lock.acquire()
+            try:
+                del self.builders[notification.sender.new_image_id]
+            except KeyError as e:
+                self.log.exception('Trying to remove unknown builder from BuildDispatcher: %s' % e)
+            finally:
+                self.builders_lock.release()
 
     def builder_for_base_image(self, template, parameters=None):
         builder = Builder()
         builder.build_image_from_template(template)
-        self.builders[builder.base_image.identifier] = builder
+        self.builders_lock.acquire()
+        try:
+            self.builders[builder.base_image.identifier] = builder
+        finally:
+            self.builders_lock.release()
         return builder
 
     def builder_for_target_image(self, target, image_id=None, template=None, parameters=None):
         builder = Builder()
         builder.customize_image_for_target(target, image_id, template, parameters)
-        self.builders[builder.target_image.identifier] = builder
+        self.builders_lock.acquire()
+        try:
+            self.builders[builder.target_image.identifier] = builder
+        finally:
+            self.builders_lock.release()
         return builder
 
     def builder_for_provider_image(self, provider, credentials, target, image_id=None, template=None, parameters=None):
         builder = Builder()
         builder.create_image_on_provider(provider, credentials, target, image_id, template, parameters)
-        self.builders[builder.provider_image.identifier] = builder
+        self.builders_lock.acquire()
+        try:
+            self.builders[builder.provider_image.identifier] = builder
+        finally:
+            self.builders_lock.release()
         return builder
