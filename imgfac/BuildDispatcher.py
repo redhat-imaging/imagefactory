@@ -26,7 +26,7 @@ class BuildDispatcher(Singleton):
         NotificationCenter().add_observer(self, 'handle_state_change', 'image.status')
 
     def handle_state_change(self, notification):
-        if(notification.user_info['new_status'] == 'COMPLETED'):
+        if(notification.user_info['new_status'] in ('COMPLETED', 'FAILED', 'DELETED', 'DELETEFAILED')):
             try:
                 del self.builders[notification.sender.new_image_id]
             except KeyError as e:
