@@ -42,49 +42,54 @@ class ApplicationConfiguration(Singleton):
         argparser = argparse.ArgumentParser(description=main_description, prog=appname, version=VERSION)
         argparser.add_argument('--verbose', action='store_true', default=False, help='Set verbose logging.')
         argparser.add_argument('--debug', action='store_true', default=False, help='Set really verbose logging for debugging.')
-        argparser.add_argument('--foreground', action='store_true', default=False, help='Stay in the foreground and avoid launching a daemon. (default: %(default)s)')
         argparser.add_argument('--config', default='/etc/imagefactory/imagefactory.conf', help='Configuration file to use. (default: %(default)s)')
         argparser.add_argument('--imgdir', default='/tmp', help='Build image files in location specified. (default: %(default)s)')
         argparser.add_argument('--timeout', type=int, default=3600, help='Set the timeout period for image building in seconds. (default: %(default)s)')
         argparser.add_argument('--tmpdir', default='/tmp', help='Use the specified location for temporary files.  (default: %(default)s)')
         argparser.add_argument('--plugins', default='/etc/imagefactory/plugins.d', help='Plugin directory. (default: %(default)s)')
 
-        group_ec2 = argparser.add_argument_group(title='EC2 activities')
+        group_ec2 = argparser.add_argument_group(title='EC2 settings')
         group_ec2.add_argument('--ec2-32bit-util', default = 'm1.small', help='Instance type to use when launching a 32 bit utility instance')
         group_ec2.add_argument('--ec2-64bit-util', default = 'm1.large', help='Instance type to use when launching a 64 bit utility instance')
 
-        subparsers = argparser.add_subparsers(dest='command')
-
         if(appname == 'imagefactoryd'):
-            cmd_rest = subparsers.add_parser('rest', help='Turn on the RESTful http interface. (default: %(default)s)')
-            cmd_rest.add_argument('--port', type=int, default=8075, help='Port to attach the RESTful http interface to. (defaul: %(default)s)')
-            cmd_rest.add_argument('--address', default='0.0.0.0', help='Interface address to listen to. (defaul: %(default)s)')
-            cmd_rest.add_argument('--no_ssl', action='store_true', default=False, help='Turn off SSL. (default: %(default)s)')
-            cmd_rest.add_argument('--ssl_pem', default='*', help='PEM certificate file to use for HTTPS access to the REST interface. (default: A transient certificate is generated at runtime.)')
-            cmd_rest.add_argument('--no_oauth', action='store_true', default=False, help='Use 2 legged OAuth to protect the REST interface. (default: %(default)s)')
+            argparser.add_argument('--foreground', action='store_true', default=False, help='Stay in the foreground and avoid launching a daemon. (default: %(default)s)')
+            group_rest = argparser.add_argument_group(title='REST service options')
+            group_rest.add_argument('--port', type=int, default=8075, help='Port to attach the RESTful http interface to. (defaul: %(default)s)')
+            group_rest.add_argument('--address', default='0.0.0.0', help='Interface address to listen to. (defaul: %(default)s)')
+            group_rest.add_argument('--no_ssl', action='store_true', default=False, help='Turn off SSL. (default: %(default)s)')
+            group_rest.add_argument('--ssl_pem', default='*', help='PEM certificate file to use for HTTPS access to the REST interface. (default: A transient certificate is generated at runtime.)')
+            group_rest.add_argument('--no_oauth', action='store_true', default=False, help='Use 2 legged OAuth to protect the REST interface. (default: %(default)s)')
         elif(appname == 'imagefactory'):
+            subparsers = argparser.add_subparsers(title='commands', dest='command')
             template_help = 'A file containing the TDL for this image.'
+
             cmd_base = subparsers.add_parser('base_image', help='Build a generic image.')
-            cmd_base.add_argument('--template', type=argparse.FileType(), help=template_help, required=True)
+            cmd_base.add_argument('template', type=argparse.FileType(), help=template_help)
             cmd_base.add_argument('--paramaters')
+
             cmd_target = subparsers.add_parser('target_image', help='Customize an image for a given cloud.')
-            cmd_target.add_argument('--target', help='The name of the target cloud for which to customize the image.', required=True)
+            cmd_target.add_argument('target', help='The name of the target cloud for which to customize the image.')
             target_group = cmd_target.add_mutually_exclusive_group(required=True)
             target_group.add_argument('--id', help='The uuid of the BaseImage to customize.')
             target_group.add_argument('--template', type=argparse.FileType(), help=template_help)
             cmd_target.add_argument('--parameters')
+
             cmd_provider = subparsers.add_parser('provider_image', help='Push an image to a cloud provider.')
-            cmd_provider.add_argument('--provider', type=argparse.FileType(), help='A file containing the provider description.', required=True)
-            cmd_provider.add_argument('--credentials', type=argparse.FileType(), help='A file containing the provider credentials', required=True)
+            cmd_provider.add_argument('provider', type=argparse.FileType(), help='A file containing the provider description.')
+            cmd_provider.add_argument('credentials', type=argparse.FileType(), help='A file containing the provider credentials')
             provider_group = cmd_provider.add_mutually_exclusive_group(required=True)
             provider_group.add_argument('--id', help='The uuid of the TargetImage to push.')
             provider_group.add_argument('--template', type=argparse.FileType(), help=template_help)
             cmd_provider.add_argument('--parameters')
+
             cmd_list = subparsers.add_parser('images', help='List images of a given type or get details of an image.')
             cmd_list.add_argument('--type', choices=('BaseImage', 'TargetImage', 'ProviderImage'))
             cmd_list.add_argument('--id', help='UUID of an image.')
+
             cmd_delete = subparsers.add_parser('delete', help='Delete an image.')
-            cmd_delete.add_argument('--id', required=True)
+            cmd_delete.add_argument('id', help='UUID of the image to delete')
+
             cmd_plugins = subparsers.add_parser('plugins', help='List active plugins or get details of a specific plugin.')
             cmd_plugins.add_argument('--id')
         return argparser
@@ -113,7 +118,7 @@ class ApplicationConfiguration(Singleton):
                 uconfig = json.load(config_file)
                 config_file.close()
                 defaults = dencode(uconfig)
-                argparser.set_defaults(defaults)
+                argparser.set_defaults(**defaults)
                 configuration = argparser.parse_args()
             except Exception, e:
                 self.log.exception(e)

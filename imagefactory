@@ -67,7 +67,7 @@ class Application(Singleton):
     def setup_logging(self):
         logger = logging.getLogger() 
         currhandler = logger.handlers[0]  # stdout is the only handler initially
-        filehandler = logging.FileHandler('/var/log/imagefactoryd.log')
+        filehandler = logging.FileHandler('/var/log/imagefactory.log')
         formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s thread(%(threadName)s) Message: %(message)s')
         filehandler.setFormatter(formatter)
         logger.addHandler(filehandler)
