@@ -12,25 +12,25 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import libxml2
 import logging
-import Provider
-from imgfac.ApplicationConfiguration import ApplicationConfiguration
-from imgfac.BuildJob import BuildJob
-from imgfac.BuildWatcher import BuildWatcher
-from imgfac.PushWatcher import PushWatcher
 from imgfac.Singleton import Singleton
-from imgfac.Template import Template
-from imgfac.JobRegistry import JobRegistry
 from Builder import Builder
+from imgfac.NotificationCenter import NotificationCenter
 
 
 class BuildDispatcher(Singleton):
 
     def _singleton_init(self):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        self.job_registry = JobRegistry()
         self.builders = dict()
+        NotificationCenter().add_observer(self, 'handle_state_change', 'image.status')
+
+    def handle_state_change(self, notification):
+        if(notification.user_info['new_status'] == 'COMPLETED'):
+            try:
+                del self.builders[notification.sender.new_image_id]
+            except KeyError as e:
+                self.log.exception('Trying to remove unknown builder from BuildDispatcher: %s' % e)
 
     def builder_for_base_image(self, template, parameters=None):
         builder = Builder()

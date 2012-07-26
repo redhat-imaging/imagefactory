@@ -83,14 +83,13 @@ class Application(Singleton):
             logging.getLogger('').setLevel(logging.INFO)
 
     def signal_handler(self, signum, stack):
-        """docstring for sigterm_handler"""
         if (signum == signal.SIGTERM):
             logging.warn('caught signal SIGTERM, stopping...')
 
             # Run the abort() method in all running builders
             # TODO: Find some way to regularly purge non-running builders from the registry
             #       or replace it with something else
-            builder_dict = BuildDispatcher().job_registry.jobs
+            builder_dict = BuildDispatcher().builders
             for builder_id in builder_dict:
                 # If the build or push worker thread has already exited we do nothing
                 # builder classes should always cleanup before exiting the thread-starting methods
