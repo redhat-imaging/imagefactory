@@ -228,11 +228,27 @@ def get_image_file(image_id, base_image_id=None, target_image_id=None, provider_
 @oauth_protect
 def delete_image_with_id(image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
     try:
-        PersistentImageManager.default_manager().delete_image_with_id(image_id)
-        response.status = 204
+        image = PersistentImageManager.default_manager().image_with_id(image_id)
+        if(not image):
+            raise HTTPResponse(status=404, output='No image found with id: %s' % image_id)
+        _type = type(image).__name__
+        if (_type == "ProviderImage"):
+            builder = Builder()
+            builder.delete_image_on_provider(provider=request_data.get('provider'), 
+                                             credentials=request_data.get('credentials'), 
+                                             target=request_data.get('target'), 
+                                             image_object=image, 
+                                             parameters=request_data.get('parameters'))
+            response.status = 204
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
+    # TODO: Implement simple deletion for Base and Target images
+    if (_type != "ProviderImage"):
+        """
+        @return 501 Not Implemented
+        """
+        raise HTTPResponse(status=501)
 
 @rest_api.get('/imagefactory/plugins')
 @rest_api.get('/imagefactory/plugins/')
