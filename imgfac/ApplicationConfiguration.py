@@ -36,20 +36,12 @@ class ApplicationConfiguration(Singleton):
     def __init__(self):
         pass
 
-    def __new_argument_parser(self):
-        main_description = """Image Factory is an application for creating system images to run virtual machines in various public and private \
-                                clouds.  The imagefactory command can be used to start a daemon providing a QMFv2 agent interface, allowing for \
-                                remote interaction.  An alternate method of running imagefactory allows for one-off image building and deployment \
-                                and does not connect to a qpidd."""
-        cli_build_description = """Build specified system and exit."""
-        cli_push_description = """Push an image and exit."""
-        ec2_description = """Options specifying EC2 instance types to use for various functions"""
-        rest_description = """Enable the RESTful interface."""
+    def __new_argument_parser(self, appname):
+        main_description = """Image Factory is an application for creating system images for use on public and private clouds."""
 
-        argparser = argparse.ArgumentParser(description=main_description, prog='imagefactory', version=VERSION)
+        argparser = argparse.ArgumentParser(description=main_description, prog=appname, version=VERSION)
         argparser.add_argument('--verbose', action='store_true', default=False, help='Set verbose logging.')
         argparser.add_argument('--debug', action='store_true', default=False, help='Set really verbose logging for debugging.')
-        argparser.add_argument('--image', help='UUID of iwhd image object to rebuild or push')
         argparser.add_argument('--foreground', action='store_true', default=False, help='Stay in the foreground and avoid launching a daemon. (default: %(default)s)')
         argparser.add_argument('--config', default='/etc/imagefactory/imagefactory.conf', help='Configuration file to use. (default: %(default)s)')
         argparser.add_argument('--imgdir', default='/tmp', help='Build image files in location specified. (default: %(default)s)')
@@ -57,51 +49,52 @@ class ApplicationConfiguration(Singleton):
         argparser.add_argument('--tmpdir', default='/tmp', help='Use the specified location for temporary files.  (default: %(default)s)')
         argparser.add_argument('--plugins', default='/etc/imagefactory/plugins.d', help='Plugin directory. (default: %(default)s)')
 
-        group_rest = argparser.add_argument_group(title='RESTful Interface', description=rest_description)
-        group_rest.add_argument('--rest', action='store_true', default=False, help='Turn on the RESTful http interface. (default: %(default)s)')
-        group_rest.add_argument('--port', type=int, default=8075, help='Port to attach the RESTful http interface to. (defaul: %(default)s)')
-        group_rest.add_argument('--address', default='0.0.0.0', help='Interface address to listen to. (defaul: %(default)s)')
-        group_rest.add_argument('--no_ssl', action='store_true', default=False, help='Turn off SSL. (default: %(default)s)')
-        group_rest.add_argument('--ssl_pem', default='*', help='PEM certificate file to use for HTTPS access to the REST interface. (default: A transient certificate is generated at runtime.)')
-        group_rest.add_argument('--no_oauth', action='store_true', default=False, help='Use 2 legged OAuth to protect the REST interface. (default: %(default)s)')
-
-        group_qmf = argparser.add_argument_group(title='QMF agent', description="NO LONGER SUPPORTED")
-        group_qmf.add_argument('--qmf', action='store_true', default=False, help='NO LONGER SUPPORTED')
-
-        group_build = argparser.add_argument_group(title='Image building', description=cli_build_description)
-        group_build.add_argument('--template', help='Template XML file to build from.')
-        group_build.add_argument('--target', action='append', help='Cloud services to target (e.g. ec2, rhevm, vsphere, rackspace, condorcloud, etc.)')
-
-        group_push = argparser.add_argument_group(title='Image pushing', description=cli_push_description)
-        group_push.add_argument('--provider', action='append', help='Cloud service providers to push the image (e.g. ec2-us-east-1, rackspace, etc.)')
-        group_push.add_argument('--credentials', help='Cloud provider credentials XML (i.e. <provider_credentials/> document)')
-
-        group_ec2 = argparser.add_argument_group(title='EC2 activities', description=ec2_description)
+        group_ec2 = argparser.add_argument_group(title='EC2 activities')
         group_ec2.add_argument('--ec2-32bit-util', default = 'm1.small', help='Instance type to use when launching a 32 bit utility instance')
         group_ec2.add_argument('--ec2-64bit-util', default = 'm1.large', help='Instance type to use when launching a 64 bit utility instance')
 
-        group_build = argparser.add_argument_group(title='Image importing', description=cli_build_description)
-        group_build.add_argument('--target-image', help='Target specific identifier for the image to import.')
-        group_build.add_argument('--image-desc', help='XML document describing the imported image.')
+        subparsers = argparser.add_subparsers(dest='command')
 
+        if(appname == 'imagefactoryd'):
+            cmd_rest = subparsers.add_parser('rest', help='Turn on the RESTful http interface. (default: %(default)s)')
+            cmd_rest.add_argument('--port', type=int, default=8075, help='Port to attach the RESTful http interface to. (defaul: %(default)s)')
+            cmd_rest.add_argument('--address', default='0.0.0.0', help='Interface address to listen to. (defaul: %(default)s)')
+            cmd_rest.add_argument('--no_ssl', action='store_true', default=False, help='Turn off SSL. (default: %(default)s)')
+            cmd_rest.add_argument('--ssl_pem', default='*', help='PEM certificate file to use for HTTPS access to the REST interface. (default: A transient certificate is generated at runtime.)')
+            cmd_rest.add_argument('--no_oauth', action='store_true', default=False, help='Use 2 legged OAuth to protect the REST interface. (default: %(default)s)')
+        elif(appname == 'imagefactory'):
+            template_help = 'A file containing the TDL for this image.'
+            cmd_base = subparsers.add_parser('base_image', help='Build a generic image.')
+            cmd_base.add_argument('--template', type=argparse.FileType(), help=template_help, required=True)
+            cmd_base.add_argument('--paramaters')
+            cmd_target = subparsers.add_parser('target_image', help='Customize an image for a given cloud.')
+            cmd_target.add_argument('--target', help='The name of the target cloud for which to customize the image.', required=True)
+            target_group = cmd_target.add_mutually_exclusive_group(required=True)
+            target_group.add_argument('--id', help='The uuid of the BaseImage to customize.')
+            target_group.add_argument('--template', type=argparse.FileType(), help=template_help)
+            cmd_target.add_argument('--parameters')
+            cmd_provider = subparsers.add_parser('provider_image', help='Push an image to a cloud provider.')
+            cmd_provider.add_argument('--provider', type=argparse.FileType(), help='A file containing the provider description.', required=True)
+            cmd_provider.add_argument('--credentials', type=argparse.FileType(), help='A file containing the provider credentials', required=True)
+            provider_group = cmd_provider.add_mutually_exclusive_group(required=True)
+            provider_group.add_argument('--id', help='The uuid of the TargetImage to push.')
+            provider_group.add_argument('--template', type=argparse.FileType(), help=template_help)
+            cmd_provider.add_argument('--parameters')
+            cmd_list = subparsers.add_parser('images', help='List images of a given type or get details of an image.')
+            cmd_list.add_argument('--type', choices=('BaseImage', 'TargetImage', 'ProviderImage'))
+            cmd_list.add_argument('--id', help='UUID of an image.')
+            cmd_delete = subparsers.add_parser('delete', help='Delete an image.')
+            cmd_delete.add_argument('--id', required=True)
+            cmd_plugins = subparsers.add_parser('plugins', help='List active plugins or get details of a specific plugin.')
+            cmd_plugins.add_argument('--id')
         return argparser
 
-    def __parse_args(self, defaults=None):
-        if(defaults):
-            self.argparser.set_defaults(**defaults)
-        if(len(sys.argv) == 1):
-            self.argparser.print_help()
-            sys.exit()
-        elif(sys.argv[0].endswith("imagefactory")):
-            return self.argparser.parse_args()
-        elif(sys.argv[0].endswith("unittest" or "nosetests")):
-            return self.argparser.parse_args('--image_bucket unittests_images --build_bucket unittests_builds --target_bucket unittests_target_images --template_bucket unittests_templates --icicle_bucket unittests_icicles --provider_bucket unittests_provider_images'.split())
-        else:
-            return self.argparser.parse_args([])
-
     def __parse_arguments(self):
-        self.argparser = self.__new_argument_parser()
-        configuration = self.__parse_args()
+        argparser = self.__new_argument_parser(sys.argv[0].rpartition('/')[2])
+        if(len(sys.argv) == 1):
+            argparser.print_help()
+            sys.exit()
+        configuration = argparser.parse_args()
         if (os.path.isfile(configuration.config)):
             try:
                 def dencode(a_dict, encoding='ascii'):
@@ -119,7 +112,9 @@ class ApplicationConfiguration(Singleton):
                 config_file = open(configuration.config)
                 uconfig = json.load(config_file)
                 config_file.close()
-                configuration = self.__parse_args(defaults=dencode(uconfig))
+                defaults = dencode(uconfig)
+                argparser.set_defaults(defaults)
+                configuration = argparser.parse_args()
             except Exception, e:
                 self.log.exception(e)
         return configuration.__dict__
