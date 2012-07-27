@@ -19,11 +19,13 @@ import sys
 import logging
 import signal
 import os
+import json
 from time import asctime, localtime
 from imgfac.Singleton import Singleton
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.PluginManager import PluginManager
+from imgfac.PersistentImageManager import PersistentImageManager
 
 
 # Monkey patch for guestfs threading issue
@@ -117,7 +119,57 @@ class Application(Singleton):
             sys.exit(0)
 
     def main(self):
-        pass
+        command = self.app_config['command']
+        returnval = {}
+
+        if(command in ('BaseImage', 'TargetImage', 'ProviderImage')):
+            template = None
+            tdl_file = self.app_config.get('template')
+            if(tdl_file):
+                template = tdl_file.read()
+
+            if(command == 'BaseImage'):
+                builder = BuildDispatcher().builder_for_base_image(template=template,
+                                                                   parameters=self.app_config.get('parameters'))
+                image = builder.base_image
+            elif(command == 'TargetImage'):
+                builder = BuildDispatcher().builder_for_target_image(target=self.app_config['target'],
+                                                                     image_id=self.app_config.get('id'),
+                                                                     template=template,
+                                                                     parameters=self.app_config.get('parameters'))
+                image = builder.target_image
+            elif(command == 'ProviderImage'):
+                builder = BuildDispatcher().builder_for_provider_image(provider=self.app_config['provider'],
+                                                                        credentials=self.app_config['credentials'],
+                                                                        image_id=self.app_config.get('id'),
+                                                                        tempalet=template,
+                                                                        parameters=self.app_config.get('parameters'))
+                image = builder.provider_image
+
+            for key in image.metadata():
+                returnval[key] = getattr(image, key, None)
+
+        elif(command == 'images'):
+            fetch_spec = json.loads(self.app_config['fetch_spec'])
+            fetched_images = PersistentImageManager.default_manager().images_from_query(fetch_spec)
+            images = list()
+            for image in fetched_images:
+                item = {}
+                for key in image.metadata():
+                    item[key] = getattr(image, key, None)
+                images.append(item)
+            returnval['images'] = images
+
+        elif(command == 'delete'):
+            try:
+                image_id = self.app_config['id']
+                PersistentImageManager.default_manager().delete_image_with_id(image_id)
+            except Exception as e:
+                self.log.exception(e)
+                print('Failed to delete image %s, see the log for exception details.' % image_id)
+        elif(command == 'plugins'):
+                plugin_id = self.app_config.get('id')
+                returnval = PluginManager().plugins[plugin_id].copy() if plugin_id else PluginManager().plugins.copy()
 
 if __name__ == "__main__":
     sys.exit(Application().main())
