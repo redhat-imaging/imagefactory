@@ -27,14 +27,14 @@ class BuildDispatcher(Singleton):
         NotificationCenter().add_observer(self, 'handle_state_change', 'image.status')
 
     def handle_state_change(self, notification):
-        if(notification.user_info['new_status'] in ('COMPLETED', 'FAILED', 'DELETED', 'DELETEFAILED')):
+        status = notification.user_info['new_status']
+        if(status in ('COMPLETED', 'FAILED', 'DELETED', 'DELETEFAILED')):
             self.builders_lock.acquire()
-            try:
-                del self.builders[notification.sender.identifier]
-            except KeyError as e:
-                self.log.exception('Trying to remove unknown builder from BuildDispatcher: %s' % e)
-            finally:
-                self.builders_lock.release()
+            image_id = notification.sender.identifier
+            if(image_id in self.builders):
+                del self.builders[image_id]
+                self.log.debug('Removed builder from BuildDispatcher on notification from image %s: %s' % (image_id, status))
+            self.builders_lock.release()
 
     def builder_for_base_image(self, template, parameters=None):
         builder = Builder()
