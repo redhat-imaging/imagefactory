@@ -1,0 +1,204 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+#   Copyright 2011 Red Hat, Inc.
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+import sys
+import os
+import os.path
+import signal
+import logging
+from imgfac.ApplicationConfiguration import ApplicationConfiguration
+from imgfac.BuildDispatcher import BuildDispatcher
+from imgfac.Singleton import Singleton
+from imgfac.rest.bottle import *
+from imgfac.rest.RESTv2 import rest_api
+from imgfac.PluginManager import PluginManager
+from time import asctime, localtime
+
+# Monkey patch for guestfs threading issue
+# BZ 790528
+# TODO: Remove at some point when the upstream fix is in our supported platforms
+from imgfac.ReservationManager import ReservationManager
+from guestfs import GuestFS as _GuestFS
+
+class GuestFS(_GuestFS):
+    def launch(self):
+        res_mgr = ReservationManager()
+        res_mgr.get_named_lock("libguestfs_launch")
+        try:
+            _GuestFS.launch(self)
+        finally:
+            res_mgr.release_named_lock("libguestfs_launch")
+
+import guestfs
+guestfs.GuestFS = GuestFS
+
+
+class Application(Singleton):
+
+    def _singleton_init(self):
+        super(Application, self)._singleton_init()
+        logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(levelname)s %(name)s thread(%(threadName)s) Message: %(message)s')
+        self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        self.daemon = False
+        self.pid_file_path = "/var/run/imagefactoryd.pid"
+        signal.signal(signal.SIGTERM, self.signal_handler)
+        self.app_config = ApplicationConfiguration().configuration
+
+        # by setting TMPDIR here we make sure that libguestfs
+        # (imagefactory -> oz -> libguestfs) uses the temporary directory of
+        # the user's choosing
+        os.putenv('TMPDIR', self.app_config['tmpdir'])
+
+    def __init__(self):
+        pass
+
+    def setup_logging(self):
+        if (not self.app_config['foreground']):
+            # We can no longer use the basicconfig convenience function to do this so do so manually
+            logger = logging.getLogger() 
+            currhandler = logger.handlers[0]  # stdout is the only handler initially
+            filehandler = logging.FileHandler('/var/log/imagefactoryd.log')
+            formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s thread(%(threadName)s) Message: %(message)s')
+            filehandler.setFormatter(formatter)
+            logger.addHandler(filehandler)
+            logger.removeHandler(currhandler)
+            self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        if (self.app_config['debug']):
+            logging.getLogger('').setLevel(logging.DEBUG)
+        elif (self.app_config['verbose']):
+            logging.getLogger('').setLevel(logging.INFO)
+
+    def signal_handler(self, signum, stack):
+        if (signum == signal.SIGTERM):
+            logging.warn('caught signal SIGTERM, stopping...')
+
+            # Run the abort() method in all running builders
+            # TODO: Find some way to regularly purge non-running builders from the registry
+            #       or replace it with something else
+            builder_dict = BuildDispatcher().builders
+            for builder_id in builder_dict:
+                # If the build or push worker thread has already exited we do nothing
+                # builder classes should always cleanup before exiting the thread-starting methods
+                if builder_dict[builder_id].builder_thread and builder_dict[builder_id].builder_thread.isAlive():
+                    try:
+                        logging.debug("Executing abort method for builder id (%s)" % (builder_id))
+                        builder_dict[builder_id].abort()
+                    except Exception as e:
+                        logging.warning("Got exception when attempting to abort build id (%s) during shutdown" % (builder_id))
+                        logging.exception(e)
+
+            sys.exit(0)
+
+    def daemonize(self): #based on Python recipe 278731
+        UMASK = 077
+        WORKING_DIRECTORY = '/'
+        if self.app_config['debug']:
+            IO_REDIRECT = "/var/log/imagefactory.log-stderr_debug"
+        else:
+            IO_REDIRECT = os.devnull
+
+        try:
+            pid = os.fork()
+        except OSError, e:
+            raise Exception, "%s [%d]" % (e.strerror, e.errno)
+
+        if (pid == 0):
+            os.setsid()
+            signal.signal(signal.SIGHUP, signal.SIG_IGN)
+            # TODO: Figure out what is generating the spurious SIGALRMs
+            # For now - ignore them
+            signal.signal(signal.SIGALRM, signal.SIG_IGN)
+            try:
+                pid = os.fork()
+            except OSError, e:
+                raise Exception, "%s [%d]" % (e.strerror, e.errno)
+
+            if (pid == 0):
+                os.chdir(WORKING_DIRECTORY)
+                os.umask(UMASK)
+            else:
+                os._exit(0)
+        else:
+            os._exit(0)
+
+        for file_descriptor in range(0, 2): # close stdin, stdout, stderr
+            try:
+                os.close(file_descriptor)
+            except OSError:
+                pass # The file descriptor wasn't open to begin with, just ignore
+          
+        if self.app_config['debug']:
+            os.open(IO_REDIRECT, os.O_RDWR | os.O_SYNC | os.O_CREAT | os.O_APPEND)
+        else:
+            os.open(IO_REDIRECT, os.O_RDWR)
+        os.dup2(0, 1)
+        os.dup2(0, 2)
+
+        return(True)
+
+    def main(self):
+        if (not self.app_config['foreground']):
+            self.daemon = self.daemonize()
+
+        self.setup_logging()
+        if(self.daemon):
+            try:
+                with open(self.pid_file_path, "w") as pidfile:
+                    pidfile.write("%s\n" % (str(os.getpid()), ))
+                    pidfile.close()
+            except Exception, e:
+                logging.warning(str(e))
+            logging.info("Launched as daemon...")
+        elif(self.app_config['foreground']):
+            logging.info("Launching in foreground...")
+        else:
+            logging.warning("Failed to launch as daemon...")
+
+        self.plugin_mgr = PluginManager(self.app_config['plugins'])
+        self.plugin_mgr.load()
+
+        debug(self.app_config['debug'])
+        pem_file = self.app_config['ssl_pem'] if not self.app_config['no_ssl'] else None
+
+        if self.app_config['debug']:
+            # Mark the start of this run in our stderr/stdout debug redirect
+            sys.stderr.write("%s - starting factory process %d\n" % (asctime(localtime()), os.getpid()))
+            sys.stderr.flush()
+            # Import and activate faulthandler if it exists
+            try:
+                import faulthandler
+                logging.debug("Enabling faulthandler")
+                faultfile = open("/var/log/imagefactory.log-faulthandler", "a")
+                faultfile.write("%s - starting factory process %d\n" % (asctime(localtime()), os.getpid()))
+                faultfile.flush()
+                faulthandler.enable(file=faultfile, all_threads = True)
+                logging.debug("Enabled faulthandler")
+            except:
+                logging.debug("Unable to start faulthandler - multi-thread tracebacks will not be available", exc_info=True)
+                pass
+
+        # Don't set reloader to True or you will lose state.  You have been warned.
+        run(server='paste',
+                app=rest_api,
+                host=self.app_config['address'],
+                port=self.app_config['port'],
+                reloader=False,
+                quiet=True,
+                ssl_pem=pem_file)
+
+if __name__ == "__main__":
+    sys.exit(Application().main())

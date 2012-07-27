@@ -14,15 +14,15 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-# imagefactory init file for Image Factory
+# imagefactoryd init file for Image Factory
 #
 # chkconfig: - 99 1
 # description: Image Factory tool
 #
-# processname: /usr/bin/imagefactory
+# processname: /usr/bin/imagefactoryd
 
 ### BEGIN INIT INFO
-# Provides: imagefactory
+# Provides: imagefactoryd
 # Required-Start: $local_fs $network
 # Required-Stop: $local_fs $network
 # Should-Start: 
@@ -36,15 +36,15 @@
 # source function library
 . /etc/init.d/functions
 
-if [ -r /etc/sysconfig/imagefactory ]; then
-  . /etc/sysconfig/imagefactory
+if [ -r /etc/sysconfig/imagefactoryd ]; then
+  . /etc/sysconfig/imagefactoryd
 fi
 
 RETVAL=0
-prog="imagefactory"
-binary=/usr/bin/imagefactory
+prog="imagefactoryd"
+binary=/usr/bin/imagefactoryd
 
-# You can overide these variables using /etc/sysconfig/deltacloud-core
+# You can overide these variables using /etc/sysconfig/imagefactoryd
 PIDFILE=${PIDFILE:-/var/run/$prog.pid}
 LOCKFILE=${LOCKFILE:-/var/lock/subsys/$prog}
 CONFFILE=${CONFFILE:-}

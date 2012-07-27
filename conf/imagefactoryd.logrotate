@@ -4,7 +4,7 @@ compress
 missingok
 notifempty
 
-/var/log/imagefactory.log {
+/var/log/imagefactoryd.log {
   sharedscripts
   postrotate
       /sbin/service imagefactory restart

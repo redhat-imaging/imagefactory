@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-#   Copyright 2011 Red Hat, Inc.
+#   Copyright 2012 Red Hat, Inc.
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -16,17 +16,24 @@
 #   limitations under the License.
 
 import sys
-import os
-import os.path
-import signal
 import logging
+import signal
+import os
+import json
+from time import asctime, localtime
+from imgfac.Singleton import Singleton
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.BuildDispatcher import BuildDispatcher
-from imgfac.Singleton import Singleton
-from imgfac.rest.bottle import *
-from imgfac.rest.RESTv2 import rest_api
 from imgfac.PluginManager import PluginManager
-from time import asctime, localtime
+from imgfac.PersistentImageManager import PersistentImageManager
+
+try:
+    from pygments import highlight
+    from pygments.lexers import JSONLexer
+    from pygments.formatters import TerminalFormatter
+    PYGMENT = True
+except:
+    PYGMENT = False
 
 # Monkey patch for guestfs threading issue
 # BZ 790528
@@ -49,36 +56,51 @@ guestfs.GuestFS = GuestFS
 
 class Application(Singleton):
 
+    def __init__(self):
+        pass
+
     def _singleton_init(self):
         super(Application, self)._singleton_init()
         logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(levelname)s %(name)s thread(%(threadName)s) Message: %(message)s')
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        self.daemon = False
-        self.pid_file_path = "/var/run/imagefactory.pid"
         signal.signal(signal.SIGTERM, self.signal_handler)
         self.app_config = ApplicationConfiguration().configuration
-
+        self.setup_logging()
         # by setting TMPDIR here we make sure that libguestfs
         # (imagefactory -> oz -> libguestfs) uses the temporary directory of
         # the user's choosing
         os.putenv('TMPDIR', self.app_config['tmpdir'])
-
-    def __init__(self):
-        pass
+        self.plugin_mgr = PluginManager(self.app_config['plugins'])
+        self.plugin_mgr.load()
 
     def setup_logging(self):
-        if (not self.app_config['foreground']):
-            # We can no longer use the basicconfig convenience function to do this so do so manually
-            logger = logging.getLogger() 
-            currhandler = logger.handlers[0]  # stdout is the only handler initially
-            filehandler = logging.FileHandler('/var/log/imagefactory.log')
-            formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s thread(%(threadName)s) Message: %(message)s')
-            filehandler.setFormatter(formatter)
-            logger.addHandler(filehandler)
-            logger.removeHandler(currhandler)
-            self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        logger = logging.getLogger() 
+        currhandler = logger.handlers[0]  # stdout is the only handler initially
+        filehandler = logging.FileHandler('/var/log/imagefactory.log')
+        formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s thread(%(threadName)s) Message: %(message)s')
+        filehandler.setFormatter(formatter)
+        logger.addHandler(filehandler)
+        logger.removeHandler(currhandler)
+        self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        # Considerably increases the logging output...
         if (self.app_config['debug']):
             logging.getLogger('').setLevel(logging.DEBUG)
+            ### Use FaultHandler if present...
+            # Mark the start of this run in our stderr/stdout debug redirect
+            #sys.stderr.write("%s - starting factory process %d\n" % (asctime(localtime()), os.getpid()))
+            sys.stderr.flush()
+            # Import and activate faulthandler if it exists
+            try:
+                import faulthandler
+                logging.debug("Enabling faulthandler")
+                faultfile = open("/var/log/imagefactory.log-faulthandler", "a")
+                faultfile.write("%s - starting factory process %d\n" % (asctime(localtime()), os.getpid()))
+                faultfile.flush()
+                faulthandler.enable(file=faultfile, all_threads = True)
+                logging.debug("Enabled faulthandler")
+            except:
+                logging.debug("Unable to start faulthandler - multi-thread tracebacks will not be available", exc_info=True)
+                pass
         elif (self.app_config['verbose']):
             logging.getLogger('').setLevel(logging.INFO)
 
@@ -103,141 +125,69 @@ class Application(Singleton):
 
             sys.exit(0)
 
-    def daemonize(self): #based on Python recipe 278731
-        UMASK = 077
-        WORKING_DIRECTORY = '/'
-        if self.app_config['debug']:
-            IO_REDIRECT = "/var/log/imagefactory.log-stderr_debug"
-        else:
-            IO_REDIRECT = os.devnull
-
-        try:
-            pid = os.fork()
-        except OSError, e:
-            raise Exception, "%s [%d]" % (e.strerror, e.errno)
-
-        if (pid == 0):
-            os.setsid()
-            signal.signal(signal.SIGHUP, signal.SIG_IGN)
-            # TODO: Figure out what is generating the spurious SIGALRMs
-            # For now - ignore them
-            signal.signal(signal.SIGALRM, signal.SIG_IGN)
-            try:
-                pid = os.fork()
-            except OSError, e:
-                raise Exception, "%s [%d]" % (e.strerror, e.errno)
-
-            if (pid == 0):
-                os.chdir(WORKING_DIRECTORY)
-                os.umask(UMASK)
-            else:
-                os._exit(0)
-        else:
-            os._exit(0)
-
-        for file_descriptor in range(0, 2): # close stdin, stdout, stderr
-            try:
-                os.close(file_descriptor)
-            except OSError:
-                pass # The file descriptor wasn't open to begin with, just ignore
-          
-        if self.app_config['debug']:
-            os.open(IO_REDIRECT, os.O_RDWR | os.O_SYNC | os.O_CREAT | os.O_APPEND)
-        else:
-            os.open(IO_REDIRECT, os.O_RDWR)
-        os.dup2(0, 1)
-        os.dup2(0, 2)
-
-        return(True)
-
     def main(self):
-        if (self.app_config['qmf']):
-            print "QMF agent support is no longer available..."
-        elif(self.app_config['rest']):
-            if (not self.app_config['foreground']):
-                self.daemon = self.daemonize()
+        command = self.app_config['command']
+        returnval = {}
 
-            self.setup_logging()
-            if(self.daemon):
-                try:
-                    with open(self.pid_file_path, "w") as pidfile:
-                        pidfile.write("%s\n" % (str(os.getpid()), ))
-                        pidfile.close()
-                except Exception, e:
-                    logging.warning(str(e))
-                logging.info("Launched as daemon...")
-            elif(self.app_config['foreground']):
-                logging.info("Launching in foreground...")
-            else:
-                logging.warning("Failed to launch as daemon...")
+        if(command in ('base_image', 'target_image', 'provider_image')):
+            template = None
+            tdl_file = self.app_config.get('template')
+            if(tdl_file):
+                template = tdl_file.read()
 
-            self.plugin_mgr = PluginManager(self.app_config['plugins'])
-            self.plugin_mgr.load()
+            if(command == 'base_image'):
+                builder = BuildDispatcher().builder_for_base_image(template=template,
+                                                                   parameters=self.app_config.get('parameters'))
+                image = builder.base_image
+            elif(command == 'target_image'):
+                builder = BuildDispatcher().builder_for_target_image(target=self.app_config['target'],
+                                                                     image_id=self.app_config.get('id'),
+                                                                     template=template,
+                                                                     parameters=self.app_config.get('parameters'))
+                image = builder.target_image
+            elif(command == 'provider_image'):
+                builder = BuildDispatcher().builder_for_provider_image(provider=self.app_config['provider'],
+                                                                        credentials=self.app_config['credentials'],
+                                                                        image_id=self.app_config.get('id'),
+                                                                        tempalet=template,
+                                                                        parameters=self.app_config.get('parameters'))
+                image = builder.provider_image
 
-            debug(self.app_config['debug'])
-            pem_file = self.app_config['ssl_pem'] if not self.app_config['no_ssl'] else None
+            for key in image.metadata():
+                returnval[key] = getattr(image, key, None)
 
-            if self.app_config['debug']:
-                # Mark the start of this run in our stderr/stdout debug redirect
-                sys.stderr.write("%s - starting factory process %d\n" % (asctime(localtime()), os.getpid()))
-                sys.stderr.flush()
-                # Import and activate faulthandler if it exists
-                try:
-                    import faulthandler
-                    logging.debug("Enabling faulthandler")
-                    faultfile = open("/var/log/imagefactory.log-faulthandler", "a")
-                    faultfile.write("%s - starting factory process %d\n" % (asctime(localtime()), os.getpid()))
-                    faultfile.flush()
-                    faulthandler.enable(file=faultfile, all_threads = True)
-                    logging.debug("Enabled faulthandler")
-                except:
-                    logging.debug("Unable to start faulthandler - multi-thread tracebacks will not be available", exc_info=True)
-                    pass
+        elif(command == 'images'):
+            fetch_spec = json.loads(self.app_config['fetch_spec'])
+            fetched_images = PersistentImageManager.default_manager().images_from_query(fetch_spec)
+            images = list()
+            for image in fetched_images:
+                item = {}
+                for key in image.metadata():
+                    item[key] = getattr(image, key, None)
+                images.append(item)
+            returnval['images'] = images
 
-            # Don't set reloader to True or you will lose state.  You have been warned.
-            run(server='paste',
-                    app=rest_api,
-                    host=self.app_config['address'],
-                    port=self.app_config['port'],
-                    reloader=False,
-                    quiet=True,
-                    ssl_pem=pem_file)
+        elif(command == 'delete'):
+            try:
+                image_id = self.app_config['id']
+                PersistentImageManager.default_manager().delete_image_with_id(image_id)
+                print('Deleting image with id %s' % image_id)
+                return
+            except Exception as e:
+                self.log.exception(e)
+                print('Failed to delete image %s, see the log for exception details.' % image_id)
+        elif(command == 'plugins'):
+                plugin_id = self.app_config.get('id')
+                returnval = PluginManager().plugins[plugin_id].copy() if plugin_id else PluginManager().plugins.copy()
+
+        formatted_returnval = json.dumps(returnval, indent=2)
+
+        if PYGMENT:
+            print highlight(formatted_returnval, JSONLexer(), TerminalFormatter())
         else:
-            self.app_config['foreground'] = True
-            self.setup_logging()
-
-            self.plugin_mgr = PluginManager(self.app_config['plugins'])
-            self.plugin_mgr.load()
-
-            if self.app_config['target_image'] and self.app_config['target'] and self.app_config['provider']:
-                if len(self.app_config['target']) != 1:
-                    print("Expect a single target, but '%s' supplied" % (self.app_config['target'],))
-                    sys.exit(1)
-                if len(self.app_config['provider']) != 1:
-                    print("Expect a single provider, but '%s' supplied" % (self.app_config['provider'],))
-                    sys.exit(1)
-                image_ids = BuildDispatcher().import_image(self.app_config['image'], None, self.app_config['target_image'], self.app_config['image_desc'], self.app_config['target'][0], self.app_config['provider'][0])
-                print("Imported target image ID %s as image %s" % (self.app_config['target_image'], image_ids[0]))
-            elif (self.app_config['template'] and self.app_config['target']) or (self.app_config['image'] and not self.app_config['provider']):
-                dispatchers = BuildDispatcher().build_image_for_targets(self.app_config['image'], None, self.app_config['template'], self.app_config['target'])
-                for dispatcher in dispatchers:
-                    print("Building build %s of image %s to target %s" % (dispatcher.build_id, dispatcher.image_id, dispatcher.target))
-
-            elif (self.app_config['image'] and self.app_config['provider'] and self.app_config['credentials']):
-                credentials = self.app_config['credentials']
-                if(os.path.exists(credentials)):
-                    credentials_file = open(credentials, "r")
-                    file_contents = credentials_file.read()
-                    credentials_file.close()
-                    credentials = file_contents
-
-                if(not (("<provider_credentials>" in file_contents.lower()) and ("</provider_credentials>" in file_contents.lower()))):
-                    print("Unexpected content or formatting of credentials...")
-                    sys.exit(1)
-
-                dispatchers = BuildDispatcher().push_image_to_providers(self.app_config['image'], None, self.app_config['provider'], credentials)
-                for dispatcher in dispatchers:
-                    print("Pushing build %s of image %s to provider %s" % (dispatcher.build_id, dispatcher.image_id, dispatcher.provider))
+            if(self.app_config['debug']):
+                print('Python module "pygment" found. Install this module if you want syntax colorization.')
+            print(formatted_returnval)
 
 if __name__ == "__main__":
     sys.exit(Application().main())

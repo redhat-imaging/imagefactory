@@ -1,0 +1,18 @@
+# Imagefactory configuration
+# http://aeolusproject.org
+
+# Default command-line options when starting imagefactoryd
+OPTIONS="--debug"
+
+# Default log file for imagefactoryd (default: /var/log/imagefactoryd.log)
+#LOGFILE="/var/log/imagefactoryd.log"
+
+# Default lock file for imagefactoryd (default: /var/lock/subsys/imagefactoryd)
+#LOCKFILE="/var/lock/subsys/imagefactoryd"
+
+# Default process id file for imagefactoryd (default: /var/run/imagefactoryd.pid)
+#PIDFILE="/var/run/imagefactoryd.pid"
+
+# Default configuration file (default: /etc/imagefactory/imagefactory.conf)
+#CONFFILE="/etc/imagefactory/imagefactory.conf"
+
