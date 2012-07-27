@@ -27,6 +27,13 @@ from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.PluginManager import PluginManager
 from imgfac.PersistentImageManager import PersistentImageManager
 
+try:
+    from pygments import highlight
+    from pygments.lexers import JSONLexer
+    from pygments.formatters import TerminalFormatter
+    PYGMENT = True
+except:
+    PYGMENT = False
 
 # Monkey patch for guestfs threading issue
 # BZ 790528
@@ -80,7 +87,7 @@ class Application(Singleton):
             logging.getLogger('').setLevel(logging.DEBUG)
             ### Use FaultHandler if present...
             # Mark the start of this run in our stderr/stdout debug redirect
-            sys.stderr.write("%s - starting factory process %d\n" % (asctime(localtime()), os.getpid()))
+            #sys.stderr.write("%s - starting factory process %d\n" % (asctime(localtime()), os.getpid()))
             sys.stderr.flush()
             # Import and activate faulthandler if it exists
             try:
@@ -164,6 +171,8 @@ class Application(Singleton):
             try:
                 image_id = self.app_config['id']
                 PersistentImageManager.default_manager().delete_image_with_id(image_id)
+                print('Deleting image with id %s' % image_id)
+                return
             except Exception as e:
                 self.log.exception(e)
                 print('Failed to delete image %s, see the log for exception details.' % image_id)
@@ -171,7 +180,14 @@ class Application(Singleton):
                 plugin_id = self.app_config.get('id')
                 returnval = PluginManager().plugins[plugin_id].copy() if plugin_id else PluginManager().plugins.copy()
 
-        print(json.dumps(returnval, indent=2))
+        formatted_returnval = json.dumps(returnval, indent=2)
+
+        if PYGMENT:
+            print highlight(formatted_returnval, JSONLexer(), TerminalFormatter())
+        else:
+            if(self.app_config['debug']):
+                print('Python module "pygment" found. Install this module if you want syntax colorization.')
+            print(formatted_returnval)
 
 if __name__ == "__main__":
     sys.exit(Application().main())
