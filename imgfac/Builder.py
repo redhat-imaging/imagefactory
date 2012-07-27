@@ -48,12 +48,28 @@ class Builder(object):
         self._os_plugin = None
         self._cloud_plugin = None
         self._base_image = None
+        self._base_image_cbws = [ ]
         self._target_image = None
+        self._target_image_cbws = [ ]
         self._provider_image = None
+        self._provider_image_cbws = [ ]
         self.base_thread = None
         self.target_thread = None
         self.push_thread = None
         self.snapshot_thread = None
+
+#####  SETUP CALLBACKS
+    def _init_callback_workers(self, image, callbacks, callbackworkers):
+        for callback in callbacks:
+            worker = CallbackWorker(callback)
+            worker.start()
+            callbackworkers.append(worker)
+            self.notification_center.add_observer(worker, 'status_notifier', 'image.status', sender = image)
+
+    def _shutdown_callback_workers(self, image, callbackworkers):
+        for worker in callbackworkers:
+            self.notification_center.remove_observer(worker, 'status_notifier', 'image.status', sender = image)
+            worker.shut_down()
 
 #####  BUILD IMAGE
     def build_image_from_template(self, template, parameters=None):
@@ -69,6 +85,9 @@ class Builder(object):
         self.base_image.template = template
         self.base_image.parameters = parameters
         self.pim.add_image(self.base_image)
+        if 'callbacks' in parameters:
+            # This ensures we have workers in place before any potential state changes
+            self._init_callback_workers(self.base_image, parameters['callbacks'], self._base_image_cbws)
 
         thread_name = str(uuid.uuid4())[0:8]
         thread_kwargs = {'template':template, 'parameters':parameters}
@@ -90,6 +109,9 @@ class Builder(object):
             self.pim.save_image(self.base_image)
             self.log.error("Exception encountered in _build_image_from_template thread")
             self.log.exception(e)
+        finally:
+            # We only shut the workers down after a known-final state change
+            self._shutdown_callback_workers(self.base_image, parameters['callbacks'], self._base_image_cbws)
 
 ##### CUSTOMIZE IMAGE FOR TARGET
     def customize_image_for_target(self, target, image_id=None, template=None, parameters=None):
@@ -109,6 +131,9 @@ class Builder(object):
         self.target_image.template = template
         self.target_image.parameters = parameters
         self.pim.add_image(self.target_image)        
+        if 'callbacks' in parameters:
+            # This ensures we have workers in place before any potential state changes
+            self._init_callback_workers(self.target_image, parameters['callbacks'], self._target_image_cbws)
 
         if(image_id and (not template)):
             self.base_image = self.pim.image_with_id(image_id)
@@ -181,6 +206,9 @@ class Builder(object):
             self.pim.save_image(self.target_image)
             self.log.error("Exception encountered in _customize_image_for_target thread")
             self.log.exception(e)
+        finally:
+            # We only shut the workers down after a known-final state change
+            self._shutdown_callback_workers(self.target_image, parameters['callbacks'], self._target_image_cbws)
 
 ##### CREATE PROVIDER IMAGE
     def create_image_on_provider(self, provider, credentials, target, image_id=None, template=None, parameters=None):
@@ -208,6 +236,9 @@ class Builder(object):
         self.provider_image.target_image_id = image_id
         self.provider_image.template = template
         self.pim.add_image(self.provider_image)
+        if 'callbacks' in parameters:
+            # This ensures we have workers in place before any potential state changes
+            self._init_callback_workers(self.provider_image, parameters['callbacks'], self._provider_image_cbws)
 
         if(image_id and (not template)):
             self.target_image = self.pim.image_with_id(image_id)
@@ -263,6 +294,9 @@ class Builder(object):
             self.pim.save_image(self.provider_image)
             self.log.error("Exception encountered in _push_image_to_provider thread")
             self.log.exception(e)
+        finally:
+            # We only shut the workers down after a known-final state change
+            self._shutdown_callback_workers(self.provider_image, parameters['callbacks'], self._provider_image_cbws)
 
 ##### SNAPSHOT IMAGE
     def snapshot_image(self, provider, credentials, target, image_id, template, parameters):
@@ -284,6 +318,9 @@ class Builder(object):
         self.provider_image.target_image_id = image_id
         self.provider_image.template = template
         self.pim.add_image(self.provider_image)
+        if 'callbacks' in parameters:
+            # This ensures we have workers in place before any potential state changes
+            self._init_callback_workers(self.provider_image, parameters['callbacks'], self._provider_image_cbws)
 
         if not template:
             raise ImageFactoryException("Must specify a template when requesting a snapshot-style build")
@@ -305,3 +342,6 @@ class Builder(object):
             self.pim.save_image(self.provider_image)
             self.log.error("Exception encountered in _snapshot_image thread")
             self.log.exception(e)
+        finally:
+            # We only shut the workers down after a known-final state change
+            self._shutdown_callback_workers(self.provider_image, parameters['callbacks'], self._provider_image_cbws)
