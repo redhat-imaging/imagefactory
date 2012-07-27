@@ -30,7 +30,7 @@ class BuildDispatcher(Singleton):
         if(notification.user_info['new_status'] in ('COMPLETED', 'FAILED', 'DELETED', 'DELETEFAILED')):
             self.builders_lock.acquire()
             try:
-                del self.builders[notification.sender.new_image_id]
+                del self.builders[notification.sender.identifier]
             except KeyError as e:
                 self.log.exception('Trying to remove unknown builder from BuildDispatcher: %s' % e)
             finally:
