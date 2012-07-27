@@ -84,8 +84,7 @@ class ApplicationConfiguration(Singleton):
             cmd_provider.add_argument('--parameters')
 
             cmd_list = subparsers.add_parser('images', help='List images of a given type or get details of an image.')
-            cmd_list.add_argument('--type', choices=('BaseImage', 'TargetImage', 'ProviderImage'))
-            cmd_list.add_argument('--id', help='UUID of an image.')
+            cmd_list.add_argument('fetch_spec', help='JSON formatted string of key/value pairs')
 
             cmd_delete = subparsers.add_parser('delete', help='Delete an image.')
             cmd_delete.add_argument('id', help='UUID of the image to delete')
