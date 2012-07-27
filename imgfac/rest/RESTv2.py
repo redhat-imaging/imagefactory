@@ -239,16 +239,12 @@ def delete_image_with_id(image_id, base_image_id=None, target_image_id=None, pro
                                              target=request_data.get('target'), 
                                              image_object=image, 
                                              parameters=request_data.get('parameters'))
-            response.status = 204
+        # TODO: Do this in a thread?  Or possibly do it within the builder.
+        PersistentImageManager.default_manager().delete_image_with_id(image_id)    
+        response.status = 204
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
-    # TODO: Implement simple deletion for Base and Target images
-    if (_type != "ProviderImage"):
-        """
-        @return 501 Not Implemented
-        """
-        raise HTTPResponse(status=501)
 
 @rest_api.get('/imagefactory/plugins')
 @rest_api.get('/imagefactory/plugins/')
