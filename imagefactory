@@ -122,23 +122,23 @@ class Application(Singleton):
         command = self.app_config['command']
         returnval = {}
 
-        if(command in ('BaseImage', 'TargetImage', 'ProviderImage')):
+        if(command in ('base_image', 'target_image', 'provider_image')):
             template = None
             tdl_file = self.app_config.get('template')
             if(tdl_file):
                 template = tdl_file.read()
 
-            if(command == 'BaseImage'):
+            if(command == 'base_image'):
                 builder = BuildDispatcher().builder_for_base_image(template=template,
                                                                    parameters=self.app_config.get('parameters'))
                 image = builder.base_image
-            elif(command == 'TargetImage'):
+            elif(command == 'target_image'):
                 builder = BuildDispatcher().builder_for_target_image(target=self.app_config['target'],
                                                                      image_id=self.app_config.get('id'),
                                                                      template=template,
                                                                      parameters=self.app_config.get('parameters'))
                 image = builder.target_image
-            elif(command == 'ProviderImage'):
+            elif(command == 'provider_image'):
                 builder = BuildDispatcher().builder_for_provider_image(provider=self.app_config['provider'],
                                                                         credentials=self.app_config['credentials'],
                                                                         image_id=self.app_config.get('id'),
@@ -170,6 +170,8 @@ class Application(Singleton):
         elif(command == 'plugins'):
                 plugin_id = self.app_config.get('id')
                 returnval = PluginManager().plugins[plugin_id].copy() if plugin_id else PluginManager().plugins.copy()
+
+        print(json.dumps(returnval, indent=2))
 
 if __name__ == "__main__":
     sys.exit(Application().main())
