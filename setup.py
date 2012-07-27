@@ -34,17 +34,20 @@ def subprocess_check_output(*popenargs, **kwargs):
 
 version_file_path = "imgfac/Version.py"
 version_file = open(version_file_path, 'w')
-(pkg_version, ignore, ignore) = subprocess_check_output('/usr/bin/git describe | tr - _', shell=True)
-pkg_version = pkg_version.rstrip('\n')
+try:
+    (pkg_version, ignore, ignore) = subprocess_check_output('/usr/bin/git describe | tr - _', shell=True)
+    pkg_version = pkg_version.rstrip('\n')
+except:
+    pkg_version = 9999
 version_file.write('VERSION = "%s"' % pkg_version)
 version_file.close()
 
-datafiles=[('share/man/man1', ['Documentation/man/imagefactory.1']),
+datafiles=[('share/man/man1', ['Documentation/man/imagefactory.1', 'Documentation/man/imagefactoryd.1']),
            ('/etc/imagefactory', ['imagefactory.conf']),
            ('/etc/pki/imagefactory', ['cert-ec2.pem']),
-           ('/etc/sysconfig', ['imagefactory']),
-           ('/etc/logrotate.d', ['imagefactory']),
-           ('/etc/rc.d/init.d', ['scripts/imagefactory'])]
+           ('/etc/sysconfig', ['imagefactoryd']),
+           ('/etc/logrotate.d', ['imagefactoryd']),
+           ('/etc/rc.d/init.d', ['scripts/imagefactoryd'])]
 
 class sdist(_sdist):
     """ custom sdist command to prepare imagefactory.spec file """
@@ -61,7 +64,7 @@ setup(name='imagefactory',
       license='Apache License, Version 2.0',
       url='http://www.aeolusproject.org/imagefactory.html',
       packages=['imgfac', 'imgfac.builders', 'imgfac.rest'],
-      scripts=['imagefactory'],
+      scripts=['imagefactory', 'imagefactoryd'],
       data_files = datafiles,
       cmdclass = {'sdist': sdist}
       )
