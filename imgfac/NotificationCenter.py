@@ -73,7 +73,7 @@ class NotificationCenter(Singleton):
                 try:
                     getattr(_observer[0], _observer[1])(notification)
                 except AttributeError as e:
-                    self.log.exception('Caught exception: posting notification to object (%s) with method (%s)' % (_observer[0], _observer.method[1]))
+                    self.log.exception('Caught exception: posting notification to object (%s) with method (%s)' % (_observer[0], _observer[1]))
         self.lock.release()
 
     def post_notification_with_info(self, message, sender, user_info=None):
