@@ -38,7 +38,7 @@ class BuildDispatcher(Singleton):
 
     def builder_for_base_image(self, template, parameters=None):
         builder = Builder()
-        builder.build_image_from_template(template)
+        builder.build_image_from_template(template, parameters=parameters)
         self.builders_lock.acquire()
         try:
             self.builders[builder.base_image.identifier] = builder

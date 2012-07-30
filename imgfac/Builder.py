@@ -27,6 +27,7 @@ from BaseImage import BaseImage
 from TargetImage import TargetImage
 from ProviderImage import ProviderImage
 from ImageFactoryException import ImageFactoryException
+from CallbackWorker import CallbackWorker
 
 class Builder(object):
     """ TODO: Docstring for Builder  """
@@ -60,8 +61,9 @@ class Builder(object):
 
 #####  SETUP CALLBACKS
     def _init_callback_workers(self, image, callbacks, callbackworkers):
-        for callback in callbacks:
-            worker = CallbackWorker(callback)
+        for callback_url in callbacks:
+            self.log.debug("Seeting up callback worker for (%s)" % (callback_url))
+            worker = CallbackWorker(callback_url)
             worker.start()
             callbackworkers.append(worker)
             self.notification_center.add_observer(worker, 'status_notifier', 'image.status', sender = image)
@@ -85,7 +87,7 @@ class Builder(object):
         self.base_image.template = template
         self.base_image.parameters = parameters
         self.pim.add_image(self.base_image)
-        if 'callbacks' in parameters:
+        if parameters and ('callbacks' in parameters):
             # This ensures we have workers in place before any potential state changes
             self._init_callback_workers(self.base_image, parameters['callbacks'], self._base_image_cbws)
 
@@ -111,7 +113,7 @@ class Builder(object):
             self.log.exception(e)
         finally:
             # We only shut the workers down after a known-final state change
-            self._shutdown_callback_workers(self.base_image, parameters['callbacks'], self._base_image_cbws)
+            self._shutdown_callback_workers(self.base_image, self._base_image_cbws)
 
 ##### CUSTOMIZE IMAGE FOR TARGET
     def customize_image_for_target(self, target, image_id=None, template=None, parameters=None):

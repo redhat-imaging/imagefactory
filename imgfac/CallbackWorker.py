@@ -50,8 +50,8 @@ class CallbackWorker():
         image = notification.sender
         _type = type(image).__name__
         callback_body = {'_type':_type,
-                         'id':image.identifier,
-                         'href':request.url}
+                         'id':image.identifier}
+#                         'href':request.url}
         for key in image.metadata():
             if key not in ('identifier', 'data', 'base_image_id', 'target_image_id'):
                 callback_body[key] = getattr(image, key, None)
@@ -101,7 +101,15 @@ class CallbackWorker():
                 time.sleep(5)
             else:
                 self.log.debug("POSTing update to URL (%s)" % (self.callback_url))
-                # TODO: Actually do this
+                try:
+                    data = urllib.urlencode(next_callback)
+                    req = urllib2.Request(callback_url, data)
+                    response = urllib2.urlopen(req)
+                    the_page = response.read()
+                except Exception, e:
+                    # We treat essentially every potential error here as non-fatal and simply move on to the next update
+                    # TODO: Configurable retries?
+                    self.log.debug("Caught exception (%s) when attempting to POST callback - Ignoring" % (str(e)))
 
     def __call__(self):
         while True:
