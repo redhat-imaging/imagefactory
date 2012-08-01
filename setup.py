@@ -31,16 +31,23 @@ def subprocess_check_output(*popenargs, **kwargs):
         raise Exception("'%s' failed(%d): %s" % (cmd, retcode, stderr))
     return (stdout, stderr, retcode)
 
-
-version_file_path = "imgfac/Version.py"
-version_file = open(version_file_path, 'w')
 try:
     (pkg_version, ignore, ignore) = subprocess_check_output('/usr/bin/git describe | tr - _', shell=True)
     pkg_version = pkg_version.rstrip('\n')
 except:
     pkg_version = 9999
-version_file.write('VERSION = "%s"' % pkg_version)
-version_file.close()
+
+def create_version_py():
+    version_file_path = "imgfac/Version.py"
+    version_file = open(version_file_path, 'w')
+    version_file.write('VERSION = "%s"' % pkg_version)
+    version_file.close()
+
+def modify_specfile():
+    cmd = (' sed -e "s/@VERSION@/%s/g" < imagefactory.spec.in ' % pkg_version) + " > imagefactory.spec"
+    print cmd
+    #cmd = (""" sed -e "s/@VERSION@/%s/g" < imagefactory.spec.in """ % pkg_version) + " > imagefactory.spec"
+    os.system(cmd)
 
 datafiles=[('share/man/man1', ['Documentation/man/imagefactory.1', 'Documentation/man/imagefactoryd.1']),
            ('/etc/imagefactory', ['imagefactory.conf']),
@@ -52,8 +59,8 @@ datafiles=[('share/man/man1', ['Documentation/man/imagefactory.1', 'Documentatio
 class sdist(_sdist):
     """ custom sdist command to prepare imagefactory.spec file """
     def run(self):
-        cmd = (""" sed -e "s/@VERSION@/%s/g" < imagefactory.spec.in """ % pkg_version) + " > imagefactory.spec"
-        os.system(cmd)
+        create_version_py()
+        modify_specfile()
         _sdist.run(self)
 
 setup(name='imagefactory',
