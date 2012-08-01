@@ -65,8 +65,8 @@ python setup.py install -O1 --root=%{buildroot} --skip-build
 
 sed -i '/\/usr\/bin\/env python/d' %{buildroot}/%{python_sitelib}/imgfac/*.py
 
-%{__install} -m0600 conf/imagefactory.sysconfig %{buildroot}/%{_sysconfdir}/sysconfig/imagefactory
-%{__install} -m0600 conf/imagefactory.logrotate %{buildroot}/%{_sysconfdir}/logrotate.d/imagefactory
+%{__install} -m0600 conf/imagefactoryd.sysconfig %{buildroot}/%{_sysconfdir}/sysconfig/imagefactoryd
+%{__install} -m0600 conf/imagefactoryd.logrotate %{buildroot}/%{_sysconfdir}/logrotate.d/imagefactoryd
 
 %post
 /sbin/chkconfig --add %{name}
@@ -79,10 +79,10 @@ fi
 
 %files
 %doc COPYING
-%{_initddir}/imagefactory
+%{_initddir}/imagefactoryd
 %config(noreplace) %{_sysconfdir}/imagefactory/imagefactory.conf
-%config(noreplace) %{_sysconfdir}/sysconfig/%{name}
-%config(noreplace) %{_sysconfdir}/logrotate.d/%{name}
+%config(noreplace) %{_sysconfdir}/sysconfig/imagefactoryd
+%config(noreplace) %{_sysconfdir}/logrotate.d/imagefactoryd
 %dir %attr(0755, root, root) %{_sysconfdir}/pki/imagefactory/
 %dir %attr(0755, root, root) %{_sysconfdir}/imagefactory/jeos_images/
 %dir %attr(0755, root, root) %{_sysconfdir}/imagefactory/plugins.d/
@@ -91,6 +91,7 @@ fi
 %{python_sitelib}/imgfac
 %{python_sitelib}/imagefactory-*.egg-info
 %{_bindir}/imagefactory
+%{_bindir}/imagefactoryd
 %{_mandir}/man1/*
 
 %changelog
