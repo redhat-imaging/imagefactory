@@ -28,6 +28,7 @@ from TargetImage import TargetImage
 from ProviderImage import ProviderImage
 from ImageFactoryException import ImageFactoryException
 from CallbackWorker import CallbackWorker
+from time import sleep
 
 class Builder(object):
     """ TODO: Docstring for Builder  """
@@ -347,3 +348,43 @@ class Builder(object):
         finally:
             # We only shut the workers down after a known-final state change
             self._shutdown_callback_workers(self.provider_image, parameters['callbacks'], self._provider_image_cbws)
+
+##### DELETE IMAGE
+    def delete_image(self, provider, credentials, target, image_object, parameters):
+        """
+        Delete an image of any type - We only need plugin-specific methods to delete ProviderImages
+        Both TargetImages and BaseImages can be deleted directly at the PersistentImageManager layer only.
+        
+        @param provider - XML or JSON provider definition - None if not a ProviderImage
+        @param credentials - Credentials for the given provider - None if not a ProviderImage
+        @param target - Target type if applicable - None if not
+        @param image_object - Already-retrieved and populated PersistentImage object
+        @param parameters TODO
+
+        @return TODO
+        """
+
+        thread_name = str(uuid.uuid4())[0:8]
+        thread_kwargs = {'provider':provider, 'credentials':credentials, 'target':target, 'image_object':image_object, 'parameters':parameters}
+        self.delete_thread = Thread(target=self._delete_image, name=thread_name, args=(), kwargs=thread_kwargs)
+        self.delete_thread.start()
+
+
+    def _delete_image(self, provider, credentials, target, image_object, parameters):
+        try:
+            _type = type(image_object).__name__
+            # TODO: These tasks take some amount of time - introduce a DELETING state?
+            # TODO: It may make sense to keep images in DELETED state for a period of time to allow polling
+            # TODO: Locking, of any type?  We can't really control whether the image is in use externally - deleter beware?
+            if _type == "ProviderImage":
+                plugin_mgr = PluginManager(self.app_config['plugins'])
+                self.cloud_plugin = plugin_mgr.plugin_for_target(target)
+                self.cloud_plugin.delete_from_provider(self, provider, credentials, target, parameters)
+            #self.provider_image.status="DELETED"
+            #self.pim.save_image(image_object)
+            self.pim.delete_image_with_id(image_object.identifier)
+        except Exception, e:
+            self.provider_image.status="DELETEFAILED"
+            self.pim.save_image(image_object)
+            self.log.error("Exception encountered in _delete_image_on_provider thread")
+            self.log.exception(e)

@@ -228,7 +228,15 @@ def get_image_file(image_id, base_image_id=None, target_image_id=None, provider_
 @oauth_protect
 def delete_image_with_id(image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
     try:
-        PersistentImageManager.default_manager().delete_image_with_id(image_id)
+        image = PersistentImageManager.default_manager().image_with_id(image_id)
+        if(not image):
+            raise HTTPResponse(status=404, output='No image found with id: %s' % image_id)
+        builder = Builder()
+        builder.delete_image(provider=request_data.get('provider'), 
+                             credentials=request_data.get('credentials'), 
+                             target=request_data.get('target'), 
+                             image_object=image, 
+                             parameters=request_data.get('parameters'))
         response.status = 204
     except Exception as e:
         log.exception(e)
