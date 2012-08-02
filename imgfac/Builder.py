@@ -210,7 +210,7 @@ class Builder(object):
             self.log.exception(e)
         finally:
             # We only shut the workers down after a known-final state change
-            self._shutdown_callback_workers(self.target_image, parameters['callbacks'], self._target_image_cbws)
+            self._shutdown_callback_workers(self.target_image, self._target_image_cbws)
 
 ##### CREATE PROVIDER IMAGE
     def create_image_on_provider(self, provider, credentials, target, image_id=None, template=None, parameters=None):
@@ -298,7 +298,7 @@ class Builder(object):
             self.log.exception(e)
         finally:
             # We only shut the workers down after a known-final state change
-            self._shutdown_callback_workers(self.provider_image, parameters['callbacks'], self._provider_image_cbws)
+            self._shutdown_callback_workers(self.provider_image, self._provider_image_cbws)
 
 ##### SNAPSHOT IMAGE
     def snapshot_image(self, provider, credentials, target, image_id, template, parameters):
@@ -346,4 +346,4 @@ class Builder(object):
             self.log.exception(e)
         finally:
             # We only shut the workers down after a known-final state change
-            self._shutdown_callback_workers(self.provider_image, parameters['callbacks'], self._provider_image_cbws)
+            self._shutdown_callback_workers(self.provider_image, self._provider_image_cbws)
