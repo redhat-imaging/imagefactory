@@ -133,7 +133,7 @@ class Builder(object):
         self.target_image.template = template
         self.target_image.parameters = parameters
         self.pim.add_image(self.target_image)        
-        if 'callbacks' in parameters:
+        if parameters and ('callbacks' in parameters):
             # This ensures we have workers in place before any potential state changes
             self._init_callback_workers(self.target_image, parameters['callbacks'], self._target_image_cbws)
 
@@ -238,7 +238,7 @@ class Builder(object):
         self.provider_image.target_image_id = image_id
         self.provider_image.template = template
         self.pim.add_image(self.provider_image)
-        if 'callbacks' in parameters:
+        if parameters and ('callbacks' in parameters):
             # This ensures we have workers in place before any potential state changes
             self._init_callback_workers(self.provider_image, parameters['callbacks'], self._provider_image_cbws)
 
@@ -320,7 +320,7 @@ class Builder(object):
         self.provider_image.target_image_id = image_id
         self.provider_image.template = template
         self.pim.add_image(self.provider_image)
-        if 'callbacks' in parameters:
+        if parameters and ('callbacks' in parameters):
             # This ensures we have workers in place before any potential state changes
             self._init_callback_workers(self.provider_image, parameters['callbacks'], self._provider_image_cbws)
 
