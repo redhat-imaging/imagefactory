@@ -92,7 +92,10 @@ def list_images(image_collection, base_image_id=None, target_image_id=None, list
 @oauth_protect
 def create_image(image_collection, base_image_id=None, target_image_id=None):
     try:
-        request_data = RESTtools.form_data_for_content_type(request.headers.get('Content-Type'))
+        image_type = image_collection[0:-1]
+        request_data = RESTtools.form_data_for_content_type(request.headers.get('Content-Type')).get(image_type)
+        if(not request_data):
+            raise HTTPResponse(status=400, output='%s not found in request.' % image_type)
 
         req_base_img_id = request_data.get('base_image_id')
         req_target_img_id = request_data.get('target_image_id')
