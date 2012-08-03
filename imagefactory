@@ -26,6 +26,7 @@ from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.PluginManager import PluginManager
 from imgfac.PersistentImageManager import PersistentImageManager
+from imgfac.Builder import Builder
 
 try:
     from pygments import highlight
@@ -170,7 +171,16 @@ class Application(Singleton):
         elif(command == 'delete'):
             try:
                 image_id = self.app_config['id']
-                PersistentImageManager.default_manager().delete_image_with_id(image_id)
+                image = PersistentImageManager.default_manager().image_with_id(image_id)
+                if(not image):
+                    print ('No image found with id: %s' % image_id)
+                    return
+                builder = Builder()
+                builder.delete_image(provider=self.app_config.get('provider'), 
+                                     credentials=self.app_config.get('credentials'), 
+                                     target=self.app_config.get('target'), 
+                                     image_object=image, 
+                                     parameters=self.app_config.get('parameters'))
                 print('Deleting image with id %s' % image_id)
                 return
             except Exception as e:
