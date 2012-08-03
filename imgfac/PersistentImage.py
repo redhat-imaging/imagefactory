@@ -21,8 +21,8 @@ from Notification import Notification
 from NotificationCenter import NotificationCenter
 
 
-METADATA =  ( 'identifier', 'data', 'template', 'icicle', 'status_detail', 'status', 'percent_complete' )
-STATUS_STRINGS = ('NEW','PENDING', 'COMPLETE', 'FAILED')
+METADATA =  ( 'identifier', 'data', 'template', 'icicle', 'status_detail', 'status', 'percent_complete', 'parameters' )
+STATUS_STRINGS = ('NEW','PENDING', 'COMPLETE', 'FAILED', 'DELETING', 'DELETEFAILED')
 NOTIFICATIONS = ('image.status', 'image.percentage')
 
 
@@ -91,6 +91,7 @@ class PersistentImage(object):
         self._status = "NEW"
         self._percent_complete = 0
         self.icicle = None
+        self.parameters = None
 
     def metadata(self):
         self.log.debug("Executing metadata in class (%s) my metadata is (%s)" % (self.__class__, METADATA))
