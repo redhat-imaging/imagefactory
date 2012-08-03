@@ -88,6 +88,10 @@ class ApplicationConfiguration(Singleton):
 
             cmd_delete = subparsers.add_parser('delete', help='Delete an image.')
             cmd_delete.add_argument('id', help='UUID of the image to delete')
+            cmd_provider.add_argument('--provider', type=argparse.FileType(), help='A file containing the provider description.')
+            cmd_provider.add_argument('--credentials', type=argparse.FileType(), help='A file containing the provider credentials')
+            cmd_target.add_argument('--target', help='The name of the target cloud for which to customize the image.')
+            cmd_provider.add_argument('--parameters')
 
             cmd_plugins = subparsers.add_parser('plugins', help='List active plugins or get details of a specific plugin.')
             cmd_plugins.add_argument('--id')
