@@ -18,7 +18,7 @@ from PersistentImage import PersistentImage
 from props import prop
 
 
-METADATA = ('base_image_id', 'target', 'parameters')
+METADATA = ('base_image_id', 'target')
 
 class TargetImage(PersistentImage):
     """ TODO: Docstring for TargetImage  """
@@ -31,7 +31,6 @@ class TargetImage(PersistentImage):
         super(TargetImage, self).__init__(image_id)
         self.base_image_id = None
         self.target = None
-        self.parameters = None
 
     def metadata(self):
         self.log.debug("Executing metadata in class (%s) my metadata is (%s)" % (self.__class__, METADATA))
