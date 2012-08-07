@@ -1,6 +1,24 @@
 #!/usr/bin/env python
 
 import argparse
+import tempfile
+import subprocess
+import json
+from time import sleep
+import sys
+
+# Required for Python 2.6 backwards compat
+def subprocess_check_output(*popenargs, **kwargs):
+    if 'stdout' in kwargs:
+        raise ValueError('stdout argument not allowed, it will be overridden.')
+
+    process = subprocess.Popen(stdout=subprocess.PIPE, stderr=subprocess.STDOUT, *popenargs, **kwargs)
+    stdout, stderr = process.communicate()
+    retcode = process.poll()
+    if retcode:
+        cmd = ' '.join(*popenargs)
+        raise Exception("'%s' failed(%d): %s" % (cmd, retcode, stdout))
+    return (stdout, stderr, retcode)
 
 
 argparser = argparse.ArgumentParser()
@@ -18,4 +36,25 @@ TDL = "<template><name>buildBaseImage</name><os><name>%s</name><version>%s\
                                                                      options.arch,
                                                                      options.url)
 
-print TDL
+template = tempfile.NamedTemporaryFile(mode='w', delete=False)
+template.write(TDL)
+template.close()
+
+(output, ignore, ignore) = subprocess_check_output('/usr/bin/imagefactory --debug --raw base_image %s' % template.name, shell=True)
+outputd = json.loads(output)
+
+image_id = outputd['identifier']
+
+interval = 5
+seconds = interval
+msg = ''
+while(outputd['status'] not in ('COMPLETE', 'COMPLETED', 'FAILED')):
+    msg = '%s - %ss' % (outputd['status_detail']['activity'], seconds)
+    sys.stdout.write('\r' + msg)
+    sleep(interval)
+    seconds = seconds + interval
+    (output, ignore, ignore) = subprocess_check_output('/usr/bin/imagefactory --debug --raw images \'{"identifier":"%s"}\'' % image_id, shell=True)
+    outputd = json.loads(output)
+
+sys.stdout.write('\r' + ' ' * len(msg))
+sys.stdout.write('\r' + output)
