@@ -166,7 +166,10 @@ class Application(Singleton):
                 for key in image.metadata():
                     item[key] = getattr(image, key, None)
                 images.append(item)
-            returnval['images'] = images
+            if(len(images) > 1):
+                returnval['images'] = images
+            else:
+                returnval = images[0]
 
         elif(command == 'delete'):
             try:
@@ -192,10 +195,10 @@ class Application(Singleton):
 
         formatted_returnval = json.dumps(returnval, indent=2)
 
-        if PYGMENT:
+        if(PYGMENT and self.app_config['raw']):
             print highlight(formatted_returnval, JSONLexer(), TerminalFormatter())
         else:
-            if(self.app_config['debug']):
+            if(self.app_config['debug'] and self.app_config['raw']):
                 print('Python module "pygment" found. Install this module if you want syntax colorization.')
             print(formatted_returnval)
 
