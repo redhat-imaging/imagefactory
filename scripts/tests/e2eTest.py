@@ -20,12 +20,12 @@ builds = json.loads(args.builds)
 targets = json.loads(args.targets)
 
 base_images = []
-bil_lock = threading.Lock()
+b_lock = threading.Lock()
 target_images = []
-til_lock = threading.Lock()
+t_lock = threading.Lock()
 failures = []
-fail_lock = threading.Lock()
-build_queue = threading.BoundedSemaphore(len(builds))
+f_lock = threading.Lock()
+queue = threading.BoundedSemaphore(len(builds))
 proc_chk_interval = 5
 
 # Required for Python 2.6 backwards compat
@@ -43,7 +43,7 @@ def subprocess_check_output(*popenargs, **kwargs):
 ###
 
 def build_base_image(template_args):
-    build_queue.acquire()
+    queue.acquire()
     try:
         TDL = "<template><name>buildBaseImage</name><os><name>%s</name><version>%s\
 </version><arch>%s</arch><install type='url'><url>%s</url></install></os>\
@@ -65,16 +65,16 @@ def build_base_image(template_args):
             outputd = json.loads(output)
 
         if(outputd['status'] == 'FAILED'):
-            with fail_lock:
+            with f_lock:
                 failures.append(outputd)
         else:
-            with bil_lock:
+            with b_lock:
                 base_images.append(outputd)
     finally:
-        build_queue.release()
+        queue.release()
 
 def customize_target_image(target, index):
-    build_queue.acquire()
+    queue.acquire()
     try:
         if(index < len(base_images)):
             base_image = base_images[index]
@@ -87,13 +87,13 @@ def customize_target_image(target, index):
                 outputd = json.loads(output)
 
             if(outputd['status'] == 'FAILED'):
-                with fail_lock:
+                with f_lock:
                     failures.append(outputd)
             else:
-                with til_lock:
+                with t_lock:
                     target_images.append(outputd)
     finally:
-        build_queue.release()
+        queue.release()
 
 for build in builds:
     thread_name = "%s-%s-%s.%s" % (build['os'], build['version'], build['arch'], os.getpid())
@@ -106,7 +106,7 @@ for target in targets:
         customize_thread = threading.Thread(target=customize_target_image, name=thread_name, args=(target, index))
         customize_thread.start()
 
-build_queue.acquire()
+queue.acquire()
 print json.dumps({"failures":failures, "base_images":base_images, "target_images":target_images}, indent=2)
-build_queue.release()
+queue.release()
 sys.exit(0)
