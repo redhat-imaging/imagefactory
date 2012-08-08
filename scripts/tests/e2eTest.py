@@ -44,38 +44,19 @@ def subprocess_check_output(*popenargs, **kwargs):
 
 def build_base_image(template_args):
     build_queue.acquire()
-    TDL = "<template><name>buildBaseImage</name><os><name>%s</name><version>%s\
-    </version><arch>%s</arch><install type='url'><url>%s</url></install></os>\
-    <description>Tests building a BaseImage</description></template>" % (template_args['os'],
-                                                                         template_args['version'],
-                                                                         template_args['arch'],
-                                                                         template_args['url'])
+    try:
+        TDL = "<template><name>buildBaseImage</name><os><name>%s</name><version>%s\
+</version><arch>%s</arch><install type='url'><url>%s</url></install></os>\
+<description>Tests building a BaseImage</description></template>" % (template_args['os'],
+                                                                     template_args['version'],
+                                                                     template_args['arch'],
+                                                                     template_args['url'])
 
-    template = tempfile.NamedTemporaryFile(mode='w', delete=False)
-    template.write(TDL)
-    template.close()
+        template = tempfile.NamedTemporaryFile(mode='w', delete=False)
+        template.write(TDL)
+        template.close()
 
-    (output, ignore, ignore) = subprocess_check_output('/usr/bin/imagefactory --debug --raw base_image %s' % template.name, shell=True)
-    outputd = json.loads(output)
-    image_id = outputd['identifier']
-    while(outputd['status'] not in ('COMPLETE', 'COMPLETED', 'FAILED')):
-        sleep(proc_chk_interval)
-        (output, ignore, ignore) = subprocess_check_output('/usr/bin/imagefactory --raw images \'{"identifier":"%s"}\'' % image_id, shell=True)
-        outputd = json.loads(output)
-
-    if(outputd['status'] == 'FAILED'):
-        with fail_lock:
-            failures.append(outputd)
-    else:
-        with bil_lock:
-            base_images.append(outputd)
-    build_queue.release()
-
-def customize_target_image(target, index):
-    build_queue.acquire()
-    if(index < len(base_images)):
-        base_image = base_images[index]
-        (output, ignore, ignore) = subprocess_check_output('/usr/bin/imagefactory --debug --raw target_image --id %s %s' % (base_image.get('identifier'), target), shell=True)
+        (output, ignore, ignore) = subprocess_check_output('/usr/bin/imagefactory --debug --raw base_image %s' % template.name, shell=True)
         outputd = json.loads(output)
         image_id = outputd['identifier']
         while(outputd['status'] not in ('COMPLETE', 'COMPLETED', 'FAILED')):
@@ -87,9 +68,32 @@ def customize_target_image(target, index):
             with fail_lock:
                 failures.append(outputd)
         else:
-            with til_lock:
-                target_images.append(outputd)
-    build_queue.release()
+            with bil_lock:
+                base_images.append(outputd)
+    finally:
+        build_queue.release()
+
+def customize_target_image(target, index):
+    build_queue.acquire()
+    try:
+        if(index < len(base_images)):
+            base_image = base_images[index]
+            (output, ignore, ignore) = subprocess_check_output('/usr/bin/imagefactory --debug --raw target_image --id %s %s' % (base_image.get('identifier'), target), shell=True)
+            outputd = json.loads(output)
+            image_id = outputd['identifier']
+            while(outputd['status'] not in ('COMPLETE', 'COMPLETED', 'FAILED')):
+                sleep(proc_chk_interval)
+                (output, ignore, ignore) = subprocess_check_output('/usr/bin/imagefactory --raw images \'{"identifier":"%s"}\'' % image_id, shell=True)
+                outputd = json.loads(output)
+
+            if(outputd['status'] == 'FAILED'):
+                with fail_lock:
+                    failures.append(outputd)
+            else:
+                with til_lock:
+                    target_images.append(outputd)
+    finally:
+        build_queue.release()
 
 for build in builds:
     thread_name = "%s-%s-%s.%s" % (build['os'], build['version'], build['arch'], os.getpid())
