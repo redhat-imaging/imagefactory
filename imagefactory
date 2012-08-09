@@ -169,7 +169,14 @@ class Application(Singleton):
             if(len(images) > 1):
                 returnval['images'] = images
             else:
-                returnval = images[0]
+                try:
+                    returnval = images[0]
+                except IndexError:
+                    if(self.app_config['debug']):
+                        print "No images matching fetch specification (%s) found." % (self.app_config['fetch_spec'])
+                except Exception as e:
+                    print e
+                    sys.exit(1)
 
         elif(command == 'delete'):
             try:
