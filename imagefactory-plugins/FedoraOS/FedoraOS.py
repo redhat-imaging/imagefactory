@@ -16,6 +16,8 @@
 import logging
 import zope
 import oz.Fedora
+import oz.RHEL_5
+import oz.RHEL_6
 import oz.TDL
 import subprocess
 import os
@@ -115,9 +117,8 @@ class FedoraOS(object):
         # make this a property to enable quick cleanup on abort
         self.instance = None
 
-        # This comes from the original init_guest()
         # Here we are always dealing with a local install
-        self.guest = oz.Fedora.get_class(self.tdlobj, self.oz_config, None)
+        self.init_guest()
 
         self.guest.diskimage = self.base_image.data
         # The remainder comes from the original build_upload(self, build_id)
@@ -157,6 +158,17 @@ class FedoraOS(object):
             pass
             # TODO: Create the base_image object representing this
             # TODO: Create the base_image object at the beginning and then set the diskimage accordingly
+
+    def init_guest(self):
+        # TODO: See if we can make this a bit more dynamic
+        if self.tdlobj.distro == "RHEL-5":
+            self.guest = oz.RHEL_5.get_class(self.tdlobj, self.oz_config, None)
+        elif self.tdlobj.distro == "RHEL-6":
+            self.guest = oz.RHEL_6.get_class(self.tdlobj, self.oz_config, None)
+        elif self.tdlobj.distro == "Fedora":
+            self.guest = oz.Fedora.get_class(self.tdlobj, self.oz_config, None)
+        else:
+            raise ImageFactoryException("OS plugin does not support distro (%s) in TDL" % (self.tdlobj.distro) )
 
     def log_exc(self):
         self.log.debug("Exception caught in ImageFactory")

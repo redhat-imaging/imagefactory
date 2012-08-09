@@ -57,28 +57,6 @@ def subprocess_check_output(*popenargs, **kwargs):
     return (stdout, stderr, retcode)
 
 
-# This allows us to use the utility methods in Oz without errors due to lack of libvirt
-class FedoraRemoteGuest(oz.Fedora.FedoraGuest):
-    def __init__(self, tdl, config, auto, nicmodel, haverepo, diskbus,
-                 brokenisomethod):
-        # The debug output in the Guest parent class needs this property to exist
-        self.host_bridge_ip = "0.0.0.0"
-        oz.Fedora.FedoraGuest.__init__(self, tdl, config, auto, nicmodel, haverepo, diskbus,
-                 brokenisomethod)
-
-    def connect_to_libvirt(self):
-        pass
-
-    def guest_execute_command(self, guestaddr, command, timeout=30,
-                              tunnels=None):
-        return super(FedoraRemoteGuest, self).guest_execute_command(guestaddr, command, timeout, tunnels)
-
-    def guest_live_upload(self, guestaddr, file_to_upload, destination,
-                          timeout=30):
-        return super(FedoraRemoteGuest, self).guest_live_upload(guestaddr, file_to_upload, destination, timeout)
-
-
-
 class EC2Cloud(object):
     zope.interface.implements(CloudDelegate)
 
@@ -130,6 +108,7 @@ class EC2Cloud(object):
             self.target = target
             self.builder = builder
             self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml, rootpw_required=True)
+            self._get_os_helper()
             # Add in target specific content
             self.add_target_content()
 
@@ -182,6 +161,21 @@ class EC2Cloud(object):
         self.percent_complete=100
         self.status="COMPLETED"
 
+    def _get_os_helper(self):
+        # For now we are adopting a 'mini-plugin' approach to OS specific code within the EC2 plugin
+        # In theory, this could live in the OS plugin - however, the code in question is very tightly
+        # related to the EC2 plugin, so it probably should stay here
+        try:
+            # Change RHEL-6 to RHEL6, etc.
+            os_name = self.tdlobj.distro.translate(None, '-')
+            class_name = "%s_ec2_Helper" % (os_name)
+            module_name = "imgfactory-plugins.EC2Cloud.EC2CloudOSHelpers.%s" % (class_name)
+            __import__(module_name)
+            os_helper_class = getattr(sys.modules[module_name], class_name)
+            self.os_helper = os_helper_class(self)
+        except:
+            self.log_exc()
+            raise ImageFactoryException("Unable to create EC2 OS helper object for distro (%s) in TDL" % (self.tdlobj.distro) )
 
     def push_image_to_provider(self, builder, provider, credentials, target, target_image, parameters):
         self.log.info('push_image_to_provider() called in EC2Cloud')
@@ -190,6 +184,7 @@ class EC2Cloud(object):
         self.new_image_id = builder.provider_image.identifier
 
         self.tdlobj = oz.TDL.TDL(xmlstring=builder.target_image.template, rootpw_required=True)
+        self._get_os_helper()
         self.builder = builder
         self.active_image = self.builder.provider_image
         self.push_image_upload(target_image, provider, credentials)
@@ -260,34 +255,10 @@ class EC2Cloud(object):
             self.log.debug("de-registering the AMI itself")
             ami.deregister()
 
-
-    def init_guest(self, guesttype):
-        if guesttype == "local":
-            self.guest = oz.Fedora.get_class(self.tdlobj, self.oz_config, None)
-        else:
-            self.guest = FedoraRemoteGuest(self.tdlobj, self.oz_config, None,
-                                           "virtio", True, "virtio", True)
-        self.guest.diskimage = self.app_config["imgdir"] + "/base-image-" + self.new_image_id + ".dsk"
-
     def log_exc(self):
         self.log.debug("Exception caught in ImageFactory")
         self.log.debug(traceback.format_exc())
         self.active_image.status_detail['error'] = traceback.format_exc()
-
-    def build_image(self, build_id=None):
-        try:
-            if self.app_config["ec2_build_style"] == "upload":
-                self.init_guest("local")
-                self.build_upload(build_id)
-            elif self.app_config["ec2_build_style"] == "snapshot":
-                # No actual need to have a guest object here so don't bother
-                self.build_snapshot(build_id)
-            else:
-                raise ImageFactoryException("Invalid ec2_build_style (%s) passed to build_image()" % (self.app_config["ec2_build_style"]))
-        except:
-            self.log_exc()
-            self.status="FAILED"
-            raise
 
     def modify_oz_filesystem(self):
         self.activity("Removing unique identifiers from image - Adding cloud information")
@@ -555,24 +526,6 @@ class EC2Cloud(object):
         # TODO: Based on architecture associate one of two XML blocks that contain the correct
         # regional AKIs for pvgrub
 
-    def push_image(self, target_image_id, provider, credentials):
-        try:
-            if self.app_config["ec2_build_style"] == "upload":
-                self.push_image_upload(target_image_id, provider, credentials)
-            elif self.app_config["ec2_build_style"] == "snapshot":
-                self.init_guest("remote")
-                self.push_image_snapshot_ec2(target_image_id, provider,
-                                             credentials)
-            else:
-                raise ImageFactoryException("Invalid build target (%s) passed to build_image()" % (self.target))
-        except:
-            self.log_exc()
-            self.status="FAILED"
-
-    def install_euca_tools(self, guestaddr):
-        # For F13-F15 we now have a working euca2ools in the default repos
-        self.guest.guest_execute_command(guestaddr, "yum -y install euca2ools")
-
     def wait_for_ec2_ssh_access(self, guestaddr):
         self.activity("Waiting for SSH access to EC2 instance")
         for i in range(300):
@@ -622,14 +575,6 @@ class EC2Cloud(object):
                 raise ImageFactoryException("Instance (%s) failed to fully start or terminate - it may still be running" % (instance.id))
             raise ImageFactoryException("Instance failed to start after 300 seconds - stopping")
 
-    def correct_remote_manifest(self, guestaddr, manifest):
-        # not needed in fedora but unfortunately needed elsewhere
-        pass
-
-    def ebs_pre_shapshot_tasks(self, guestaddr):
-        # not needed in Fedora but needed in current RHEL AMIs to make key injection work
-        pass
-
     def terminate_instance(self, instance):
         # boto 1.9 claims a terminate() method but does not implement it
         # boto 2.0 throws an exception if you attempt to stop() an S3 backed instance
@@ -640,7 +585,6 @@ class EC2Cloud(object):
             instance.stop()
 
     def snapshot_image_on_provider(self, builder, provider, credentials, target, template, parameters):
-    #def push_image_snapshot_ec2(self, target_image_id, provider, credentials):
         self.log.info('snapshot_image_on_provider() called in EC2Cloud')
 
         # TODO: This is a convenience variable for refactoring - rename
@@ -648,6 +592,8 @@ class EC2Cloud(object):
 
         # Template must be defined for snapshots
         self.tdlobj = oz.TDL.TDL(xmlstring=str(template), rootpw_required=True)
+        self._get_os_helper()
+        self.os_helper.init_guest()
 
         self.builder = builder
         self.active_image = self.builder.provider_image
@@ -1003,7 +949,7 @@ class EC2Cloud(object):
     def ec2_push_image_upload_ebs(self, target_image_id, provider, credentials):
         # TODO: Merge with ec2_push_image_upload and/or factor out duplication
         # In this case we actually do need an Oz object to manipulate a remote guest
-        self.init_guest("remote")
+        self.os_helper.init_guest()
 
         self.ec2_decode_credentials(credentials)
         # We don't need the x509 material here so close the temp files right away
