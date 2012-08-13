@@ -125,12 +125,8 @@ class vSphere(object):
         # created as the base_image.  As a result, all the Oz building steps are gone (and can be found
         # in the OS plugin(s)
 
-        # First, we populate our target_image bodyfile with the original base image
-        # which we do not want to modify in place
-        self.activity("Copying BaseImage to modifiable TargetImage")
-        self.log.debug("Copying base_image file (%s) to new target_image file (%s)" % (builder.base_image.data, builder.target_image.data))
-        shutil.copy2(builder.base_image.data, builder.target_image.data)
-        self.image = builder.target_image.data
+        # OS plugin has already provided the initial file for us to work with
+        # which we can currently assume is a raw KVM compatible image
 
         # Add the cloud-info file
         self.modify_oz_filesystem()

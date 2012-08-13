@@ -68,8 +68,100 @@ class FedoraOS(object):
     ## INTERFACE METHOD
     def create_target_image(self, builder, target, base_image, parameters):
         self.log.info('create_target_image() called for FedoraOS plugin - creating a TargetImage')
-        self.log.debug("Currently create_target_image() does nothing here")
-        pass
+        self.active_image = self.builder.target_image
+
+        # Merge together any TDL-style customizations requested via our plugin-to-plugin interface
+        # with any target specific packages, repos and commands and then run a second Oz customization
+        # step.
+        self.tdlobj = oz.TDL.TDL(xmlstring=builder.base_image.template.xml, rootpw_required=True)
+        
+        # We remove any packages and commands from the original TDL - these have already been
+        # installed/executed.  We leave the repos in place, as it is possible that the target
+        # specific packages or commands may require them.
+        self.tdlobj.packages = [ ]
+        self.tdlobj.commands = { }
+        self.add_target_content()
+
+        # populate our target_image bodyfile with the original base image
+        # which we do not want to modify in place
+        self.activity("Copying BaseImage to modifiable TargetImage")
+        self.log.debug("Copying base_image file (%s) to new target_image file (%s)" % (builder.base_image.data, builder.target_image.data))
+        shutil.copy2(builder.base_image.data, builder.target_image.data)
+        self.image = builder.target_image.data
+
+        # Retrieve original libvirt_xml from base image - update filename
+        input_doc = libxml2.parseDoc(builder.base_image.parameters['libvirt_xml'])
+        disknodes = input_doc.xpathEval("/domain/devices/disk")
+        for disknode in disknodes:
+            if disknode.prop('device') == 'disk':
+                disknode.xpathEval('source')[0].setProp('file', builder.target_image.data)
+
+        libvirt_xml = xml = input_doc.serialize(None, 1)
+
+        self._init_oz()
+
+        try:
+            self.log.debug("Doing second-stage target_image customization and ICICLE generation")
+            #self.percent_complete = 30
+            self.output_descriptor = self.guest.customize_and_generate_icicle(libvirt_xml)
+            self.log.debug("Customization and ICICLE generation complete")
+            #self.percent_complete = 50
+        finally:
+            self.activity("Cleaning up install artifacts")
+            self.guest.cleanup_install()
+
+
+    def add_target_content(self):
+        """Merge in target specific package and repo content.
+        TDL object must already exist as self.tdlobj"""
+        doc = None
+        if self.config_block:
+            doc = libxml2.parseDoc(self.config_block)
+        elif isfile("/etc/imagefactory/target_content.xml"):
+            doc = libxml2.parseFile("/etc/imagefactory/target_content.xml")
+        else:
+            self.log.debug("Found neither a call-time config nor a config file - doing nothing")
+            return
+
+        # Purely to make the xpath statements below a tiny bit shorter
+        target = self.target
+        os=self.tdlobj.distro
+        version=self.tdlobj.update
+        arch=self.tdlobj.arch
+
+        # We go from most to least specific in this order:
+        #   arch -> version -> os-> target
+        # Note that at the moment we even allow an include statment that covers absolutely everything.
+        # That is, one that doesn't even specify a target - this is to support a very simple call-time syntax
+        include = doc.xpathEval("/template_includes/include[@target='%s' and @os='%s' and @version='%s' and @arch='%s']" %
+                  (target, os, version, arch))
+        if len(include) == 0:
+            include = doc.xpathEval("/template_includes/include[@target='%s' and @os='%s' and @version='%s' and not(@arch)]" %
+                      (target, os, version))
+        if len(include) == 0:
+            include = doc.xpathEval("/template_includes/include[@target='%s' and @os='%s' and not(@version) and not(@arch)]" %
+                      (target, os))
+        if len(include) == 0:
+            include = doc.xpathEval("/template_includes/include[@target='%s' and not(@os) and not(@version) and not(@arch)]" %
+                      (target))
+        if len(include) == 0:
+            include = doc.xpathEval("/template_includes/include[not(@target) and not(@os) and not(@version) and not(@arch)]")
+        if len(include) == 0:
+            self.log.debug("cannot find a config section that matches our build details - doing nothing")
+            return
+
+        # OK - We have at least one config block that matches our build - take the first one, merge it and be done
+        # TODO: Merge all of them?  Err out if there is more than one?  Warn?
+        include = include[0]
+
+        packages = include.xpathEval("packages")
+        if len(packages) > 0:
+            self.tdlobj.merge_packages(str(packages[0]))
+
+        repositories = include.xpathEval("repositories")
+        if len(repositories) > 0:
+            self.tdlobj.merge_repositories(str(repositories[0]))
+
 
     def __init__(self):
         super(FedoraOS, self).__init__()
@@ -83,21 +175,8 @@ class FedoraOS(object):
             self.log.warning("No JEOS amis defined for ec2.  Snapshot builds will not be possible.")
             self.ec2_jeos_amis = {}
 
-    ## INTERFACE METHOD
-    def create_base_image(self, builder, template, parameters):
-        self.log.info('create_base_image() called for FedoraOS plugin - creating a BaseImage')
 
-        self.tdlobj = oz.TDL.TDL(xmlstring=template.xml, rootpw_required=True)
-
-        # TODO: Standardize reference scheme for the persistent image objects in our builder
-        #   Having local short-name copies like this may well be a good idea though they
-        #   obscure the fact that these objects are in a container "upstream" of our plugin object
-        self.base_image = builder.base_image
-
-        # Set to the image object that is actively being created or modified
-        # Used in the logging helper function above
-        self.active_image = self.base_image
-
+    def _init_oz(self):
         # TODO: This is a convenience variable for refactoring - rename
         self.new_image_id = self.base_image.identifier
 
@@ -120,6 +199,24 @@ class FedoraOS(object):
         # Here we are always dealing with a local install
         self.init_guest()
 
+
+    ## INTERFACE METHOD
+    def create_base_image(self, builder, template, parameters):
+        self.log.info('create_base_image() called for FedoraOS plugin - creating a BaseImage')
+
+        self.tdlobj = oz.TDL.TDL(xmlstring=template.xml, rootpw_required=True)
+
+        # TODO: Standardize reference scheme for the persistent image objects in our builder
+        #   Having local short-name copies like this may well be a good idea though they
+        #   obscure the fact that these objects are in a container "upstream" of our plugin object
+        self.base_image = builder.base_image
+
+        # Set to the image object that is actively being created or modified
+        # Used in the logging helper function above
+        self.active_image = self.base_image
+
+        self._init_oz()
+
         self.guest.diskimage = self.base_image.data
         # The remainder comes from the original build_upload(self, build_id)
 
@@ -141,6 +238,7 @@ class FedoraOS(object):
                 #  subject to some rules about updates to underlying repo
                 self.activity("Execute JEOS install")
                 libvirt_xml = self.guest.install(self.app_config["timeout"])
+                self.base_image.parameters['libvirt_xml'] = libvirt_xml
                 self.image = self.guest.diskimage
                 self.log.debug("Base install complete - Doing customization and ICICLE generation")
                 self.percent_complete = 30
