@@ -20,7 +20,6 @@ import oz.RHEL_5
 import oz.RHEL_6
 import oz.TDL
 import subprocess
-import os
 import os.path
 import re
 import guestfs
@@ -31,6 +30,8 @@ import traceback
 import pycurl
 import gzip
 import ConfigParser
+import shutil
+from os.path import isfile
 from time import *
 from tempfile import *
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
@@ -68,12 +69,14 @@ class FedoraOS(object):
     ## INTERFACE METHOD
     def create_target_image(self, builder, target, base_image, parameters):
         self.log.info('create_target_image() called for FedoraOS plugin - creating a TargetImage')
-        self.active_image = self.builder.target_image
+        self.active_image = builder.target_image
+        self.target = target
+        self.base_image = builder.base_image
 
         # Merge together any TDL-style customizations requested via our plugin-to-plugin interface
         # with any target specific packages, repos and commands and then run a second Oz customization
         # step.
-        self.tdlobj = oz.TDL.TDL(xmlstring=builder.base_image.template.xml, rootpw_required=True)
+        self.tdlobj = oz.TDL.TDL(xmlstring=builder.base_image.template, rootpw_required=True)
         
         # We remove any packages and commands from the original TDL - these have already been
         # installed/executed.  We leave the repos in place, as it is possible that the target
@@ -115,9 +118,7 @@ class FedoraOS(object):
         """Merge in target specific package and repo content.
         TDL object must already exist as self.tdlobj"""
         doc = None
-        if self.config_block:
-            doc = libxml2.parseDoc(self.config_block)
-        elif isfile("/etc/imagefactory/target_content.xml"):
+        if isfile("/etc/imagefactory/target_content.xml"):
             doc = libxml2.parseFile("/etc/imagefactory/target_content.xml")
         else:
             self.log.debug("Found neither a call-time config nor a config file - doing nothing")

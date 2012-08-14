@@ -143,6 +143,7 @@ class EC2Cloud(object):
             # At this point our builder has a target_image and a base_image
             # OS plugin has already provided the initial file for us to work with
             # which we can currently assume is a raw KVM compatible image
+            self.image = builder.target_image.data
 
             self.modify_oz_filesystem()
 

@@ -100,6 +100,7 @@ class vSphere(object):
         self.template = template
         self.target = target
         self.builder = builder
+        self.image = builder.target_image.data
 
         # This lets our logging helper know what image is being operated on
         self.active_image = self.builder.target_image

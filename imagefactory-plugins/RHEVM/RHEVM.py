@@ -127,6 +127,7 @@ class RHEVM(object):
 
         # OS plugin has already provided the initial file for us to work with
         # which we can currently assume is a raw KVM compatible image
+        self.image = builder.target_image.data
 
         # Add the cloud-info file
         self.modify_oz_filesystem()
