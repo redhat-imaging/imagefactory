@@ -84,6 +84,7 @@ class FedoraOS(object):
         self.tdlobj.packages = [ ]
         self.tdlobj.commands = { }
         self.add_target_content()
+        self.merge_cloud_plugin_content()
 
         # populate our target_image bodyfile with the original base image
         # which we do not want to modify in place
@@ -112,6 +113,51 @@ class FedoraOS(object):
         finally:
             self.activity("Cleaning up install artifacts")
             self.guest.cleanup_install()
+
+    def add_cloud_plugin_content(self, content):
+        # Expected input is a dict containing commands and files
+        # No support for repos at the moment as these introduce external deps that we may not be able to count on
+        # Add this to an array which will later be merged into the TDL object used to drive Oz
+        self.cloud_plugin_content.append(content)
+
+    def merge_cloud_plugin_content(self):
+        for content in self.cloud_plugin_content:
+            if 'files' in content:
+                for fileentry in content['files']:
+                    if not 'name' in fileentry:
+                        raise ImageFactoryException("File given without a name")
+                    if not 'type' in fileentry:
+                        raise ImageFactoryException("File given without a type")
+                    if not 'file' in fileentry:
+                        raise ImageFactoryException("File given without any content")
+                    if fileentry['type'] == 'raw':
+                        self.tdlobj.files[fileentry['name']] = fileentry['file']
+                    elif fileentry['type'] == 'base64':
+                        if len(fileentry['file']) == 0:
+                            self.tdlobj.files[fileentry['name']] = ""
+                        else:
+                            self.tdlobj.files[fileentry['name']] = base64.b64decode(fileentry['file'])
+                    else:
+                        raise ImageFactoryException("File given with invalid type (%s)" % (file['type']))
+
+            if 'commands' in content:
+                for command in content['commands']:
+                    if not 'name' in command:
+                        raise ImageFactoryException("Command given without a name")
+                    if not 'type' in command:
+                        raise ImageFactoryException("Command given without a type")
+                    if not 'command' in command:
+                        raise ImageFactoryException("Command given without any content")
+                    if command['type'] == 'raw':
+                        self.tdlobj.commands[command['name']] = command['command']
+                    elif command['type'] == 'base64':
+                        if len(command['command']) == 0:
+                            self.log.warning("Command with zero length given")
+                            self.tdlobj.commands[command['name']] = ""
+                        else:
+                            self.tdlobj.commandss[command['name']] = base64.b64decode(command['command'])
+                    else:
+                        raise ImageFactoryException("Command given with invalid type (%s)" % (command['type']))
 
 
     def add_target_content(self):
@@ -166,6 +212,7 @@ class FedoraOS(object):
 
     def __init__(self):
         super(FedoraOS, self).__init__()
+        self.cloud_plugin_content = [ ]
         config_obj = ApplicationConfiguration()
         self.app_config = config_obj.configuration
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
