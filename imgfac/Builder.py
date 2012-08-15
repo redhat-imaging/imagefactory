@@ -188,20 +188,17 @@ class Builder(object):
             if not self.cloud_plugin:
                 self.log.warn("Unable to find cloud plugin for target (%s)" % (target))
 
-            try:
+            if(hasattr(self.cloud_plugin, 'builder_should_create_target_image')):
                 _should_create = self.cloud_plugin.builder_should_create_target_image(self, target, image_id, template, parameters)
-            except AttributeError as e:
+            else:
                 _should_create = True
-            try:
-                if _should_create : self.cloud_plugin.builder_will_create_target_image(self, target, image_id, template, parameters)
-            except AttributeError as e:
-                pass
+            if(_should_create and hasattr(self.cloud_plugin, 'builder_will_create_target_image')):
+                self.cloud_plugin.builder_will_create_target_image(self, target, image_id, template, parameters)
             if(_should_create):
-                try:
+                if(hasattr(self.os_plugin, 'create_target_image')):
                     self.os_plugin.create_target_image(self, target, image_id, parameters)
+                if(hasattr(self.cloud_plugin, 'builder_did_create_target_image')):
                     self.cloud_plugin.builder_did_create_target_image(self, target, image_id, template, parameters)
-                except AttributeError as e:
-                    pass
             self.target_image.status = "COMPLETE"
             self.pim.save_image(self.target_image)
         except Exception, e:
