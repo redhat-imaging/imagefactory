@@ -94,7 +94,7 @@ class vSphere(object):
         return True
 
     def builder_will_create_target_image(self, builder, target, image_id, template, parameters):
-        tdlobj = oz.TDL.TDL(xmlstring=self.template.xml, rootpw_required=True)
+        tdlobj = oz.TDL.TDL(xmlstring=template.xml, rootpw_required=True)
         if tdlobj.distro == "RHEL-5":
             merge_content = { "commands": [ { "name": "execute-module-script", "type": "raw" , "command": "/bin/sh /root/vsphere-module.sh" } ],
                               "files" : [ { "name": "/root/vsphere-module.sh", "type": "raw", "file": rhel5_module_script } ] }
