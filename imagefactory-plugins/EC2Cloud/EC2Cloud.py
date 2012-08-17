@@ -19,15 +19,11 @@ import oz.Fedora
 import oz.TDL
 import subprocess
 import os
-import shutil
 import re
 import guestfs
 import string
 import libxml2
-import httplib2
 import traceback
-import pycurl
-import gzip
 import ConfigParser
 import boto.ec2
 from time import *
@@ -957,7 +953,6 @@ class EC2Cloud(object):
 
         # Image is always here and it is the target_image datafile
         input_image = self.builder.target_image.data
-        input_image_name = os.path.basename(input_image)
 
         input_image_compressed = input_image + ".gz"
         input_image_compressed_name = os.path.basename(input_image_compressed)

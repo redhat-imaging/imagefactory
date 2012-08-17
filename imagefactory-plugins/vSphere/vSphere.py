@@ -20,16 +20,13 @@ import os
 import guestfs
 import libxml2
 import traceback
-import pycurl
 import json
 import ConfigParser
 import logging
-import shutil
 from xml.etree.ElementTree import fromstring
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
 from VSphereHelper import VSphereHelper
-from imgfac.BuildDispatcher import BuildDispatcher
 from VMDKstream import convert_to_stream
 from imgfac.CloudDelegate import CloudDelegate
 
@@ -100,7 +97,7 @@ class vSphere(object):
                               "files" : [ { "name": "/root/vsphere-module.sh", "type": "raw", "file": rhel5_module_script } ] }
             try:
                 builder.os_plugin.add_cloud_plugin_content(merge_content)
-            except e:
+            except:
                 self.log.error("Failed to add RHEL-5 specific vSphere customization to cloud plugin tasks")
                 raise
 

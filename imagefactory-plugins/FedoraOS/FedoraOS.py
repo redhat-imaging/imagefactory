@@ -20,15 +20,8 @@ import oz.RHEL_5
 import oz.RHEL_6
 import oz.TDL
 import subprocess
-import os.path
-import re
-import guestfs
-import string
 import libxml2
-import httplib2
 import traceback
-import pycurl
-import gzip
 import ConfigParser
 import shutil
 from os.path import isfile
@@ -39,8 +32,6 @@ from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.ReservationManager import ReservationManager
 
 from imgfac.OSDelegate import OSDelegate
-from imgfac.BaseImage import BaseImage
-from imgfac.TargetImage import TargetImage
 
 def subprocess_check_output(*popenargs, **kwargs):
     if 'stdout' in kwargs:
@@ -100,7 +91,7 @@ class FedoraOS(object):
             if disknode.prop('device') == 'disk':
                 disknode.xpathEval('source')[0].setProp('file', builder.target_image.data)
 
-        libvirt_xml = xml = input_doc.serialize(None, 1)
+        libvirt_xml = input_doc.serialize(None, 1)
 
         self._init_oz()
 

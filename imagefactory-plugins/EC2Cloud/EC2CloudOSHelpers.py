@@ -15,7 +15,6 @@
 import oz.RHEL_5
 import oz.RHEL_6
 import oz.Fedora
-import ConfigParser
 from tempfile import *
 
 

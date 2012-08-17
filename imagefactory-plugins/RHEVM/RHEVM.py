@@ -14,11 +14,9 @@
 #   limitations under the License.
 
 import os
-import stat
 import zope
 import oz.GuestFactory
 import oz.TDL
-import re
 import guestfs
 import libxml2
 import traceback
@@ -26,14 +24,10 @@ import json
 import ConfigParser
 import subprocess
 import logging
-import shutil
-from string import split
 from time import *
 from tempfile import *
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
-from imgfac.BuildDispatcher import BuildDispatcher
-from copy import deepcopy
 from imgfac.CloudDelegate import CloudDelegate
 from xml.etree.ElementTree import fromstring
 from RHEVMHelper import RHEVMHelper
