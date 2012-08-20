@@ -166,7 +166,17 @@ class Application(Singleton):
                 for key in image.metadata():
                     item[key] = getattr(image, key, None)
                 images.append(item)
-            returnval['images'] = images
+            if(len(images) > 1):
+                returnval['images'] = images
+            else:
+                try:
+                    returnval = images[0]
+                except IndexError:
+                    if(self.app_config['debug']):
+                        print "No images matching fetch specification (%s) found." % (self.app_config['fetch_spec'])
+                except Exception as e:
+                    print e
+                    sys.exit(1)
 
         elif(command == 'delete'):
             try:
@@ -192,10 +202,10 @@ class Application(Singleton):
 
         formatted_returnval = json.dumps(returnval, indent=2)
 
-        if PYGMENT:
+        if(PYGMENT and not self.app_config['raw']):
             print highlight(formatted_returnval, JSONLexer(), TerminalFormatter())
         else:
-            if(self.app_config['debug']):
+            if(self.app_config['debug'] and not self.app_config['raw']):
                 print('Python module "pygment" found. Install this module if you want syntax colorization.')
             print(formatted_returnval)
 
