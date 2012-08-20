@@ -20,19 +20,24 @@ import os
 import guestfs
 import libxml2
 import traceback
-import pycurl
 import json
 import ConfigParser
 import logging
-import shutil
 from xml.etree.ElementTree import fromstring
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
-#from imgfac.VMWare import VMImport
 from VSphereHelper import VSphereHelper
-from imgfac.BuildDispatcher import BuildDispatcher
 from VMDKstream import convert_to_stream
 from imgfac.CloudDelegate import CloudDelegate
+
+rhel5_module_script='''echo "alias scsi_hostadapter2 mptbase" >> /etc/modprobe.conf
+echo "alias scsi_hostadapter3 mptspi" >> /etc/modprobe.conf
+KERNEL=`grubby --default-kernel`
+KERNELVERSION=`grubby --default-kernel | cut -f 2- -d "-"`
+NEWINITRD="`grubby --info=$KERNEL | grep initrd | cut -f 2 -d "="`-vsphere"
+mkinitrd $NEWINITRD $KERNELVERSION
+grubby --add-kernel=$KERNEL --copy-default --make-default --initrd=$NEWINITRD --title="Red Hat Enterprise Linux Server ($KERNELVERSION) Image Factory vSphere module update"
+rm /root/vsphere-module.sh'''
 
 class vSphere(object):
     """docstring for Fedora_vsphere_Builder"""
@@ -86,8 +91,15 @@ class vSphere(object):
         return True
 
     def builder_will_create_target_image(self, builder, target, image_id, template, parameters):
-        # Nothing really to do here
-        pass
+        tdlobj = oz.TDL.TDL(xmlstring=template.xml, rootpw_required=True)
+        if tdlobj.distro == "RHEL-5":
+            merge_content = { "commands": [ { "name": "execute-module-script", "type": "raw" , "command": "/bin/sh /root/vsphere-module.sh" } ],
+                              "files" : [ { "name": "/root/vsphere-module.sh", "type": "raw", "file": rhel5_module_script } ] }
+            try:
+                builder.os_plugin.add_cloud_plugin_content(merge_content)
+            except:
+                self.log.error("Failed to add RHEL-5 specific vSphere customization to cloud plugin tasks")
+                raise
 
     def builder_did_create_target_image(self, builder, target, image_id, template, parameters):
         self.log.info('builder_did_create_target_image() called in vSphere plugin')
@@ -100,6 +112,7 @@ class vSphere(object):
         self.template = template
         self.target = target
         self.builder = builder
+        self.image = builder.target_image.data
 
         # This lets our logging helper know what image is being operated on
         self.active_image = self.builder.target_image
@@ -125,12 +138,8 @@ class vSphere(object):
         # created as the base_image.  As a result, all the Oz building steps are gone (and can be found
         # in the OS plugin(s)
 
-        # First, we populate our target_image bodyfile with the original base image
-        # which we do not want to modify in place
-        self.activity("Copying BaseImage to modifiable TargetImage")
-        self.log.debug("Copying base_image file (%s) to new target_image file (%s)" % (builder.base_image.data, builder.target_image.data))
-        shutil.copy2(builder.base_image.data, builder.target_image.data)
-        self.image = builder.target_image.data
+        # OS plugin has already provided the initial file for us to work with
+        # which we can currently assume is a raw KVM compatible image
 
         # Add the cloud-info file
         self.modify_oz_filesystem()

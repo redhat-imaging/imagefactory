@@ -1,7 +1,7 @@
 {
     "type": "os",
-    "targets": [["Fedora",null,null] ],
-    "description": "Fedora OS plugin for testing imagefactory plugin code",
+    "targets": [ ["Fedora",null,null], ["RHEL-6", null, null], ["RHEL-5", null, null] ],
+    "description": "Fedora, RHEL-5 and RHEL-6 OS plugin",
     "maintainer": {
         "name": "Red Hat, Inc.",
         "email": "aeolus-devel@lists.fedorahosted.org",

@@ -16,19 +16,15 @@
 import logging
 import zope
 import oz.Fedora
+import oz.RHEL_5
+import oz.RHEL_6
 import oz.TDL
 import subprocess
-import os
-import os.path
-import re
-import guestfs
-import string
 import libxml2
-import httplib2
 import traceback
-import pycurl
-import gzip
 import ConfigParser
+import shutil
+from os.path import isfile
 from time import *
 from tempfile import *
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
@@ -36,8 +32,6 @@ from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.ReservationManager import ReservationManager
 
 from imgfac.OSDelegate import OSDelegate
-from imgfac.BaseImage import BaseImage
-from imgfac.TargetImage import TargetImage
 
 def subprocess_check_output(*popenargs, **kwargs):
     if 'stdout' in kwargs:
@@ -66,11 +60,150 @@ class FedoraOS(object):
     ## INTERFACE METHOD
     def create_target_image(self, builder, target, base_image, parameters):
         self.log.info('create_target_image() called for FedoraOS plugin - creating a TargetImage')
-        self.log.debug("Currently create_target_image() does nothing here")
-        pass
+        self.active_image = builder.target_image
+        self.target = target
+        self.base_image = builder.base_image
+
+        # Merge together any TDL-style customizations requested via our plugin-to-plugin interface
+        # with any target specific packages, repos and commands and then run a second Oz customization
+        # step.
+        self.tdlobj = oz.TDL.TDL(xmlstring=builder.base_image.template, rootpw_required=True)
+        
+        # We remove any packages and commands from the original TDL - these have already been
+        # installed/executed.  We leave the repos in place, as it is possible that the target
+        # specific packages or commands may require them.
+        self.tdlobj.packages = [ ]
+        self.tdlobj.commands = { }
+        self.add_target_content()
+        self.merge_cloud_plugin_content()
+
+        # populate our target_image bodyfile with the original base image
+        # which we do not want to modify in place
+        self.activity("Copying BaseImage to modifiable TargetImage")
+        self.log.debug("Copying base_image file (%s) to new target_image file (%s)" % (builder.base_image.data, builder.target_image.data))
+        shutil.copy2(builder.base_image.data, builder.target_image.data)
+        self.image = builder.target_image.data
+
+        # Retrieve original libvirt_xml from base image - update filename
+        input_doc = libxml2.parseDoc(builder.base_image.parameters['libvirt_xml'])
+        disknodes = input_doc.xpathEval("/domain/devices/disk")
+        for disknode in disknodes:
+            if disknode.prop('device') == 'disk':
+                disknode.xpathEval('source')[0].setProp('file', builder.target_image.data)
+
+        libvirt_xml = input_doc.serialize(None, 1)
+
+        self._init_oz()
+
+        try:
+            self.log.debug("Doing second-stage target_image customization and ICICLE generation")
+            #self.percent_complete = 30
+            self.output_descriptor = self.guest.customize_and_generate_icicle(libvirt_xml)
+            self.log.debug("Customization and ICICLE generation complete")
+            #self.percent_complete = 50
+        finally:
+            self.activity("Cleaning up install artifacts")
+            self.guest.cleanup_install()
+
+    def add_cloud_plugin_content(self, content):
+        # Expected input is a dict containing commands and files
+        # No support for repos at the moment as these introduce external deps that we may not be able to count on
+        # Add this to an array which will later be merged into the TDL object used to drive Oz
+        self.cloud_plugin_content.append(content)
+
+    def merge_cloud_plugin_content(self):
+        for content in self.cloud_plugin_content:
+            if 'files' in content:
+                for fileentry in content['files']:
+                    if not 'name' in fileentry:
+                        raise ImageFactoryException("File given without a name")
+                    if not 'type' in fileentry:
+                        raise ImageFactoryException("File given without a type")
+                    if not 'file' in fileentry:
+                        raise ImageFactoryException("File given without any content")
+                    if fileentry['type'] == 'raw':
+                        self.tdlobj.files[fileentry['name']] = fileentry['file']
+                    elif fileentry['type'] == 'base64':
+                        if len(fileentry['file']) == 0:
+                            self.tdlobj.files[fileentry['name']] = ""
+                        else:
+                            self.tdlobj.files[fileentry['name']] = base64.b64decode(fileentry['file'])
+                    else:
+                        raise ImageFactoryException("File given with invalid type (%s)" % (file['type']))
+
+            if 'commands' in content:
+                for command in content['commands']:
+                    if not 'name' in command:
+                        raise ImageFactoryException("Command given without a name")
+                    if not 'type' in command:
+                        raise ImageFactoryException("Command given without a type")
+                    if not 'command' in command:
+                        raise ImageFactoryException("Command given without any content")
+                    if command['type'] == 'raw':
+                        self.tdlobj.commands[command['name']] = command['command']
+                    elif command['type'] == 'base64':
+                        if len(command['command']) == 0:
+                            self.log.warning("Command with zero length given")
+                            self.tdlobj.commands[command['name']] = ""
+                        else:
+                            self.tdlobj.commandss[command['name']] = base64.b64decode(command['command'])
+                    else:
+                        raise ImageFactoryException("Command given with invalid type (%s)" % (command['type']))
+
+
+    def add_target_content(self):
+        """Merge in target specific package and repo content.
+        TDL object must already exist as self.tdlobj"""
+        doc = None
+        if isfile("/etc/imagefactory/target_content.xml"):
+            doc = libxml2.parseFile("/etc/imagefactory/target_content.xml")
+        else:
+            self.log.debug("Found neither a call-time config nor a config file - doing nothing")
+            return
+
+        # Purely to make the xpath statements below a tiny bit shorter
+        target = self.target
+        os=self.tdlobj.distro
+        version=self.tdlobj.update
+        arch=self.tdlobj.arch
+
+        # We go from most to least specific in this order:
+        #   arch -> version -> os-> target
+        # Note that at the moment we even allow an include statment that covers absolutely everything.
+        # That is, one that doesn't even specify a target - this is to support a very simple call-time syntax
+        include = doc.xpathEval("/template_includes/include[@target='%s' and @os='%s' and @version='%s' and @arch='%s']" %
+                  (target, os, version, arch))
+        if len(include) == 0:
+            include = doc.xpathEval("/template_includes/include[@target='%s' and @os='%s' and @version='%s' and not(@arch)]" %
+                      (target, os, version))
+        if len(include) == 0:
+            include = doc.xpathEval("/template_includes/include[@target='%s' and @os='%s' and not(@version) and not(@arch)]" %
+                      (target, os))
+        if len(include) == 0:
+            include = doc.xpathEval("/template_includes/include[@target='%s' and not(@os) and not(@version) and not(@arch)]" %
+                      (target))
+        if len(include) == 0:
+            include = doc.xpathEval("/template_includes/include[not(@target) and not(@os) and not(@version) and not(@arch)]")
+        if len(include) == 0:
+            self.log.debug("cannot find a config section that matches our build details - doing nothing")
+            return
+
+        # OK - We have at least one config block that matches our build - take the first one, merge it and be done
+        # TODO: Merge all of them?  Err out if there is more than one?  Warn?
+        include = include[0]
+
+        packages = include.xpathEval("packages")
+        if len(packages) > 0:
+            self.tdlobj.merge_packages(str(packages[0]))
+
+        repositories = include.xpathEval("repositories")
+        if len(repositories) > 0:
+            self.tdlobj.merge_repositories(str(repositories[0]))
+
 
     def __init__(self):
         super(FedoraOS, self).__init__()
+        self.cloud_plugin_content = [ ]
         config_obj = ApplicationConfiguration()
         self.app_config = config_obj.configuration
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
@@ -81,21 +214,8 @@ class FedoraOS(object):
             self.log.warning("No JEOS amis defined for ec2.  Snapshot builds will not be possible.")
             self.ec2_jeos_amis = {}
 
-    ## INTERFACE METHOD
-    def create_base_image(self, builder, template, parameters):
-        self.log.info('create_base_image() called for FedoraOS plugin - creating a BaseImage')
 
-        self.tdlobj = oz.TDL.TDL(xmlstring=template.xml, rootpw_required=True)
-
-        # TODO: Standardize reference scheme for the persistent image objects in our builder
-        #   Having local short-name copies like this may well be a good idea though they
-        #   obscure the fact that these objects are in a container "upstream" of our plugin object
-        self.base_image = builder.base_image
-
-        # Set to the image object that is actively being created or modified
-        # Used in the logging helper function above
-        self.active_image = self.base_image
-
+    def _init_oz(self):
         # TODO: This is a convenience variable for refactoring - rename
         self.new_image_id = self.base_image.identifier
 
@@ -115,9 +235,26 @@ class FedoraOS(object):
         # make this a property to enable quick cleanup on abort
         self.instance = None
 
-        # This comes from the original init_guest()
         # Here we are always dealing with a local install
-        self.guest = oz.Fedora.get_class(self.tdlobj, self.oz_config, None)
+        self.init_guest()
+
+
+    ## INTERFACE METHOD
+    def create_base_image(self, builder, template, parameters):
+        self.log.info('create_base_image() called for FedoraOS plugin - creating a BaseImage')
+
+        self.tdlobj = oz.TDL.TDL(xmlstring=template.xml, rootpw_required=True)
+
+        # TODO: Standardize reference scheme for the persistent image objects in our builder
+        #   Having local short-name copies like this may well be a good idea though they
+        #   obscure the fact that these objects are in a container "upstream" of our plugin object
+        self.base_image = builder.base_image
+
+        # Set to the image object that is actively being created or modified
+        # Used in the logging helper function above
+        self.active_image = self.base_image
+
+        self._init_oz()
 
         self.guest.diskimage = self.base_image.data
         # The remainder comes from the original build_upload(self, build_id)
@@ -140,6 +277,7 @@ class FedoraOS(object):
                 #  subject to some rules about updates to underlying repo
                 self.activity("Execute JEOS install")
                 libvirt_xml = self.guest.install(self.app_config["timeout"])
+                self.base_image.parameters['libvirt_xml'] = libvirt_xml
                 self.image = self.guest.diskimage
                 self.log.debug("Base install complete - Doing customization and ICICLE generation")
                 self.percent_complete = 30
@@ -157,6 +295,17 @@ class FedoraOS(object):
             pass
             # TODO: Create the base_image object representing this
             # TODO: Create the base_image object at the beginning and then set the diskimage accordingly
+
+    def init_guest(self):
+        # TODO: See if we can make this a bit more dynamic
+        if self.tdlobj.distro == "RHEL-5":
+            self.guest = oz.RHEL_5.get_class(self.tdlobj, self.oz_config, None)
+        elif self.tdlobj.distro == "RHEL-6":
+            self.guest = oz.RHEL_6.get_class(self.tdlobj, self.oz_config, None)
+        elif self.tdlobj.distro == "Fedora":
+            self.guest = oz.Fedora.get_class(self.tdlobj, self.oz_config, None)
+        else:
+            raise ImageFactoryException("OS plugin does not support distro (%s) in TDL" % (self.tdlobj.distro) )
 
     def log_exc(self):
         self.log.debug("Exception caught in ImageFactory")
