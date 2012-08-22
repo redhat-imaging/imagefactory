@@ -43,3 +43,8 @@ class OSDelegate(Interface):
 
         @return A TargetImage object.
         """
+
+    def add_cloud_plugin_content(self, content):
+        """
+        TODO: Describe add_cloud_plugin_content
+        """
