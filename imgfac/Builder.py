@@ -86,7 +86,8 @@ class Builder(object):
         # Create what is essentially an empty BaseImage here
         self.base_image = BaseImage()
         self.base_image.template = template
-        self.base_image.parameters = parameters
+        if parameters:
+            self.base_image.parameters = parameters
         self.pim.add_image(self.base_image)
         if parameters and ('callbacks' in parameters):
             # This ensures we have workers in place before any potential state changes
@@ -132,7 +133,8 @@ class Builder(object):
         self.target_image.target = target
         self.target_image.base_image_id = image_id
         self.target_image.template = template
-        self.target_image.parameters = parameters
+        if parameters:
+            self.target_image.parameters = parameters
         self.pim.add_image(self.target_image)        
         if parameters and ('callbacks' in parameters):
             # This ensures we have workers in place before any potential state changes

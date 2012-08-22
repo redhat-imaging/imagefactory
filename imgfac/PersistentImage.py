@@ -91,7 +91,7 @@ class PersistentImage(object):
         self._status = "NEW"
         self._percent_complete = 0
         self.icicle = None
-        self.parameters = None
+        self.parameters = { }
 
     def metadata(self):
         self.log.debug("Executing metadata in class (%s) my metadata is (%s)" % (self.__class__, METADATA))
