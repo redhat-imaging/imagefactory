@@ -83,6 +83,7 @@ class ApplicationConfiguration(Singleton):
             provider_group.add_argument('--id', help='The uuid of the TargetImage to push.')
             provider_group.add_argument('--template', type=argparse.FileType(), help=template_help)
             cmd_provider.add_argument('--parameters')
+            cmd_provider.add_argument('--target', help='The target type of the given provider')
 
             cmd_list = subparsers.add_parser('images', help='List images of a given type or get details of an image.')
             cmd_list.add_argument('fetch_spec', help='JSON formatted string of key/value pairs')
