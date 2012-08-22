@@ -32,7 +32,7 @@ def form_data_for_content_type(content_type):
         return new_dict
 
     try:
-        if(content_type == 'application/json'):
+        if(content_type.startswith('application/json')):
             return dencode(request.json)
         else:
             return dencode(request.forms)
