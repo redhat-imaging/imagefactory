@@ -1,6 +1,6 @@
 {
     "type": "cloud",
-    "targets": ["MockSphere"],
+    "targets": [ ["MockSphere"] ],
     "description": "Mock cloud plugin for testing imagefactory plugin code",
     "maintainer": {
         "name": "Red Hat, Inc.",

@@ -133,6 +133,11 @@ python setup.py install -O1 --root=%{buildroot} --skip-build
 %postun vSphere
 %auto_register_macro_postun vSphere
 
+%post MockSphere
+%auto_register_macro_post MockSphere
+%postun MockSphere
+%auto_register_macro_postun MockSphere
+
 %files
 %dir %{python_sitelib}/imagefactory_plugins
 %{python_sitelib}/imagefactory_plugins/__init__.py*
