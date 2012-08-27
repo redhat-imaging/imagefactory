@@ -18,6 +18,7 @@ import logging
 import re
 import os
 import os.path
+import stat
 import json
 from props import prop
 from ImageFactoryException import ImageFactoryException
@@ -37,6 +38,7 @@ class FilePersistentImageManager(PersistentImageManager):
         if not os.path.exists(storage_path):
             self.log.debug("Creating directory (%s) for persistent storage" % (storage_path))
             os.makedirs(storage_path)
+            os.chmod(storage_path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
         elif not os.path.isdir(storage_path):
             raise ImageFactoryException("Storage location (%s) already exists and is not a directory - cannot init persistence" % (storage_path))
         else:
