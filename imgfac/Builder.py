@@ -100,10 +100,10 @@ class Builder(object):
 
     def _build_image_from_template(self, template, parameters=None):
         try:
-	    template = template if(isinstance(template, Template)) else Template(template)
-	    plugin_mgr = PluginManager(self.app_config['plugins'])
-	    self.os_plugin = plugin_mgr.plugin_for_target((template.os_name, template.os_version, template.os_arch))
-	    self.os_plugin.create_base_image(self, template, parameters)
+            template = template if(isinstance(template, Template)) else Template(template)
+            plugin_mgr = PluginManager(self.app_config['plugins'])
+            self.os_plugin = plugin_mgr.plugin_for_target((template.os_name, template.os_version, template.os_arch))
+            self.os_plugin.create_base_image(self, template, parameters)
             # This implies a convention where the plugin can never dictate completion and must indicate failure
             # via an exception
             self.base_image.status="COMPLETE"
