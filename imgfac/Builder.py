@@ -288,7 +288,7 @@ class Builder(object):
             plugin_mgr = PluginManager(self.app_config['plugins'])
             if not self.cloud_plugin:
                 self.cloud_plugin = plugin_mgr.plugin_for_target(target)
-                self.cloud_plugin.push_image_to_provider(self, provider, credentials, target, image_id, parameters)
+            self.cloud_plugin.push_image_to_provider(self, provider, credentials, target, image_id, parameters)
             self.provider_image.status="COMPLETE"
             self.pim.save_image(self.provider_image)
         except Exception, e:
