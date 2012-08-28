@@ -13,6 +13,7 @@ from ovirtsdk.api import API
 from ovirtsdk.xml import params
 from xml.etree import ElementTree
 from time import sleep
+from threading import BoundedSemaphore
 
 # Large portions derived from dc-rhev-img from iwhd written by
 # Pete Zaitcev <zaitcev@redhat.com>
@@ -61,9 +62,29 @@ Function to call a subprocess and gather the output.
 
 class RHEVMHelper(object):
 
+    api_connections_lock = BoundedSemaphore()
+
     def __init__(self, url, username, password):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        # The SDK allows only a single active connection object to be created, regardless of whether 
+        # or not multiple RHEVM servers are being accessed.  For now we need to have a global lock,
+        # create a connection object before each batch of API interactions and then disconnect it.
+        self.api_details = { 'url':url, 'username':username, 'password':password }
+
+    # TODO: When this limitation in the ovirt SDK is removed, get rid of these
+    def _init_api(self):
+        self.log.debug("Doing blocking acquire() on global RHEVM API connection lock")
+        self.api_connections_lock.acquire()
+        self.log.debug("Got global RHEVM API connection lock")
+        url = self.api_details['url']
+        username = self.api_details['username']
+        password = self.api_details['password']
         self.api = API(url=url, username=username, password=password)
+
+    def _disconnect_api(self):
+        self.api.disconnect()
+        self.log.debug("Releasing global RHEVM API connection lock")
+        self.api_connections_lock.release()
 
     # These are the only two genuinley public methods
     # What we create is a VM template
@@ -75,7 +96,14 @@ class RHEVMHelper(object):
         else:
             self.ovf_desc = ovf_desc
         self.log.debug("Preparing for RHEVM template import of image file (%s)" % (image_filename))
-        self.init_vm_import(image_filename, nfs_host, nfs_path, nfs_dir, cluster)
+
+        # API lock protected action
+        try: 
+            self._init_api()
+            self.init_vm_import(image_filename, nfs_host, nfs_path, nfs_dir, cluster)
+        finally:
+            self._disconnect_api()
+
         if not ovf_name:
             self.ovf_name=str(self.tpl_uuid)
         else:
@@ -85,7 +113,14 @@ class RHEVMHelper(object):
         self.log.debug("Moving files to final export domain location")
         self.move_files()
         self.log.debug("Executing import")
-        self.execute_import()
+
+        # API lock protected action
+        try:
+            self._init_api()
+            self.execute_import()
+        finally:
+            self._disconnect_api()
+
         return str(self.tpl_uuid)
 
     def delete_template(self, template_uuid):
