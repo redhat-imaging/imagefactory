@@ -159,16 +159,16 @@ class RHEVMHelper(object):
         (stdout, stderr, retcode) = subprocess_check_output([ 'rm', '-rf', '%s' % (directory)], preexec_fn=self.become_nfs_user)
 
     def get_storage_domain(self, nfs_host, nfs_path):
-	# Find the storage domain that matches the nfs details given
-	sds = self.api.storagedomains.list()
-	for sd in sds:
-	    if sd.get_type() == "export":
-		self.log.debug("Export domain: (%s)" % (sd.get_name()))
-		stor = sd.get_storage()
-		if (stor.get_address() == nfs_host) and (stor.get_path() == nfs_path):
-		    self.log.debug("This is the right domain (%s)" % (sd.get_id()))
-		    return sd
-	return None
+        # Find the storage domain that matches the nfs details given
+        sds = self.api.storagedomains.list()
+        for sd in sds:
+            if sd.get_type() == "export":
+                self.log.debug("Export domain: (%s)" % (sd.get_name()))
+                stor = sd.get_storage()
+                if (stor.get_address() == nfs_host) and (stor.get_path() == nfs_path):
+                    self.log.debug("This is the right domain (%s)" % (sd.get_id()))
+                    return sd
+        return None
 
     def get_pool_id(self, sd_uuid):
         # Get datacenter for a given storage domain UUID
@@ -178,36 +178,36 @@ class RHEVMHelper(object):
         dcs =  self.api.datacenters.list()
         for dc in dcs:
             self.log.debug("Looking for our storage domain (%s) in data center (%s)" % (sd_uuid, dc.get_id()))
-	    sd = dc.storagedomains.get(id=sd_uuid)
+            sd = dc.storagedomains.get(id=sd_uuid)
             if sd: 
-		self.log.debug("This is the right datacenter (%s)" % (dc.get_id()))
-		return dc
+                self.log.debug("This is the right datacenter (%s)" % (dc.get_id()))
+                return dc
         return None
 
     def get_cluster_by_dc(self, poolid):
         # If we have been passed "_any_" as the cluster name, we pick the first cluster that
         # matches our datacenter/pool ID
-	clusters = self.api.clusters.list()
+        clusters = self.api.clusters.list()
 
-	for cluster in clusters:
-	    dc_id = None
-	    if cluster.get_data_center():
-		dc_id = cluster.get_data_center().get_id()
-	    self.log.debug("Checking cluster (%s) with name (%s) with data center (%s)" % (cluster.get_id(), cluster.get_name(), dc_id))
-	    if dc_id == poolid:
-		return cluster
+        for cluster in clusters:
+            dc_id = None
+            if cluster.get_data_center():
+                dc_id = cluster.get_data_center().get_id()
+            self.log.debug("Checking cluster (%s) with name (%s) with data center (%s)" % (cluster.get_id(), cluster.get_name(), dc_id))
+            if dc_id == poolid:
+                return cluster
         self.log.debug("Cannot find cluster for dc (%s)" % (poolid))
         return None
 
     def get_cluster_by_name(self, name):
         # If we have been passed a specific cluster name, we need to find that specific cluster
-	clusters = self.api.clusters.list()
-	for cluster in clusters:
-	    self.log.debug("Checking cluster (%s) with name (%s)" % (cluster.get_id(), cluster.get_name()))
-	    if cluster.get_name() == name:
-		return cluster
+        clusters = self.api.clusters.list()
+        for cluster in clusters:
+            self.log.debug("Checking cluster (%s) with name (%s)" % (cluster.get_id(), cluster.get_name()))
+            if cluster.get_name() == name:
+                return cluster
         self.log.debug("Cannot find cluster named (%s)" % (name))
-	return None
+        return None
 
 
     def check_qcow_size(self, filename):
@@ -215,36 +215,36 @@ class RHEVMHelper(object):
         # If it is, return the size of the underlying disk image
         # If it isn't, return none
 
-	# For interested parties, this is the QCOW header struct in C
-	# struct qcow_header {
-	#    uint32_t magic; 
-	#    uint32_t version;
-	#    uint64_t backing_file_offset;
-	#    uint32_t backing_file_size;
-	#    uint32_t cluster_bits;
-	#    uint64_t size; /* in bytes */
-	#    uint32_t crypt_method;
-	#    uint32_t l1_size;
-	#    uint64_t l1_table_offset;
-	#    uint64_t refcount_table_offset;
-	#    uint32_t refcount_table_clusters;
-	#    uint32_t nb_snapshots;
-	#    uint64_t snapshots_offset;
-	# };
+        # For interested parties, this is the QCOW header struct in C
+        # struct qcow_header {
+        #    uint32_t magic; 
+        #    uint32_t version;
+        #    uint64_t backing_file_offset;
+        #    uint32_t backing_file_size;
+        #    uint32_t cluster_bits;
+        #    uint64_t size; /* in bytes */
+        #    uint32_t crypt_method;
+        #    uint32_t l1_size;
+        #    uint64_t l1_table_offset;
+        #    uint64_t refcount_table_offset;
+        #    uint32_t refcount_table_clusters;
+        #    uint32_t nb_snapshots;
+        #    uint64_t snapshots_offset;
+        # };
 
-	# And in Python struct format string-ese
-	qcow_struct=">IIQIIQIIQQIIQ" # > means big-endian
-	qcow_magic = 0x514649FB # 'Q' 'F' 'I' 0xFB
+        # And in Python struct format string-ese
+        qcow_struct=">IIQIIQIIQQIIQ" # > means big-endian
+        qcow_magic = 0x514649FB # 'Q' 'F' 'I' 0xFB
 
-	f = open(filename,"r")
-	pack = f.read(struct.calcsize(qcow_struct))
-	f.close()
+        f = open(filename,"r")
+        pack = f.read(struct.calcsize(qcow_struct))
+        f.close()
 
-	unpack = struct.unpack(qcow_struct, pack)
+        unpack = struct.unpack(qcow_struct, pack)
 
-	if unpack[0] == qcow_magic:
-	    return unpack[5]
-	else:
+        if unpack[0] == qcow_magic:
+            return unpack[5]
+        else:
             return None
 
     def init_vm_import(self, image_filename, nfs_host, nfs_path, nfs_dir, cluster):
@@ -382,332 +382,332 @@ class RHEVMHelper(object):
     def generate_meta_file(self):
         metafile=""
 
-	metafile += "DOMAIN=" + self.storage_domain + "\n"
-	# saved template has VOLTYPE=SHARED
-	metafile += "VOLTYPE=LEAF\n"
-	metafile += "CTIME=" + str(int(self.raw_create_time)) + "\n"
-	# saved template has FORMAT=COW
+        metafile += "DOMAIN=" + self.storage_domain + "\n"
+        # saved template has VOLTYPE=SHARED
+        metafile += "VOLTYPE=LEAF\n"
+        metafile += "CTIME=" + str(int(self.raw_create_time)) + "\n"
+        # saved template has FORMAT=COW
         if self.qcow_size:
-	    metafile += "FORMAT=COW\n"
+            metafile += "FORMAT=COW\n"
         else:
-	    metafile += "FORMAT=RAW\n"
-	metafile += "IMAGE=" + str(self.img_uuid) + "\n"
-	metafile += "DISKTYPE=1\n"
-	metafile += "PUUID=00000000-0000-0000-0000-000000000000\n"
-	metafile += "LEGALITY=LEGAL\n"
-	metafile += "MTIME=" + str(int(self.raw_create_time)) + "\n"
-	metafile += "POOL_UUID=" + self.pool_id + "\n"
-	# assuming 1KB alignment
-	metafile += "SIZE=" + str(self.vol_size/512) + "\n"
-	metafile += "TYPE=SPARSE\n"
-	metafile += "DESCRIPTION=Uploaded by Image Factory\n"
+            metafile += "FORMAT=RAW\n"
+        metafile += "IMAGE=" + str(self.img_uuid) + "\n"
+        metafile += "DISKTYPE=1\n"
+        metafile += "PUUID=00000000-0000-0000-0000-000000000000\n"
+        metafile += "LEGALITY=LEGAL\n"
+        metafile += "MTIME=" + str(int(self.raw_create_time)) + "\n"
+        metafile += "POOL_UUID=" + self.pool_id + "\n"
+        # assuming 1KB alignment
+        metafile += "SIZE=" + str(self.vol_size/512) + "\n"
+        metafile += "TYPE=SPARSE\n"
+        metafile += "DESCRIPTION=Uploaded by Image Factory\n"
         metafile += "EOF\n"
 
         return metafile
  
     def generate_ovf_xml(self):
-	etroot = ElementTree.Element('ovf:Envelope')
-	etroot.set('xmlns:ovf', "http://schemas.dmtf.org/ovf/envelope/1/")
-	etroot.set('xmlns:rasd', "http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData")
-	etroot.set('xmlns:vssd', "http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData")
-	etroot.set('xmlns:xsi', "http://www.w3.org/2001/XMLSchema-instance")
-	etroot.set('ovf:version', "0.9")
+        etroot = ElementTree.Element('ovf:Envelope')
+        etroot.set('xmlns:ovf', "http://schemas.dmtf.org/ovf/envelope/1/")
+        etroot.set('xmlns:rasd', "http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData")
+        etroot.set('xmlns:vssd', "http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData")
+        etroot.set('xmlns:xsi', "http://www.w3.org/2001/XMLSchema-instance")
+        etroot.set('ovf:version', "0.9")
 
-	etref = ElementTree.Element('References')
+        etref = ElementTree.Element('References')
 
-	etfile = ElementTree.Element('File')
-	etfile.set('ovf:href', str(self.img_uuid)+'/'+str(self.vol_uuid))
-	etfile.set('ovf:id', str(self.vol_uuid))
-	etfile.set('ovf:size', str(self.vol_size))
+        etfile = ElementTree.Element('File')
+        etfile.set('ovf:href', str(self.img_uuid)+'/'+str(self.vol_uuid))
+        etfile.set('ovf:id', str(self.vol_uuid))
+        etfile.set('ovf:size', str(self.vol_size))
         # TODO: Bulk this up a bit
-	etfile.set('ovf:description', self.ovf_name)
-	etref.append(etfile)
+        etfile.set('ovf:description', self.ovf_name)
+        etref.append(etfile)
 
-	etroot.append(etref)
+        etroot.append(etref)
 
-	etsec = ElementTree.Element('Section')
-	etsec.set('xsi:type', "ovf:NetworkSection_Type")
-	ete = ElementTree.Element('Info')
-	ete.text = "List of Networks"
-	etsec.append(ete)
-	# dummy section, even though we have Ethernet defined below
-	etroot.append(etsec)
+        etsec = ElementTree.Element('Section')
+        etsec.set('xsi:type', "ovf:NetworkSection_Type")
+        ete = ElementTree.Element('Info')
+        ete.text = "List of Networks"
+        etsec.append(ete)
+        # dummy section, even though we have Ethernet defined below
+        etroot.append(etsec)
 
-	etsec = ElementTree.Element('Section')
-	etsec.set('xsi:type', "ovf:DiskSection_Type")
+        etsec = ElementTree.Element('Section')
+        etsec.set('xsi:type', "ovf:DiskSection_Type")
 
-	etdisk = ElementTree.Element('Disk')
-	etdisk.set('ovf:diskId', str(self.vol_uuid))
-	vol_size_str = str((self.vol_size + (1024*1024*1024) - 1) / (1024*1024*1024))
-	etdisk.set('ovf:size', vol_size_str)
+        etdisk = ElementTree.Element('Disk')
+        etdisk.set('ovf:diskId', str(self.vol_uuid))
+        vol_size_str = str((self.vol_size + (1024*1024*1024) - 1) / (1024*1024*1024))
+        etdisk.set('ovf:size', vol_size_str)
         etdisk.set('ovf:vm_snapshot_id', '00000000-0000-0000-0000-000000000000')
-	etdisk.set('ovf:actual_size', vol_size_str)
+        etdisk.set('ovf:actual_size', vol_size_str)
         etdisk.set('ovf:format', 'http://www.vmware.com/specifications/vmdk.html#sparse')
         etdisk.set('ovf:parentRef', '')
-	# XXX ovf:vm_snapshot_id
-	etdisk.set('ovf:fileRef', str(self.img_uuid)+'/'+str(self.vol_uuid))
-	# XXX ovf:format ("usually url to the specification")
+        # XXX ovf:vm_snapshot_id
+        etdisk.set('ovf:fileRef', str(self.img_uuid)+'/'+str(self.vol_uuid))
+        # XXX ovf:format ("usually url to the specification")
         if self.qcow_size:
-	    etdisk.set('ovf:volume-type', "Sparse")
-	    etdisk.set('ovf:volume-format', "COW")
+            etdisk.set('ovf:volume-type', "Sparse")
+            etdisk.set('ovf:volume-format', "COW")
         else:
-	    etdisk.set('ovf:volume-type', "Preallocated")
-	    etdisk.set('ovf:volume-format', "RAW")
-	etdisk.set('ovf:disk-interface', "VirtIO")
-	etdisk.set('ovf:disk-type', "System")
-	etdisk.set('ovf:boot', "true")
-	etdisk.set('ovf:wipe-after-delete', "false")
-	etsec.append(etdisk)
-
-	etroot.append(etsec)
-
-	etcon = ElementTree.Element('Content')
-	etcon.set('xsi:type', "ovf:VirtualSystem_Type")
-	etcon.set('ovf:id', "out")
-
-	ete = ElementTree.Element('Name')
-	ete.text = self.ovf_name
-	etcon.append(ete)
-
-	ete = ElementTree.Element('TemplateId')
-	ete.text = str(self.tpl_uuid)
-	etcon.append(ete)
-
-	# spec also has 'TemplateName'
-
-	ete = ElementTree.Element('Description')
-	ete.text = self.ovf_desc
-	etcon.append(ete)
-
-	ete = ElementTree.Element('Domain')
-	# AD domain, not in use right now
-	# ete.text = 
-	etcon.append(ete)
-
-	ete = ElementTree.Element('CreationDate')
-	ete.text = time.strftime("%Y/%m/%d %H:%M:%S", self.create_time)
-	etcon.append(ete)
-
-	ete = ElementTree.Element('TimeZone')
-	# ete.text = 
-	etcon.append(ete)
-
-	ete = ElementTree.Element('IsAutoSuspend')
-	ete.text = "false"
-	etcon.append(ete)
-
-	ete = ElementTree.Element('VmType')
-	ete.text = "1"
-	etcon.append(ete)
+            etdisk.set('ovf:volume-type', "Preallocated")
+            etdisk.set('ovf:volume-format', "RAW")
+        etdisk.set('ovf:disk-interface', "VirtIO")
+        etdisk.set('ovf:disk-type', "System")
+        etdisk.set('ovf:boot', "true")
+        etdisk.set('ovf:wipe-after-delete', "false")
+        etsec.append(etdisk)
+
+        etroot.append(etsec)
+
+        etcon = ElementTree.Element('Content')
+        etcon.set('xsi:type', "ovf:VirtualSystem_Type")
+        etcon.set('ovf:id', "out")
+
+        ete = ElementTree.Element('Name')
+        ete.text = self.ovf_name
+        etcon.append(ete)
+
+        ete = ElementTree.Element('TemplateId')
+        ete.text = str(self.tpl_uuid)
+        etcon.append(ete)
+
+        # spec also has 'TemplateName'
+
+        ete = ElementTree.Element('Description')
+        ete.text = self.ovf_desc
+        etcon.append(ete)
+
+        ete = ElementTree.Element('Domain')
+        # AD domain, not in use right now
+        # ete.text = 
+        etcon.append(ete)
+
+        ete = ElementTree.Element('CreationDate')
+        ete.text = time.strftime("%Y/%m/%d %H:%M:%S", self.create_time)
+        etcon.append(ete)
+
+        ete = ElementTree.Element('TimeZone')
+        # ete.text = 
+        etcon.append(ete)
+
+        ete = ElementTree.Element('IsAutoSuspend')
+        ete.text = "false"
+        etcon.append(ete)
+
+        ete = ElementTree.Element('VmType')
+        ete.text = "1"
+        etcon.append(ete)
 
-	ete = ElementTree.Element('default_display_type')
-	# vnc = 0, gxl = 1
-	ete.text = "0"
-	etcon.append(ete)
+        ete = ElementTree.Element('default_display_type')
+        # vnc = 0, gxl = 1
+        ete.text = "0"
+        etcon.append(ete)
 
-	ete = ElementTree.Element('default_boot_sequence')
-	# C=0,   DC=1,  N=2, CDN=3, CND=4, DCN=5, DNC=6, NCD=7,
-	# NDC=8, CD=9, D=10, CN=11, DN=12, NC=13, ND=14
-	# (C - HardDisk, D - CDROM, N - Network)
-	ete.text = "1"
-	etcon.append(ete)
+        ete = ElementTree.Element('default_boot_sequence')
+        # C=0,   DC=1,  N=2, CDN=3, CND=4, DCN=5, DNC=6, NCD=7,
+        # NDC=8, CD=9, D=10, CN=11, DN=12, NC=13, ND=14
+        # (C - HardDisk, D - CDROM, N - Network)
+        ete.text = "1"
+        etcon.append(ete)
 
-	etsec = ElementTree.Element('Section')
-	etsec.set('xsi:type', "ovf:OperatingSystemSection_Type")
-	etsec.set('ovf:id', str(self.tpl_uuid))
-	etsec.set('ovf:required', "false")
+        etsec = ElementTree.Element('Section')
+        etsec.set('xsi:type', "ovf:OperatingSystemSection_Type")
+        etsec.set('ovf:id', str(self.tpl_uuid))
+        etsec.set('ovf:required', "false")
 
-	ete = ElementTree.Element('Info')
-	ete.text = "Guest OS"
-	etsec.append(ete)
+        ete = ElementTree.Element('Info')
+        ete.text = "Guest OS"
+        etsec.append(ete)
 
-	ete = ElementTree.Element('Description')
-	# This is rigid, must be "Other", "OtherLinux", "RHEL6", or such
-	ete.text = "OtherLinux"
-	etsec.append(ete)
+        ete = ElementTree.Element('Description')
+        # This is rigid, must be "Other", "OtherLinux", "RHEL6", or such
+        ete.text = "OtherLinux"
+        etsec.append(ete)
 
-	etcon.append(etsec)
+        etcon.append(etsec)
 
-	etsec = ElementTree.Element('Section')
-	etsec.set('xsi:type', "ovf:VirtualHardwareSection_Type")
+        etsec = ElementTree.Element('Section')
+        etsec.set('xsi:type', "ovf:VirtualHardwareSection_Type")
 
-	ete = ElementTree.Element('Info')
-	ete.text = "1 CPU, 512 Memory"
-	etsec.append(ete)
-
-	etsys = ElementTree.Element('System')
-	# This is probably wrong, needs actual type.
-	ete = ElementTree.Element('vssd:VirtualSystemType')
-	ete.text = "RHEVM 4.6.0.163"
-	etsys.append(ete)
-	etsec.append(etsys)
-
-	etitem = ElementTree.Element('Item')
+        ete = ElementTree.Element('Info')
+        ete.text = "1 CPU, 512 Memory"
+        etsec.append(ete)
+
+        etsys = ElementTree.Element('System')
+        # This is probably wrong, needs actual type.
+        ete = ElementTree.Element('vssd:VirtualSystemType')
+        ete.text = "RHEVM 4.6.0.163"
+        etsys.append(ete)
+        etsec.append(etsys)
+
+        etitem = ElementTree.Element('Item')
 
-	ete = ElementTree.Element('rasd:Caption')
-	ete.text = "1 virtual CPU"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:Caption')
+        ete.text = "1 virtual CPU"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:Description')
-	ete.text = "Number of virtual CPU"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:Description')
+        ete.text = "Number of virtual CPU"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:InstanceId')
-	ete.text = "1"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:InstanceId')
+        ete.text = "1"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:ResourceType')
-	ete.text = "3"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:ResourceType')
+        ete.text = "3"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:num_of_sockets')
-	ete.text = "1"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:num_of_sockets')
+        ete.text = "1"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:cpu_per_socket')
-	ete.text = "1"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:cpu_per_socket')
+        ete.text = "1"
+        etitem.append(ete)
 
-	etsec.append(etitem)
+        etsec.append(etitem)
 
-	etitem = ElementTree.Element('Item')
+        etitem = ElementTree.Element('Item')
 
-	ete = ElementTree.Element('rasd:Caption')
-	ete.text = "512 MB of memory"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:Caption')
+        ete.text = "512 MB of memory"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:Description')
-	ete.text = "Memory Size"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:Description')
+        ete.text = "Memory Size"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:InstanceId')
-	ete.text = "2"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:InstanceId')
+        ete.text = "2"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:ResourceType')
-	ete.text = "4"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:ResourceType')
+        ete.text = "4"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:AllocationUnits')
-	ete.text = "MegaBytes"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:AllocationUnits')
+        ete.text = "MegaBytes"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:VirtualQuantity')
-	ete.text = "512"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:VirtualQuantity')
+        ete.text = "512"
+        etitem.append(ete)
 
-	etsec.append(etitem)
+        etsec.append(etitem)
 
-	etitem = ElementTree.Element('Item')
+        etitem = ElementTree.Element('Item')
 
-	ete = ElementTree.Element('rasd:Caption')
-	ete.text = "Drive 1"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:Caption')
+        ete.text = "Drive 1"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:InstanceId')
-	ete.text = str(self.vol_uuid)
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:InstanceId')
+        ete.text = str(self.vol_uuid)
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:ResourceType')
-	ete.text = "17"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:ResourceType')
+        ete.text = "17"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:HostResource')
-	ete.text = str(self.img_uuid)+'/'+str(self.vol_uuid)
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:HostResource')
+        ete.text = str(self.img_uuid)+'/'+str(self.vol_uuid)
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:Parent')
-	ete.text = "00000000-0000-0000-0000-000000000000"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:Parent')
+        ete.text = "00000000-0000-0000-0000-000000000000"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:Template')
-	ete.text = "00000000-0000-0000-0000-000000000000"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:Template')
+        ete.text = "00000000-0000-0000-0000-000000000000"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:ApplicationList')
-	# List of installed applications, separated by comma
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:ApplicationList')
+        # List of installed applications, separated by comma
+        etitem.append(ete)
 
-	# This corresponds to ID of volgroup in host where snapshot was taken.
-	# Obviously we have nothing like it.
-	ete = ElementTree.Element('rasd:StorageId')
-	# "Storage Domain Id"
-	ete.text = "00000000-0000-0000-0000-000000000000"
-	etitem.append(ete)
+        # This corresponds to ID of volgroup in host where snapshot was taken.
+        # Obviously we have nothing like it.
+        ete = ElementTree.Element('rasd:StorageId')
+        # "Storage Domain Id"
+        ete.text = "00000000-0000-0000-0000-000000000000"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:StoragePoolId')
-	ete.text = self.pool_id
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:StoragePoolId')
+        ete.text = self.pool_id
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:CreationDate')
-	ete.text = time.strftime("%Y/%m/%d %H:%M:%S", self.create_time)
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:CreationDate')
+        ete.text = time.strftime("%Y/%m/%d %H:%M:%S", self.create_time)
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:LastModified')
-	ete.text = time.strftime("%Y/%m/%d %H:%M:%S", self.create_time)
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:LastModified')
+        ete.text = time.strftime("%Y/%m/%d %H:%M:%S", self.create_time)
+        etitem.append(ete)
 
-	etsec.append(etitem)
+        etsec.append(etitem)
 
-	etitem = ElementTree.Element('Item')
+        etitem = ElementTree.Element('Item')
 
-	ete = ElementTree.Element('rasd:Caption')
-	ete.text = "Ethernet 0 rhevm"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:Caption')
+        ete.text = "Ethernet 0 rhevm"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:InstanceId')
-	ete.text = "3"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:InstanceId')
+        ete.text = "3"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:ResourceType')
-	ete.text = "10"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:ResourceType')
+        ete.text = "10"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:ResourceSubType')
-	# e1000 = 2, pv = 3
-	ete.text = "3"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:ResourceSubType')
+        # e1000 = 2, pv = 3
+        ete.text = "3"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:Connection')
-	ete.text = "rhevm"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:Connection')
+        ete.text = "rhevm"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:Name')
-	ete.text = "eth0"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:Name')
+        ete.text = "eth0"
+        etitem.append(ete)
 
-	# also allowed is "MACAddress"
+        # also allowed is "MACAddress"
 
-	ete = ElementTree.Element('rasd:speed')
-	ete.text = "1000"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:speed')
+        ete.text = "1000"
+        etitem.append(ete)
 
-	etsec.append(etitem)
+        etsec.append(etitem)
 
-	etitem = ElementTree.Element('Item')
+        etitem = ElementTree.Element('Item')
 
-	ete = ElementTree.Element('rasd:Caption')
-	ete.text = "Graphics"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:Caption')
+        ete.text = "Graphics"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:InstanceId')
-	# doc says "6", reality is "5"
-	ete.text = "5"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:InstanceId')
+        # doc says "6", reality is "5"
+        ete.text = "5"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:ResourceType')
-	ete.text = "20"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:ResourceType')
+        ete.text = "20"
+        etitem.append(ete)
 
-	ete = ElementTree.Element('rasd:VirtualQuantity')
-	ete.text = "1"
-	etitem.append(ete)
+        ete = ElementTree.Element('rasd:VirtualQuantity')
+        ete.text = "1"
+        etitem.append(ete)
 
-	etsec.append(etitem)
+        etsec.append(etitem)
 
-	etcon.append(etsec)
+        etcon.append(etsec)
 
-	etroot.append(etcon)
+        etroot.append(etcon)
 
-	et = ElementTree.ElementTree(etroot)
-	return et
+        et = ElementTree.ElementTree(etroot)
+        return et
