@@ -1,9 +1,9 @@
 
 # Callable class that is used to launch a thread
-import httplib
 import threading
 import time
 import logging
+import httplib2
 
 class CallbackWorker():
 
@@ -97,19 +97,19 @@ class CallbackWorker():
         if next_callback:
             self.log.debug("Updated image is: (%s)" % (str(next_callback)))
             if self.callback_url == "debug":
-                self.log.debug("Executing a debug callback - sleeping 5 seconds - no actual POST sent")
+                self.log.debug("Executing a debug callback - sleeping 5 seconds - no actual PUT sent")
                 time.sleep(5)
             else:
-                self.log.debug("POSTing update to URL (%s)" % (self.callback_url))
+                self.log.debug("PUTing update to URL (%s)" % (self.callback_url))
                 try:
-                    data = urllib.urlencode(next_callback)
-                    req = urllib2.Request(callback_url, data)
-                    response = urllib2.urlopen(req)
-                    the_page = response.read()
+                    h = httplib2.Http()
+                    resp, content = h.request(self.callback_url, 
+                                              "PUT", body=json.dumps(next_callback), 
+                                              headers={'content-type':'application/json'} )
                 except Exception, e:
                     # We treat essentially every potential error here as non-fatal and simply move on to the next update
                     # TODO: Configurable retries?
-                    self.log.debug("Caught exception (%s) when attempting to POST callback - Ignoring" % (str(e)))
+                    self.log.debug("Caught exception (%s) when attempting to PUT callback - Ignoring" % (str(e)))
 
     def __call__(self):
         while True:
