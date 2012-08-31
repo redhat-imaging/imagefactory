@@ -24,7 +24,7 @@ class OSDelegate(Interface):
 
     def create_base_image(self, builder, template, parameters):
         """
-        Create a JEOS image and nstalls any packages specified in the template.
+        Create a JEOS image and install any packages specified in the template.
 
         @param builder The Builder object coordinating image creation.
         @param template A Template object.
