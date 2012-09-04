@@ -79,7 +79,7 @@ def list_images(image_collection, base_image_id=None, target_image_id=None, list
                         }
             images.append(resp_item)
 
-        return images
+        return {image_collection:images}
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
