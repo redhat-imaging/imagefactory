@@ -50,12 +50,15 @@ class CallbackWorker():
     def status_notifier(self, notification):
         image = notification.sender
         _type = type(image).__name__
-        callback_body = { _type: {'_type':_type,
+        typemap = {"TargetImage": "target_image", "ProviderImage": "provider_image", "BaseImage": "base_image" }
+        if not _type in typemap:
+            raise Exception("Unmappable object type: %s" % _type)
+        callback_body = { typemap[_type]: {'_type':_type,
                          'id':image.identifier} }
 #                         'href':request.url}
         for key in image.metadata():
             if key not in ('identifier', 'data', 'base_image_id', 'target_image_id'):
-                callback_body[_type][key] = getattr(image, key, None)
+                callback_body[typemap[_type]][key] = getattr(image, key, None)
         self._enqueue(callback_body)
 
     def _enqueue(self, status_update):
