@@ -4,6 +4,7 @@ import threading
 import time
 import logging
 import httplib2
+import json
 
 class CallbackWorker():
 
@@ -49,12 +50,12 @@ class CallbackWorker():
     def status_notifier(self, notification):
         image = notification.sender
         _type = type(image).__name__
-        callback_body = {'_type':_type,
-                         'id':image.identifier}
+        callback_body = { _type: {'_type':_type,
+                         'id':image.identifier} }
 #                         'href':request.url}
         for key in image.metadata():
             if key not in ('identifier', 'data', 'base_image_id', 'target_image_id'):
-                callback_body[key] = getattr(image, key, None)
+                callback_body[_type][key] = getattr(image, key, None)
         self._enqueue(callback_body)
 
     def _enqueue(self, status_update):
