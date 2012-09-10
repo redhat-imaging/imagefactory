@@ -35,6 +35,10 @@ class ApplicationConfiguration(Singleton):
             # For cli, we debug by default and have a nodebug argument with default False
             # Rest of the code assumes a 'debug' value in app_config so set it here
             self.configuration['debug'] = not self.configuration['nodebug']
+        if not 'secondary' in self.configuration:
+            # We use this in the non-daemon context so it needs to be set
+            # TODO: Something cleaner?
+            self.configuration['secondary'] = False
         self.jeos_images = {}
         self.__parse_jeos_images()
 
@@ -65,6 +69,7 @@ class ApplicationConfiguration(Singleton):
             group_rest.add_argument('--no_ssl', action='store_true', default=False, help='Turn off SSL. (default: %(default)s)')
             group_rest.add_argument('--ssl_pem', default='*', help='PEM certificate file to use for HTTPS access to the REST interface. (default: A transient certificate is generated at runtime.)')
             group_rest.add_argument('--no_oauth', action='store_true', default=False, help='Use 2 legged OAuth to protect the REST interface. (default: %(default)s)')
+            group_rest.add_argument('--secondary', action='store_true', default=False, help='Operate as a secondary/helper factory. (default: %(default)s)')
         elif(appname == 'imagefactory'):
             argparser.add_argument('--nodebug', action='store_true', default=False, help='Turn off the default verbose CLI logging')
             argparser.add_argument('--output', choices=('log', 'json'), default='log', help='Choose between log or json output. (default: %(default)s)')

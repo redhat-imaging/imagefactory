@@ -28,8 +28,14 @@ class MockRPMBasedOS(object):
 
     def create_base_image(self, builder, template, parameters):
         self.log.info('create_base_image() called in MockRPMBasedOS')
+        mock_image_file = open(builder.base_image.data, "w")
+        mock_image_file.write("MockRPMBasedOS base_image file for id (%s)" % builder.base_image.identifier)
+        mock_image_file.close()
         #return BaseImage(template)
 
     def create_target_image(self, builder, target, base_image, parameters):
         self.log.info('create_target_image() called in MockRPMBasedOS')
+        mock_image_file = open(builder.target_image.data, "w")
+        mock_image_file.write("MockRPMBasedOS target_image file for id (%s)" % builder.target_image.identifier)
+        mock_image_file.close()
         #return TargetImage(base_image, target, parameters)
