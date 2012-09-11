@@ -82,6 +82,7 @@ fi
 
 %files
 %doc COPYING
+%doc target_content.xml.example
 %{_initddir}/imagefactory
 %config(noreplace) %{_sysconfdir}/imagefactory/imagefactory.conf
 %config(noreplace) %{_sysconfdir}/sysconfig/%{name}

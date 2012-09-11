@@ -1,0 +1,22 @@
+<template_includes>
+  <include target='vsphere' os='Fedora' version='16' arch='x86_64'>
+    <packages>
+      <package name='faad2'/>
+    </packages>
+    <repositories>
+      <repository name='rpmfusion-free'>
+        <url>http://download1.rpmfusion.org/free/fedora/releases/16/Everything/x86_64/os/</url>
+      </repository>
+    </repositories>
+  </include>
+  <include target='rhevm' os='RHEL'>
+    <packages>
+      <package name='rhev-fedora-generic-package'/>
+    </packages>
+    <repositories>
+      <repository name='rhev-repo'>
+        <url>http://rhev.repo.com/</url>
+      </repository>
+    </repositories>
+  </include>
+</template_includes>
