@@ -54,24 +54,30 @@ class VMImport:
             self.time_at_last_poke = time()
 
     def import_vm(self, datastore, network_name, name, disksize_kb,
-                  memory, num_cpus, guest_id, host=None, imagefilename=None):
+                  memory, num_cpus, guest_id, host=None, computeresource=None, imagefilename=None):
 
         nic = {'network_name': network_name, 'type': 'VirtualE1000'}
         nics = [nic]
         # If the host is not set, use the ComputeResource as the target
-        if not host:
-            target = self.vim.find_entity_view(view_type='ComputeResource')
-            target.update_view_data(['name', 'datastore', 'network', 'parent',
-                                     'resourcePool'])
-            resource_pool = target.resourcePool
-        else:
+        if host:
             target = self.vim.find_entity_view(view_type='HostSystem',
                                                 filter={'name': host})
             # Retrieve the properties we're going to use
             target.update_view_data(['name', 'datastore', 'network', 'parent'])
-            host_cr = self.vim.get_view(mo_ref=target.parent, vim=self.vim)
+            host_cr = self.vim.get_view(mo_ref=target.parent)
             host_cr.update_view_data(properties=['resourcePool'])
             resource_pool = host_cr.resourcePool
+        elif computeresource:
+            target = self.vim.find_entity_view(view_type='ComputeResource',
+                                               filter={'name': computeresource})
+            target.update_view_data(['name', 'datastore', 'network', 'parent',
+                                     'resourcePool'])
+            resource_pool = target.resourcePool
+        else:
+            target = self.vim.find_entity_view(view_type='ComputeResource')
+            target.update_view_data(['name', 'datastore', 'network', 'parent',
+                                     'resourcePool'])
+            resource_pool = target.resourcePool
 
         # A list of devices to be assigned to the VM
         vm_devices = []

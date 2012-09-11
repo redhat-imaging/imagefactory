@@ -214,6 +214,14 @@ class Fedora_vsphere_Builder(BaseBuilder):
         if provider_data['target'] != 'vsphere':
             raise ImageFactoryException("Got a non-vsphere target in the vsphere builder.  This should never happen.")
 
+        target_host = None
+        if 'host' in provider_data:
+            target_host = provider_data['host']
+
+        computeresource = None
+        if 'computeresource' in provider_data:
+            computeresource = provider_data['computeresource']
+
         self.generic_decode_credentials(credentials, provider_data)
 
         # This is where the image should be after a local build
@@ -229,7 +237,7 @@ class Fedora_vsphere_Builder(BaseBuilder):
         vm_import = VMImport(provider_data['api-url'], self.username, self.password)
         vm_import.import_vm(datastore=provider_data['datastore'], network_name = provider_data['network_name'],
                        name=vm_name, disksize_kb = (10*1024*1024 + 2 ), memory=512, num_cpus=1,
-                       guest_id='otherLinux64Guest', imagefilename=input_image)
+                       guest_id='otherLinux64Guest', imagefilename=input_image, host=target_host, computeresource = computeresource)
 
         # Create the provdier image
         metadata = dict(target_image=target_image_id, provider=provider_data['name'], icicle="none", target_identifier=vm_name, provider_account_identifier=self.username)
