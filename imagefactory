@@ -164,6 +164,14 @@ class Application(Singleton):
             else:
                 logging.warning("Failed to launch as daemon...")
 
+            # Temporary fix pending resolution of BZ 836498
+            if os.path.isfile("/etc/sysconfig/modules/kvm.modules"):
+                logging.debug("Forcing load of kvm modules if they are not already loaded")
+                try:
+                    subprocess.call(["/bin/sh", "/etc/sysconfig/modules/kvm.modules"])
+                except:
+                    logging.warning("Forced load of kvm generated an exception - Continuing anyway - You may see slow virt performance")
+
             debug(self.app_config['debug'])
             pem_file = self.app_config['ssl_pem'] if not self.app_config['no_ssl'] else None
 
