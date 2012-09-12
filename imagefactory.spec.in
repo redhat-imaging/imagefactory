@@ -103,6 +103,11 @@ fi
 %{_sysconfdir}/imagefactory/jeos_images/ec2_rhel_jeos.conf
 
 %changelog
+* Tue Sep 11 2012 Ian McLeod <imcleod@redhat.com> - 1.0.2-1
+- Add an example of target_contet.xml to doc dir [BZ 828476]
+- Add ability to specify a host or compute resource for vSphere [BZ 853126]
+- Forcibly load KVM module at startup [BZ 839323]
+
 * Mon Jun 18 2012 Ian McLeod <imcleod@redhat.com> - 1.0.1-2
 - Add EC2 JEOS AMIs for RHEL 6.3 [BZ 831683]
 
