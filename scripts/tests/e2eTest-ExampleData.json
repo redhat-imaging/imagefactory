@@ -1,0 +1,50 @@
+{
+    "jeos":
+    [
+        {
+            "os":"Fedora",
+            "version":"16",
+            "arch":"x86_64",
+            "url":"http://download.fedoraproject.org/pub/fedora/linux/releases/16/Fedora/x86_64/os/"
+        },
+        {
+            "os":"Fedora",
+            "version":"17",
+            "arch":"x86_64",
+            "url":"http://download.fedoraproject.org/pub/fedora/linux/releases/17/Fedora/x86_64/os/"
+        }
+    ],
+    "targets": ["rhevm", "ec2", "vsphere"],
+    "providers":
+    {
+        "example-rhevm-provider":
+        {
+            "target": "rhevm",
+            "definition":
+            {
+                "api-key": "login",
+                "api-secret": "password",
+                "api-url": "https://api_host:8548/rhevm-api-powershell",
+                "nfs-dir": "nfs_mount_point",
+                "nfs-path": "nfs_export",
+                "nfs-host": "nfs_host"
+            },
+            "credentials": "<provider_credentials><rhevm_credentials><username>username</username><password>password</password></rhevm_credentials></provider_credentials>"
+        },
+        "example-vsphere-provider":
+        {
+            "target": "vsphere",
+            "definition":
+            {
+                "api-url": "https://api_host/sdk",
+                "datastore": "datastore_name",
+                "network_name": "network_name"
+            }
+            "credentials": "<provider_credentials><vsphere_credentials><username>username</username><password>password</password></vsphere_credentials></provider_credentials>"
+        },
+        "example-ec2-region":
+        {
+            "target": "ec2"
+        }
+    }
+}
