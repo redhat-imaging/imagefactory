@@ -113,7 +113,7 @@ def build_push_delete(target, index):
                             credentials_file.write(provider['credentials'])
                             provider_file = NamedTemporaryFile()
                             provider_file.write(provider['definition'])
-                            (provider_image_output_str, ignore, ignore) = subprocess_check_output('/usr/bin/imagefactory --debug --raw provider_image --id %s %s %s' % (target_image_id, provider_file.name, credentials_file.name), shell=True)
+                            (provider_image_output_str, ignore, ignore) = subprocess_check_output('/usr/bin/imagefactory --debug --raw provider_image --id %s %s %s %s' % (target_image_id, provider['target'], provider_file.name, credentials_file.name), shell=True)
                             provider_image_output_dict = json.loads(provider_image_output_str)
                             provider_image_id = provider_image_output_dict['identifier']
                             while(provider_image_output_dict['status'] not in ('COMPLETE', 'COMPLETED', 'FAILED')):
@@ -126,7 +126,7 @@ def build_push_delete(target, index):
                                 else:
                                     with p_lock:
                                         provider_images.append(provider_image_output_dict)
-                                    (delete_output_str, ignore, ignore) = subprocess_check_output('/usr/bin/imagefactory --raw delete %s' % provider_image_id, shell=True)
+                                    subprocess_check_output('/usr/bin/imagefactory --raw delete %s --target %s --provider %s --credentials %s' % (provider_image_id, provider['target'], provider_file.name, credentials_file.name), shell=True)
                         finally:
                             credentials_file.close()
                             provider_file.close()
@@ -148,5 +148,12 @@ for target in targets:
 
 while(test_index < test_count):
     sleep(5)
+
+for target_image in target_images:
+    subprocess_check_output('/usr/bin/imagefactory --raw delete %s' % target_image['identifier'], shell=True)
+
+for base_image in base_images:
+    subprocess_check_output('/usr/bin/imagefactory --raw delete %s' % base_image['identifier'], shell=True)
+
 print json.dumps({"failures":failures, "base_images":base_images, "target_images":target_images}, indent=2)
 sys.exit(0)
