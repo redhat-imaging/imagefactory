@@ -36,8 +36,16 @@ class OpenStackCloud(object):
         super(OpenStackCloud, self).__init__()
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
 
+    def activity(self, activity):
+        # Simple helper function
+        # Activity should be a one line human-readable string indicating the task in progress
+        # We log it at DEBUG and also set it as the status_detail on our active image
+        self.log.debug(activity)
+        self.active_image.status_detail['activity'] = activity
+
     def push_image_to_provider(self, builder, provider, credentials, target, target_image, parameters):
         # Our target_image is already a raw KVM image.  All we need to do is upload to glance
+        self.active_image = self.builder.provider_image
         self.openstack_decode_credentials(credentials)
 
         provider_data = self.get_dynamic_provider_data("openstack-kvm")
