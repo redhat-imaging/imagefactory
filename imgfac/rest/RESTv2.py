@@ -19,31 +19,20 @@ sys.path.insert(1, '%s/imgfac/rest' % sys.path[0])
 import logging
 import os.path
 from bottle import *
-import imgfac.rest.RESTtools as RESTtools
+from imgfac.rest.RESTtools import *
 from imgfac.rest.OAuthTools import oauth_protect
 from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.PluginManager import PluginManager
 from imgfac.PersistentImageManager import PersistentImageManager
 from imgfac.Version import VERSION as VERSION
-from imgfac.ApplicationConfiguration import ApplicationConfiguration
 
 log = logging.getLogger(__name__)
 
 rest_api = Bottle(catchall=True)
 
-def log_request(f):
-    def decorated_function(*args, **kwargs):
-        if(ApplicationConfiguration().configuration['debug']):
-            log.debug('Handling %s HTTP %s REQUEST for resource at %s: %s' % (request.headers.get('Content-Type'),
-                                                                              request.method,
-                                                                              request.path,
-                                                                              request.body.read()))
-        return f(*args, **kwargs)
-    decorated_function.__name__ = f.__name__
-    return decorated_function
-
 @rest_api.get('/imagefactory')
 @log_request
+@check_accept_header
 def api_info():
     return {'name':'imagefactory', 'version':VERSION, 'api_version':'2.0'}
 
@@ -52,6 +41,7 @@ def api_info():
 @rest_api.get('/imagefactory/target_images/<target_image_id>/<image_collection>')
 @log_request
 @oauth_protect
+@check_accept_header
 def list_images(image_collection, base_image_id=None, target_image_id=None, list_url=None):
     try:
         fetch_spec = {}
@@ -90,10 +80,11 @@ def list_images(image_collection, base_image_id=None, target_image_id=None, list
 @rest_api.post('/imagefactory/target_images/<target_image_id>/<image_collection>')
 @log_request
 @oauth_protect
+@check_accept_header
 def create_image(image_collection, base_image_id=None, target_image_id=None):
     try:
         image_type = image_collection[0:-1]
-        request_data = RESTtools.form_data_for_content_type(request.headers.get('Content-Type')).get(image_type)
+        request_data = form_data_for_content_type(request.headers.get('Content-Type')).get(image_type)
         if(not request_data):
             raise HTTPResponse(status=400, output='%s not found in request.' % image_type)
 
@@ -147,6 +138,7 @@ def create_image(image_collection, base_image_id=None, target_image_id=None):
 @rest_api.get('/imagefactory/target_images/<target_image_id>/provider_images/<image_id>')
 @log_request
 @oauth_protect
+@check_accept_header
 def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
     try:
         image = PersistentImageManager.default_manager().image_with_id(image_id)
@@ -206,6 +198,7 @@ def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_i
 @rest_api.get('/imagefactory/target_images/<target_image_id>/provider_images/<image_id>/raw_image')
 @log_request
 @oauth_protect
+@check_accept_header
 def get_image_file(image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
     try:
         image = PersistentImageManager.default_manager().image_with_id(image_id)
@@ -225,6 +218,7 @@ def get_image_file(image_id, base_image_id=None, target_image_id=None, provider_
 @rest_api.delete('/imagefactory/target_images/<target_image_id>/provider_images/<image_id>')
 @log_request
 @oauth_protect
+@check_accept_header
 def delete_image_with_id(image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
     try:
         image = PersistentImageManager.default_manager().image_with_id(image_id)
@@ -246,6 +240,7 @@ def delete_image_with_id(image_id, base_image_id=None, target_image_id=None, pro
 @rest_api.get('/imagefactory/plugins/<plugin_id>')
 @log_request
 @oauth_protect
+@check_accept_header
 def get_plugins(plugin_id=None):
     try:
         response.status = 200
@@ -275,6 +270,7 @@ def get_plugins(plugin_id=None):
 @rest_api.get('/imagefactory/jeos')
 @rest_api.get('/imagefactory/jeos/<jeos_id>')
 @log_request
+@check_accept_header
 def method_not_implemented(**kw):
     """
     @return 501 Not Implemented
