@@ -1,0 +1,427 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+<title>Documentation</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<style>
+body { font:80% Verdana,Tahoma,Arial,sans-serif; }
+h1, h2, h3, h4 {  font-family: "Trebuchet MS",Georgia,"Times New Roman",serif; }
+ul.toc { padding: 4px; margin-left: 0; }
+ul.toc li { list-style-type:none; }
+ul.toc li.heading2 { margin-left: 1em; }
+ul.toc li.heading3 { margin-left: 2em; }
+a.wiki-anchor { display: none; margin-left: 6px; text-decoration: none; }
+a.wiki-anchor:hover { color: #aaa !important; text-decoration: none; }
+h1:hover a.wiki-anchor, h2:hover a.wiki-anchor, h3:hover a.wiki-anchor { display: inline; color: #ddd; }
+</style>
+</head>
+<body>
+<h1  id="Documentation">Documentation<a href="#Documentation" class="wiki-anchor">&para;</a></h1>
+
+
+	<p>Currently this is a scratch pad for documentation.  I hope to eventually either incorporate buildable markdown doco into the source tree or find a more obvious and permanent home.</p>
+
+
+	<h2  id="High-level-overview-of-Conductor-Warehouse-Image-Factory-and-Oz">High level overview of Conductor, Warehouse, Image Factory and Oz<a href="#High-level-overview-of-Conductor-Warehouse-Image-Factory-and-Oz" class="wiki-anchor">&para;</a></h2>
+
+
+	<p>The Image Factory is intended to be a general purpose and extensible component for building machine images (sometimes referred to as appliances). It is initially being targeted towards building Linux images for public and private clouds.  At present it can build Linux images for EC2, Rackspace, RHEV-M, VMWare and raw KVM.  Over time the goal is to provide support for additional OS types, including Windows, and additional targets including both raw virtual machines and bare metal.</p>
+
+
+	<p>The Image Factory uses an XML Input Descriptor (aka a Template or TDL) when creating builds.  The process of creating an image is logically divided into two distinct steps.</p>
+
+
+	<p>1) "Building" an image for a particular cloud type (eg EC2 or VMWare) referred to as the "target".</p>
+
+
+	<p>2) "Pushing" an image to a specific instance or region of a cloud (eg, EC2 us-east 1 or an individual VMWare cluster) referred to as the "provider".</p>
+
+
+	<p>Depending on the type of cloud and the style of build selected the above steps may involve creating and then uploading a binary image or they may involve launching and then modifying an existing image to match the Template and then saving the result.</p>
+
+
+	<p>In all cases a second component, the Image Warehouse, is currently used to store both binary data (where appropriate) as well as metadata representing details of the images being built and the providers to which they are pushed.</p>
+
+
+	<p>The Factory can be driven via a built-in command line tool, a command line tool "aeolus-image" provided as part of the Conductor component or using a QMF interface.</p>
+
+
+	<h2  id="Getting-started-quickly">Getting started quickly<a href="#Getting-started-quickly" class="wiki-anchor">&para;</a></h2>
+
+
+	<p>The best way to start using the Image Factory tool is to install all the components of the Aeolus project.  This will install both the Image Factory and the Image Warehouse as well as the optional aeolus-image command line tool and the Conductor web interface for launching images on a variety of clouds.  Instructions for how to do this can be found on the Aeolus project web site at this link:</p>
+
+
+	<p><a class="external" href="http://www.aeolusproject.org/get_it.html">http://www.aeolusproject.org/get_it.html</a></p>
+
+
+	<p>After installing the Conductor component and configuring your cloud accounts, you can build images using the aeolus-image command line tool.</p>
+
+
+	<h2  id="Getting-started-slowly">Getting started slowly<a href="#Getting-started-slowly" class="wiki-anchor">&para;</a></h2>
+
+
+	<p>To make basic use of the Image Factory you must install and configure an Image Warehouse as well as a number of Factory dependencies.</p>
+
+
+	<p>Packaged releases of the Factory and its dependencies can be found here:</p>
+
+
+	<p><a class="external" href="http://repos.fedorapeople.org/repos/aeolus/image-factory/">http://repos.fedorapeople.org/repos/aeolus/image-factory/</a></p>
+
+
+	<p>Recent releases of the Warehouse are available as the "iwhd" packages available in the "testing" and individual versioned release directories for the Aeolus project here;</p>
+
+
+	<p><a class="external" href="http://repos.fedorapeople.org/repos/aeolus/conductor/">http://repos.fedorapeople.org/repos/aeolus/conductor/</a></p>
+
+
+	<h2  id="Object-model-overview">Object model overview<a href="#Object-model-overview" class="wiki-anchor">&para;</a></h2>
+
+
+	<p>The exact model used when passing objects between the Factory, Warehouse and Conductor has evolved somewhat over time.  As of the 0.4.0 release the model is loosely based on this mailing list post:</p>
+
+
+	<p><a class="external" href="https://fedorahosted.org/pipermail/aeolus-devel/2011-May/001667.html">https://fedorahosted.org/pipermail/aeolus-devel/2011-May/001667.html</a></p>
+
+
+	<p>We are in the process of refining the model and clarifying how it relates to the aeolus-image command.  That discussion can be found here:</p>
+
+
+	<p><a class="external" href="https://fedorahosted.org/pipermail/aeolus-devel/2011-July/003311.html">https://fedorahosted.org/pipermail/aeolus-devel/2011-July/003311.html</a></p>
+
+
+	<h2  id="Configuration">Configuration<a href="#Configuration" class="wiki-anchor">&para;</a></h2>
+
+
+	<h3  id="General">General<a href="#General" class="wiki-anchor">&para;</a></h3>
+
+
+	<p>The general behaviour of the Image Factory is controlled by a configuration file.  The default location for this file is /etc/imagefactory/imagefactory.conf.  Here is an example:</p>
+
+
+<pre>
+{
+  "warehouse": "http://localhost:9090/",
+  "image_bucket": "images",
+  "build_bucket": "builds",
+  "target_bucket": "target_images",
+  "template_bucket": "templates",
+  "icicle_bucket": "icicles",
+  "provider_bucket": "provider_images",
+  "imgdir": "/var/tmp",
+  "ec2_build_style": "upload",
+  "ec2_ami_type": "s3" 
+}
+</pre>
+
+	<p>The individual elements of this file are described below.</p>
+
+
+	<ul>
+	<li>warehouse - Defines the location of the Image Warehouse the Image Factory will use.  If you have installed the Warehouse locally using the default port you can safely leave this unchanged.</li>
+	</ul>
+
+
+	<ul>
+	<li>&lt;type&gt;_bucket - The next five items define the bucket within the Image Warehouse used for object of the given &lt;type&gt;.  These can also safely be left unchanged from the default values provided in the RPM.</li>
+	</ul>
+
+
+	<ul>
+	<li>imgdir - the directory where the Factory will store any image files - for upload-style clouds these images are often several GB in size - plan and configure accordingly</li>
+	</ul>
+
+
+	<ul>
+	<li>ec2_build_style - set to "upload" to build EC2 images locally and upload to S3 or EBS - set to "snapshot" to build EC2 images by launching and modifying a pre-existing set of JEOS AMIs (more details below)</li>
+	</ul>
+
+
+	<ul>
+	<li>ec2_ami_Type - set to "s3" to create original style stateless AMIs - set to "ebs" to create EBS backed images (more details below)</li>
+	</ul>
+
+
+	<h3  id="Target-Specific-Packages-and-Repos">Target Specific Packages and Repos<a href="#Target-Specific-Packages-and-Repos" class="wiki-anchor">&para;</a></h3>
+
+
+	<p>Starting with commit 057e66 we have introduced initial support for specifying target-specific packages and repositories outside of the TDL passed in to the build command.  For now, you must specify this information in a local config file on your Factory host.  This file must be /etc/imagefactory/target_content.xml.  The file looks like this:</p>
+
+
+<pre>
+&lt;template_includes&gt;
+  &lt;include target='ec2' os='Fedora' version='14' arch='x86_64'&gt;
+    &lt;packages&gt;
+      &lt;package name='oz'/&gt;
+    &lt;/packages&gt;
+    &lt;repositories&gt;
+      &lt;repository name='oz-repository'&gt;
+        &lt;url&gt;http://repos.fedorapeople.org/repos/aeolus/oz/0.6.0/packages/fedora-14/x86_64/&lt;/url&gt;
+      &lt;/repository&gt;
+    &lt;/repositories&gt;
+  &lt;/include&gt;
+  &lt;include target='rhevm' os='RHEL'&gt;
+    &lt;packages&gt;
+      &lt;package name='rhev-fedora-generic-package'/&gt;
+    &lt;/packages&gt;
+    &lt;repositories&gt;
+      &lt;repository name='rhev-repo'&gt;
+        &lt;url&gt;http://rhev.repo.com/&lt;/url&gt;
+      &lt;/repository&gt;
+    &lt;/repositories&gt;
+  &lt;/include&gt;
+&lt;/template_includes&gt;
+</pre>
+
+	<p>Each &lt;include&gt; tag can specify, in increasing order of specificity, a target, an OS, a version and an architecture.  The Factory will search, from most specific to least specific, for an include block that matches the build it has been asked to perform.  If it finds one, it merges the package and repositories content within the tag with the information already present in the TDL passed to the build request.  At present, packages and repos with the same name are overridden by this include file.</p>
+
+
+	<p>An expected use case for this features is the installation of VMWare tools and the equivalent RHEV-M packages on all images built for those targets.</p>
+
+
+	<p>Support for build-time specification of this information is pending.</p>
+
+
+	<h4  id="Snapshot-versus-Upload">Snapshot versus Upload<a href="#Snapshot-versus-Upload" class="wiki-anchor">&para;</a></h4>
+
+
+	<p>Some cloud provider types, such as VMWare, RHEV-M and EC2 support directly uploading complete binary disk images.  For these clouds, the Image Factory creates a full system image locally and then uploads it to the cloud provider instance using the appropriate format and tools.  The process of creating the image content is done during the "build" step and the actual uploading (along with any required format change or bundling) is done in the "push" step.</p>
+
+
+	<p>This process is sometimes referred to using the shorthand of "upload style" builds and the associated cloud targets as "upload style clouds".</p>
+
+
+	<p>Other clouds, such as Rackspace, do not support direct uploads.  These types of clouds instead provide a collection of minimal images that users can modify as well as API calls to "snapshot" the state of a modified instance and turn it back into an image.  For these clouds the Image Factory creates a place holder "image" object during the "build" step.  When a user then requests a "push" the Factory selects an appropriate pre-existing minimal (aka JEOS) image, launches it, modifies it to match the package list in the template and then "snapshots" the result as a new image.</p>
+
+
+	<p>This process is sometimes referred to as a "snapshot style" build and the associated cloud targets as "snapshot style clouds".</p>
+
+
+	<p>Note that is usually possible to produce snapshot style builds on an upload style cloud.  Currently the factory supports this only on EC2.  The build style used for EC2 images is controlled by the ec2_build_style configuration option described above.</p>
+
+
+	<h3  id="VMWare">VMWare<a href="#VMWare" class="wiki-anchor">&para;</a></h3>
+
+
+	<p>Building for VMWare VSphere (ESX) instances is supported using the cloud target name of "vsphere".  Individual VMWare providers must be listed in a configuration file at /etc/imagefactory/vsphere.json.  Here is an example:</p>
+
+
+<pre>
+{"user_selected_name": {"api-url": "https://vsphere.office.redhat.com/sdk",
+ "datastore": "datastore1", "network_name": "VM Network" } }
+</pre>
+
+	<p>At present, you must specify the name of an existing Datastore and Virtual Network to be used when uploading the image.</p>
+
+
+	<h3  id="RHEV-M">RHEV-M<a href="#RHEV-M" class="wiki-anchor">&para;</a></h3>
+
+
+	<p>Building for RHEV-M instances is supported using the cloud target name "rhevm".  Individual RHEV-M providers must be listed in a configuration file at /etc/imagefactory/rhevm.json.  Here is an example:</p>
+
+
+<pre>
+{"user_selected_name": {"nfs-dir": "/home/vdsm/v1", "nfs-path": "/home/vdsm/v1",
+ "nfs-host": "nfs-server.redhat.com", "cluster": "_any_",
+ "api-url": "http://rhevm-server.redhat.com/rhevm-api", "timeout": 1800 } }
+</pre>
+
+	<p>The push step for RHEV-M providers is currently executed by the Image Warehouse and requires the use of an NFS share visible to both the RHEV-M server and the machine hosting the Image Warehouse.</p>
+
+
+	<p>NOTE: RHEV-M is currently the only cloud type for which iwhd executes pushes.  Provider pushes for all other clouds are done within the Factory and use Warehouse only for storage.</p>
+
+
+	<p>Detailed setup instructions can be found in the Warehouse source tree markdown documentation on registration here:</p>
+
+
+	<p><a class="external" href="http://git.fedorahosted.org/git/?p=iwhd.git;a=blob;f=doc/registrations.md;hb=HEAD">http://git.fedorahosted.org/git/?p=iwhd.git;a=blob;f=doc/registrations.md;hb=HEAD</a></p>
+
+
+	<p>The rough process is as follows:</p>
+
+
+	<p>1) Create an NFS share with sufficient space for your images and mountable by both the RHEV-M server and the Factory host (note that the Factory host itself can be used as the server).  Ensure that the mount point is owned by UID/GID 36:36.</p>
+
+
+	<p>2) Create an "export domain" in RHEV-M that points to the share created above</p>
+
+
+	<p>3) Populate the configuration file above.  The fields need to be set as follows</p>
+
+
+	<ul>
+	<li>nfs-dir    - The local path, as viewed by the factory, that the NFS share is mounted on</li>
+		<li>nfs-host   - The hostname of the NFS server</li>
+		<li>nfs-path   - the path on the remote server that is mounted on "nfs-dir" above</li>
+		<li>api-url    - the API endpoint address for the RHEV-M server being used</li>
+		<li>cluster    - should be set to "_any_" unless you wish to specify a specific RHEV-M cluster</li>
+		<li>timeout    - timeout in seconds for the entire push process to complete (suggested value 1800)</li>
+	</ul>
+
+
+	<p>Note that the timeout <em>must</em> be set in the config file if using iwhd 0.99 with a factor version earlier than 0.8.0</p>
+
+
+	<p>With Factory 0.8.0 and newer this value will be set to 1800 seconds if not specified in the configuration file.</p>
+
+
+	<p>Note that the "user_selected_name" given to the provider must match what is used in Conductor.</p>
+
+
+	<h3  id="Package-installation">Package installation<a href="#Package-installation" class="wiki-anchor">&para;</a></h3>
+
+
+	<h2  id="Usage">Usage<a href="#Usage" class="wiki-anchor">&para;</a></h2>
+
+
+	<h3  id="TDL">TDL<a href="#TDL" class="wiki-anchor">&para;</a></h3>
+
+
+	<p>TDL is the format used to describe the image being built.  It is used primarily by the underlying Oz tool to create and customize disk images.  The Factory itself typically only reads the TDL to determine the specific OS and version being built.</p>
+
+
+	<p>The full documentation for Oz can currently be found here:</p>
+
+
+	<p><a class="external" href="http://aeolusproject.org/oz.html">http://aeolusproject.org/oz.html</a></p>
+
+
+	<p>Below is an example TDL file for building Fedora 13:</p>
+
+
+<pre>
+
+&lt;template version="1.0"&gt;
+  &lt;name&gt;f13-samepletdl&lt;/name&gt;
+  &lt;description&gt;Fedora 13 32 bit - Example Template&lt;/description&gt;
+  &lt;os&gt;
+    &lt;name&gt;Fedora&lt;/name&gt;
+    &lt;version&gt;13&lt;/version&gt;
+    &lt;arch&gt;i386&lt;/arch&gt;
+    &lt;install type='url'&gt;
+      &lt;url&gt;http://fedora-mirror-site.com/install_trees/fedora/F-13/GOLD/Fedora/i386/os/&lt;/url&gt;
+    &lt;/install&gt;
+    &lt;rootpw&gt;changeme&lt;/rootpw&gt;
+  &lt;/os&gt;
+
+  &lt;repositories&gt;
+    &lt;repository name='signed-custom-repo'&gt;
+      &lt;url&gt;http://custom-package-site.redhat.com/repos/unsigned_custom_repo/&lt;/url&gt;
+      &lt;signed&gt;True&lt;/signed&gt;
+    &lt;/repository&gt;
+    &lt;repository name='unsigned-custom-repo'&gt;
+      &lt;url&gt;http://custom-rpackage-site2.redhat.com/repos/signed_custom_repo/&lt;/url&gt;
+      &lt;signed&gt;False&lt;/signed&gt;
+      &lt;persisted&gt;False&lt;/persisted&gt;
+    &lt;/repository&gt;
+  &lt;/repositories&gt;
+
+  &lt;packages&gt;
+    &lt;package name='kernel-PAE'/&gt;
+    &lt;package name='euca2ools'/&gt;
+    &lt;package name='imgfacsnapinit'/&gt;
+  &lt;/packages&gt;
+
+  &lt;files&gt;
+    &lt;file name='/etc/rock.it'&gt;
+This is a custom configuration file.
+    &lt;/file&gt;
+    &lt;file name='/tmp/binary_file' type='base64'&gt;
+VGhpcyBpcyBhbiBlbmNvZGVkIGZpbGUK
+    &lt;/file&gt;
+  &lt;/files&gt;
+  &lt;commands&gt;
+    &lt;command name="test"&gt;
+echo "hello" &gt; /var/lib/foo.bar
+    &lt;/command&gt;
+  &lt;/commands&gt;
+
+&lt;/template&gt;
+
+</pre>
+
+	<p>This example contains all currently supported elements of TDL.  Some line-by line detail:</p>
+
+
+	<ul>
+	<li>The &lt;name&gt; and &lt;description&gt; tags are entirely user-defined</li>
+	</ul>
+
+
+	<ul>
+	<li>Within the &lt;os&gt; section the following name/version combinations are supported on all targets: Fedora/14, Fedora/15, RHEL-6/0, RHEL-6/1  (Other combinations may work for some cloud types and not others.  We are working to add full support for recent updates of RHEL5 and can add older Fedoras if demand exists.)  For historical reasons RHEL5 versions are referred to as "GOLD", "U1", "U2", etc.</li>
+	</ul>
+
+
+	<ul>
+	<li>Note that as of Factory 0.8.0 you <em>must</em> specify a &lt;rootpw&gt; tag or your build will fail</li>
+	</ul>
+
+
+	<ul>
+	<li>The &lt;url&gt; tag in the &lt;os&gt; section must point to a valid install tree for the OS in question.  An alternative option is to use an ISO style install by swapping in a stanza like this that points to a valid install DVD for the OS in question:</li>
+	</ul>
+
+
+<pre>
+    &lt;install type='iso'&gt;
+      &lt;iso&gt;http://download.devel.redhat.com/released/F-14/GOLD/Fedora/i386/iso/Fedora-14-i386-DVD.iso&lt;/iso&gt;
+    &lt;/install&gt;
+</pre>
+
+	<ul>
+	<li>the &lt;repository&gt; tags should point to any additional repos you want to use during the creation of the image.  The &lt;signed&gt; tag is optional.  If it is not present the Factory will assume that the repository content is unsigned and will disable signature checking.  The &lt;persisted&gt; tag is also optional.  If it is not present Factory will keep the repo definition in the finished image.  If it is set to False the repo will only be available during customization and will not appear in the completed image.</li>
+	</ul>
+
+
+	<ul>
+	<li>Be aware that by default Fedora operating systems include active repo definitions for the core fedora package set and its updates.  RHEL images do not.  <strong>At the moment, if you wish to install additional packages from the RHEL install media you must include a repo definition that points to a valid copy of the install media repo.</strong>  The Factory doesn't currently support automated installation of additional content from RHN or RHN Satellite.</li>
+	</ul>
+
+
+	<ul>
+	<li>the &lt;package&gt; tags specify any additional packages you wish to install beyond those that are part of a bare bones install of the selected OS.  Note that you can also install package groups defined in your repos by listing them as a package with a leading @.  That is:<br /><pre>
+  &lt;package name="@my_repo_group"/&gt;
+</pre></li>
+	</ul>
+
+
+	<ul>
+	<li>the &lt;files&gt; tags specify files to be copied to the system after all packages have been installed - note that you can either provide raw file content or base64 encoded content.  If no type is given, raw content is assumed.</li>
+	</ul>
+
+
+	<ul>
+	<li>the &lt;commands&gt; tags specify commands to be run after all packages have been installed and all files copied</li>
+	</ul>
+
+
+	<h3  id="Building-an-image">Building an image<a href="#Building-an-image" class="wiki-anchor">&para;</a></h3>
+
+
+	<h4  id="CLI">CLI<a href="#CLI" class="wiki-anchor">&para;</a></h4>
+
+
+	<h4  id="QMF">QMF<a href="#QMF" class="wiki-anchor">&para;</a></h4>
+
+
+	<h4  id="aeolus-image">aeolus-image<a href="#aeolus-image" class="wiki-anchor">&para;</a></h4>
+
+
+	<h3  id="Pushing-an-image">Pushing an image<a href="#Pushing-an-image" class="wiki-anchor">&para;</a></h3>
+
+
+	<h4  id="CLI">CLI<a href="#CLI" class="wiki-anchor">&para;</a></h4>
+
+
+	<h4  id="QMF">QMF<a href="#QMF" class="wiki-anchor">&para;</a></h4>
+
+
+	<h4  id="aeolus-image">aeolus-image<a href="#aeolus-image" class="wiki-anchor">&para;</a></h4>
+
+
+	<h3  id="Oz">Oz<a href="#Oz" class="wiki-anchor">&para;</a></h3>
+</body>
+</html>
