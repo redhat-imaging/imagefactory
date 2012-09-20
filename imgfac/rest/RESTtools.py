@@ -58,9 +58,9 @@ def log_request(f):
 def check_accept_header(f):
     def decorated_function(*args, **kwargs):
         accept_header = request.get_header('Accept', None)
-        if(accept_header and ('application/json' not in accept_header)):
+        if(accept_header and (('application/json' not in accept_header) and ('xml' not in accept_header))):
             log.debug('Returning HTTP 406, unsupported response type: %s' % accept_header)
-            raise HTTPResponse(status=406, output='Responses in %s are currently unsupported. Please try application/json or remove the Accept header from the request.' % accept_header)
+            raise HTTPResponse(status=406, output='Responses in %s are currently unsupported.' % accept_header)
         else:
             return f(*args, **kwargs)
     decorated_function.__name__ = f.__name__
