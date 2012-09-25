@@ -1,6 +1,1 @@
-*.pyc
-*~
-/version.txt
-*.un~
-
 imgfac/Version.py
