@@ -1,0 +1,14 @@
+safe: false
+auto: true
+pygments: true
+
+# Site data
+url: http://imgfac.org
+sitename: imagefactory
+tagline: build, push, deploy
+
+navigation:
+- name: Home
+  url: /
+  layout: default
+
