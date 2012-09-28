@@ -3,6 +3,7 @@ lsi: true
 permalink: /blog/:year/:month/:day/:title
 
 # Site data
+baseurl: /imagefactory
 url: http://imgfac.org
 sitename: imagefactory
 tagline: build, push, deploy
