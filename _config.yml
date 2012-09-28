@@ -11,4 +11,9 @@ navigation:
 - name: Home
   url: /
   layout: default
-
+- name: Blog
+  url: /blog
+  layout: page
+- name: Documentation
+  url: /docs
+  layout: page

@@ -1,7 +1,7 @@
 @import url(https://fonts.googleapis.com/css?family=Lato:300italic,700italic,300,700);
 
 body {
-  padding:50px;
+  padding:100px;
   font:14px/1.5 Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
   color:#777;
   font-weight:300;
@@ -93,6 +93,67 @@ th {
 
 img {
   max-width:100%;
+}
+
+.first {
+    margin-left: 0;
+    padding-left: 0;
+}
+
+.last {
+    margin-right: 0;
+    padding-right: 0;
+}
+
+nav {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: block;
+}
+
+#navigation {
+  background-color: #33363b;
+  width: 100%;
+  height: 50px;
+  overflow: hidden;
+  padding-bottom: 0;
+  color: #d4d4d4;
+  font-size: 24px;
+  letter-spacing: -1px;
+  line-height: 32px;
+  float: left;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+#navigation ul {
+  margin: 0;
+  padding: 0;
+}
+
+#navigation li {
+  list-style-type: none;
+  float: left;
+  display: inline;
+  margin: 10px 10px 10px 10px;
+  position: relative;
+  font-weight: normal;
+}
+
+#navigation li a {
+  color: #959b9d;
+  text-decoration: none;
+  padding: 6px 10px;
+}
+
+#navigation li a:hover { color: #fff }
+
+#navigation li a.current {
+  background-color: #292b2f;
+  color: #fff;
+  border-radius: 5px;
 }
 
 header {
