@@ -77,13 +77,13 @@ class ApplicationConfiguration(Singleton):
             cmd_target.add_argument('--parameters')
 
             cmd_provider = subparsers.add_parser('provider_image', help='Push an image to a cloud provider.')
+            cmd_provider.add_argument('target', help='The target type of the given provider')
             cmd_provider.add_argument('provider', type=argparse.FileType(), help='A file containing the provider description.')
             cmd_provider.add_argument('credentials', type=argparse.FileType(), help='A file containing the provider credentials')
             provider_group = cmd_provider.add_mutually_exclusive_group(required=True)
             provider_group.add_argument('--id', help='The uuid of the TargetImage to push.')
             provider_group.add_argument('--template', type=argparse.FileType(), help=template_help)
             cmd_provider.add_argument('--parameters')
-            cmd_provider.add_argument('--target', help='The target type of the given provider')
 
             cmd_list = subparsers.add_parser('images', help='List images of a given type or get details of an image.')
             cmd_list.add_argument('fetch_spec', help='JSON formatted string of key/value pairs')
