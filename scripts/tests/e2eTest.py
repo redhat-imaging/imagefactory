@@ -8,24 +8,38 @@ from time import sleep
 import threading
 import os
 import sys
+from tempfile import NamedTemporaryFile
 
 
+description = 'Attempts an end to end test of the imagefactory command line interface\
+        by creating base images, building a target image from each of the successfully\
+        built base images, pushing the target images to each of the providers defined\
+        for a target, and finally deleting the provider images. What is done at each\
+        step is controlled by the datafile you supply this script. The e2eTest-ExampleData.json\
+        file can be found in the scripts/tests/ directory of the imagefactory source\
+        tree for you to customize to your own testing.'
 argparser = argparse.ArgumentParser()
-argparser.add_argument('--builds', default='[{"os":"Fedora","version":"16","arch":"x86_64","url":"http://download.fedoraproject.org/pub/fedora/linux/releases/16/Fedora/x86_64/os/"},\
-                                             {"os":"Fedora","version":"17","arch":"x86_64","url":"http://download.fedoraproject.org/pub/fedora/linux/releases/17/Fedora/x86_64/os/"}]')
-argparser.add_argument('--targets', default='["rhevm", "ec2", "vsphere"]')
+argparser.add_argument('datafile', type=argparse.FileType('r'))
 
 args = argparser.parse_args()
-builds = json.loads(args.builds)
-targets = json.loads(args.targets)
+test_data = json.load(args.datafile)
+args.datafile.close()
+
+builds = test_data['jeos']
+targets = test_data['targets']
+providers = test_data['providers']
 
 base_images = []
 b_lock = threading.Lock()
 target_images = []
 t_lock = threading.Lock()
+provider_images = []
+p_lock = threading.Lock()
 failures = []
 f_lock = threading.Lock()
-queue = threading.BoundedSemaphore(len(builds))
+build_queue = threading.BoundedSemaphore(len(builds))
+test_count = len(builds) * len(targets)
+test_index = 0
 proc_chk_interval = 5
 
 # Required for Python 2.6 backwards compat
@@ -42,12 +56,12 @@ def subprocess_check_output(*popenargs, **kwargs):
     return (stdout, stderr, retcode)
 ###
 
-def build_base_image(template_args):
-    queue.acquire()
+def create_base_image(template_args):
+    build_queue.acquire()
     try:
-        TDL = "<template><name>buildBaseImage</name><os><name>%s</name><version>%s\
+        TDL = "<template><name>buildbase_image</name><os><name>%s</name><version>%s\
 </version><arch>%s</arch><install type='url'><url>%s</url></install></os>\
-<description>Tests building a BaseImage</description></template>" % (template_args['os'],
+<description>Tests building a base_image</description></template>" % (template_args['os'],
                                                                      template_args['version'],
                                                                      template_args['arch'],
                                                                      template_args['url'])
@@ -56,57 +70,90 @@ def build_base_image(template_args):
         template.write(TDL)
         template.close()
 
-        (output, ignore, ignore) = subprocess_check_output('/usr/bin/imagefactory --debug --raw base_image %s' % template.name, shell=True)
-        outputd = json.loads(output)
-        image_id = outputd['identifier']
-        while(outputd['status'] not in ('COMPLETE', 'COMPLETED', 'FAILED')):
+        (base_image_output_str, ignore, ignore) = subprocess_check_output('/usr/bin/imagefactory --debug --raw base_image %s' % template.name, shell=True)
+        base_image_output_dict = json.loads(base_image_output_str)
+        base_image_id = base_image_output_dict['identifier']
+        while(base_image_output_dict['status'] not in ('COMPLETE', 'COMPLETED', 'FAILED')):
             sleep(proc_chk_interval)
-            (output, ignore, ignore) = subprocess_check_output('/usr/bin/imagefactory --raw images \'{"identifier":"%s"}\'' % image_id, shell=True)
-            outputd = json.loads(output)
+            (base_image_output_str, ignore, ignore) = subprocess_check_output('/usr/bin/imagefactory --raw images \'{"identifier":"%s"}\'' % base_image_id, shell=True)
+            base_image_output_dict = json.loads(base_image_output_str)
 
-        if(outputd['status'] == 'FAILED'):
+        if(base_image_output_dict['status'] == 'FAILED'):
             with f_lock:
-                failures.append(outputd)
+                failures.append(base_image_output_dict)
         else:
             with b_lock:
-                base_images.append(outputd)
+                base_images.append(base_image_output_dict)
     finally:
-        queue.release()
+        build_queue.release()
 
-def customize_target_image(target, index):
-    queue.acquire()
+def build_push_delete(target, index):
+    build_queue.acquire()
     try:
         if(index < len(base_images)):
             base_image = base_images[index]
-            (output, ignore, ignore) = subprocess_check_output('/usr/bin/imagefactory --debug --raw target_image --id %s %s' % (base_image.get('identifier'), target), shell=True)
-            outputd = json.loads(output)
-            image_id = outputd['identifier']
-            while(outputd['status'] not in ('COMPLETE', 'COMPLETED', 'FAILED')):
+            (target_image_output_str, ignore, ignore) = subprocess_check_output('/usr/bin/imagefactory --debug --raw target_image --id %s %s' % (base_image.get('identifier'), target), shell=True)
+            target_image_output_dict = json.loads(target_image_output_str)
+            target_image_id = target_image_output_dict['identifier']
+            while(target_image_output_dict['status'] not in ('COMPLETE', 'COMPLETED', 'FAILED')):
                 sleep(proc_chk_interval)
-                (output, ignore, ignore) = subprocess_check_output('/usr/bin/imagefactory --raw images \'{"identifier":"%s"}\'' % image_id, shell=True)
-                outputd = json.loads(output)
+                (target_image_output_str, ignore, ignore) = subprocess_check_output('/usr/bin/imagefactory --raw images \'{"identifier":"%s"}\'' % target_image_id, shell=True)
+                target_image_output_dict = json.loads(target_image_output_str)
 
-            if(outputd['status'] == 'FAILED'):
+            if(target_image_output_dict['status'] == 'FAILED'):
                 with f_lock:
-                    failures.append(outputd)
+                    failures.append(target_image_output_dict)
             else:
                 with t_lock:
-                    target_images.append(outputd)
+                    target_images.append(target_image_output_dict)
+                for provider in providers:
+                    if((not provider.startswith('example')) and (provider['target'] == target)):
+                        try:
+                            credentials_file = NamedTemporaryFile()
+                            credentials_file.write(provider['credentials'])
+                            provider_file = NamedTemporaryFile()
+                            provider_file.write(provider['definition'])
+                            (provider_image_output_str, ignore, ignore) = subprocess_check_output('/usr/bin/imagefactory --debug --raw provider_image --id %s %s %s %s' % (target_image_id, provider['target'], provider_file.name, credentials_file.name), shell=True)
+                            provider_image_output_dict = json.loads(provider_image_output_str)
+                            provider_image_id = provider_image_output_dict['identifier']
+                            while(provider_image_output_dict['status'] not in ('COMPLETE', 'COMPLETED', 'FAILED')):
+                                sleep(proc_chk_interval)
+                                (provider_image_output_str, ignore, ignore) = subprocess_check_output('/usr/bin/imagefactory --raw images \'{"identifier":"%s"}\'' % provider_image_id, shell=True)
+                                provider_image_output_dict = json.loads(provider_image_output_str)
+                                if(provider_image_output_dict['status'] == 'FAILED'):
+                                    with f_lock:
+                                        failures.append(provider_image_output_dict)
+                                else:
+                                    with p_lock:
+                                        provider_images.append(provider_image_output_dict)
+                                    subprocess_check_output('/usr/bin/imagefactory --raw delete %s --target %s --provider %s --credentials %s' % (provider_image_id, provider['target'], provider_file.name, credentials_file.name), shell=True)
+                        finally:
+                            credentials_file.close()
+                            provider_file.close()
+
     finally:
-        queue.release()
+        build_queue.release()
+        test_index += 1
 
 for build in builds:
     thread_name = "%s-%s-%s.%s" % (build['os'], build['version'], build['arch'], os.getpid())
-    build_thread = threading.Thread(target=build_base_image, name = thread_name, args=(build,))
+    build_thread = threading.Thread(target=create_base_image, name = thread_name, args=(build,))
     build_thread.start()
 
 for target in targets:
     for index in range(len(builds)):
         thread_name = "%s-%s.%s" % (target, index, os.getpid())
-        customize_thread = threading.Thread(target=customize_target_image, name=thread_name, args=(target, index))
+        customize_thread = threading.Thread(target=build_push_delete, name=thread_name, args=(target, index))
         customize_thread.start()
 
-queue.acquire()
+while(test_index < test_count):
+    sleep(5)
+
+for target_image in target_images:
+    subprocess_check_output('/usr/bin/imagefactory --raw delete %s' % target_image['identifier'], shell=True)
+
+for base_image in base_images:
+    subprocess_check_output('/usr/bin/imagefactory --raw delete %s' % base_image['identifier'], shell=True)
+
 print json.dumps({"failures":failures, "base_images":base_images, "target_images":target_images}, indent=2)
-queue.release()
 sys.exit(0)
