@@ -25,16 +25,25 @@ from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.PluginManager import PluginManager
 from imgfac.PersistentImageManager import PersistentImageManager
 from imgfac.Version import VERSION as VERSION
+from picklingtools.xmldumper import *
 
 log = logging.getLogger(__name__)
 
 rest_api = Bottle(catchall=True)
 
+def converted_response(resp_dict):
+    if('xml' in request.get_header('Accept', '')):
+        xml_options = XML_DUMP_STRINGS_AS_STRINGS | XML_DUMP_PRETTY | XML_DUMP_POD_LIST_AS_XML_LIST
+        response.set_header('Content-Type', request.get_header('Accept', None))
+        return WriteToXMLStream(resp_dict, options=xml_options)
+    else:
+        return resp_dict
+
 @rest_api.get('/imagefactory')
 @log_request
 @check_accept_header
 def api_info():
-    return {'name':'imagefactory', 'version':VERSION, 'api_version':'2.0'}
+    return converted_response({'name':'imagefactory', 'version':VERSION, 'api_version':'2.0'})
 
 @rest_api.get('/imagefactory/<image_collection>')
 @rest_api.get('/imagefactory/base_images/<base_image_id>/<image_collection>')
@@ -69,7 +78,7 @@ def list_images(image_collection, base_image_id=None, target_image_id=None, list
                         }
             images.append(resp_item)
 
-        return {image_collection:images}
+        return converted_response({image_collection:images})
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
@@ -122,7 +131,7 @@ def create_image(image_collection, base_image_id=None, target_image_id=None):
                 _response[key] = getattr(image, key, None)
 
         response.status = 202
-        return {image_collection[0:-1]:_response}
+        return converted_response({image_collection[0:-1]:_response})
     except KeyError as e:
         log.exception(e)
         raise HTTPResponse(status=400, output='Missing value for key: %s' % e)
@@ -185,7 +194,7 @@ def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_i
             raise HTTPResponse(status=500, output='Bad type for found object: %s' % _type)
 
         response.status = 200
-        return {_objtype:_response}
+        return converted_response({_objtype:_response})
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
@@ -250,14 +259,14 @@ def get_plugins(plugin_id=None):
             plugin.update({'_type':'plugin',
                            'id':plugin_id,
                            'href':'%s/%s' % (request.url, plugin_id)})
-            return plugin
+            return converted_response(plugin)
         else:
             plugins = plugin_mgr.plugins.copy()
             for plugin in plugins:
                 plugins[plugin].update({'_type':'plugin',
                                         'id':plugin,
                                         'href':'%s/%s' % (request.url, plugin)})
-        return {'plugins':plugins.values()}
+        return converted_response({'plugins':plugins.values()})
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output='%s %s' % (e, traceback.format_exc()))
