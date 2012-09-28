@@ -4,7 +4,7 @@ permalink: /blog/:year/:month/:day/:title
 
 # Site data
 baseurl: /imagefactory
-url: http://imgfac.org
+url: http://aeolusproject.github.com/imagefactory/
 sitename: imagefactory
 tagline: build, push, deploy
 
