@@ -2,6 +2,7 @@
 # YAML front matter. Must exist for Jekyll to process this file.
 layout: page
 title: Sample Page
+section: documentation
 ---
 
 ### Welcome to GitHub Pages.

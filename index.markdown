@@ -1,7 +1,8 @@
 ---
 # YAML front matter. Must exist for Jekyll to process this file.
 layout: default
-title: Imagefactory by aeolusproject
+title: tagline
+section: home
 ---
 
 ### Welcome to GitHub Pages.

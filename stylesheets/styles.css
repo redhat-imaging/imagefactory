@@ -226,6 +226,12 @@ section {
   padding-bottom:50px;
 }
 
+wide-section {
+  width:770px;
+  float:right;
+  padding-bottom:50px;
+}
+
 small {
   font-size:11px;
 }
@@ -241,7 +247,7 @@ footer {
   width:270px;
   float:left;
   position:fixed;
-  bottom:50px;
+  bottom:25px;
 }
 
 @media print, screen and (max-width: 960px) {

@@ -1,6 +1,6 @@
-safe: false
-auto: true
 pygments: true
+lsi: true
+permalink: /blog/:year/:month/:day/:title
 
 # Site data
 url: http://imgfac.org
@@ -10,10 +10,11 @@ tagline: build, push, deploy
 navigation:
 - name: Home
   url: /
-  layout: default
+  section: home
 - name: Blog
   url: /blog
-  layout: page
+  section: blog
 - name: Documentation
   url: /docs
-  layout: page
+  section: documentation
+

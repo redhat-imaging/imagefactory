@@ -5,14 +5,14 @@
 <html>
   {% include head.html %}
   <body>
+    {% include topnavbar.html %}
     <div class="wrapper">
-        {% include about.html %}
-      <section>
+      <wide-section>
       {{ content }}
-      </section>
+      </wide-section>
       {% include footer.html %}
     </div>
-    <script src="javascripts/scale.fix.js"></script>
+    <script src="/javascripts/scale.fix.js"></script>
     
   </body>
 </html>
