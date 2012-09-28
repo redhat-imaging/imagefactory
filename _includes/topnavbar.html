@@ -7,7 +7,7 @@
                     {% assign current = 'current' %}
                 {% endif %}
                 <li class="{% if forloop.first %}first{% endif %} {% if forloop.last %}last{% endif %}">
-                  <a class="{{ current }}" href="{{ link.url }}">{{ link.name }}</a>
+                <a class="{{ current }}" href="{{ site.baseurl }}{{ link.url }}">{{ link.name }}</a>
                 </li>
             {% endfor %}
         </ul>
