@@ -16,6 +16,6 @@ navigation:
   url: /blog
   section: blog
 - name: Documentation
-  url: /docs
+  url: /documentation
   section: documentation
 
