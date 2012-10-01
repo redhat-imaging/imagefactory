@@ -22,6 +22,7 @@ Group: Applications/System
 URL: http://www.aeolusproject.org/imagefactory.html
 BuildArch: noarch
 BuildRequires: python-setuptools
+Requires: imagefactory
 
 %description
 This is a placeholder top level package for a collection of plugins for the Image Factory
@@ -35,6 +36,7 @@ http://aeolusproject.org/projects/imagefactory for more information.
 Summary: OS plugin for Fedora
 License: ASL 2.0
 Requires: oz >= 0.7.0
+Requires: imagefactory
 
 %description FedoraOS
 An OS plugin to support Fedora OSes
@@ -43,6 +45,7 @@ An OS plugin to support Fedora OSes
 Summary: Cloud plugin for OpenStack running on KVM
 License: ASL 2.0
 Requires: python-glance
+Requires: imagefactory
 
 %description OpenStackCloud
 A Cloud plugin to support OpenStack running on top of KVM.
@@ -52,6 +55,7 @@ Summary: Cloud plugin for EC2
 License: ASL 2.0
 Requires: euca2ools
 Requires: python-boto >= 2.0
+Requires: imagefactory
 
 %description EC2Cloud
 A Cloud plugin to support EC2
@@ -67,6 +71,7 @@ These configuration files point to existing JEOS AMIs on EC2 that can be used to
 %package MockRPMBasedOS
 Summary: Mock OS plugin
 License: ASL 2.0
+Requires: imagefactory
 
 %description MockRPMBasedOS
 This plugin mimcs some of the behaviour of the RPM based OS plugins without actually doing a build.
@@ -75,6 +80,7 @@ For testing use only.
 %package MockSphere
 Summary: Mock Cloud plugin
 License: ASL 2.0
+Requires: imagefactory
 
 %description MockSphere
 This plugin mimcs some of the behaviour of a real cloud plugin without needing any real external infra.
@@ -83,6 +89,7 @@ For testing use only.
 %package RHEVM
 Summary: RHEVM Cloud plugin
 License: ASL 2.0
+Requires: imagefactory
 
 %description RHEVM
 A plugin for RHEVM "clouds"
@@ -90,6 +97,8 @@ A plugin for RHEVM "clouds"
 %package vSphere
 Summary: vSphere Cloud plugin
 License: ASL 2.0
+Requires: imagefactory
+Requires: python-psphere
 
 %description vSphere
 A plugin for vSphere "clouds"
