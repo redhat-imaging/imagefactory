@@ -26,6 +26,7 @@ import libxml2
 import traceback
 import ConfigParser
 import boto.ec2
+import sys
 from time import *
 from tempfile import *
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
@@ -98,11 +99,14 @@ class EC2Cloud(object):
         # TODO: Revisit this, and the plugin interface, to see if there are ways to
         #       make the separation cleaner
 
+        # This lets our logging helper know what image is being operated on
+        self.builder = builder
+        self.active_image = self.builder.target_image
+
         try:
             # TODO: More convenience vars - revisit
             self.template = template
             self.target = target
-            self.builder = builder
             self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml, rootpw_required=True)
             self._get_os_helper()
             # Add in target specific content
@@ -112,7 +116,6 @@ class EC2Cloud(object):
             self.new_image_id = builder.target_image.identifier
 
             # This lets our logging helper know what image is being operated on
-            self.active_image = self.builder.target_image
                     
             self.activity("Initializing Oz environment")
             # Create a name combining the TDL name and the UUID for use when tagging EC2 AMIs
@@ -162,7 +165,7 @@ class EC2Cloud(object):
             # Change RHEL-6 to RHEL6, etc.
             os_name = self.tdlobj.distro.translate(None, '-')
             class_name = "%s_ec2_Helper" % (os_name)
-            module_name = "imgfactory-plugins.EC2Cloud.EC2CloudOSHelpers.%s" % (class_name)
+            module_name = "imagefactory_plugins.EC2Cloud.EC2CloudOSHelpers"
             __import__(module_name)
             os_helper_class = getattr(sys.modules[module_name], class_name)
             self.os_helper = os_helper_class(self)
@@ -173,13 +176,14 @@ class EC2Cloud(object):
     def push_image_to_provider(self, builder, provider, credentials, target, target_image, parameters):
         self.log.info('push_image_to_provider() called in EC2Cloud')
 
+        self.builder = builder
+        self.active_image = self.builder.provider_image
+
         # TODO: This is a convenience variable for refactoring - rename
         self.new_image_id = builder.provider_image.identifier
 
         self.tdlobj = oz.TDL.TDL(xmlstring=builder.target_image.template, rootpw_required=True)
         self._get_os_helper()
-        self.builder = builder
-        self.active_image = self.builder.provider_image
         self.push_image_upload(target_image, provider, credentials)
 
 
@@ -580,6 +584,9 @@ class EC2Cloud(object):
     def snapshot_image_on_provider(self, builder, provider, credentials, target, template, parameters):
         self.log.info('snapshot_image_on_provider() called in EC2Cloud')
 
+        self.builder = builder
+        self.active_image = self.builder.provider_image
+
         # TODO: This is a convenience variable for refactoring - rename
         self.new_image_id = builder.provider_image.identifier
 
@@ -587,9 +594,6 @@ class EC2Cloud(object):
         self.tdlobj = oz.TDL.TDL(xmlstring=str(template), rootpw_required=True)
         self._get_os_helper()
         self.os_helper.init_guest()
-
-        self.builder = builder
-        self.active_image = self.builder.provider_image
 
         def replace(item):
             if item in [self.ec2_access_key, self.ec2_secret_key]:
