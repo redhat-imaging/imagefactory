@@ -1193,7 +1193,7 @@ class EC2Cloud(object):
         self.builder.provider_image.identifier_on_provider=ami_id
         self.builder.provider_image.provider_account_identifier=self.ec2_access_key
 
-        self.log.debug("Fedora_ec2_Builder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), target_image_id, self.new_image_id, str(metadata)))
+        self.log.debug("Fedora_ec2_Builder instance %s pushed image with uuid %s to provider_image UUID (%s)" % (id(self), target_image_id, self.new_image_id))
         self.percent_complete=100
 
     def ec2_push_image_upload(self, target_image_id, provider, credentials):
@@ -1302,7 +1302,7 @@ class EC2Cloud(object):
         self.builder.provider_image.identifier_on_provider = ami_id
         self.builder.provider_image.provider_account_identifier = self.ec2_access_key
 
-        self.log.debug("Fedora_ec2_Builder instance %s pushed image with uuid %s to provider_image UUID (%s) and set metadata: %s" % (id(self), target_image_id, self.new_image_id, str(metadata)))
+        self.log.debug("Fedora_ec2_Builder instance %s pushed image with uuid %s to provider_image UUID (%s)" % (id(self), target_image_id, self.new_image_id))
         self.percent_complete=100
 
     def abort(self):
