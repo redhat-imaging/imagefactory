@@ -3,7 +3,8 @@ lsi: true
 permalink: /blog/:year/:month/:day/:title
 
 # Site data
-baseurl: /imagefactory
+#baseurl: /imagefactory
+baseurl:
 url: http://aeolusproject.github.com/imagefactory/
 sitename: imagefactory
 tagline: build, push, deploy
