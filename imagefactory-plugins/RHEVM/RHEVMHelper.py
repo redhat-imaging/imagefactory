@@ -283,7 +283,7 @@ class RHEVMHelper(object):
         if self.qcow_size:
             self.vol_size=self.qcow_size
         else:
-            statb = os.stat(imgdst)
+            statb = os.stat(image_filename)
             self.vol_size = statb[stat.ST_SIZE]
 
         # We need these three unique identifiers when generating XML and the meta file
