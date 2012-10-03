@@ -147,8 +147,8 @@ class Application(Singleton):
                                                                      parameters=self.app_config.get('parameters'))
                 image = builder.target_image
             elif(command == 'provider_image'):
-                builder = BuildDispatcher().builder_for_provider_image(provider=self.app_config['provider'].read(),
-                                                                        credentials=self.app_config['credentials'].read(),
+                builder = BuildDispatcher().builder_for_provider_image(provider=self.app_config['provider'].read().rstrip(),
+                                                                        credentials=self.app_config['credentials'].read().rstrip(),
                                                                         target=self.app_config.get('target'),
                                                                         image_id=self.app_config.get('id'),
                                                                         template=template,
