@@ -1,6 +1,7 @@
 pygments: true
 lsi: true
 permalink: /blog/:year/:month/:day/:title
+exclude: [imgfac]
 
 # Site data
 #baseurl: /imagefactory
