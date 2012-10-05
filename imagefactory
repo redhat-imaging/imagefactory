@@ -76,13 +76,14 @@ class Application(Singleton):
 
     def setup_logging(self):
         logger = logging.getLogger() 
-        currhandler = logger.handlers[0]  # stdout is the only handler initially
-        filehandler = logging.FileHandler('/var/log/imagefactory.log')
-        formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s thread(%(threadName)s) Message: %(message)s')
-        filehandler.setFormatter(formatter)
-        logger.addHandler(filehandler)
-        logger.removeHandler(currhandler)
-        self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        if (self.app_config['output'] != 'log'):
+            currhandler = logger.handlers[0]  # stdout is the only handler initially
+            filehandler = logging.FileHandler('/var/log/imagefactory.log')
+            formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s thread(%(threadName)s) Message: %(message)s')
+            filehandler.setFormatter(formatter)
+            logger.addHandler(filehandler)
+            logger.removeHandler(currhandler)
+            self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         # Considerably increases the logging output...
         if (self.app_config['debug']):
             logging.getLogger('').setLevel(logging.DEBUG)
@@ -129,6 +130,8 @@ class Application(Singleton):
     def main(self):
         command = self.app_config['command']
         returnval = {}
+        thread = None
+        image = None
 
         if(command in ('base_image', 'target_image', 'provider_image')):
             template = None
@@ -140,12 +143,14 @@ class Application(Singleton):
                 builder = BuildDispatcher().builder_for_base_image(template=template,
                                                                    parameters=self.app_config.get('parameters'))
                 image = builder.base_image
+                thread = builder.base_thread
             elif(command == 'target_image'):
                 builder = BuildDispatcher().builder_for_target_image(target=self.app_config['target'],
                                                                      image_id=self.app_config.get('id'),
                                                                      template=template,
                                                                      parameters=self.app_config.get('parameters'))
                 image = builder.target_image
+                thread = builder.target_thread
             elif(command == 'provider_image'):
                 builder = BuildDispatcher().builder_for_provider_image(provider=self.app_config['provider'].read().rstrip(),
                                                                         credentials=self.app_config['credentials'].read().rstrip(),
@@ -154,6 +159,10 @@ class Application(Singleton):
                                                                         template=template,
                                                                         parameters=self.app_config.get('parameters'))
                 image = builder.provider_image
+                if builder.push_thread:
+                    thread = builder.push_thread
+                else:
+                    thread = builder.snapshot_thread
 
             for key in image.metadata():
                 returnval[key] = getattr(image, key, None)
@@ -193,6 +202,7 @@ class Application(Singleton):
                                      image_object=image, 
                                      parameters=self.app_config.get('parameters'))
                 print('Deleting image with id %s' % image_id)
+                builder.delete_thread.join()
                 return
             except Exception as e:
                 self.log.exception(e)
@@ -203,12 +213,25 @@ class Application(Singleton):
 
         formatted_returnval = json.dumps(returnval, indent=2)
 
-        if(PYGMENT and not self.app_config['raw']):
-            print highlight(formatted_returnval, JSONLexer(), TerminalFormatter())
-        else:
-            if(self.app_config['debug'] and not self.app_config['raw']):
-                print('Python module "pygment" found. Install this module if you want syntax colorization.')
-            print(formatted_returnval)
+        if(self.app_config['output'] == 'json'):
+            if(PYGMENT and not self.app_config['raw']):
+                print highlight(formatted_returnval, JSONLexer(), TerminalFormatter())
+            else:
+                if(self.app_config['debug'] and not self.app_config['raw']):
+                    print('Python module "pygment" found. Install this module if you want syntax colorization.')
+                print(formatted_returnval)
+
+        if thread:
+            # Wait for the primary worker thread to complete if it exists
+            thread.join()
+
+        if (image and (self.app_config['output'] == 'log')):
+            print
+            print "============ Final Image Details ============"
+            print "UUID: %s" % (image.identifier)
+            print "Type: %s" % (command)
+            print "Status: %s" % (image.status)
+            print "Status Details: %s" % (image.status_detail)
 
 if __name__ == "__main__":
     sys.exit(Application().main())
