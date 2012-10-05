@@ -14,6 +14,7 @@
 #   limitations under the License.
 
 import logging
+import imgfac.ApplicationConfiguration
 from imgfac.rest.bottle import *
 from imgfac.picklingtools.xmlloader import *
 
