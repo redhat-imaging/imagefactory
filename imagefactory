@@ -76,7 +76,7 @@ class Application(Singleton):
 
     def setup_logging(self):
         logger = logging.getLogger() 
-        if (self.app_config['json_only']):
+        if (self.app_config['output'] != 'log'):
             currhandler = logger.handlers[0]  # stdout is the only handler initially
             filehandler = logging.FileHandler('/var/log/imagefactory.log')
             formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s thread(%(threadName)s) Message: %(message)s')
@@ -213,18 +213,19 @@ class Application(Singleton):
 
         formatted_returnval = json.dumps(returnval, indent=2)
 
-        if(PYGMENT and not self.app_config['raw']):
-            print highlight(formatted_returnval, JSONLexer(), TerminalFormatter())
-        else:
-            if(self.app_config['debug'] and not self.app_config['raw']):
-                print('Python module "pygment" found. Install this module if you want syntax colorization.')
-            print(formatted_returnval)
+        if(self.app_config['output'] == 'json'):
+            if(PYGMENT and not self.app_config['raw']):
+                print highlight(formatted_returnval, JSONLexer(), TerminalFormatter())
+            else:
+                if(self.app_config['debug'] and not self.app_config['raw']):
+                    print('Python module "pygment" found. Install this module if you want syntax colorization.')
+                print(formatted_returnval)
 
         if thread:
             # Wait for the primary worker thread to complete if it exists
             thread.join()
 
-        if image:
+        if (image and (self.app_config['output'] == 'log')):
             print
             print "============ Final Image Details ============"
             print "UUID: %s" % (image.identifier)

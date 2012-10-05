@@ -67,7 +67,7 @@ class ApplicationConfiguration(Singleton):
             group_rest.add_argument('--no_oauth', action='store_true', default=False, help='Use 2 legged OAuth to protect the REST interface. (default: %(default)s)')
         elif(appname == 'imagefactory'):
             argparser.add_argument('--nodebug', action='store_true', default=False, help='Turn off the default verbose CLI logging')
-            argparser.add_argument('--json_only', action='store_true', default=False, help='Output nothing to stdout but the JSON for the created object.')
+            argparser.add_argument('--output', choices=('log', 'json'), default='log', help='Choose between log or json output. (default: %(default)s)')
             argparser.add_argument('--raw', action='store_true', default=False, help='Turn off pretty printing.')
             subparsers = argparser.add_subparsers(title='commands', dest='command')
             template_help = 'A file containing the TDL for this image.'
