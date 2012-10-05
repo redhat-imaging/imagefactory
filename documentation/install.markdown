@@ -7,17 +7,56 @@ title: Installation
 <a id="rpm" />
 ## Installing via RPM
 
-Nullam semper lobortis gravida. Donec sagittis tellus vel mauris dapibus non cursus diam rhoncus. Praesent semper pharetra erat nec sollicitudin. Aliquam ac risus ante. Aliquam sit amet odio eget felis pulvinar tincidunt. Nulla facilisi. Nulla venenatis auctor eros eu molestie. Integer ut magna augue.
+1. Add the imagefactory repository.
 
-Aliquam erat volutpat. Morbi ante velit, cursus vel tempor a, fermentum nec diam. Donec vehicula erat non urna hendrerit ultricies ornare nibh consequat. Vestibulum in mauris vel eros ullamcorper tincidunt. Integer tincidunt volutpat aliquam. Vivamus et ipsum sed quam feugiat egestas in a lacus. Suspendisse porttitor, purus ut tempor rhoncus, nulla tellus fermentum nulla, at dictum tortor tellus ac ligula. Donec sit amet dolor ac ipsum faucibus condimentum luctus quis metus. Quisque lobortis blandit velit sit amet scelerisque. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. In eget adipiscing diam. Donec nec mauris a lectus consequat ullamcorper nec a felis. Mauris at tortor tempor urna ultrices dictum pretium a justo. Aliquam erat odio, egestas non ultricies vitae, convallis id diam. Fusce faucibus diam eget metus consectetur mollis. Donec massa tellus, volutpat non aliquam id, dignissim at nisi.
+    Fedora:
+
+        $ su -c "(cd /etc/yum.repos.d; wget http://repos.fedorapeople.org/repos/aeolus/imagefactory/testing/repos/fedora/imagefactory.repo)"
+
+    RHEL:
+
+        $ su -c "(cd /etc/yum.repos.d; wget http://repos.fedorapeople.org/repos/aeolus/imagefactory/testing/repos/rhel/imagefactory.repo)"
+
+1. Install imagefactory and the plugins.
+
+        $ su -c "yum install imagefactory imagefactory-plugins \
+        imagefactory-plugins-EC2Cloud imagefactory-plugins-RHEVM \
+        imagefactory-plugins-vSphere imagefactory-plugins-MockRPMBasedOS \
+        imagefactory-plugins-EC2Cloud-JEOS-images \
+        imagefactory-plugins-MockSphere imagefactory-plugins-OpenStackCloud \
+        imagefactory-plugins-FedoraOS"
 
 ---
 
 <a id="distutils" />
 ## Installing via distutils
 
-Sed imperdiet, urna sed adipiscing tempor, magna nulla tempor dolor, at semper leo nulla eu tortor. Aenean sed dui quam, eu tempus velit. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Sed eros elit, placerat ac aliquam at, dignissim vitae dui. Aenean ante lectus, eleifend at posuere a, elementum et libero. Donec lacinia venenatis metus, eget congue metus rhoncus at. Curabitur luctus pretium mauris sed auctor. Praesent semper gravida mi non convallis. Donec tortor orci, vulputate vel gravida sed, tempor quis ligula. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Suspendisse et ligula neque, vel egestas eros. Etiam malesuada iaculis ligula.
+1. Get the imagefactory source tree.
 
-Vestibulum sit amet sem sit amet tellus fringilla egestas ut sagittis sem. Suspendisse vitae sapien leo. Nulla facilisi. Aenean lobortis lorem aliquet mi ullamcorper ultricies. Donec aliquet fermentum commodo. Phasellus sed nulla ligula, non placerat nibh. Phasellus tincidunt laoreet ullamcorper. Curabitur in nisi urna, eu placerat dui. Nullam enim purus, rhoncus sed convallis at, dignissim id est. Vestibulum in mauris sed metus venenatis convallis. Ut id leo arcu, feugiat porttitor orci. Suspendisse adipiscing tempor lacus vitae feugiat. Sed faucibus, libero at tempus euismod, lacus turpis adipiscing risus, vel interdum nibh nisi id justo.
+    tarball:
+    
+        $ wget https://github.com/aeolusproject/imagefactory/tarball/master ; tar xvf master ; rm master
 
+    git:
 
+        $ git clone git://github.com/aeolusproject/imagefactory.git
+
+1. Change to the `imagefactory` or the `aeolus-imagefactory-<commit>` directory.
+
+        $ cd aeolusproject-imagefactory-d9ce32d
+
+    or
+    
+        $ cd imagefactory
+
+1. Install imagefactory core
+
+        $ su -c "python setup.py install"
+
+1. Change to the `imagefactory-plugins` directory
+
+        $ cd imagefactory-plugins
+
+1. Install the imagefactory plugins
+
+        $ su -c "python setup.py install"

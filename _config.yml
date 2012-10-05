@@ -20,4 +20,6 @@ navigation:
 - name: Documentation
   url: /documentation
   section: documentation
-
+- name: Contact Us
+  url: /contact_us.html
+  section: contact_us
