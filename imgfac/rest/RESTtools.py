@@ -14,8 +14,9 @@
 #   limitations under the License.
 
 import logging
+from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.rest.bottle import *
-from picklingtools.xmlloader import *
+from imgfac.picklingtools.xmlloader import *
 
 log = logging.getLogger(__name__)
 
@@ -58,7 +59,7 @@ def log_request(f):
 def check_accept_header(f):
     def decorated_function(*args, **kwargs):
         accept_header = request.get_header('Accept', None)
-        if(accept_header and (('application/json' not in accept_header) and ('xml' not in accept_header))):
+        if(accept_header and (('*/*' not in accept_header) and ('application/json' not in accept_header) and ('xml' not in accept_header))):
             log.debug('Returning HTTP 406, unsupported response type: %s' % accept_header)
             raise HTTPResponse(status=406, output='Responses in %s are currently unsupported.' % accept_header)
         else:

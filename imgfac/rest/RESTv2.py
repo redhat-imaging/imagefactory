@@ -25,7 +25,7 @@ from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.PluginManager import PluginManager
 from imgfac.PersistentImageManager import PersistentImageManager
 from imgfac.Version import VERSION as VERSION
-from picklingtools.xmldumper import *
+from imgfac.picklingtools.xmldumper import *
 
 log = logging.getLogger(__name__)
 
