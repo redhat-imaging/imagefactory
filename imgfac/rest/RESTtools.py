@@ -15,7 +15,7 @@
 
 import logging
 from imgfac.rest.bottle import *
-from picklingtools.xmlloader import *
+from imgfac.picklingtools.xmlloader import *
 
 log = logging.getLogger(__name__)
 
