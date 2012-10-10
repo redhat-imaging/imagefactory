@@ -1,3 +1,8 @@
+---
+layout: page
+title: user manual (imagefactory)
+---
+
 % IMAGEFACTORY(1) Version 2.0 - July 27, 2012 | User Manual
 
 **NAME**  

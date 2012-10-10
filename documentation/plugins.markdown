@@ -1,3 +1,8 @@
+---
+layout: page
+title: user manual (plugins)
+---
+
 % IMAGEFACTORY PLUGIN REFERENCE(7) Version 1.0 - February 22, 2012
 
 Image Factory offers the ability to extend the support for operating systems and cloud types beyond what is included in the official releases. This document describes how plugins are used as well as how developers can write their own custom plugins.
@@ -54,13 +59,13 @@ A plugin must include a JSON formatted metadata file named _plugin-name_.info. I
 The contents of this file are:
 
 + **type** - Either `os` or `cloud`
-+ **targets** - List of targets tuples.
-    *Ex - OS plugin*. [["RHEL5", "U8", "x86_64"], ["Fedora", "16", None], ["Fedora", "17", "x86_64"]]
-    *Ex - Cloud plugin*. ["vsphere4", "vsphere5"]
++ **targets** - List of targets tuples.  
+    *Ex - OS plugin*. `[["RHEL5", "U8", "x86_64"], ["Fedora", "16", None], ["Fedora", "17", "x86_64"]]`  
+    *Ex - Cloud plugin*. `["vsphere4", "vsphere5"]`
 + **description** - A long string describing the plugin.
-+ **maintainer** - A dictionary with the following keys:
-    - **name** - The name of the individual or organization maintaining this plugin.
-    - **email** - An email address for queries about the plugin.
-    - **url** - A URL for more information about the plugin.
++ **maintainer** - A dictionary with the following keys:  
+    - **name** - The name of the individual or organization maintaining this plugin.  
+    - **email** - An email address for queries about the plugin.  
+    - **url** - A URL for more information about the plugin.  
 + **version** - A short string identifying the version.
 + **license** - The license this plugin is released under.

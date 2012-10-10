@@ -1,0 +1,907 @@
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      <title>Schema documentation for </title>
+      <link rel="stylesheet" href="docHtml.css" type="text/css" /><script type="text/javascript">
+         <!--
+        var propertiesBoxes= new Array('properties_TDL.xsd', 
+				'properties_template', 
+				'properties_name', 
+				'properties_os', 
+				'properties_version', 
+				'properties_arch', 
+				'properties_install', 
+				'properties_url', 
+				'properties_NO_NAMESPACE_iso', 
+				'properties_md5sum', 
+				'properties_sha1sum', 
+				'properties_sha256sum', 
+				'properties_rootpw', 
+				'properties_key', 
+				'properties_description', 
+				'properties_packages', 
+				'properties_package', 
+				'properties_package_repository', 
+				'properties_package_file', 
+				'properties_arguments', 
+				'properties_files', 
+				'properties_files_file', 
+				'properties_commands', 
+				'properties_command', 
+				'properties_repositories', 
+				'properties_repositories_repository', 
+				'properties_signed', 
+				'properties_persisted', 
+				'properties_clientcert', 
+				'properties_clientkey', 
+				'properties_sslverify', 
+				'properties_cacert', 
+				'properties_install_type', 
+				'properties_package_name', 
+				'properties_files_files_file_name', 
+				'properties_files_files_file_type', 
+				'properties_command_name', 
+				'properties_command_type', 
+				'properties_repositories_repositories_repository_name', 
+				'properties_NO_NAMESPACE_url_type', 
+				'properties_Attribute_Group_FROM_NO_NAMESPACE_PQN_iso_type', 
+				'properties_rawtype_type', 
+				'properties_NO_NAMESPACE_base64type_type');
+
+        var facetsBoxes= new Array('facets_arch', 
+				'facets_base64', 
+				'facets_base64type', 
+				'facets_install_type', 
+				'facets_files_files_file_type', 
+				'facets_command_type', 
+				'facets_NO_NAMESPACE_url_type', 
+				'facets_Attribute_Group_FROM_NO_NAMESPACE_PQN_iso_type', 
+				'facets_rawtype_type', 
+				'facets_NO_NAMESPACE_base64type_type');
+
+        var usedByBoxes= new Array('usedBy_name', 
+				'usedBy_os', 
+				'usedBy_version', 
+				'usedBy_arch', 
+				'usedBy_install', 
+				'usedBy_url', 
+				'usedBy_NO_NAMESPACE_iso', 
+				'usedBy_md5sum', 
+				'usedBy_sha1sum', 
+				'usedBy_sha256sum', 
+				'usedBy_rootpw', 
+				'usedBy_key', 
+				'usedBy_description', 
+				'usedBy_packages', 
+				'usedBy_package', 
+				'usedBy_arguments', 
+				'usedBy_files', 
+				'usedBy_commands', 
+				'usedBy_command', 
+				'usedBy_repositories', 
+				'usedBy_signed', 
+				'usedBy_persisted', 
+				'usedBy_clientcert', 
+				'usedBy_clientkey', 
+				'usedBy_sslverify', 
+				'usedBy_cacert', 
+				'usedBy_bool', 
+				'usedBy_base64', 
+				'usedBy_install_type', 
+				'usedBy_package_name', 
+				'usedBy_files_files_file_name', 
+				'usedBy_files_files_file_type', 
+				'usedBy_command_name', 
+				'usedBy_command_type', 
+				'usedBy_repositories_repositories_repository_name', 
+				'usedBy_template_version', 
+				'usedBy_NO_NAMESPACE_url_type', 
+				'usedBy_Attribute_Group_FROM_NO_NAMESPACE_PQN_iso_type', 
+				'usedBy_rawtype_type', 
+				'usedBy_NO_NAMESPACE_base64type_type', 
+				'usedBy_iso');
+
+        var sourceBoxes= new Array('source_template', 
+				'source_name', 
+				'source_os', 
+				'source_version', 
+				'source_arch', 
+				'source_install', 
+				'source_url', 
+				'source_NO_NAMESPACE_iso', 
+				'source_md5sum', 
+				'source_sha1sum', 
+				'source_sha256sum', 
+				'source_rootpw', 
+				'source_key', 
+				'source_description', 
+				'source_packages', 
+				'source_package', 
+				'source_package_repository', 
+				'source_package_file', 
+				'source_arguments', 
+				'source_files', 
+				'source_files_file', 
+				'source_commands', 
+				'source_command', 
+				'source_repositories', 
+				'source_repositories_repository', 
+				'source_signed', 
+				'source_persisted', 
+				'source_clientcert', 
+				'source_clientkey', 
+				'source_sslverify', 
+				'source_cacert', 
+				'source_bool', 
+				'source_base64', 
+				'source_base64type', 
+				'source_install_type', 
+				'source_package_name', 
+				'source_files_files_file_name', 
+				'source_files_files_file_type', 
+				'source_command_name', 
+				'source_command_type', 
+				'source_repositories_repositories_repository_name', 
+				'source_template_version', 
+				'source_NO_NAMESPACE_url_type', 
+				'source_Attribute_Group_FROM_NO_NAMESPACE_PQN_iso_type', 
+				'source_rawtype_type', 
+				'source_NO_NAMESPACE_base64type_type', 
+				'source_iso', 
+				'source_NO_NAMESPACE_url', 
+				'source_Attribute_Group_FROM_NO_NAMESPACE_PQN_iso', 
+				'source_rawtype', 
+				'source_NO_NAMESPACE_base64type');
+
+        var instanceBoxes= new Array('instance_template', 
+				'instance_os', 
+				'instance_install', 
+				'instance_packages', 
+				'instance_package', 
+				'instance_files', 
+				'instance_commands', 
+				'instance_repositories', 
+				'instance_repositories_repository');
+
+        var diagramBoxes= new Array('diagram_template', 
+				'diagram_name', 
+				'diagram_os', 
+				'diagram_version', 
+				'diagram_arch', 
+				'diagram_install', 
+				'diagram_url', 
+				'diagram_NO_NAMESPACE_iso', 
+				'diagram_md5sum', 
+				'diagram_sha1sum', 
+				'diagram_sha256sum', 
+				'diagram_rootpw', 
+				'diagram_key', 
+				'diagram_description', 
+				'diagram_packages', 
+				'diagram_package', 
+				'diagram_package_repository', 
+				'diagram_package_file', 
+				'diagram_arguments', 
+				'diagram_files', 
+				'diagram_files_file', 
+				'diagram_commands', 
+				'diagram_command', 
+				'diagram_repositories', 
+				'diagram_repositories_repository', 
+				'diagram_signed', 
+				'diagram_persisted', 
+				'diagram_clientcert', 
+				'diagram_clientkey', 
+				'diagram_sslverify', 
+				'diagram_cacert', 
+				'diagram_bool', 
+				'diagram_base64', 
+				'diagram_base64type', 
+				'diagram_iso', 
+				'diagram_NO_NAMESPACE_url', 
+				'diagram_Attribute_Group_FROM_NO_NAMESPACE_PQN_iso', 
+				'diagram_rawtype', 
+				'diagram_NO_NAMESPACE_base64type');
+
+        var annotationBoxes= new Array('annotations_files', 
+				'annotations_files_file', 
+				'annotations_commands');
+
+        var attributesBoxes= new Array('attributes_template', 
+				'attributes_install', 
+				'attributes_package', 
+				'attributes_files_file', 
+				'attributes_command', 
+				'attributes_repositories_repository', 
+				'attributes_NO_NAMESPACE_url', 
+				'attributes_Attribute_Group_FROM_NO_NAMESPACE_PQN_iso', 
+				'attributes_rawtype', 
+				'attributes_NO_NAMESPACE_base64type');
+
+        
+        var button_prefix = 'button_';
+        
+        /**
+        * Returns an element in the current HTML document.
+        *
+        * @param elementID Identifier of HTML element
+        * @return               HTML element object
+        */
+        function getElementObject(elementID) {
+            var elemObj = null;
+            if (document.getElementById) {
+                elemObj = document.getElementById(elementID);
+            }
+            return elemObj;
+        }
+        
+        /**
+        * Switches the state of a collapseable box, e.g.
+        * if it's opened, it'll be closed, and vice versa.
+        *
+        * @param boxID Identifier of box
+        */
+        function switchState(boxID) {
+            var boxObj = getElementObject(boxID);
+            var buttonObj = getElementObject(button_prefix + boxID);
+            if (boxObj == null || buttonObj == null) {
+                // Box or button not found
+            } else if (boxObj.style.display == "none") {
+                // Box is closed, so open it
+                openBox(boxObj, buttonObj);
+            } else if (boxObj.style.display == "block") {
+                // Box is opened, so close it
+                closeBox(boxObj, buttonObj);
+            }
+        }
+        
+        /**
+        * Opens a collapseable box.
+        *
+        * @param boxObj       Collapseable box
+        * @param buttonObj Button controlling box
+        */
+        function openBox(boxObj, buttonObj) {
+            if (boxObj == null || buttonObj == null) {
+                // Box or button not found
+            } else {
+                // Change 'display' CSS property of box
+                boxObj.style.display = "block";
+                
+                // Change text of button
+                if (boxObj.style.display == "block") {
+                    buttonObj.src = "img/btM.gif";
+                }
+            }
+        }
+        
+        /**
+        * Closes a collapseable box.
+        *
+        * @param boxObj       Collapseable box
+        * @param buttonObj Button controlling box
+        */
+        function closeBox(boxObj, buttonObj) {
+            if (boxObj == null || buttonObj == null) {
+                // Box or button not found
+            } else {
+                // Change 'display' CSS property of box
+                boxObj.style.display = "none";
+                
+                // Change text of button
+                if (boxObj.style.display == "none") {
+                    buttonObj.src = "img/btP.gif";
+                }
+            }
+        }
+    
+       function switchStateForAll(buttonObj, boxList) {
+            if (buttonObj == null) {
+                // button not found
+            } else if (buttonObj.value == "+") {
+                // Expand all
+                expandAll(boxList);
+                buttonObj.value = "-";
+            } else if (buttonObj.value == "-") {
+                // Collapse all
+                collapseAll(boxList);
+                buttonObj.value = "+";
+            }
+        }
+        
+        /**
+        * Closes all boxes in a given list.
+        *
+        * @param boxList Array of box IDs
+        */
+        function collapseAll(boxList) {
+            var idx;
+            for (idx = 0; idx < boxList.length; idx++) {
+                var boxObj = getElementObject(boxList[idx]);
+                var buttonObj = getElementObject(button_prefix + boxList[idx]);
+                closeBox(boxObj, buttonObj);
+            }
+        }
+            
+        /**
+        * Open all boxes in a given list.
+        *
+        * @param boxList Array of box IDs
+        */
+        function expandAll(boxList) {
+            var idx;
+            for (idx = 0; idx < boxList.length; idx++) {
+                var boxObj = getElementObject(boxList[idx]);
+                var buttonObj = getElementObject(button_prefix + boxList[idx]);
+                openBox(boxObj, buttonObj);
+            }
+        }
+        
+        /**
+         * Update the message presented in the title of the html page.
+         * - If the documentation was splited by namespace we present something like: "Documentation for namespace 'ns'"
+         * - If the documentation was splited by location we present somehing like: "Documentation for 'Schema.xsd'"
+         * - If no split we always present: "Documentation for 'MainSchema.xsd'"
+         */
+        function updatePageTitle(message) {
+            top.document.title = message;
+        }
+        
+          
+                    
+         /**
+          * Finds an HTML element by its ID and makes it floatable over the normal content.
+          *
+          * @param x_displacement The difference in pixels to the right side of the window from 
+          *           the left side of the element.
+          * @param y_displacement The difference in pixels to the right side of the window from 
+          *           the top of the element.          
+          */
+         function findAndFloat(id, x_displacement, y_displacement){
+
+            var element = getElementObject(id);            
+            
+            window[id + "_obj"] = element;
+            
+            if(document.layers) {
+               element.style = element;
+            }
+            
+            element.current_y = y_displacement;      
+            element.first_time = true;
+         
+            element.floatElement = function(){
+               // It may be closed by an user action.
+                
+               // Target X and Y coordinates.
+               var x, y;
+               
+               var myWidth = 0, myHeight = 0;
+               if( typeof( window.innerWidth ) == 'number' ) {
+                  //Non-IE
+                  myWidth = window.innerWidth;
+                  myHeight = window.innerHeight;
+               } else if( document.documentElement && ( document.documentElement.clientWidth || document.documentElement.clientHeight ) ) {
+                  //IE 6+ in 'standards compliant mode'
+                  myWidth = document.documentElement.clientWidth;
+                  myHeight = document.documentElement.clientHeight;
+               } else if( document.body && ( document.body.clientWidth || document.body.clientHeight ) ) {
+                  //IE 4 compatible
+                  myWidth = document.body.clientWidth;
+                  myHeight = document.body.clientHeight;
+               }
+               
+               
+               x = myWidth - x_displacement;
+               
+               var ns = (navigator.appName.indexOf("Netscape") != -1);               
+               y = ns ? pageYOffset : document.documentElement && document.documentElement.scrollTop ? 
+                  document.documentElement.scrollTop : document.body.scrollTop;               
+               y = y + y_displacement;               
+               
+               // The current y is the current coordinate of the floating element.
+               // This should be at the limit the y target coordinate.
+               this.current_y += (y - this.current_y)/1.25;
+               
+               // Add the pixels constant after the values
+               // and move the element.
+               var px = document.layers ? "" : "px";
+               this.style.left =  x + px;
+               this.style.top =  this.current_y + px;
+                              
+               setTimeout(this.id + "_obj.floatElement()", 100);
+            }
+            
+            element.floatElement();
+            return element;
+          }
+
+         /**
+          * Finds an HTML element by its ID and makes it floatable over the normal content.
+          *
+          * @param x_displacement The difference in pixels to the right side of the window from 
+          *           the left side of the element.
+          * @param y_displacement The difference in pixels to the right side of the window from 
+          *           the top of the element.          
+          */
+         function selectTOCGroupBy(id, isChunked, indexFileLocation, indexFileNamespace, indexFileComponent){
+
+            if (!isChunked) {
+             var selectIds = new Array('toc_group_by_namespace', 'toc_group_by_location', 'toc_group_by_component_type');
+             // Make all the tabs invisible.
+               for (i = 0; i < 3; i++){
+                  var tab = getElementObject(selectIds[i]);
+                  tab.style.display = 'none';
+               }
+               var selTab = getElementObject(id);
+               selTab.style.display = 'block';
+            } else {
+             if (id == 'toc_group_by_namespace') {
+               parent.indexFrame.location = indexFileNamespace;
+             } else  if (id == 'toc_group_by_location') {
+               parent.indexFrame.location = indexFileLocation;
+             } else  if (id == 'toc_group_by_component_type') {
+              parent.indexFrame.location = indexFileComponent;
+             }
+            }
+         }
+          
+
+    --></script></head>
+   <body>
+      <h2><a id="INDEX">Table of Contents</a></h2>
+      <div class="toc">
+         <form action="none">
+            <div><span> Group by: <select id="selectTOC"
+                          onchange="selectTOCGroupBy(this.options[this.selectedIndex].value, false, '.html', 'ns.html', 'comp.html');">
+                     <option value="toc_group_by_namespace" selected="selected">Namespace</option>
+                     <option value="toc_group_by_location">Location</option>
+                     <option value="toc_group_by_component_type">Component Type</option></select></span></div>
+         </form>
+         <div class="level1" id="toc_group_by_namespace" style="display:block">
+            <div>
+               <div class="level2">
+                  <p><input id="button_boxIdNamespace1" type="image" value="-" src="img/btM.gif"
+                            onclick="switchState('boxIdNamespace1');"
+                            class="control" /><span class="indexGroupTitle">No namespace</span></p>
+                  <div id="boxIdNamespace1" style="display:block">
+                     <div class="horizontalLayout">
+                        <table class="rt">
+                           <tr>
+                              <td class="rt_cornerTopLeft"></td>
+                              <td class="rt_lineTop"></td>
+                              <td class="rt_cornerTopRight"></td>
+                           </tr>
+                           <tr>
+                              <td class="rt_lineLeft"></td>
+                              <td class="rt_content">
+                                 <div class="componentGroupTitle">Elements
+                                    
+                                 </div>
+                                 <div id="boxIdNamespace1Element" style="display:block">
+                                    <div><b><a href="TDL.html#arch" target="_self" title="No namespace">arch</a></b></div>
+                                    <div><b><a href="TDL.html#arguments" target="_self" title="No namespace">arguments</a></b></div>
+                                    <div><b><a href="TDL.html#cacert" target="_self" title="No namespace">cacert</a></b></div>
+                                    <div><b><a href="TDL.html#clientcert" target="_self" title="No namespace">clientcert</a></b></div>
+                                    <div><b><a href="TDL.html#clientkey" target="_self" title="No namespace">clientkey</a></b></div>
+                                    <div><b><a href="TDL.html#command" target="_self" title="No namespace">command</a></b></div>
+                                    <div><b><a href="TDL.html#commands" target="_self" title="No namespace">commands</a></b></div>
+                                    <div><b><a href="TDL.html#description" target="_self" title="No namespace">description</a></b></div>
+                                    <div><b><a href="TDL.html#files" target="_self" title="No namespace">files</a></b></div>
+                                    <div><b><a href="TDL.html#install" target="_self" title="No namespace">install</a></b></div>
+                                    <div><b><a href="TDL.html#NO_NAMESPACE_iso" target="_self" title="No namespace">iso</a></b></div>
+                                    <div><b><a href="TDL.html#key" target="_self" title="No namespace">key</a></b></div>
+                                    <div><b><a href="TDL.html#md5sum" target="_self" title="No namespace">md5sum</a></b></div>
+                                    <div><b><a href="TDL.html#name" target="_self" title="No namespace">name</a></b></div>
+                                    <div><b><a href="TDL.html#os" target="_self" title="No namespace">os</a></b></div>
+                                    <div><b><a href="TDL.html#package" target="_self" title="No namespace">package</a></b></div>
+                                    <div><b><a href="TDL.html#packages" target="_self" title="No namespace">packages</a></b></div>
+                                    <div><b><a href="TDL.html#persisted" target="_self" title="No namespace">persisted</a></b></div>
+                                    <div><b><a href="TDL.html#repositories" target="_self" title="No namespace">repositories</a></b></div>
+                                    <div><b><a href="TDL.html#rootpw" target="_self" title="No namespace">rootpw</a></b></div>
+                                    <div><b><a href="TDL.html#sha1sum" target="_self" title="No namespace">sha1sum</a></b></div>
+                                    <div><b><a href="TDL.html#sha256sum" target="_self" title="No namespace">sha256sum</a></b></div>
+                                    <div><b><a href="TDL.html#signed" target="_self" title="No namespace">signed</a></b></div>
+                                    <div><b><a href="TDL.html#sslverify" target="_self" title="No namespace">sslverify</a></b></div>
+                                    <div><b><a href="TDL.html#template" target="_self" title="No namespace">template</a></b></div>
+                                    <div><b><a href="TDL.html#url" target="_self" title="No namespace">url</a></b></div>
+                                    <div><b><a href="TDL.html#version" target="_self" title="No namespace">version</a></b></div>
+                                 </div>
+                              </td>
+                              <td class="rt_lineRight"></td>
+                           </tr>
+                           <tr>
+                              <td class="rt_cornerBottomLeft"></td>
+                              <td class="rt_lineBottom"></td>
+                              <td class="rt_cornerBottomRight"></td>
+                           </tr>
+                        </table>
+                     </div>
+                     <div class="horizontalLayout">
+                        <table class="rt">
+                           <tr>
+                              <td class="rt_cornerTopLeft"></td>
+                              <td class="rt_lineTop"></td>
+                              <td class="rt_cornerTopRight"></td>
+                           </tr>
+                           <tr>
+                              <td class="rt_lineLeft"></td>
+                              <td class="rt_content">
+                                 <div class="componentGroupTitle">Simple Types
+                                    
+                                 </div>
+                                 <div id="boxIdNamespace1Simple_Type" style="display:block">
+                                    <div><b><a href="TDL.html#base64" target="_self" title="No namespace">base64</a></b></div>
+                                    <div><b><a href="TDL.html#base64type" target="_self" title="No namespace">base64type</a></b></div>
+                                    <div><b><a href="TDL.html#bool" target="_self" title="No namespace">bool</a></b></div>
+                                 </div>
+                              </td>
+                              <td class="rt_lineRight"></td>
+                           </tr>
+                           <tr>
+                              <td class="rt_cornerBottomLeft"></td>
+                              <td class="rt_lineBottom"></td>
+                              <td class="rt_cornerBottomRight"></td>
+                           </tr>
+                        </table>
+                     </div>
+                     <div class="horizontalLayout">
+                        <table class="rt">
+                           <tr>
+                              <td class="rt_cornerTopLeft"></td>
+                              <td class="rt_lineTop"></td>
+                              <td class="rt_cornerTopRight"></td>
+                           </tr>
+                           <tr>
+                              <td class="rt_lineLeft"></td>
+                              <td class="rt_content">
+                                 <div class="componentGroupTitle">Element Groups
+                                    
+                                 </div>
+                                 <div id="boxIdNamespace1Element_Group" style="display:block">
+                                    <div><b><a href="TDL.html#iso" target="_self" title="No namespace">iso</a></b></div>
+                                 </div>
+                              </td>
+                              <td class="rt_lineRight"></td>
+                           </tr>
+                           <tr>
+                              <td class="rt_cornerBottomLeft"></td>
+                              <td class="rt_lineBottom"></td>
+                              <td class="rt_cornerBottomRight"></td>
+                           </tr>
+                        </table>
+                     </div>
+                     <div class="horizontalLayout">
+                        <table class="rt">
+                           <tr>
+                              <td class="rt_cornerTopLeft"></td>
+                              <td class="rt_lineTop"></td>
+                              <td class="rt_cornerTopRight"></td>
+                           </tr>
+                           <tr>
+                              <td class="rt_lineLeft"></td>
+                              <td class="rt_content">
+                                 <div class="componentGroupTitle">Attribute Groups
+                                    
+                                 </div>
+                                 <div id="boxIdNamespace1Attribute_Group" style="display:block">
+                                    <div><b><a href="TDL.html#NO_NAMESPACE_base64type" target="_self" title="No namespace">base64type</a></b></div>
+                                    <div><b><a href="TDL.html#Attribute_Group_FROM_NO_NAMESPACE_PQN_iso" target="_self"
+                                             title="No namespace">iso</a></b></div>
+                                    <div><b><a href="TDL.html#rawtype" target="_self" title="No namespace">rawtype</a></b></div>
+                                    <div><b><a href="TDL.html#NO_NAMESPACE_url" target="_self" title="No namespace">url</a></b></div>
+                                 </div>
+                              </td>
+                              <td class="rt_lineRight"></td>
+                           </tr>
+                           <tr>
+                              <td class="rt_cornerBottomLeft"></td>
+                              <td class="rt_lineBottom"></td>
+                              <td class="rt_cornerBottomRight"></td>
+                           </tr>
+                        </table>
+                     </div>
+                     <div style="clear:left"></div>
+                  </div>
+               </div>
+            </div>
+         </div>
+         <div class="level1" id="toc_group_by_component_type" style="display:none">
+            <div>
+               <div class="horizontalLayout">
+                  <table class="rt">
+                     <tr>
+                        <td class="rt_cornerTopLeft"></td>
+                        <td class="rt_lineTop"></td>
+                        <td class="rt_cornerTopRight"></td>
+                     </tr>
+                     <tr>
+                        <td class="rt_lineLeft"></td>
+                        <td class="rt_content">
+                           <div class="componentGroupTitle">Elements
+                              
+                           </div>
+                           <div id="Element" style="display:block">
+                              <div><b><a href="TDL.html#arch" target="_self" title="No namespace">arch</a></b></div>
+                              <div><b><a href="TDL.html#arguments" target="_self" title="No namespace">arguments</a></b></div>
+                              <div><b><a href="TDL.html#cacert" target="_self" title="No namespace">cacert</a></b></div>
+                              <div><b><a href="TDL.html#clientcert" target="_self" title="No namespace">clientcert</a></b></div>
+                              <div><b><a href="TDL.html#clientkey" target="_self" title="No namespace">clientkey</a></b></div>
+                              <div><b><a href="TDL.html#command" target="_self" title="No namespace">command</a></b></div>
+                              <div><b><a href="TDL.html#commands" target="_self" title="No namespace">commands</a></b></div>
+                              <div><b><a href="TDL.html#description" target="_self" title="No namespace">description</a></b></div>
+                              <div><b><a href="TDL.html#files" target="_self" title="No namespace">files</a></b></div>
+                              <div><b><a href="TDL.html#install" target="_self" title="No namespace">install</a></b></div>
+                              <div><b><a href="TDL.html#NO_NAMESPACE_iso" target="_self" title="No namespace">iso</a></b></div>
+                              <div><b><a href="TDL.html#key" target="_self" title="No namespace">key</a></b></div>
+                              <div><b><a href="TDL.html#md5sum" target="_self" title="No namespace">md5sum</a></b></div>
+                              <div><b><a href="TDL.html#name" target="_self" title="No namespace">name</a></b></div>
+                              <div><b><a href="TDL.html#os" target="_self" title="No namespace">os</a></b></div>
+                              <div><b><a href="TDL.html#package" target="_self" title="No namespace">package</a></b></div>
+                              <div><b><a href="TDL.html#packages" target="_self" title="No namespace">packages</a></b></div>
+                              <div><b><a href="TDL.html#persisted" target="_self" title="No namespace">persisted</a></b></div>
+                              <div><b><a href="TDL.html#repositories" target="_self" title="No namespace">repositories</a></b></div>
+                              <div><b><a href="TDL.html#rootpw" target="_self" title="No namespace">rootpw</a></b></div>
+                              <div><b><a href="TDL.html#sha1sum" target="_self" title="No namespace">sha1sum</a></b></div>
+                              <div><b><a href="TDL.html#sha256sum" target="_self" title="No namespace">sha256sum</a></b></div>
+                              <div><b><a href="TDL.html#signed" target="_self" title="No namespace">signed</a></b></div>
+                              <div><b><a href="TDL.html#sslverify" target="_self" title="No namespace">sslverify</a></b></div>
+                              <div><b><a href="TDL.html#template" target="_self" title="No namespace">template</a></b></div>
+                              <div><b><a href="TDL.html#url" target="_self" title="No namespace">url</a></b></div>
+                              <div><b><a href="TDL.html#version" target="_self" title="No namespace">version</a></b></div>
+                           </div>
+                        </td>
+                        <td class="rt_lineRight"></td>
+                     </tr>
+                     <tr>
+                        <td class="rt_cornerBottomLeft"></td>
+                        <td class="rt_lineBottom"></td>
+                        <td class="rt_cornerBottomRight"></td>
+                     </tr>
+                  </table>
+               </div>
+               <div class="horizontalLayout">
+                  <table class="rt">
+                     <tr>
+                        <td class="rt_cornerTopLeft"></td>
+                        <td class="rt_lineTop"></td>
+                        <td class="rt_cornerTopRight"></td>
+                     </tr>
+                     <tr>
+                        <td class="rt_lineLeft"></td>
+                        <td class="rt_content">
+                           <div class="componentGroupTitle">Simple Types
+                              
+                           </div>
+                           <div id="Simple_Type" style="display:block">
+                              <div><b><a href="TDL.html#base64" target="_self" title="No namespace">base64</a></b></div>
+                              <div><b><a href="TDL.html#base64type" target="_self" title="No namespace">base64type</a></b></div>
+                              <div><b><a href="TDL.html#bool" target="_self" title="No namespace">bool</a></b></div>
+                           </div>
+                        </td>
+                        <td class="rt_lineRight"></td>
+                     </tr>
+                     <tr>
+                        <td class="rt_cornerBottomLeft"></td>
+                        <td class="rt_lineBottom"></td>
+                        <td class="rt_cornerBottomRight"></td>
+                     </tr>
+                  </table>
+               </div>
+               <div class="horizontalLayout">
+                  <table class="rt">
+                     <tr>
+                        <td class="rt_cornerTopLeft"></td>
+                        <td class="rt_lineTop"></td>
+                        <td class="rt_cornerTopRight"></td>
+                     </tr>
+                     <tr>
+                        <td class="rt_lineLeft"></td>
+                        <td class="rt_content">
+                           <div class="componentGroupTitle">Element Groups
+                              
+                           </div>
+                           <div id="Element_Group" style="display:block">
+                              <div><b><a href="TDL.html#iso" target="_self" title="No namespace">iso</a></b></div>
+                           </div>
+                        </td>
+                        <td class="rt_lineRight"></td>
+                     </tr>
+                     <tr>
+                        <td class="rt_cornerBottomLeft"></td>
+                        <td class="rt_lineBottom"></td>
+                        <td class="rt_cornerBottomRight"></td>
+                     </tr>
+                  </table>
+               </div>
+               <div class="horizontalLayout">
+                  <table class="rt">
+                     <tr>
+                        <td class="rt_cornerTopLeft"></td>
+                        <td class="rt_lineTop"></td>
+                        <td class="rt_cornerTopRight"></td>
+                     </tr>
+                     <tr>
+                        <td class="rt_lineLeft"></td>
+                        <td class="rt_content">
+                           <div class="componentGroupTitle">Attribute Groups
+                              
+                           </div>
+                           <div id="Attribute_Group" style="display:block">
+                              <div><b><a href="TDL.html#NO_NAMESPACE_base64type" target="_self" title="No namespace">base64type</a></b></div>
+                              <div><b><a href="TDL.html#Attribute_Group_FROM_NO_NAMESPACE_PQN_iso" target="_self"
+                                       title="No namespace">iso</a></b></div>
+                              <div><b><a href="TDL.html#rawtype" target="_self" title="No namespace">rawtype</a></b></div>
+                              <div><b><a href="TDL.html#NO_NAMESPACE_url" target="_self" title="No namespace">url</a></b></div>
+                           </div>
+                        </td>
+                        <td class="rt_lineRight"></td>
+                     </tr>
+                     <tr>
+                        <td class="rt_cornerBottomLeft"></td>
+                        <td class="rt_lineBottom"></td>
+                        <td class="rt_cornerBottomRight"></td>
+                     </tr>
+                  </table>
+               </div>
+               <div style="clear:left"></div>
+            </div>
+         </div>
+         <div class="level1" id="toc_group_by_location" style="display:none">
+            <div>
+               <div class="level2">
+                  <p><input id="button_TDL.xsd" type="image" value="-" src="img/btM.gif"
+                            onclick="switchState('TDL.xsd');"
+                            class="control" /><span class="indexGroupTitle">TDL.xsd</span></p>
+                  <div id="TDL.xsd" style="display:block">
+                     <div class="horizontalLayout">
+                        <table class="rt">
+                           <tr>
+                              <td class="rt_cornerTopLeft"></td>
+                              <td class="rt_lineTop"></td>
+                              <td class="rt_cornerTopRight"></td>
+                           </tr>
+                           <tr>
+                              <td class="rt_lineLeft"></td>
+                              <td class="rt_content">
+                                 <div class="componentGroupTitle">Elements
+                                    
+                                 </div>
+                                 <div id="TDL.xsdElement" style="display:block">
+                                    <div><b><a href="TDL.html#arch" target="_self" title="No namespace">arch</a></b></div>
+                                    <div><b><a href="TDL.html#arguments" target="_self" title="No namespace">arguments</a></b></div>
+                                    <div><b><a href="TDL.html#cacert" target="_self" title="No namespace">cacert</a></b></div>
+                                    <div><b><a href="TDL.html#clientcert" target="_self" title="No namespace">clientcert</a></b></div>
+                                    <div><b><a href="TDL.html#clientkey" target="_self" title="No namespace">clientkey</a></b></div>
+                                    <div><b><a href="TDL.html#command" target="_self" title="No namespace">command</a></b></div>
+                                    <div><b><a href="TDL.html#commands" target="_self" title="No namespace">commands</a></b></div>
+                                    <div><b><a href="TDL.html#description" target="_self" title="No namespace">description</a></b></div>
+                                    <div><b><a href="TDL.html#files" target="_self" title="No namespace">files</a></b></div>
+                                    <div><b><a href="TDL.html#install" target="_self" title="No namespace">install</a></b></div>
+                                    <div><b><a href="TDL.html#NO_NAMESPACE_iso" target="_self" title="No namespace">iso</a></b></div>
+                                    <div><b><a href="TDL.html#key" target="_self" title="No namespace">key</a></b></div>
+                                    <div><b><a href="TDL.html#md5sum" target="_self" title="No namespace">md5sum</a></b></div>
+                                    <div><b><a href="TDL.html#name" target="_self" title="No namespace">name</a></b></div>
+                                    <div><b><a href="TDL.html#os" target="_self" title="No namespace">os</a></b></div>
+                                    <div><b><a href="TDL.html#package" target="_self" title="No namespace">package</a></b></div>
+                                    <div><b><a href="TDL.html#packages" target="_self" title="No namespace">packages</a></b></div>
+                                    <div><b><a href="TDL.html#persisted" target="_self" title="No namespace">persisted</a></b></div>
+                                    <div><b><a href="TDL.html#repositories" target="_self" title="No namespace">repositories</a></b></div>
+                                    <div><b><a href="TDL.html#rootpw" target="_self" title="No namespace">rootpw</a></b></div>
+                                    <div><b><a href="TDL.html#sha1sum" target="_self" title="No namespace">sha1sum</a></b></div>
+                                    <div><b><a href="TDL.html#sha256sum" target="_self" title="No namespace">sha256sum</a></b></div>
+                                    <div><b><a href="TDL.html#signed" target="_self" title="No namespace">signed</a></b></div>
+                                    <div><b><a href="TDL.html#sslverify" target="_self" title="No namespace">sslverify</a></b></div>
+                                    <div><b><a href="TDL.html#template" target="_self" title="No namespace">template</a></b></div>
+                                    <div><b><a href="TDL.html#url" target="_self" title="No namespace">url</a></b></div>
+                                    <div><b><a href="TDL.html#version" target="_self" title="No namespace">version</a></b></div>
+                                 </div>
+                              </td>
+                              <td class="rt_lineRight"></td>
+                           </tr>
+                           <tr>
+                              <td class="rt_cornerBottomLeft"></td>
+                              <td class="rt_lineBottom"></td>
+                              <td class="rt_cornerBottomRight"></td>
+                           </tr>
+                        </table>
+                     </div>
+                     <div class="horizontalLayout">
+                        <table class="rt">
+                           <tr>
+                              <td class="rt_cornerTopLeft"></td>
+                              <td class="rt_lineTop"></td>
+                              <td class="rt_cornerTopRight"></td>
+                           </tr>
+                           <tr>
+                              <td class="rt_lineLeft"></td>
+                              <td class="rt_content">
+                                 <div class="componentGroupTitle">Simple Types
+                                    
+                                 </div>
+                                 <div id="TDL.xsdSimple_Type" style="display:block">
+                                    <div><b><a href="TDL.html#base64" target="_self" title="No namespace">base64</a></b></div>
+                                    <div><b><a href="TDL.html#base64type" target="_self" title="No namespace">base64type</a></b></div>
+                                    <div><b><a href="TDL.html#bool" target="_self" title="No namespace">bool</a></b></div>
+                                 </div>
+                              </td>
+                              <td class="rt_lineRight"></td>
+                           </tr>
+                           <tr>
+                              <td class="rt_cornerBottomLeft"></td>
+                              <td class="rt_lineBottom"></td>
+                              <td class="rt_cornerBottomRight"></td>
+                           </tr>
+                        </table>
+                     </div>
+                     <div class="horizontalLayout">
+                        <table class="rt">
+                           <tr>
+                              <td class="rt_cornerTopLeft"></td>
+                              <td class="rt_lineTop"></td>
+                              <td class="rt_cornerTopRight"></td>
+                           </tr>
+                           <tr>
+                              <td class="rt_lineLeft"></td>
+                              <td class="rt_content">
+                                 <div class="componentGroupTitle">Element Groups
+                                    
+                                 </div>
+                                 <div id="TDL.xsdElement_Group" style="display:block">
+                                    <div><b><a href="TDL.html#iso" target="_self" title="No namespace">iso</a></b></div>
+                                 </div>
+                              </td>
+                              <td class="rt_lineRight"></td>
+                           </tr>
+                           <tr>
+                              <td class="rt_cornerBottomLeft"></td>
+                              <td class="rt_lineBottom"></td>
+                              <td class="rt_cornerBottomRight"></td>
+                           </tr>
+                        </table>
+                     </div>
+                     <div class="horizontalLayout">
+                        <table class="rt">
+                           <tr>
+                              <td class="rt_cornerTopLeft"></td>
+                              <td class="rt_lineTop"></td>
+                              <td class="rt_cornerTopRight"></td>
+                           </tr>
+                           <tr>
+                              <td class="rt_lineLeft"></td>
+                              <td class="rt_content">
+                                 <div class="componentGroupTitle">Attribute Groups
+                                    
+                                 </div>
+                                 <div id="TDL.xsdAttribute_Group" style="display:block">
+                                    <div><b><a href="TDL.html#NO_NAMESPACE_base64type" target="_self" title="No namespace">base64type</a></b></div>
+                                    <div><b><a href="TDL.html#Attribute_Group_FROM_NO_NAMESPACE_PQN_iso" target="_self"
+                                             title="No namespace">iso</a></b></div>
+                                    <div><b><a href="TDL.html#rawtype" target="_self" title="No namespace">rawtype</a></b></div>
+                                    <div><b><a href="TDL.html#NO_NAMESPACE_url" target="_self" title="No namespace">url</a></b></div>
+                                 </div>
+                              </td>
+                              <td class="rt_lineRight"></td>
+                           </tr>
+                           <tr>
+                              <td class="rt_cornerBottomLeft"></td>
+                              <td class="rt_lineBottom"></td>
+                              <td class="rt_cornerBottomRight"></td>
+                           </tr>
+                        </table>
+                     </div>
+                     <div style="clear:left"></div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      <div class="footer">
+         <hr />
+         <div align="center">XML Schema documentation generated by <a href="http://www.oxygenxml.com" target="_parent"><span class="oXygenLogo"><span class="redX">&lt;</span>o<span class="redX">X</span>ygen<span class="redX">/&gt;</span></span></a><sup>®</sup> XML Editor.
+         </div>
+      </div>
+   </body>
+</html>

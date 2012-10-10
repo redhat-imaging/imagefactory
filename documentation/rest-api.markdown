@@ -1,3 +1,8 @@
+---
+layout: page
+title: user manual (REST API)
+---
+
 % IMAGEFACTORY REST API(1) Version 2.0 - April 27, 2012
 
 Image Factory is the ideal system image creation engine for any application that needs to support a variety of virtualization and cloud services. Our REST API provides developers with a straightforward and easy way to develop solutions on top of Image Factory. This document describes the Image Factory REST API for building and pushing images as well as getting the status of builder operations.
@@ -37,10 +42,12 @@ Image Factory uses two-legged OAuth to protect writable operations from unauthor
 Any number of consumer_key / shared_secret pairs can be used. Just add these to the `clients` section of the `imagefactory.conf` file.
 
 _Example:_  
-    `"clients": {
+<pre>
+    "clients": {
         "client1": "our-secret",
         "client2": "just-between-us"
-    }`
+    }
+</pre>
 
 <a id="resources"></a>
 ## Resources
@@ -50,26 +57,25 @@ _Example:_
 ### API Information
 
 * __*/imagefactory*__  
-    **Methods:**
+    **Methods:**  
+    **GET**
     
-    * **GET**
-
-    > **Description:** Returns the version string for the API
-    >
-    > **OAuth protected:** NO
-    >
-    > **Parameters:**  
-      
-    > > __None__
-    >
-    > **Responses:**  
-      
-    > > __200__ - Image Factory version (version), API name (name), API version (api_version)  
-    >
-    > *Example:*  
-    > `% curl http://imgfac-host:8075/imagefactory`
-    > 
-    > `{"version": "1.1", "name": "imagefactory", "api_version": "2.0"}`
+    **Description:**  
+    Returns the version string for the API
+    
+    **OAuth protected:**  
+    NO
+    
+     **Parameters:**  
+    __None__
+    
+    **Responses:**  
+    __200__ - Image Factory version (version), API name (name), API version (api_version)  
+    
+    *Example:*  
+        
+        % curl http://imgfac-host:8075/imagefactory  
+        {"version": "1.1", "name": "imagefactory", "api_version": "2.0"}
 
 ### Listing Images
 
@@ -78,25 +84,24 @@ _Example:_
 * __*/imagefactory/base_images/:base_image_id/target_images/:target_image_id/provider_images*__
 * __*/imagefactory/target_images*__
 * __*/imagefactory/target_images/:target_image_id/provider_images*__
-* __*/imagefactory/provider_images*__
-    **Methods:**
-
-    * **GET**
+* __*/imagefactory/provider_images*__  
     
-    >  **Description:** Lists the image collection
-    >
-    > **OAuth protected:** YES
-    >
-    > **Responses:**  
+    **Methods:**  
+    **GET**
     
-    > > __200__ - Image list 
-    > > __500__ - Server error
-    >
-    > *Example:*  
-    > 
-        % curl http://imgfac-host:8075/imagefactory/base_images 
-    >
-    >  
+    **Description:**  
+    Lists the image collection
+    
+    **OAuth protected:**  
+    YES
+    
+    **Responses:**  
+    __200__ - Image list  
+    __500__ - Server error  
+    
+    *Example:*  
+        
+        % curl http://imgfac-host:8075/imagefactory/base_images  
         {"base_images": [{"status": "COMPLETE", "_type": "BaseImage", "icicle"  
         : null, "status_detail": null, "href": "http://imgfac-host:8075/imagef  
         actory/base_images/20942760-2c5c-4fd2-8d5a-40f5533a11ec", "percent_com  
@@ -111,33 +116,32 @@ _Example:_
 #### Base Images
 
 * __*/imagefactory/base_images*__  
-    **Methods:**
-
-    * **POST**
     
-    >  **Description:** Builds a new BaseImage.
-    >
-    > **OAuth protected:** YES
-    >
-    > **Parameters:**  
+    **Methods:**  
+    **POST**  
     
-    > > __template__ - TDL document
-    >
-    > **Responses:**  
+    **Description:**  
+    Builds a new BaseImage.  
     
-    > > __202__ - New image  
-    > > __400__ - Missing parameters  
-    > > __500__ - Server error
-    >
-    > *Example:*  
-    >  
+    **OAuth protected:**  
+    YES
+    
+    **Parameters:**  
+    __template__ - TDL document  
+    
+    **Responses:**  
+    __202__ - New image  
+    __400__ - Missing parameters  
+    __500__ - Server error
+    
+    *Example:*  
+        
         curl -d "template=<template><name>mock</name><os><name>RHELMock</name>  
         <version>1</version><arch>x86_64</arch><install type='iso'><iso>http:/  
         /mockhost/RHELMock1-x86_64-DVD.iso</iso></install><rootpw>password</ro  
         otpw></os><description>Mock Template</description></template>" http://  
         imgfac-host:8075/imagefactory/base_images
-    >
-    >  
+    
         {"status": "NEW", "_type": "BaseImage", "icicle": null, "status_detail  
         ": null, "href": "http://imgfac-host:8075/imagefactory/base_images/209  
         42760-2c5c-4fd2-8d5a-40f5533a11ec", "percent_complete": 0, "id": "2094  
@@ -147,37 +151,36 @@ _Example:_
 
 * __*/imagefactory/target_images*__  
 * __*/imagefactory/base_images/:base_image_id/target_images*__  
-    **Methods:**
-
-    * **POST**
     
-    >  **Description:** Builds a new TargetImage.
-    >
-    > **OAuth protected:** YES
-    >
-    > **Parameters:**  
+    **Methods:**  
+    **POST**  
     
-    > > __base_image_id__ - uuid of the base_image to build from. If not provided, a BaseImage will be built.  
-    > > __template__ - TDL document  
-    > > __target__ - cloud target name  
-    > > __parameters__ - Optional parameters that may change the nature of the image being built.  This may include things such as on-disk format or the build mechanism itself.  Parameters are never required as sensible defaults will always be used and will be made part of the queryable properties of an image.
-    >
-    > **Responses:**  
+    **Description:**  
+    Builds a new TargetImage.  
     
-    > > __202__ - New image  
-    > > __400__ - Missing parameters  
-    > > __404__ - BaseImage not found  
-    > > __500__ - Error building image
-    >
-    > *Example:*  
-    >  
+    **OAuth protected:**  
+    YES  
+    
+    **Parameters:**  
+    __base_image_id__ - uuid of the base_image to build from. If not provided, a BaseImage will be built.  
+    __template__ - TDL document  
+    __target__ - cloud target name  
+    __parameters__ - Optional parameters that may change the nature of the image being built.  This may include things such as on-disk format or the build mechanism itself.  Parameters are never required as sensible defaults will always be used and will be made part of the queryable properties of an image.
+    
+    **Responses:**  
+    __202__ - New image  
+    __400__ - Missing parameters  
+    __404__ - BaseImage not found  
+    __500__ - Error building image
+    
+    *Example:*  
+        
         curl -d "template=<template><name>mock</name><os><name>RHELMock</name>  
         <version>1</version><arch>x86_64</arch><install type='iso'><iso>http:/  
         /mockhost/RHELMock1-x86_64-DVD.iso</iso></install><rootpw>password</ro  
         otpw></os><description>Mock Template</description></template>;target=M  
         ockSphere" http://imgfac-host:8075/imagefactory/target_images
-    >
-    >  
+        
         {"status": "NEW", "_type": "TargetImage", "icicle": null, "status_deta  
         il": null, "href": "http://imgfac-host:8075/imagefactory/target_images  
         /4cc3b024-5fe7-4b0b-934b-c5d463b990b0", "percent_complete": 0, "id": "  
@@ -188,30 +191,29 @@ _Example:_
 * __*/imagefactory/provider_images*__  
 * __*/imagefactory/target_images/:target_image_id/provider_images*__  
 * __*/imagefactory/base_images/:base_image_id/target_images/:target_image_id/provider_images*__  
-    **Methods:**
-
-    * **POST**
     
-    >  **Description:** Builds a new ProviderImage
-    >
-    > **OAuth protected:** YES
-    >
-    > **Parameters:**  
+    **Methods:**  
+    * **POST**  
     
-    > > __target_image_id__ - uuid of the target image to push. If not provided and not an image snapshot, a TargetImage will be created.  
-    > > __template__ - TDL document  
-    > > __target__ - The target to which the provider belongs. This would be the same target used for building a TargetImage.  
-    > > __provider__ - cloud provider name  
-    > > __credentials__ - cloud provider credentials xml  
-    > > __parameters__ - Optional parameters that may change the nature of the image being built.  This may include things such as on-disk format or the build mechanism itself.  Parameters are never required as sensible defaults will always be used and will be made part of the queryable properties of an image.
-    >
-    > **Responses:**  
+    **Description:**  
+    Builds a new ProviderImage  
     
-    > > __202__ - New image  
-    > > __400__ - Missing parameters  
-    > > __404__ - BaseImage or TargetImage not found  
-    > > __500__ - Error building image
-    >
+    **OAuth protected:**  
+    YES  
+    
+    **Parameters:**  
+    __target_image_id__ - uuid of the target image to push. If not provided and not an image snapshot, a TargetImage will be created.  
+    __template__ - TDL document  
+    __target__ - The target to which the provider belongs. This would be the same target used for building a TargetImage.  
+    __provider__ - cloud provider name  
+    __credentials__ - cloud provider credentials xml  
+    __parameters__ - Optional parameters that may change the nature of the image being built.  This may include things such as on-disk format or the build mechanism itself.  Parameters are never required as sensible defaults will always be used and will be made part of the queryable properties of an image.
+    
+    **Responses:**  
+    __202__ - New image  
+    __400__ - Missing parameters  
+    __404__ - BaseImage or TargetImage not found  
+    __500__ - Error building image  
 
 ### Image Inspection
 
@@ -222,28 +224,27 @@ _Example:_
 * __*/imagefactory/target_images/:target_image_id/provider_images/:image_id*__
 * __*/imagefactory/provider_images/:image_id*__
     
-    > __image_id__ - uuid of the image to inspect  
-
-    **Methods:**
+    __image_id__ - uuid of the image to inspect  
     
-    * **GET**
+    **Methods:**  
+    **GET**  
     
-    >  **Description:** Get image details
-    >
-    > **OAuth protected:** YES
-    >
-    > **Responses:**  
+    **Description:**  
+    Get image details  
     
-    > > __200__ - Image  
-    > > __404__ - Image Not Found  
-    > > __500__ - Server error
-    >
-    > *Example:*  
-    >  
+    **OAuth protected:**  
+    YES  
+    
+    **Responses:**  
+    __200__ - Image  
+    __404__ - Image Not Found  
+    __500__ - Server error
+    
+    *Example:*  
+        
         curl http://imgfac-host:8075/imagefactory/base_images/20942760-2c5c-4f  
         d2-8d5a-40f5533a11ec
-    >
-    >  
+        
         {"status": "COMPLETE", "_type": "BaseImage", "icicle": null, "status_d  
         etail": null, "href": "http://imgfac-host:8075/imagefactory/base_image  
         s/20942760-2c5c-4fd2-8d5a-40f5533a11ec/20942760-2c5c-4fd2-8d5a-40f5533  
@@ -259,50 +260,49 @@ _Example:_
 * __*/imagefactory/target_images/:target_image_id/provider_images/:image_id*__
 * __*/imagefactory/provider_images/:image_id*__
     
-    > __image_id__ - uuid of the image to delete  
-
-    **Methods:**
+    __image_id__ - uuid of the image to delete  
     
-    * **DELETE**
+    **Methods:**  
+    **DELETE**  
     
-    >  **Description:** Delete the image specified with *image_id*
-    >
-    > **OAuth protected:** YES
-    >
-    > **Responses:**  
+    **Description:**  
+    Delete the image specified with *image_id*  
     
-    > > __200__  
-    > > __404__ - Image Not Found  
-    > > __500__ - Server error
-    >
-    > *Example:*  
-    >  
+    **OAuth protected:**  
+    YES  
+    
+    **Responses:**  
+    __204__ - No Content  
+    __404__ - Image Not Found  
+    __500__ - Server error  
+    
+    *Example:*  
+        
         curl -X DELETE http://imgfac-host:8075/imagefactory/base_images/209427  
         60-2c5c-4fd2-8d5a-40f5533a11ec
-    >
-    >  
+    
 
 ### Plugins
 
 * __*/imagefactory/plugins*__
-    **Methods:**
-
-    * **GET**
     
-    >  **Description:** Lists the loaded plugins
-    >
-    > **OAuth protected:** YES
-    >
-    > **Responses:**  
+    **Methods:**  
+    **GET**  
     
-    > > __200__ - Plugin list 
-    > > __500__ - Server error
-    >
-    > *Example:*  
-    > 
+    **Description:**  
+    Lists the loaded plugins  
+    
+    **OAuth protected:**  
+    YES  
+    
+    **Responses:**  
+    __200__ - Plugin list 
+    __500__ - Server error
+    
+    *Example:*  
+        
         % curl http://imgfac-host:8075/imagefactory/plugins 
-    >
-    >  
+        
         {"plugins": [{"_type": "plugin", "maintainer": {"url": "http://www.aeo  
         lusproject.org/imagefactory.html", "name": "Red Hat, Inc.", "email": "  
         aeolus-devel@lists.fedorahosted.org"}, "description": "Mock cloud plug  
@@ -320,24 +320,24 @@ _Example:_
         ["RHELMock", "1", "x86_64"]]}]}
 
 * __*/imagefactory/plugins/:plugin_id*__
-    **Methods:**
-
-    * **GET**
     
-    >  **Description:** Get the details for plugin with a given id.
-    >
-    > **OAuth protected:** YES
-    >
-    > **Responses:**  
+    **Methods:**  
+    **GET**  
     
-    > > __200__ - Plugin 
-    > > __500__ - Server error
-    >
-    > *Example:*  
-    > 
+    **Description:**  
+    Get the details for plugin with a given id.  
+    
+    **OAuth protected:**  
+    YES  
+    
+    **Responses:**  
+    __200__ - Plugin 
+    __500__ - Server error  
+    
+    *Example:*  
+        
         % curl http://imgfac-host:8075/imagefactory/plugins/MockSphere 
-    >
-    >  
+        
         {"_type": "plugin", "maintainer": {"url": "http://www.aeolusproject.or  
         g/imagefactory.html", "name": "Red Hat, Inc.", "email": "aeolus-devel@  
         lists.fedorahosted.org"}, "description": "Mock cloud plugin for testin  
