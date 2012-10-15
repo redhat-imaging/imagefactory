@@ -15,7 +15,7 @@ and Cloud providers.
 
 ##Using Image Factory##
 Building an image begins with a template describing what to build. See an example
-of such a template below. See the [schema documentation for TDL](http://aeolusproject.github.com/imagefactory/tdl/)
+of such a template below. See the [schema documentation for TDL](http://imgfac.org/documentation/tdl/TDL.html)
 for more detail on creating a template. Note that a template is **not** tied to
 a specific cloud. 
 
