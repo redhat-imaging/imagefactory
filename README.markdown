@@ -4,8 +4,6 @@
 Image Factory enables appliance creation and deployment to multiple virtualization
 and Cloud providers.
 
-![](http://aeolusproject.github.com/imagefactory/images/IF-highlevel.png)
-
 ##Features##
 *   Build guest images for a growing list of operating system and cloud combinations.
     * Current guest OS support: Fedora 7-16, RHEL 5.x and 6.x
