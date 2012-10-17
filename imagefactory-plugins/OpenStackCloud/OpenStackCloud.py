@@ -4,6 +4,7 @@ import logging
 import zope
 import libxml2
 import json
+import os
 from xml.etree.ElementTree import fromstring
 from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.ImageFactoryException import ImageFactoryException
@@ -61,7 +62,8 @@ class OpenStackCloud(object):
 
         image_name = 'ImageFactory created image - %s' % (self.builder.provider_image.identifier)
         image_id = glance_upload(input_image, creds = self.credentials_dict, token = self.credentials_token,
-                                 hostname=provider_data['glance-host'], port=provider_data['glance-port'])
+                                 host=provider_data['glance-host'], port=provider_data['glance-port'],
+                                 name = image_name)
 
         self.builder.provider_image.identifier_on_provider = image_id
         if 'username' in self.credentials_dict:
