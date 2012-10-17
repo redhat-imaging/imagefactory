@@ -223,7 +223,7 @@ class RHEVM(object):
         self.log.debug("New RHEVM Template UUID: %s " % (rhevm_uuid))
 
         self.builder.provider_image.identifier_on_provider = rhevm_uuid
-        self.builder.provider_account_identifier = self.username
+        self.builder.provider_image.provider_account_identifier = self.username
         self.percent_complete = 100
 
     def delete_from_provider(self, builder, provider, credentials, target, parameters):
