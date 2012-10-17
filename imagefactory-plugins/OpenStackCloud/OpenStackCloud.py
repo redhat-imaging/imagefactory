@@ -3,6 +3,8 @@
 import logging
 import zope
 import libxml2
+import json
+from xml.etree.ElementTree import fromstring
 from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.CloudDelegate import CloudDelegate
@@ -45,10 +47,11 @@ class OpenStackCloud(object):
 
     def push_image_to_provider(self, builder, provider, credentials, target, target_image, parameters):
         # Our target_image is already a raw KVM image.  All we need to do is upload to glance
+        self.builder = builder
         self.active_image = self.builder.provider_image
         self.openstack_decode_credentials(credentials)
 
-        provider_data = self.get_dynamic_provider_data("openstack-kvm")
+        provider_data = self.get_dynamic_provider_data(provider)
         if provider_data is None:
             raise ImageFactoryException("OpenStack KVM instance not found in local configuration file /etc/imagefactory/openstack-kvm.json or as XML or JSON")
 
