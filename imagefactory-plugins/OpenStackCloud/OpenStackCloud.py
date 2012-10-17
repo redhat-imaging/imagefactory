@@ -56,15 +56,16 @@ class OpenStackCloud(object):
             raise ImageFactoryException("OpenStack KVM instance not found in local configuration file /etc/imagefactory/openstack-kvm.json or as XML or JSON")
 
         # Image is always here and it is the target_image datafile
-        input_image = self.builder.target_image.datafile
+        input_image = self.builder.target_image.data
         input_image_name = os.path.basename(input_image)
 
         image_name = 'ImageFactory created image - %s' % (self.builder.provider_image.identifier)
         image_id = glance_upload(input_image, creds = self.credentials_dict, token = self.credentials_token,
                                  hostname=provider_data['glance-host'], port=provider_data['glance-port'])
-        
-        self.builder.provider_image.target_identifier=image_id
-        self.builder.provider_image.provider_account_identifier=self.credentials_dict['username']
+
+        self.builder.provider_image.identifier_on_provider = image_id
+        if 'username' in self.credentials_dict:
+            self.builder.provider_image.provider_account_identifier = self.credentials_dict['username']
         self.percent_complete=100
     
     def openstack_decode_credentials(self, credentials):
