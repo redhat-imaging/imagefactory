@@ -93,6 +93,8 @@ fi
 %{_bindir}/imagefactory
 %{_bindir}/imagefactoryd
 %{_mandir}/man1/*
+%{_mandir}/man5/*
+%{_mandir}/man7/*
 
 %changelog
 * Thu Sep 15 2011 Ian McLeod <imcleod@redhat.com> - 0.6.1
