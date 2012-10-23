@@ -93,7 +93,12 @@ def list_images(image_collection, base_image_id=None, target_image_id=None, list
 def create_image(image_collection, base_image_id=None, target_image_id=None):
     try:
         image_type = image_collection[0:-1]
-        request_data = form_data_for_content_type(request.headers.get('Content-Type')).get(image_type)
+        content_type = request.headers.get('Content-Type')
+        form_data = form_data_for_content_type(content_type)
+        if('application/x-www-form-urlencoded' in content_type):
+            request_data = form_data
+        else:
+            request_data = form_data.get(image_type)
         if(not request_data):
             raise HTTPResponse(status=400, output='%s not found in request.' % image_type)
 
