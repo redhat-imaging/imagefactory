@@ -49,7 +49,9 @@ def modify_specfile():
     #cmd = (""" sed -e "s/@VERSION@/%s/g" < imagefactory.spec.in """ % pkg_version) + " > imagefactory.spec"
     os.system(cmd)
 
-datafiles=[('share/man/man1', ['Documentation/man/imagefactory.1', 'Documentation/man/imagefactoryd.1']),
+datafiles=[('share/man/man1', ['documentation/man/imagefactory.1', 'documentation/man/imagefactoryd.1']),
+           ('share/man/man5', ['documentation/man/imagefactory.conf.5']),
+           ('share/man/man7', ['documentation/man/imagefactory.rest.7']),
            ('/etc/imagefactory', ['imagefactory.conf']),
            ('/etc/pki/imagefactory', ['cert-ec2.pem']),
            ('/etc/sysconfig', ['imagefactoryd']),
