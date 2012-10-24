@@ -26,6 +26,7 @@ from imgfac.PluginManager import PluginManager
 from imgfac.PersistentImageManager import PersistentImageManager
 from imgfac.Version import VERSION as VERSION
 from imgfac.picklingtools.xmldumper import *
+from imgfac.Builder import Builder
 
 log = logging.getLogger(__name__)
 
@@ -234,11 +235,15 @@ def delete_image_with_id(image_id, base_image_id=None, target_image_id=None, pro
         if(not image):
             raise HTTPResponse(status=404, output='No image found with id: %s' % image_id)
         builder = Builder()
-        builder.delete_image(provider=request_data.get('provider'),
-                             credentials=request_data.get('credentials'),
-                             target=request_data.get('target'),
-                             image_object=image,
-                             parameters=request_data.get('parameters'))
+        request_data = form_data_for_content_type(request.headers.get('Content-Type'))
+        if(request_data and (len(request_data) > 0)):
+            builder.delete_image(provider=request_data.get('provider'),
+                                 credentials=request_data.get('credentials'),
+                                 target=request_data.get('target'),
+                                 image_object=image,
+                                 parameters=request_data.get('parameters'))
+        else:
+            builder.delete_image(provider=None, credentials=None, target=None, image_object=image, parameters=None)
         response.status = 204
     except Exception as e:
         log.exception(e)
