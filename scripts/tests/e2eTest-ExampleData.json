@@ -39,7 +39,7 @@
                 "api-url": "https://api_host/sdk",
                 "datastore": "datastore_name",
                 "network_name": "network_name"
-            }
+            },
             "credentials": "<provider_credentials><vsphere_credentials><username>username</username><password>password</password></vsphere_credentials></provider_credentials>"
         },
         "example-ec2-region":
