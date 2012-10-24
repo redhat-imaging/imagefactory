@@ -89,6 +89,7 @@ def create_base_image(template_args):
         build_queue.release()
 
 def build_push_delete(target, index):
+    global test_index
     build_queue.acquire()
     try:
         if(index < len(base_images)):
