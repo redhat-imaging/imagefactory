@@ -4,7 +4,7 @@ title: latest blog entries
 section: blog
 ---
 
-When we start posting to the blog, those entries should show up here.
+Subscribe: [atom](/blog/atom.xml "imagefactory blog")
 
 <ul>
 {% for post in site.posts %}
