@@ -1,0 +1,15 @@
+---
+layout: blog_post
+section: blog
+---
+
+Ian and Steve met up with [Aaron Newcomb](http://thesourceshow.org/) and [Dan Lynch](http://danlynch.org/) yesterday to talk about imagefactory on FLOSS Weekly episode 231.
+
+You can download the interview (audio and video) from the podcast website:  
+[http://twit.tv/show/floss-weekly/231](http://twit.tv/show/floss-weekly/231 "FLOSS Weekly on TWiT")
+
+or watch it on YouTube:  
+[http://www.youtube.com/watch?v=H5z-tpYS0Ng](http://www.youtube.com/watch?v=H5z-tpYS0Ng "FLOSS Weekly episode 231 on YouTube")
+
+Our thanks to the whole [FLOSS Weekly](http://twit.tv/floss) team for giving us a chance to talk about the project.
+
