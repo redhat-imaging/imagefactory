@@ -1145,7 +1145,7 @@ class BaseRequest(DictMixin):
 
     def copy(self):
         """ Return a new :class:`Request` with a shallow :attr:`environ` copy. """
-        return Request(self.environ.copy())
+        return BaseRequest(self.environ.copy())
 
     def __getitem__(self, key): return self.environ[key]
     def __delitem__(self, key): self[key] = ""; del(self.environ[key])

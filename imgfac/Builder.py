@@ -29,6 +29,8 @@ from ProviderImage import ProviderImage
 from ImageFactoryException import ImageFactoryException
 from CallbackWorker import CallbackWorker
 from time import sleep
+from SecondaryDispatcher import SecondaryDispatcher
+from SecondaryPlugin import SecondaryPlugin
 
 class Builder(object):
     """ TODO: Docstring for Builder  """
@@ -213,14 +215,14 @@ class Builder(object):
             self._shutdown_callback_workers(self.target_image, self._target_image_cbws)
 
 ##### CREATE PROVIDER IMAGE
-    def create_image_on_provider(self, provider, credentials, target, image_id=None, template=None, parameters=None):
+    def create_image_on_provider(self, provider, credentials, target, image_id=None, template=None, parameters=None, my_image_id = None):
         if(parameters and parameters.get('snapshot', False)):
-            self.snapshot_image_on_provider(provider, credentials, target, image_id, template, parameters)
+            self.snapshot_image_on_provider(provider, credentials, target, image_id, template, parameters, my_image_id)
         else:
-            self.push_image_to_provider(provider, credentials, target, image_id, template, parameters)
+            self.push_image_to_provider(provider, credentials, target, image_id, template, parameters, my_image_id)
 
 ##### PUSH IMAGE TO PROVIDER
-    def push_image_to_provider(self, provider, credentials, target, image_id, template, parameters):
+    def push_image_to_provider(self, provider, credentials, target, image_id, template, parameters, my_image_id):
         """
         TODO: Docstring for push_image_to_provider
 
@@ -232,7 +234,8 @@ class Builder(object):
         @return TODO
         """
 
-        self.provider_image = ProviderImage() 
+        # If operating as a secondary we will have the provider_image ID dictated to us - otherwise it is None and it is created
+        self.provider_image = ProviderImage(image_id = my_image_id) 
         self.provider_image.provider = provider
         self.provider_image.credentials = credentials
         self.provider_image.target_image_id = image_id
@@ -246,9 +249,11 @@ class Builder(object):
             self.target_image = self.pim.image_with_id(image_id)
             if not self.target_image:
                 raise ImageFactoryException("Unable to retrieve target image with id (%s) from storage" % (image_id))
-            self.base_image = self.pim.image_with_id(self.target_image.base_image_id)
-            if not self.base_image:
-                raise ImageFactoryException("Unable to retrieve base image with id (%s) from storage" % (image_id))
+            # If we are being called as a secondary do not try to look up the base image
+            if not my_image_id:
+                self.base_image = self.pim.image_with_id(self.target_image.base_image_id)
+                if not self.base_image:
+                    raise ImageFactoryException("Unable to retrieve base image with id (%s) from storage" % (image_id))
             template = self.target_image.template
             self.provider_image.template = template
         elif template and image_id:
@@ -285,9 +290,19 @@ class Builder(object):
 
             template = template if(isinstance(template, Template)) else Template(template)
 
-            plugin_mgr = PluginManager(self.app_config['plugins'])
-            if not self.cloud_plugin:
-                self.cloud_plugin = plugin_mgr.plugin_for_target(target)
+            if not self.app_config['secondary']:
+                secondary = SecondaryDispatcher().get_secondary(target, provider)
+            else:
+                # Do not allow nesting of secondaries
+                secondary = None
+            if secondary:
+                # NOTE: This may overwrite the cloud_plugin that was used to create the target_image
+                #       This is expected and is correct
+                self.cloud_plugin = SecondaryPlugin(SecondaryDispatcher().get_helper(secondary))
+            else:
+                plugin_mgr = PluginManager(self.app_config['plugins'])
+                if not self.cloud_plugin:
+                    self.cloud_plugin = plugin_mgr.plugin_for_target(target)
             self.cloud_plugin.push_image_to_provider(self, provider, credentials, target, image_id, parameters)
             self.provider_image.status="COMPLETE"
             self.pim.save_image(self.provider_image)
@@ -301,7 +316,7 @@ class Builder(object):
             self._shutdown_callback_workers(self.provider_image, self._provider_image_cbws)
 
 ##### SNAPSHOT IMAGE
-    def snapshot_image(self, provider, credentials, target, image_id, template, parameters):
+    def snapshot_image(self, provider, credentials, target, image_id, template, parameters, my_image_id):
         """
         TODO: Docstring for snapshot_image
         
@@ -314,7 +329,8 @@ class Builder(object):
         @return TODO
         """
 
-        self.provider_image = ProviderImage()
+        # If operating as a secondary we will have the provider_image ID dictated to us - otherwise it is None and it is created
+        self.provider_image = ProviderImage(image_id = my_image_id)
         self.provider_image.provider = provider
         self.provider_image.credentials = credentials
         self.provider_image.target_image_id = image_id
@@ -334,8 +350,16 @@ class Builder(object):
 
     def _snapshot_image(self, provider, credentials, target, image_id, template, parameters):
         try:
-            plugin_mgr = PluginManager(self.app_config['plugins'])
-            self.cloud_plugin = plugin_mgr.plugin_for_target(target)
+            if not self.app_config['secondary']:
+                secondary = SecondaryDispatcher().get_secondary(target, provider)
+            else:
+                # Do not allow nesting of secondaries
+                secondary = None
+            if secondary:
+                self.cloud_plugin = SecondaryPlugin(SecondaryDispatcher().get_helper(secondary))
+            else:    
+                plugin_mgr = PluginManager(self.app_config['plugins'])
+                self.cloud_plugin = plugin_mgr.plugin_for_target(target)
             self.cloud_plugin.snapshot_image_on_provider(self, provider, credentials, target, image_id, template, parameters)
             self.provider_image.status="COMPLETE"
             self.pim.save_image(self.provider_image)
@@ -387,3 +411,7 @@ class Builder(object):
             self.pim.save_image(image_object)
             self.log.error("Exception encountered in _delete_image_on_provider thread")
             self.log.exception(e)
+# encoding: utf-8
+
+#   Copyright 2012 Red Hat, Inc.
+#

@@ -44,6 +44,9 @@ class PersistentImage(object):
 
         def fset(self, value):
             value = value.upper()
+            if(value == self._status):
+                # Do not update or send a notification if nothing has changed
+                return
             if(value in STATUS_STRINGS):
                 old_value = self._status
                 self._status = value
@@ -64,6 +67,9 @@ class PersistentImage(object):
 
         def fset(self, value):
             old_value = self._percent_complete
+            if value == old_value:
+                # Do not update or send a notification if nothing has changed
+                return
             self._percent_complete = value
             notification = Notification(message=NOTIFICATIONS[1],
                                         sender=self,

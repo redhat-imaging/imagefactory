@@ -25,6 +25,7 @@ from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.Singleton import Singleton
 from imgfac.rest.bottle import *
 from imgfac.rest.RESTv2 import rest_api
+from imgfac.rest.RESTSecondaryv2 import rest_api as secondary_rest_api
 from imgfac.PluginManager import PluginManager
 from time import asctime, localtime
 
@@ -191,9 +192,14 @@ class Application(Singleton):
                 logging.debug("Unable to start faulthandler - multi-thread tracebacks will not be available", exc_info=True)
                 pass
 
+        if self.app_config['secondary']:
+            app = secondary_rest_api
+        else:
+            app = rest_api
+
         # Don't set reloader to True or you will lose state.  You have been warned.
         run(server='paste',
-                app=rest_api,
+                app=app,
                 host=self.app_config['address'],
                 port=self.app_config['port'],
                 reloader=False,
