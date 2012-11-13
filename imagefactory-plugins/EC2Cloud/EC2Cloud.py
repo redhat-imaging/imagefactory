@@ -724,7 +724,7 @@ class EC2Cloud(object):
             if ami.root_device_type == "instance-store":
                 # Different OSes need different steps here
                 # Only needed for S3 images
-                self.install_euca_tools(guestaddr)
+                self.os_helper.install_euca_tools(guestaddr)
 
             # Not all JEOS images contain this - redoing it if already present is harmless
             self.log.info("Creating cloud-info file indicating target (%s)" % (self.target))
@@ -793,7 +793,7 @@ class EC2Cloud(object):
                 manifest = "/mnt/bundles/%s.manifest.xml" % (uuid)
 
                 # Unfortunately, for some OS versions we need to correct the manifest
-                self.correct_remote_manifest(guestaddr, manifest)
+                self.os_helper.correct_remote_manifest(guestaddr, manifest)
 
                 command = ['euca-upload-bundle', '-b', bucket, '-m', manifest,
                            '--ec2cert', '/tmp/cert-ec2.pem',
@@ -825,7 +825,7 @@ class EC2Cloud(object):
             else:
                 self.activity("Preparing image for an EBS snapshot")
                 self.log.debug("Performing image prep tasks for EBS backed images")
-                self.ebs_pre_shapshot_tasks(guestaddr)
+                self.os_helper.ebs_pre_snapshot_tasks(guestaddr)
                 self.activity("Requesting EBS snapshot creation by EC2")
                 self.log.debug("Creating a new EBS backed image from our running EBS instance")
                 new_ami_id = conn.create_image(self.instance.id, image_name, image_desc)

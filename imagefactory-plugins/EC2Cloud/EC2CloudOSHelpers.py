@@ -60,14 +60,14 @@ class RHEL5_ec2_Helper(Base_ec2_Helper):
 
         def guest_execute_command(self, guestaddr, command, timeout=30,
                                   tunnels=None):
-            return super(RHEL5RemoteGuest, self).guest_execute_command(guestaddr, command, timeout, tunnels)
+            return super(RHEL5_ec2_Helper.RHEL5RemoteGuest, self).guest_execute_command(guestaddr, command, timeout, tunnels)
 
         def guest_live_upload(self, guestaddr, file_to_upload, destination,
                               timeout=30):
-            return super(RHEL5RemoteGuest, self).guest_live_upload(guestaddr, file_to_upload, destination, timeout)
+            return super(RHEL5_ec2_Helper.RHEL5RemoteGuest, self).guest_live_upload(guestaddr, file_to_upload, destination, timeout)
 
     def init_guest(self):
-        self.guest = RHEL5RemoteGuest(self.tdlobj, self.oz_config, None)
+        self.guest = self.RHEL5RemoteGuest(self.plugin.tdlobj, self.plugin.oz_config, None)
         self._init_guest_common()
 
     def ebs_pre_shapshot_tasks(self, guestaddr):
@@ -109,14 +109,14 @@ class RHEL6_ec2_Helper(Base_ec2_Helper):
 
         def guest_execute_command(self, guestaddr, command, timeout=30,
                                   tunnels=None):
-            return super(RHEL6RemoteGuest, self).guest_execute_command(guestaddr, command, timeout, tunnels)
+            return super(RHEL6_ec2_Helper.RHEL6RemoteGuest, self).guest_execute_command(guestaddr, command, timeout, tunnels)
 
         def guest_live_upload(self, guestaddr, file_to_upload, destination,
                               timeout=30):
-            return super(RHEL6RemoteGuest, self).guest_live_upload(guestaddr, file_to_upload, destination, timeout)
+            return super(RHEL6_ec2_Helper.RHEL6RemoteGuest, self).guest_live_upload(guestaddr, file_to_upload, destination, timeout)
 
     def init_guest(self):
-        self.guest = RHEL6RemoteGuest(self.tdlobj, self.oz_config, None)
+        self.guest = self.RHEL6RemoteGuest(self.plugin.tdlobj, self.plugin.oz_config, None)
         self._init_guest_common()
 
     def ebs_pre_shapshot_tasks(self, guestaddr):
@@ -152,14 +152,14 @@ class Fedora_ec2_Helper(Base_ec2_Helper):
 
         def guest_execute_command(self, guestaddr, command, timeout=30,
                                   tunnels=None):
-            return super(FedoraRemoteGuest, self).guest_execute_command(guestaddr, command, timeout, tunnels)
+            return super(Fedora_ec2_Helper.FedoraRemoteGuest, self).guest_execute_command(guestaddr, command, timeout, tunnels)
 
         def guest_live_upload(self, guestaddr, file_to_upload, destination,
                               timeout=30):
-            return super(FedoraRemoteGuest, self).guest_live_upload(guestaddr, file_to_upload, destination, timeout)
+            return super(Fedora_ec2_Helper.FedoraRemoteGuest, self).guest_live_upload(guestaddr, file_to_upload, destination, timeout)
 
     def init_guest(self):
-        self.guest = FedoraRemoteGuest(self.tdlobj, self.oz_config, None,
+        self.guest = self.FedoraRemoteGuest(self.plugin.tdlobj, self.plugin.oz_config, None,
                                            "virtio", True, "virtio", True)
         self._init_guest_common()
 
