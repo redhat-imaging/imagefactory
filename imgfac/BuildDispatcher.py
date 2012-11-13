@@ -56,9 +56,9 @@ class BuildDispatcher(Singleton):
             self.builders_lock.release()
         return builder
 
-    def builder_for_provider_image(self, provider, credentials, target, image_id=None, template=None, parameters=None):
+    def builder_for_provider_image(self, provider, credentials, target, image_id=None, template=None, parameters=None, my_image_id=None):
         builder = Builder()
-        builder.create_image_on_provider(provider, credentials, target, image_id, template, parameters)
+        builder.create_image_on_provider(provider, credentials, target, image_id, template, parameters, my_image_id)
         self.builders_lock.acquire()
         try:
             self.builders[builder.provider_image.identifier] = builder
