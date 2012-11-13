@@ -27,6 +27,7 @@ import traceback
 import ConfigParser
 import boto.ec2
 import sys
+import json
 from time import *
 from tempfile import *
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
@@ -191,7 +192,7 @@ class EC2Cloud(object):
         self.log.debug("Deleting AMI (%s)" % (self.builder.provider_image.identifier_on_provider))
         self.activity("Preparing EC2 region details")
         region=provider
-        region_conf=self.ec2_region_details[region]
+        region_conf=self._decode_region_details(region)
         boto_loc = region_conf['boto_loc']
         if region != "ec2-us-east-1":
             s3_url = "http://s3-%s.amazonaws.com/" % (region_conf['host'])
@@ -611,7 +612,7 @@ class EC2Cloud(object):
         self.activity("Preparing EC2 region details")
         region=provider
         # These are the region details for the TARGET region for our new AMI
-        region_conf=self.ec2_region_details[region]
+        region_conf=self._decode_region_details(region)
         aki = region_conf[self.tdlobj.arch]
         boto_loc = region_conf['boto_loc']
         if region != "ec2-us-east-1":
@@ -645,8 +646,7 @@ class EC2Cloud(object):
             raise ImageFactoryException("No available JEOS for desired OS, verison combination")
 
         # These are the region details for the region we are building in (which may be different from the target)
-        build_region_conf = self.ec2_region_details[build_region]
-
+        build_region_conf = self._decode_region_details(build_region)
 
         # Note that this connection may be to a region other than the target
         self.activity("Preparing EC2 JEOS AMI details")
@@ -987,7 +987,7 @@ class EC2Cloud(object):
 
         self.activity("Preparing EC2 region details")
         region=provider
-        region_conf=self.ec2_region_details[region]
+        region_conf=self._decode_region_details(region)
         aki = region_conf[self.tdlobj.arch]
 
         # Use our F16 - 32 bit JEOS image as the utility image for uploading to the EBS volume
@@ -1213,7 +1213,7 @@ class EC2Cloud(object):
 
         self.activity("Preparing EC2 region details and connection")
         region=provider
-        region_conf=self.ec2_region_details[region]
+        region_conf = self._decode_region_details(region)
         aki = region_conf[self.tdlobj.arch]
         boto_loc = region_conf['boto_loc']
         if region != "ec2-us-east-1":
@@ -1400,6 +1400,51 @@ none       /sys      sysfs   defaults         0 0
 
     # TODO: Ideally we should use boto "Location" references when possible - 1.9 contains only DEFAULT and EU
     #       The rest are hard coded strings for now.
+
+    def _decode_region_details(self, region):
+        """Accept as input either the original ec2-* strings or a JSON string containing the same
+        details.
+        If the JSON contains a 'name' field attempt to match it to known details.  Allow any other
+        fields in the JSON to override. """
+
+        # This whole thing is a bit of a mess but it preserves backwards compat but also allows for
+        # ad-hoc addition of new regions without code changes
+        # TODO: Move EC2 builtin details to a config file
+        region_details = None
+
+        # If it is JSON, decode it
+        try:
+            region_details = json.loads(region)
+        except:
+            pass
+
+        # If decoded JSON has a name field, use it for the follow on lookups
+        if region_details and 'name' in region_details:
+            region = region_details['name']
+
+        if region in self.ec2_region_details:
+            bi_region_details = self.ec2_region_details[region]
+        elif ("ec2-" + region) in self.ec2_region_details:
+            bi_region_details = self.ec2_region_details["ec2-" + region]
+        else:
+            bi_region_details = None
+
+        if (not region_details) and (not bi_region_details):
+            # We couldn't decode any json and the string we were passed is not a builtin region - give up
+            raise ImageFactoryException("Passed unknown EC2 region (%s)" % region)
+
+        if not region_details:
+            region_details = { }
+
+        # Allow the builtin details to fill in anything that is missing
+        if bi_region_details:
+            for bi_key in bi_region_details:
+                if not (bi_key in region_details):
+                    region_details[bi_key] = bi_region_details[bi_key]
+
+        return region_details
+
+
     ec2_region_details={
          'ec2-us-east-1':      { 'boto_loc': Location.DEFAULT,     'host':'us-east-1',      'i386': 'aki-805ea7e9', 'x86_64': 'aki-825ea7eb' },
          'ec2-us-west-1':      { 'boto_loc': 'us-west-1',          'host':'us-west-1',      'i386': 'aki-83396bc6', 'x86_64': 'aki-8d396bc8' },
