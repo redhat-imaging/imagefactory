@@ -113,7 +113,7 @@ class ApplicationConfiguration(Singleton):
 
     def __parse_arguments(self):
         appname = sys.argv[0].rpartition('/')[2]
-        argparser = self.__new_argument_parser(sys.argv[0].rpartition('/')[2])
+        argparser = self.__new_argument_parser(appname)
         if((appname == 'imagefactory') and (len(sys.argv) == 1)):
             argparser.print_help()
             sys.exit()
