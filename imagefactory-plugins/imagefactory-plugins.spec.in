@@ -168,6 +168,7 @@ python setup.py install -O1 --root=%{buildroot} --skip-build
 
 %files EC2Cloud
 %{python_sitelib}/imagefactory_plugins/EC2Cloud/*
+%{_bindir}/create-ec2-factory-credentials
 
 %files EC2Cloud-JEOS-images
 %{_sysconfdir}/imagefactory/jeos_images/ec2_fedora_jeos.conf
