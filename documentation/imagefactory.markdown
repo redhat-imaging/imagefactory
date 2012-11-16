@@ -38,9 +38,8 @@ documentation.
 **OPTIONS**
 
     -h, --help            show this help message and exit
-    -v, --version         show version number and exit
+    -v, --version         show program's version number and exit
     --verbose             Set verbose logging.
-    --debug               Set really verbose logging for debugging.
     --config CONFIG       Configuration file to use. (default:
                             /etc/imagefactory/imagefactory.conf)
     --imgdir IMGDIR       Build image files in location specified. (default:
@@ -51,6 +50,9 @@ documentation.
                             (default: /tmp)
     --plugins PLUGINS     Plugin directory. (default:
                             /etc/imagefactory/plugins.d)
+    --nodebug             Turn off the default verbose CLI logging
+    --output {log,json}   Choose between log or json output. (default: log)
+    --raw                 Turn off pretty printing.
     
     EC2 settings:
         --ec2-32bit-util EC2_32BIT_UTIL
@@ -62,15 +64,14 @@ documentation.
     
     commands:
         {base_image,target_image,provider_image,images,delete,plugins}
-          base_image          Build a generic image.
-          target_image        Customize an image for a given cloud.
-          provider_image      Push an image to a cloud provider.
-          images              List images of a given type or get details of an
-                                image.
-          delete              Delete an image.
-          plugins             List active plugins or get details of a specific
-                                plugin.
-
+        base_image          Build a generic image.
+        target_image        Customize an image for a given cloud.
+        provider_image      Push an image to a cloud provider.
+        images              List images of a given type or get details of an
+                            image.
+        delete              Delete an image.
+        plugins             List active plugins or get details of a specific
+                            plugin.
 **COMMANDS**
 
 __*base_image*__
@@ -104,10 +105,12 @@ __*provider_image*__
 
     usage: imagefactory provider_image [-h] (--id ID | --template TEMPLATE)
                                        [--parameters PARAMETERS]
-                                       provider credentials
+                                       target provider credentials
     
     positional arguments:
-      provider              A file containing the provider description.
+      target                The target type of the given provider
+      provider              A file containing the provider description or a string
+                            literal starting with '@' such as '@ec2-us-east-1'.
       credentials           A file containing the provider credentials
     
     optional arguments:
@@ -128,13 +131,23 @@ __*images*__
 
 __*delete*__
 
-    usage: imagefactory delete [-h] id
+    usage: imagefactory delete [-h] [--provider PROVIDER]
+                               [--credentials CREDENTIALS] [--target TARGET]
+                               [--parameters PARAMETERS]
+                               id
     
     positional arguments:
-      id          UUID of the image to delete
+      id                    UUID of the image to delete
     
     optional arguments:
-      -h, --help  show this help message and exit
+      -h, --help            show this help message and exit
+      --provider PROVIDER   A file containing the provider description or a string
+                            literal starting with '@' such as '@ec2-us-east-1'.
+      --credentials CREDENTIALS
+                            A file containing the provider credentials
+      --target TARGET       The name of the target cloud for which to customize
+                            the image.
+      --parameters PARAMETERS
 
 __*plugins*__
 
