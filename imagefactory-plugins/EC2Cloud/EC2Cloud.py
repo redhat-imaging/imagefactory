@@ -992,9 +992,9 @@ class EC2Cloud(object):
 
         # Use our F16 - 32 bit JEOS image as the utility image for uploading to the EBS volume
         try:
-            ami_id = self.ec2_jeos_amis[provider]['Fedora']['16']['i386']
+            ami_id = self.ec2_jeos_amis['ec2-' + region_conf['host']]['Fedora']['16']['i386']
         except KeyError:
-            raise ImageFactoryException("No Fedora 16 i386 JEOS/utility image in region (%s) - aborting", (provider))
+            raise ImageFactoryException("No Fedora 16 i386 JEOS/utility image in region (%s) - aborting" % (provider))
 
         # i386
         instance_type=self.app_config.get('ec2-32bit-util','m1.small')
