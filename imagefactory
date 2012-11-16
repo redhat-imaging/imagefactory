@@ -246,6 +246,8 @@ class Application(Singleton):
             print "============ Final Image Details ============"
             print "UUID: %s" % (image.identifier)
             print "Type: %s" % (command)
+            if command == "provider_image" and image.status == "COMPLETE":
+                print "Image ID on provider: %s" % (image.identifier_on_provider)
             print "Status: %s" % (image.status)
             print "Status Details: %s" % (image.status_detail)
 
