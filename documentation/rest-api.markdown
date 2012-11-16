@@ -31,11 +31,11 @@ To use the Image Factory REST API, send an HTTP request to any of the [resources
 
 ### Request - Response formatting
 
-* PUT/POST requests 
-    * _DEFAULT_: form data is assumed to be formatted as `application/x-www-form-urlencoded`.
-    * form data can be formatted as JSON if the HTTP header, `Content-Type`, is set to `application/json`.
-    * form data can be formatted as XML if the HTTP header, `Content-Type`, is set to `application/xml` or `text/xml`.
-* Responses are formatted as JSON by default. XML responses will be returned if specified in the `Accept` http header.
+* PUT/POST requests  
+    * _DEFAULT_: form data is assumed to be formatted as `application/x-www-form-urlencoded`.  
+    * form data can be formatted as JSON if the HTTP header, `Content-Type`, is set to `application/json`.  
+    * form data can be formatted as XML if the HTTP header, `Content-Type`, is set to `application/xml` or `text/xml`.  
+* Responses are formatted as JSON by default. XML responses will be returned if specified in the `Accept` http header.  
 
 Response contents are documented for each specific resource in the [resources][] section.
 
