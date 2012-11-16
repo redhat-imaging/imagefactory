@@ -920,7 +920,7 @@ class EC2Cloud(object):
             ec2_key_node = doc.xpathEval("//provider_credentials/ec2_credentials/x509_private")
         if not ec2_key_node:
             raise ImageFactoryException("No x509 private key found in ec2 credentials")
-        ec2_key = '-----BEGIN PRIVATE KEY-----\n%s\n-----END PRIVATE KEY-----' % '\n'.join(ec2_key_node[0].content.strip().split()[3:-3])
+        ec2_key = ec2_key_node[0].content.strip()
 
         # Support both "certificate" and "x509_public" as element names
         ec2_cert_node = doc.xpathEval("//provider_credentials/ec2_credentials/certificate")
@@ -928,7 +928,7 @@ class EC2Cloud(object):
             ec2_cert_node = doc.xpathEval("//provider_credentials/ec2_credentials/x509_public")
         if not ec2_cert_node:
             raise ImageFactoryException("No x509 public certificate found in ec2 credentials")
-        ec2_cert = '-----BEGIN CERTIFICATE-----\n%s\n-----END CERTIFICATE-----' % '\n'.join(ec2_cert_node[0].content.strip().split()[3:-3])
+        ec2_cert = ec2_cert_node[0].content.strip()
 
         doc.freeDoc()
 
