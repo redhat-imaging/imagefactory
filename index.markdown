@@ -22,12 +22,16 @@ section: home
 
 1. Get a system template:
 
-        $ wget https://raw.github.com/clalancette/oz/master/examples/f14x86_64.tdl
+        $ wget https://raw.github.com/aeolusproject/imagefactory/gh-pages/documentation/tdl/f17_x86_64.tdl
 
 1. Build the image:
 
-        $ su -c "imagefactory target_image --template f14x64.tdl ec2"
+        $ su -c "imagefactory target_image --template f17_x86_64.tdl ec2"
 
-1. This creates an image, customized for the target cloud, that can be pushed up for use:
+1. Create your EC2 credentials file:
 
-        $ su -c "imagefactory provider_image --id <uuid_from_previous_step> provider.json credentials.xml"
+        $ create-ec2-factory-credentials        
+
+1. Push (upload) the image to EC2 us-east-1:
+
+        $ su -c "imagefactory provider_image --id <uuid_from_previous_step> ec2 @us-east-1 ec2_credentials.xml"
