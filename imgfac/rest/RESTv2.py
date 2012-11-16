@@ -119,13 +119,20 @@ def create_image(image_collection, base_image_id=None, target_image_id=None):
                                                                  parameters=request_data.get('parameters'))
             image = builder.target_image
         elif(image_collection == 'provider_images'):
-            builder = BuildDispatcher().builder_for_provider_image(provider=request_data.get('provider'),
-                                                                   credentials=request_data.get('credentials'),
-                                                                   target=request_data.get('target'),
+            _provider = request_data.get('provider')
+            _credentials = request_data.get('credentials')
+            _target = request_data.get('target')
+            if(_provider and _credentials and _target):
+                builder = BuildDispatcher().builder_for_provider_image(provider=_provider,
+                                                                   credentials=_credentials,
+                                                                   target=_target,
                                                                    image_id=target_img_id,
                                                                    template=request_data.get('template'),
                                                                    parameters=request_data.get('parameters'))
-            image = builder.provider_image
+                image = builder.provider_image
+            else:
+                _credentials = 'REDACTED' if _credentials else None
+                raise HTTPResponse(status=400, output="Missing key/value pair: provider(%s), credentials(%s), target(%s)" % (_provider, _credentials, _target))
         else:
             raise HTTPResponse(status=404, output="%s not found" % image_collection)
 

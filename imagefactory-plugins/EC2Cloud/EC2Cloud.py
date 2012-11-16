@@ -907,7 +907,7 @@ class EC2Cloud(object):
 
     def ec2_decode_credentials(self, credentials):
         self.activity("Preparing EC2 credentials")
-        doc = libxml2.parseDoc(credentials)
+        doc = libxml2.parseDoc(credentials.strip())
 
         self.ec2_user_id = self._ec2_get_xml_node(doc, "account_number")
         self.ec2_access_key = self._ec2_get_xml_node(doc, "access_key")
@@ -920,7 +920,7 @@ class EC2Cloud(object):
             ec2_key_node = doc.xpathEval("//provider_credentials/ec2_credentials/x509_private")
         if not ec2_key_node:
             raise ImageFactoryException("No x509 private key found in ec2 credentials")
-        ec2_key=ec2_key_node[0].content.strip()
+        ec2_key = ec2_key_node[0].content.strip()
 
         # Support both "certificate" and "x509_public" as element names
         ec2_cert_node = doc.xpathEval("//provider_credentials/ec2_credentials/certificate")
