@@ -30,8 +30,8 @@ section: home
 
 1. Create your EC2 credentials file:
 
-        
+        $ create-ec2-factory-credentials        
 
-1. This creates an image, customized for the target cloud, that can be pushed up for use:
+1. Push (upload) the image to EC2 us-east-1:
 
-        $ su -c "imagefactory provider_image --id <uuid_from_previous_step> ec2 us-east-1 ec2_credentials.xml"
+        $ su -c "imagefactory provider_image --id <uuid_from_previous_step> ec2 @us-east-1 ec2_credentials.xml"
