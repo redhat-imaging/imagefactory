@@ -90,7 +90,7 @@ class ApplicationConfiguration(Singleton):
 
             cmd_provider = subparsers.add_parser('provider_image', help='Push an image to a cloud provider.')
             cmd_provider.add_argument('target', help='The target type of the given provider')
-            cmd_provider.add_argument('provider', type=argparse.FileType(), help='A file containing the provider description.')
+            cmd_provider.add_argument('provider', help="A file containing the provider description or a string literal starting with '@' such as '@ec2-us-east-1'.")
             cmd_provider.add_argument('credentials', type=argparse.FileType(), help='A file containing the provider credentials')
             provider_group = cmd_provider.add_mutually_exclusive_group(required=True)
             provider_group.add_argument('--id', help='The uuid of the TargetImage to push.')

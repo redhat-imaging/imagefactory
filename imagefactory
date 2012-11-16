@@ -127,6 +127,20 @@ class Application(Singleton):
 
             sys.exit(0)
 
+    def _get_provider(self, provider):
+        # This allows people to specify widely known EC2 provider names directly on the CLI
+        # by prepending them with an @
+        # TODO: Make this cleaner perhaps
+        # If provider starts with @ interpret the remaining string literally
+        if provider[0] == '@':
+            return provider[1:]
+        # If not, try to read it as a file
+        else:
+            f = open(provider)
+            ret_provider = f.read().rstrip()
+            f.close()
+            return ret_provider
+            
     def main(self):
         command = self.app_config['command']
         returnval = {}
@@ -152,7 +166,8 @@ class Application(Singleton):
                 image = builder.target_image
                 thread = builder.target_thread
             elif(command == 'provider_image'):
-                builder = BuildDispatcher().builder_for_provider_image(provider=self.app_config['provider'].read().rstrip(),
+                provider = self._get_provider(self.app_config['provider'])
+                builder = BuildDispatcher().builder_for_provider_image(provider=provider,
                                                                         credentials=self.app_config['credentials'].read().rstrip(),
                                                                         target=self.app_config.get('target'),
                                                                         image_id=self.app_config.get('id'),
@@ -191,12 +206,13 @@ class Application(Singleton):
         elif(command == 'delete'):
             try:
                 image_id = self.app_config['id']
+                provider = self._get_provider(self.app_config['provider'])
                 image = PersistentImageManager.default_manager().image_with_id(image_id)
                 if(not image):
                     print ('No image found with id: %s' % image_id)
                     return
                 builder = Builder()
-                builder.delete_image(provider=self.app_config.get('provider'), 
+                builder.delete_image(provider=provider, 
                                      credentials=self.app_config.get('credentials'), 
                                      target=self.app_config.get('target'), 
                                      image_object=image, 
@@ -230,6 +246,8 @@ class Application(Singleton):
             print "============ Final Image Details ============"
             print "UUID: %s" % (image.identifier)
             print "Type: %s" % (command)
+            if command == "provider_image" and image.status == "COMPLETE":
+                print "Image ID on provider: %s" % (image.identifier_on_provider)
             print "Status: %s" % (image.status)
             print "Status Details: %s" % (image.status_detail)
 
