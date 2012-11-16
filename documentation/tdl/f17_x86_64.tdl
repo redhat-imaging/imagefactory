@@ -1,0 +1,13 @@
+<template>
+  <name>Fedora 17 x86_64 - Basic Install</name>
+  <os>
+    <rootpw>changeme</rootpw>
+    <name>Fedora</name>
+    <version>17</version>
+    <arch>x86_64</arch>
+    <install type='url'>
+      <url>http://download.fedoraproject.org/pub/fedora/linux/releases/17/Fedora/x86_64/os/</url>
+    </install>
+  </os>
+  <description>Fedora 17 - Basic Install</description>
+</template>
