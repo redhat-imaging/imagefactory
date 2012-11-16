@@ -194,7 +194,7 @@ class EC2Cloud(object):
         region=provider
         region_conf=self._decode_region_details(region)
         boto_loc = region_conf['boto_loc']
-        if region != "ec2-us-east-1":
+        if region_conf['host'] != "us-east-1":
             s3_url = "http://s3-%s.amazonaws.com/" % (region_conf['host'])
         else:
             # Note to Amazon - would it be that hard to have s3-us-east-1.amazonaws.com?
@@ -615,7 +615,7 @@ class EC2Cloud(object):
         region_conf=self._decode_region_details(region)
         aki = region_conf[self.tdlobj.arch]
         boto_loc = region_conf['boto_loc']
-        if region != "ec2-us-east-1":
+        if region_conf['host'] != "us-east-1":
             upload_url = "http://s3-%s.amazonaws.com/" % (region_conf['host'])
         else:
             # Note to Amazon - would it be that hard to have s3-us-east-1.amazonaws.com?
@@ -1216,7 +1216,7 @@ class EC2Cloud(object):
         region_conf = self._decode_region_details(region)
         aki = region_conf[self.tdlobj.arch]
         boto_loc = region_conf['boto_loc']
-        if region != "ec2-us-east-1":
+        if region_conf['host'] != "us-east-1":
             upload_url = "http://s3-%s.amazonaws.com/" % (region_conf['host'])
         else:
             # Note to Amazon - would it be that hard to have s3-us-east-1.amazonaws.com?
