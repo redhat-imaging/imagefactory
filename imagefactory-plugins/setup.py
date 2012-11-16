@@ -70,6 +70,7 @@ setup(name='imagefactory-plugins',
       license='Apache License, Version 2.0',
       url='http://www.aeolusproject.org/imagefactory.html',
       package_dir = {'imagefactory_plugins': ''},
+      scripts = [ 'EC2Cloud/create-ec2-factory-credentials' ],
       packages=packages,
       cmdclass = {'sdist': sdist},
       data_files = datafiles
