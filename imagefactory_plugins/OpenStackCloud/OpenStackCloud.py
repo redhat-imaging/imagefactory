@@ -20,6 +20,7 @@ import libxml2
 import json
 import os
 from xml.etree.ElementTree import fromstring
+from imgfac.Template import Template
 from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.CloudDelegate import CloudDelegate
@@ -75,7 +76,14 @@ class OpenStackCloud(object):
         input_image = self.builder.target_image.data
         input_image_name = os.path.basename(input_image)
 
-        image_name = 'ImageFactory created image - %s' % (self.builder.provider_image.identifier)
+        # If the template species a name, use that, otherwise create a name
+        # using provider_image.identifier.
+        template = Template(self.builder.provider_image.template)
+        if template.name:
+            image_name = template.name
+        else:
+            image_name = 'ImageFactory created image - %s' % (self.builder.provider_image.identifier)
+
         image_id = glance_upload(input_image, creds = self.credentials_dict, token = self.credentials_token,
                                  host=provider_data['glance-host'], port=provider_data['glance-port'],
                                  name = image_name)

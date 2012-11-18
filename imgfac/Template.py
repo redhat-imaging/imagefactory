@@ -29,6 +29,10 @@ class Template(object):
     url = props.prop("_url", "The url property.")
     xml = props.prop("_xml", "The xml property.")
     @property
+    def name(self):
+        """The property name"""
+        return self._content_at_path('/template/name')
+    @property
     def os_name(self):
         """The property os_name"""
         return self._content_at_path('/template/os/name')
