@@ -83,7 +83,7 @@ class OpenStackCloud(object):
         if 'username' in self.credentials_dict:
             self.builder.provider_image.provider_account_identifier = self.credentials_dict['username']
         self.percent_complete=100
-    
+
     def openstack_decode_credentials(self, credentials):
         self.activity("Preparing OpenStack credentials")
         # TODO: Validate these - in particular, ensure that if some nodes are missing at least
@@ -94,7 +94,7 @@ class OpenStackCloud(object):
         for authprop in [ 'auth_url', 'password', 'strategy', 'tenant', 'username']:
             self.credentials_dict[authprop] = self._get_xml_node(doc, authprop)
         self.credentials_token = self._get_xml_node(doc, 'token')
-        
+
     def _get_xml_node(self, doc, credtype):
         nodes = doc.xpathEval("//provider_credentials/openstack_credentials/%s" % (credtype))
         # OpenStack supports multiple auth schemes so not all nodes are required
@@ -132,4 +132,3 @@ class OpenStackCloud(object):
             pass
 
         return None
-
