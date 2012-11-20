@@ -19,8 +19,10 @@ import zope
 import libxml2
 import json
 import os
+import struct
 from xml.etree.ElementTree import fromstring
 from imgfac.Template import Template
+from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.CloudDelegate import CloudDelegate
@@ -28,10 +30,10 @@ from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, re
 from glance import client as glance_client
 
 def glance_upload(image_filename, creds = {'auth_url': None, 'password': None, 'strategy': 'noauth', 'tenant': None, 'username': None},
-                  host = "0.0.0.0", port = "9292", token = None, name = 'Factory Test Image'):
+                  host = "0.0.0.0", port = "9292", token = None, name = 'Factory Test Image', disk_format = 'raw'):
 
     image_meta = {'container_format': 'bare',
-     'disk_format': 'raw',
+     'disk_format': disk_format,
      'is_public': True,
      'min_disk': 0,
      'min_ram': 0,
@@ -46,13 +48,13 @@ def glance_upload(image_filename, creds = {'auth_url': None, 'password': None, '
     image_data.close()
     return image_meta['id']
 
-
 class OpenStackCloud(object):
     zope.interface.implements(CloudDelegate)
 
     def __init__(self):
         # Note that we are now missing ( template, target, config_block = None):
         super(OpenStackCloud, self).__init__()
+        self.app_config = ApplicationConfiguration().configuration
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
 
     def activity(self, activity):
@@ -74,7 +76,6 @@ class OpenStackCloud(object):
 
         # Image is always here and it is the target_image datafile
         input_image = self.builder.target_image.data
-        input_image_name = os.path.basename(input_image)
 
         # If the template species a name, use that, otherwise create a name
         # using provider_image.identifier.
@@ -84,9 +85,15 @@ class OpenStackCloud(object):
         else:
             image_name = 'ImageFactory created image - %s' % (self.builder.provider_image.identifier)
 
+        if self.check_qcow_size(input_image):
+            self.log.debug("Uploading image to glance, detected qcow format")
+            disk_format='qcow2'
+        else:
+            self.log.debug("Uploading image to glance, assuming raw format")
+            disk_format='raw'
         image_id = glance_upload(input_image, creds = self.credentials_dict, token = self.credentials_token,
                                  host=provider_data['glance-host'], port=provider_data['glance-port'],
-                                 name = image_name)
+                                 name=image_name, disk_format=disk_format)
 
         self.builder.provider_image.identifier_on_provider = image_id
         if 'username' in self.credentials_dict:
@@ -127,6 +134,24 @@ class OpenStackCloud(object):
         self.builder=builder 
         self.modify_oz_filesystem()
 
+        # OS plugin has already provided the initial file for us to work with
+        # which we can currently assume is a raw image
+        input_image = builder.target_image.data
+
+        # Support conversion to alternate preferred image format
+        # Currently only handle qcow2, but the size reduction of
+        # using this avoids the performance penalty of uploading
+        # (and launching) raw disk images on slow storage
+        if self.app_config.get('openstack_image_format', 'raw') == 'qcow2':
+            self.log.debug("Converting RAW image to compressed qcow2 format")
+            rc = os.system("qemu-img convert -c -O qcow2 %s %s" %
+                            (input_image, input_image + ".tmp.qcow2"))
+            if rc == 0:
+                os.unlink(input_image)
+                os.rename(input_image + ".tmp.qcow2", input_image)
+            else:
+                raise ImageFactoryException("qemu-img convert failed!")
+
     def modify_oz_filesystem(self):
         self.log.debug("Doing further Factory specific modification of Oz image")
         guestfs_handle = launch_inspect_and_mount(self.builder.target_image.data)
@@ -150,3 +175,41 @@ class OpenStackCloud(object):
             pass
 
         return None
+
+    # FIXME : cut/paste from RHEVMHelper.py, should refactor into a common utility class
+    def check_qcow_size(self, filename):
+        # Detect if an image is in qcow format
+        # If it is, return the size of the underlying disk image
+        # If it isn't, return None
+
+        # For interested parties, this is the QCOW header struct in C
+        # struct qcow_header {
+        #    uint32_t magic;·
+        #    uint32_t version;
+        #    uint64_t backing_file_offset;
+        #    uint32_t backing_file_size;
+        #    uint32_t cluster_bits;
+        #    uint64_t size; /* in bytes */
+        #    uint32_t crypt_method;
+        #    uint32_t l1_size;
+        #    uint64_t l1_table_offset;
+        #    uint64_t refcount_table_offset;
+        #    uint32_t refcount_table_clusters;
+        #    uint32_t nb_snapshots;
+        #    uint64_t snapshots_offset;
+        # };
+
+        # And in Python struct format string-ese
+        qcow_struct=">IIQIIQIIQQIIQ" # > means big-endian
+        qcow_magic = 0x514649FB # 'Q' 'F' 'I' 0xFB
+
+        f = open(filename,"r")
+        pack = f.read(struct.calcsize(qcow_struct))
+        f.close()
+
+        unpack = struct.unpack(qcow_struct, pack)
+
+        if unpack[0] == qcow_magic:
+            return unpack[5]
+        else:
+            return None

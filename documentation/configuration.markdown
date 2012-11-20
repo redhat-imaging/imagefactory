@@ -84,3 +84,12 @@ Options specific to Red Hat Enterprise Virtualization
     - _Description:_ The format to use for RHEVM images.
     - _Default:_ kvm
     - _Values:_ qcow2
+
+## Openstack options
+
+Options specific to Openstack
+
++ **openstack_image_format**
+    - _Description:_ The format to use for Openstack images.
+    - _Default:_ raw
+    - _Values:_ qcow2
