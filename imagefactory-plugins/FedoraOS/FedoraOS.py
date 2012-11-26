@@ -15,9 +15,7 @@
 
 import logging
 import zope
-import oz.Fedora
-import oz.RHEL_5
-import oz.RHEL_6
+import oz.GuestFactory
 import oz.TDL
 import subprocess
 import libxml2
@@ -297,15 +295,14 @@ class FedoraOS(object):
             # TODO: Create the base_image object at the beginning and then set the diskimage accordingly
 
     def init_guest(self):
-        # TODO: See if we can make this a bit more dynamic
-        if self.tdlobj.distro == "RHEL-5":
-            self.guest = oz.RHEL_5.get_class(self.tdlobj, self.oz_config, None)
-        elif self.tdlobj.distro == "RHEL-6":
-            self.guest = oz.RHEL_6.get_class(self.tdlobj, self.oz_config, None)
-        elif self.tdlobj.distro == "Fedora":
-            self.guest = oz.Fedora.get_class(self.tdlobj, self.oz_config, None)
-        else:
-            raise ImageFactoryException("OS plugin does not support distro (%s) in TDL" % (self.tdlobj.distro) )
+        # Use the factory function from Oz directly
+        # This raises an exception if the TDL contains an unsupported distro or version
+        # Cloud plugins that use KVM directly, such as RHEV-M and openstack-kvm can accept
+        # any arbitrary guest that Oz is capable of producing
+        try:
+            self.guest = oz.GuestFactory.guest_factory(self.tdlobj, self.oz_config, None)
+        except:
+            raise ImageFactoryException("OS plugin does not support distro (%s) update (%s) in TDL" % (self.tdlobj.distro, self.tdlobj.update) )
 
     def log_exc(self):
         self.log.debug("Exception caught in ImageFactory")
