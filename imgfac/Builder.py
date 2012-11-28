@@ -29,8 +29,6 @@ from ProviderImage import ProviderImage
 from ImageFactoryException import ImageFactoryException
 from CallbackWorker import CallbackWorker
 from time import sleep
-from SecondaryDispatcher import SecondaryDispatcher
-from SecondaryPlugin import SecondaryPlugin
 
 class Builder(object):
     """ TODO: Docstring for Builder  """
@@ -61,6 +59,14 @@ class Builder(object):
         self.target_thread = None
         self.push_thread = None
         self.snapshot_thread = None
+        try:
+            from imgfac.secondary.SecondaryDispatcher import SecondaryDispatcher
+            from imgfac.secondary.SecondaryPlugin import SecondaryPlugin
+            self.secondary_dispatcher = SecondaryDispatcher()
+        except:
+            self.log.debug("No SecondaryDispatcher present - Use of secondary factories is not enabled")
+            self.secondary_dispatcher = None
+    
 
 #####  SETUP CALLBACKS
     def _init_callback_workers(self, image, callbacks, callbackworkers):
@@ -290,11 +296,12 @@ class Builder(object):
 
             template = template if(isinstance(template, Template)) else Template(template)
 
-            if not self.app_config['secondary']:
-                secondary = SecondaryDispatcher().get_secondary(target, provider)
+            if not self.app_config['secondary'] and self.secondary_dispatcher:
+                secondary = self.secondary_dispatcher.get_secondary(target, provider)
             else:
-                # Do not allow nesting of secondaries
+                # Do not allow nesting of secondaries and do not try to use the dispatcher if it is not present
                 secondary = None
+
             if secondary:
                 # NOTE: This may overwrite the cloud_plugin that was used to create the target_image
                 #       This is expected and is correct
