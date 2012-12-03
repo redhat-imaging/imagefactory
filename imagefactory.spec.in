@@ -65,8 +65,8 @@ python setup.py install -O1 --root=%{buildroot} --skip-build
 
 sed -i '/\/usr\/bin\/env python/d' %{buildroot}/%{python_sitelib}/imgfac/*.py
 
-%{__install} -m0600 conf/imagefactoryd.sysconfig %{buildroot}/%{_sysconfdir}/sysconfig/imagefactoryd
-%{__install} -m0600 conf/imagefactoryd.logrotate %{buildroot}/%{_sysconfdir}/logrotate.d/imagefactoryd
+%{__install} -m0600 conf/sysconfig/imagefactoryd %{buildroot}/%{_sysconfdir}/sysconfig/imagefactoryd
+%{__install} -m0600 conf/logrotate.d/imagefactoryd %{buildroot}/%{_sysconfdir}/logrotate.d/imagefactoryd
 
 %post
 /sbin/chkconfig --add imagefactoryd
