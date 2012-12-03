@@ -217,7 +217,7 @@ class Builder(object):
 ##### CREATE PROVIDER IMAGE
     def create_image_on_provider(self, provider, credentials, target, image_id=None, template=None, parameters=None, my_image_id = None):
         if(parameters and parameters.get('snapshot', False)):
-            self.snapshot_image_on_provider(provider, credentials, target, image_id, template, parameters, my_image_id)
+            self.snapshot_image(provider, credentials, target, image_id, template, parameters, my_image_id)
         else:
             self.push_image_to_provider(provider, credentials, target, image_id, template, parameters, my_image_id)
 
@@ -360,7 +360,7 @@ class Builder(object):
             else:    
                 plugin_mgr = PluginManager(self.app_config['plugins'])
                 self.cloud_plugin = plugin_mgr.plugin_for_target(target)
-            self.cloud_plugin.snapshot_image_on_provider(self, provider, credentials, target, image_id, template, parameters)
+            self.cloud_plugin.snapshot_image_on_provider(self, provider, credentials, target, template, parameters)
             self.provider_image.status="COMPLETE"
             self.pim.save_image(self.provider_image)
         except Exception, e:
