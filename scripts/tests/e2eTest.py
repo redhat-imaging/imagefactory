@@ -9,6 +9,7 @@ import threading
 import os
 import sys
 from tempfile import NamedTemporaryFile
+import requests
 
 
 description = 'Attempts an end to end test of the imagefactory command line interface\
@@ -17,10 +18,14 @@ description = 'Attempts an end to end test of the imagefactory command line inte
         for a target, and finally deleting the provider images. What is done at each\
         step is controlled by the datafile you supply this script. The e2eTest-ExampleData.json\
         file can be found in the scripts/tests/ directory of the imagefactory source\
-        tree for you to customize to your own testing.'
+        tree for you to customize to your own testing.\
+        To execute the test via REST api (the default) you need to disable ssl and oauth\
+        launching the daemon with --no_ssl and --no_oauth.'
 argparser = argparse.ArgumentParser()
 argparser.add_argument('datafile', type=argparse.FileType('r'))
-argparser.add_argument('cmd', default='/usr/bin/imagefactory', help='Path to the imagefactory command. (default: %(default)s)')
+argparser.add_argument('--cmd', default='/usr/bin/imagefactory', help='Path to the imagefactory command. (default: %(default)s)')
+argparser.add_argument('--url', default='http://localhost:8075/imagefactory', help='URL of the imagefactory instance to test. (default: %(default)s)')
+argparser.add_argument('-L', help='uses the local CLI to run the tests instead of the REST api interface. (default: %(default)s)', action='store_false', dest='remote')
 
 args = argparser.parse_args()
 test_data = json.load(args.datafile)
@@ -29,6 +34,7 @@ args.datafile.close()
 builds = test_data['jeos']
 targets = test_data['targets']
 providers = test_data['providers']
+requests_headers = {'accept': 'application/json', 'content-type': 'application/json'}
 
 base_images = []
 b_lock = threading.Lock()
@@ -41,7 +47,7 @@ f_lock = threading.Lock()
 build_queue = threading.BoundedSemaphore(len(builds))
 test_count = len(builds) * len(targets)
 test_index = 0
-proc_chk_interval = 5
+proc_chk_interval = 10
 
 # Required for Python 2.6 backwards compat
 def subprocess_check_output(*popenargs, **kwargs):
@@ -61,7 +67,7 @@ def create_base_image(template_args):
     build_queue.acquire()
     try:
         TDL = "<template><name>buildbase_image</name><os><name>%s</name><version>%s\
-</version><arch>%s</arch><install type='url'><url>%s</url></install></os>\
+</version><arch>%s</arch><install type='url'><url>%s</url></install><rootpw>password</rootpw></os>\
 <description>Tests building a base_image</description></template>" % (template_args['os'],
                                                                      template_args['version'],
                                                                      template_args['arch'],
@@ -71,13 +77,22 @@ def create_base_image(template_args):
         template.write(TDL)
         template.close()
 
-        (base_image_output_str, ignore, ignore) = subprocess_check_output('%s --output json --raw base_image %s' % (args.cmd, template.name), shell=True)
-        base_image_output_dict = json.loads(base_image_output_str)
-        base_image_id = base_image_output_dict['identifier']
+        if args.remote:
+            payload = {'base_image': {'template': TDL}}
+            r = requests.post(args.url+'/base_images', data=json.dumps(payload), headers=requests_headers)
+            base_image_output_str = r.text
+        else:
+            (base_image_output_str, ignore, ignore) = subprocess_check_output('%s --output json --raw base_image %s' % (args.cmd, template.name), shell=True)
+        base_image_output_dict = json.loads(base_image_output_str)['base_image']
+        base_image_id = base_image_output_dict['id']
         while(base_image_output_dict['status'] not in ('COMPLETE', 'COMPLETED', 'FAILED')):
             sleep(proc_chk_interval)
-            (base_image_output_str, ignore, ignore) = subprocess_check_output('%s --output json --raw images \'{"identifier":"%s"}\'' % (args.cmd, base_image_id), shell=True)
-            base_image_output_dict = json.loads(base_image_output_str)
+            if args.remote:
+                r = requests.get(args.url+'/base_images/'+base_image_id)
+                base_image_output_str = r.text
+            else:
+                (base_image_output_str, ignore, ignore) = subprocess_check_output('%s --output json --raw images \'{"identifier":"%s"}\'' % (args.cmd, base_image_id), shell=True)
+            base_image_output_dict = json.loads(base_image_output_str)['base_image']
 
         if(base_image_output_dict['status'] == 'FAILED'):
             with f_lock:
@@ -94,13 +109,22 @@ def build_push_delete(target, index):
     try:
         if(index < len(base_images)):
             base_image = base_images[index]
-            (target_image_output_str, ignore, ignore) = subprocess_check_output('%s --output json --raw target_image --id %s %s' % (args.cmd, base_image.get('identifier'), target), shell=True)
-            target_image_output_dict = json.loads(target_image_output_str)
-            target_image_id = target_image_output_dict['identifier']
+            if args.remote:
+                payload = {'target_image': {'target': target}}
+                r = requests.post(args.url+'/base_images/'+base_image['id']+'/target_images', data=json.dumps(payload), headers=requests_headers)
+                target_image_output_str = r.text
+            else:
+                (target_image_output_str, ignore, ignore) = subprocess_check_output('%s --output json --raw target_image --id %s %s' % (args.cmd, base_image['id'], target), shell=True)
+            target_image_output_dict = json.loads(target_image_output_str)['target_image']
+            target_image_id = target_image_output_dict['id']
             while(target_image_output_dict['status'] not in ('COMPLETE', 'COMPLETED', 'FAILED')):
                 sleep(proc_chk_interval)
-                (target_image_output_str, ignore, ignore) = subprocess_check_output('%s --output json --raw images \'{"identifier":"%s"}\'' % (args.cmd, target_image_id), shell=True)
-                target_image_output_dict = json.loads(target_image_output_str)
+                if args.remote:
+                    r = requests.get(args.url+'/target_images/'+target_image_id)
+                    target_image_output_str = r.text
+                else:
+                    (target_image_output_str, ignore, ignore) = subprocess_check_output('%s --output json --raw images \'{"identifier":"%s"}\'' % (args.cmd, target_image_id), shell=True)
+                target_image_output_dict = json.loads(target_image_output_str)['target_image']
 
             if(target_image_output_dict['status'] == 'FAILED'):
                 with f_lock:
@@ -109,25 +133,42 @@ def build_push_delete(target, index):
                 with t_lock:
                     target_images.append(target_image_output_dict)
                 for provider in providers:
-                    if((not provider.startswith('example')) and (provider['target'] == target)):
+                    if((not provider['name'].startswith('example')) and (provider['target'] == target)):
                         try:
+                            if 'ec2' in provider['target']:
+                                f = open(provider['credentials'], 'r')
+                                provider['credentials'] = f.read()
+                                f.close()
                             credentials_file = NamedTemporaryFile()
                             credentials_file.write(provider['credentials'])
                             provider_file = NamedTemporaryFile()
                             provider_file.write(provider['definition'])
-                            (provider_image_output_str, ignore, ignore) = subprocess_check_output('%s --output json --raw provider_image --id %s %s %s %s' % (args.cmd, target_image_id, provider['target'], provider_file.name, credentials_file.name), shell=True)
-                            provider_image_output_dict = json.loads(provider_image_output_str)
-                            provider_image_id = provider_image_output_dict['identifier']
+                            if args.remote:
+                                payload = {'provider_image': {'target': target, 'provider': provider['name'], 'credentials': provider['credentials']}}
+                                r = requests.post(args.url+'/target_images/'+target_image_id+'/provider_images', data=json.dumps(payload), headers=requests_headers)
+                                provider_image_output_str = r.text
+                            else:
+                                (provider_image_output_str, ignore, ignore) = subprocess_check_output('%s --output json --raw provider_image --id %s %s %s %s' % (args.cmd, target_image_id, provider['target'], provider_file.name, credentials_file.name), shell=True)
+                            provider_image_output_dict = json.loads(provider_image_output_str)['provider_image']
+                            provider_image_id = provider_image_output_dict['id']
                             while(provider_image_output_dict['status'] not in ('COMPLETE', 'COMPLETED', 'FAILED')):
                                 sleep(proc_chk_interval)
-                                (provider_image_output_str, ignore, ignore) = subprocess_check_output('%s --output json --raw images \'{"identifier":"%s"}\'' % (args.cmd, provider_image_id), shell=True)
-                                provider_image_output_dict = json.loads(provider_image_output_str)
-                                if(provider_image_output_dict['status'] == 'FAILED'):
-                                    with f_lock:
-                                        failures.append(provider_image_output_dict)
+                                if args.remote:
+                                    r = requests.get(args.url+'/provider_images/'+provider_image_id)
+                                    provider_image_output_str = r.text
                                 else:
-                                    with p_lock:
-                                        provider_images.append(provider_image_output_dict)
+                                    (provider_image_output_str, ignore, ignore) = subprocess_check_output('%s --output json --raw images \'{"identifier":"%s"}\'' % (args.cmd, provider_image_id), shell=True)
+                                provider_image_output_dict = json.loads(provider_image_output_str)['provider_image']
+
+                            if(provider_image_output_dict['status'] == 'FAILED'):
+                                with f_lock:
+                                    failures.append(provider_image_output_dict)
+                            else:
+                                with p_lock:
+                                    provider_images.append(provider_image_output_dict)
+                                if args.remote:
+                                    r = requests.delete(args.url+'/provider_images/'+provider_image_id)
+                                else:
                                     subprocess_check_output('%s --output json --raw delete %s --target %s --provider %s --credentials %s' % (args.cmd, provider_image_id, provider['target'], provider_file.name, credentials_file.name), shell=True)
                         finally:
                             credentials_file.close()
@@ -149,13 +190,19 @@ for target in targets:
         customize_thread.start()
 
 while(test_index < test_count):
-    sleep(5)
+    sleep(proc_chk_interval)
 
 for target_image in target_images:
-    subprocess_check_output('%s --output json --raw delete %s' % (args.cmd, target_image['identifier']), shell=True)
+    if args.remote:
+        r = requests.delete(args.url+'/target_images/'+target_image['id'])
+    else:
+        subprocess_check_output('%s --output json --raw delete %s' % (args.cmd, target_image['id']), shell=True)
 
 for base_image in base_images:
-    subprocess_check_output('%s --output json --raw delete %s' % (args.cmd, base_image['identifier']), shell=True)
+    if args.remote:
+        r = requests.delete(args.url+'/base_images/'+base_image['id'])
+    else:
+        subprocess_check_output('%s --output json --raw delete %s' % (args.cmd, base_image['id']), shell=True)
 
 print json.dumps({"failures":failures, "base_images":base_images, "target_images":target_images}, indent=2)
 sys.exit(0)

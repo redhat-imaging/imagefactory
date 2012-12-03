@@ -16,9 +16,9 @@
     ],
     "targets": ["rhevm", "ec2", "vsphere"],
     "providers":
-    {
-        "example-rhevm-provider":
+    [
         {
+            "name": "example-rhevm-provider",
             "target": "rhevm",
             "definition":
             {
@@ -31,8 +31,8 @@
             },
             "credentials": "<provider_credentials><rhevm_credentials><username>username</username><password>password</password></rhevm_credentials></provider_credentials>"
         },
-        "example-vsphere-provider":
         {
+            "name": "example-vsphere-provider",
             "target": "vsphere",
             "definition":
             {
@@ -42,9 +42,11 @@
             },
             "credentials": "<provider_credentials><vsphere_credentials><username>username</username><password>password</password></vsphere_credentials></provider_credentials>"
         },
-        "example-ec2-region":
         {
-            "target": "ec2"
+            "name": "example-ec2-region",
+            "target": "ec2",
+            "definition": "",
+            "credentials": "/path/to/ec2_credentials.xml"
         }
-    }
+    ]
 }
