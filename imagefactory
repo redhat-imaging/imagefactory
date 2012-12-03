@@ -165,14 +165,14 @@ class Application(Singleton):
 
             if(command == 'base_image'):
                 builder = BuildDispatcher().builder_for_base_image(template=template,
-                                                                   parameters=self.app_config.get('parameters'))
+                                                                   parameters=parameters)
                 image = builder.base_image
                 thread = builder.base_thread
             elif(command == 'target_image'):
                 builder = BuildDispatcher().builder_for_target_image(target=self.app_config['target'],
                                                                      image_id=self.app_config.get('id'),
                                                                      template=template,
-                                                                     parameters=self.app_config.get('parameters'))
+                                                                     parameters=parameters)
                 image = builder.target_image
                 thread = builder.target_thread
             elif(command == 'provider_image'):
@@ -187,7 +187,7 @@ class Application(Singleton):
                                                                         target=self.app_config.get('target'),
                                                                         image_id=self.app_config.get('id'),
                                                                         template=template,
-                                                                        parameters=self.app_config.get('parameters'))
+                                                                        parameters=parameters)
                 image = builder.provider_image
                 if builder.push_thread:
                     thread = builder.push_thread
@@ -231,7 +231,7 @@ class Application(Singleton):
                                      credentials=self.app_config.get('credentials'), 
                                      target=self.app_config.get('target'), 
                                      image_object=image, 
-                                     parameters=self.app_config.get('parameters'))
+                                     parameters=parameters)
                 print('Deleting image with id %s' % image_id)
                 builder.delete_thread.join()
                 return
