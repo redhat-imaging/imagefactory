@@ -38,6 +38,8 @@ Requires: python-httplib2
 Requires: python-argparse
 Requires: python-paste-deploy
 Requires: python-oauth2
+Requires: python-requests
+Requires: python-requests-oauth
 Requires(post): chkconfig
 Requires(preun): chkconfig
 # This is for /sbin/service
