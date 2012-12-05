@@ -147,6 +147,16 @@ class Application(Singleton):
         thread = None
         image = None
 
+        parameters_file = self.app_config.get('parameters')
+        if(parameters_file):
+            try:
+                parameters = json.reads(parameters_file.read().rstrip())
+            except:
+                logging.error("Unable to read JSON from file provided in --parameters")
+                sys.exit(1)
+        else:
+            parameters={ }
+
         if(command in ('base_image', 'target_image', 'provider_image')):
             template = None
             tdl_file = self.app_config.get('template')
@@ -166,6 +176,11 @@ class Application(Singleton):
                 image = builder.target_image
                 thread = builder.target_thread
             elif(command == 'provider_image'):
+                # This is a convenience argument for the CLI - Without it users are forced to pass in an entire JSON file
+                # just to select the snapshot style of build - This argument is always present in provider_image invocations
+                # and defaults to false.  Do not override a pre-existing snapshot value if it is present in parameters
+                if not 'snapshot' in parameters:
+                    parameters['snapshot'] = self.app_config.get('snapshot')
                 provider = self._get_provider(self.app_config['provider'])
                 builder = BuildDispatcher().builder_for_provider_image(provider=provider,
                                                                         credentials=self.app_config['credentials'].read().rstrip(),
