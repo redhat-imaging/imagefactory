@@ -590,11 +590,17 @@ class EC2Cloud(object):
 
         # TODO: This is a convenience variable for refactoring - rename
         self.new_image_id = builder.provider_image.identifier
+        # TODO: so is this
+        self.target = target
+
 
         # Template must be defined for snapshots
         self.tdlobj = oz.TDL.TDL(xmlstring=str(template), rootpw_required=True)
         self._get_os_helper()
         self.os_helper.init_guest()
+
+        # Create a name combining the TDL name and the UUID for use when tagging EC2 AMIs
+        self.longname = self.tdlobj.name + "-" + self.new_image_id
 
         def replace(item):
             if item in [self.ec2_access_key, self.ec2_secret_key]:
@@ -876,9 +882,7 @@ class EC2Cloud(object):
             except Exception, e:
                 self.log.debug("Unable to delete temporary security group (%s) due to exception: %s" % (factory_security_group_name, e))
 
-        self.log.debug("Fedora_ec2_Builder instance %s pushed image with uuid %s to provider_image UUID (%s)" % (id(self), target_image_id, self.new_image_id))
-        self.percent_complete=100
-        self.status="COMPLETED"
+        self.log.debug("Fedora_ec2_Builder successfully pushed image with uuid %s as %s" % (self.new_image_id, new_ami_id))
 
     def push_image_upload(self, target_image_id, provider, credentials):
         self.status="PUSHING"
@@ -1192,8 +1196,6 @@ class EC2Cloud(object):
         # This replaces our warehouse calls
         self.builder.provider_image.identifier_on_provider=ami_id
         self.builder.provider_image.provider_account_identifier=self.ec2_access_key
-
-        self.log.debug("Fedora_ec2_Builder instance %s pushed image with uuid %s to provider_image UUID (%s)" % (id(self), target_image_id, self.new_image_id))
         self.percent_complete=100
 
     def ec2_push_image_upload(self, target_image_id, provider, credentials):

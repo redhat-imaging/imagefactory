@@ -26,7 +26,7 @@ class Base_ec2_Helper(object):
     def init_guest(self):
         raise ImageFactoryException("init_guest() not implemented in this helper")
 
-    def ebs_pre_shapshot_tasks(self, guestaddr):
+    def ebs_pre_snapshot_tasks(self, guestaddr):
         pass
 
     def correct_remote_manifest(self, guestaddr, manifest):
