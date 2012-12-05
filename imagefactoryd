@@ -25,7 +25,6 @@ from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.Singleton import Singleton
 from imgfac.rest.bottle import *
 from imgfac.rest.RESTv2 import rest_api
-from imgfac.rest.RESTSecondaryv2 import rest_api as secondary_rest_api
 from imgfac.PluginManager import PluginManager
 from time import asctime, localtime
 
@@ -193,7 +192,13 @@ class Application(Singleton):
                 pass
 
         if self.app_config['secondary']:
-            app = secondary_rest_api
+            try:
+                from imgfac.secondary.RESTSecondaryv2 import rest_api as secondary_rest_api
+                app = secondary_rest_api
+            except:
+                logging.error("Secondary REST API module not present - Cannot start as a secondary factory")
+                sys.exit(1)
+
         else:
             app = rest_api
 
