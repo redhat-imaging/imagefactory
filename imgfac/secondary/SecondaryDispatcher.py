@@ -16,12 +16,12 @@ import logging
 import os.path
 import json
 import shutil
+from threading import BoundedSemaphore, Thread
 from imgfac.Singleton import Singleton
 from imgfac.NotificationCenter import NotificationCenter
-from threading import BoundedSemaphore, Thread
-from PersistentImageManager import PersistentImageManager
-from ReservationManager import ReservationManager
-from TargetImage import TargetImage
+from imgfac.PersistentImageManager import PersistentImageManager
+from imgfac.ReservationManager import ReservationManager
+from imgfac.TargetImage import TargetImage
 from SecondaryHelper import SecondaryHelper
 import uuid
 

@@ -19,11 +19,11 @@ sys.path.insert(1, '%s/imgfac/rest' % sys.path[0])
 import logging
 import os.path
 import shutil
-from bottle import *
+from imgfac.rest.bottle import *
 import imgfac.rest.RESTtools as RESTtools
 from imgfac.rest.OAuthTools import oauth_protect
 from imgfac.BuildDispatcher import BuildDispatcher
-from imgfac.SecondaryDispatcher import SecondaryDispatcher
+from imgfac.secondary.SecondaryDispatcher import SecondaryDispatcher
 from imgfac.PluginManager import PluginManager
 from imgfac.PersistentImageManager import PersistentImageManager
 from imgfac.Version import VERSION as VERSION
