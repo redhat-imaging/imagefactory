@@ -16,7 +16,7 @@ import ez_setup
 ez_setup.use_setuptools()
 
 from setuptools import setup
-from setuptools.command.easy_install import easy_install as _easy_install
+#from setuptools.command.easy_install import easy_install as _easy_install
 from distutils.sysconfig import get_python_lib
 from distutils.spawn import find_executable
 import subprocess
@@ -37,35 +37,35 @@ if depflag in sys.argv:
 else:
     NO_DEPENDENCIES = False
 
-class easy_install(_easy_install):
-    def check_preinstall_deps(self):
+#class easy_install(_easy_install):
+#    def check_preinstall_deps(self):
         # There are some things we cannot install via setuptools. Until we take on
         # providing pre/post install magic to install these things, we need to let
         # the user know what we need and how to get it installed in order to proceed.
         # Note: this check should be made more generic if we end up with more than a few
         # things to check. For now, this will suffice.
-        missing_dependencies = []
-        try:
-            required_module = 'oz'
-            __import__(required_module)
-        except:
-            missing_dependencies.append(required_module)
+#        missing_dependencies = []
+#        try:
+#            required_module = 'oz'
+#            __import__(required_module)
+#        except:
+#            missing_dependencies.append(required_module)
         # check for one of the commands we use from euca2ools
-        if(not find_executable('euca-bundle-image')):
-            missing_dependencies.append('euca2ools')
+#        if(not find_executable('euca-bundle-image')):
+#            missing_dependencies.append('euca2ools')
 
-        if(len(missing_dependencies) > 0):
-            info_url = 'http://imgfac.org/documentation/dependencies'
-            print('###############################\nSetup cannot continue due to missing dependencies that are not installed by this script: %s\nPlease see %s for more information regarding pre-install dependencies.' % (missing_dependencies, info_url))
-            exit(1)
+#        if(len(missing_dependencies) > 0):
+#            info_url = 'http://imgfac.org/documentation/dependencies'
+#            print('###############################\nSetup cannot continue due to missing dependencies that are not installed by this script: %s\nPlease see %s for more information regarding pre-install dependencies.' % (missing_dependencies, info_url))
+#            exit(1)
     
-    def easy_install(self, spec, deps=False):
+#    def easy_install(self, spec, deps=False):
         # This allows us to use "setup.py install" in our SPEC file without getting auto deps
-        if NO_DEPENDENCIES:
-            _easy_install.easy_install(self, spec, False)
-        else:
-            self.check_preinstall_deps()
-            _easy_install.easy_install(self, spec, True)
+#        if NO_DEPENDENCIES:
+#            _easy_install.easy_install(self, spec, False)
+#        else:
+#            self.check_preinstall_deps()
+#            _easy_install.easy_install(self, spec, True)
 
 # Required for Python 2.6 backwards compat
 def subprocess_check_output(*popenargs, **kwargs):
@@ -116,5 +116,6 @@ setup(name='imagefactory-plugins',
       packages=packages,
       data_files = datafiles,
       install_requires = dependencies,
-      cmdclass={'easy_install': easy_install}
+      zip_safe = False
+#      cmdclass={'easy_install': easy_install}
       )

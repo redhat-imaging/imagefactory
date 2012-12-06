@@ -16,7 +16,7 @@ import ez_setup
 ez_setup.use_setuptools()
 
 from setuptools import setup
-from setuptools.command.easy_install import easy_install as _easy_install
+#from setuptools.command.easy_install import easy_install as _easy_install
 import subprocess
 import sys
 
@@ -27,28 +27,28 @@ if depflag in sys.argv:
 else:
     NO_DEPENDENCIES = False
 
-class easy_install(_easy_install):
-    def check_preinstall_deps(self):
+#class easy_install(_easy_install):
+#    def check_preinstall_deps(self):
         # There are some things we cannot install via setuptools. Until we take on
         # providing pre/post install magic to install these things, we need to let
         # the user know what we need and how to get it installed in order to proceed.
         # Note: this check should be made more generic if we end up with more than a few
         # things to check. For now, this will suffice.
-        try:
-            required_module = 'guestfs'
-            __import__(required_module)
-        except:
-            info_url = 'http://imgfac.org/documentation/dependencies'
-            print('###################\nSetup cannot continue due to missing dependencies that are not installed by this script: %s\nPlease see %s for more information regarding pre-install dependencies.' % (required_module, info_url))
-            exit(1)
+#        try:
+#            required_module = 'guestfs'
+#            __import__(required_module)
+#        except:
+#            info_url = 'http://imgfac.org/documentation/dependencies'
+#            print('###################\nSetup cannot continue due to missing dependencies that are not installed by this script: %s\nPlease see %s for more information regarding pre-install dependencies.' % (required_module, info_url))
+#            exit(1)
     
-    def easy_install(self, spec, deps=False):
+#    def easy_install(self, spec, deps=False):
         # This allows us to use "setup.py install" in our SPEC file without getting auto deps
-        if NO_DEPENDENCIES:
-            _easy_install.easy_install(self, spec, False)
-        else:
-            self.check_preinstall_deps()
-            _easy_install.easy_install(self, spec, True)
+#        if NO_DEPENDENCIES:
+#            _easy_install.easy_install(self, spec, False)
+#        else:
+#            self.check_preinstall_deps()
+#            _easy_install.easy_install(self, spec, True)
 
 # Required for Python 2.6 backwards compat
 def subprocess_check_output(*popenargs, **kwargs):
@@ -93,9 +93,9 @@ datafiles=[('share/man/man1', ['documentation/man/imagefactory.1', 'documentatio
            ('/etc/logrotate.d', ['conf/logrotate.d/imagefactoryd']),
            ('/etc/rc.d/init.d', ['scripts/imagefactoryd'])]
 
-dependencies=['pycurl', 'zope.interface', 'libxml2.python', 'httplib2',
-              'argparse', 'PasteDeploy', 'oauth2', 'bottle', 'pymongo',
-              'requests', 'requests-oauth2']
+dependencies=['pycurl', 'zope.interface', 'httplib2', 'argparse',
+              'PasteDeploy', 'oauth2', 'bottle', 'pymongo', 'requests',
+              'requests-oauth2']
 
 setup(name='imagefactory',
       version=pkg_version,
@@ -108,5 +108,6 @@ setup(name='imagefactory',
       scripts=['imagefactory', 'imagefactoryd'],
       data_files = datafiles,
       install_requires = dependencies,
-      cmdclass={'easy_install': easy_install}
+      zip_safe = False
+      #cmdclass={'easy_install': easy_install}
       )
