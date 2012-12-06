@@ -28,35 +28,7 @@ title: Installation
 
 ---
 
-<a id="distutils" />
-## Installing via distutils
+<a id="setuptools" />
+## Installing via setuptools
 
-1. Get the imagefactory source tree.
-
-    tarball:
-    
-        $ wget https://github.com/aeolusproject/imagefactory/tarball/master ; tar xvf master ; rm master
-
-    git:
-
-        $ git clone git://github.com/aeolusproject/imagefactory.git
-
-1. Change to the `imagefactory` or the `aeolus-imagefactory-<commit>` directory.
-
-        $ cd aeolusproject-imagefactory-d9ce32d
-
-    or
-    
-        $ cd imagefactory
-
-1. Install imagefactory core
-
-        $ su -c "python setup.py install"
-
-1. Change to the `imagefactory-plugins` directory
-
-        $ cd imagefactory-plugins
-
-1. Install the imagefactory plugins
-
-        $ su -c "python setup.py install"
+This is currently being worked on. Please watch this space for more information soon.

@@ -7,7 +7,7 @@ title: Documentation
 #### Installation:
 
 * [Installation via RPM](/documentation/install.html#rpm "Installation via RPM")
-* [Installation via distutils](/documentation/install.html#distutils "Installation via distutil")
+* [Installation via setuptools](/documentation/install.html#setuptools "Installation via setuptools")
 
 #### Setup
 
