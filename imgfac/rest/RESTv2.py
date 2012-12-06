@@ -13,9 +13,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import sys
-sys.path.insert(1, '%s/imgfac/rest' % sys.path[0])
-
 import logging
 import os.path
 from bottle import *

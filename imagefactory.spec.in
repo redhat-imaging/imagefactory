@@ -38,6 +38,7 @@ Requires: python-httplib2
 Requires: python-argparse
 Requires: python-paste-deploy
 Requires: python-oauth2
+Requires: python-bottle
 Requires(post): chkconfig
 Requires(preun): chkconfig
 # This is for /sbin/service
@@ -65,7 +66,7 @@ This is mainly useful when operating the primary factory behind a restrictive fi
 python setup.py build
 
 %install
-python setup.py install -O1 --root=%{buildroot} --skip-build
+python setup.py --install-no-deps install -O1 --root=%{buildroot} --skip-build
 
 %{__install} -d %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
 %{__install} -d %{buildroot}/%{_localstatedir}/lib/imagefactory/images

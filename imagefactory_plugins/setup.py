@@ -17,8 +17,18 @@ ez_setup.use_setuptools()
 
 from setuptools import setup
 from setuptools.command.easy_install import easy_install as _easy_install
+from distutils.sysconfig import get_python_lib
+from distutils.spawn import find_executable
 import subprocess
 import sys
+
+
+# ****** IF ADDING A NEW PLUGIN ******
+# If your plugin follows the standard format, all you should need to do is add the name
+# here.  If this doesn't work, you'll have to dig into the details below
+
+plugins = ['EC2Cloud', 'FedoraOS','MockSphere','MockRPMBasedOS', 'OpenStackCloud',
+           'RHEVM', 'vSphere']
 
 depflag = "--install-no-deps"
 if depflag in sys.argv:
@@ -34,12 +44,19 @@ class easy_install(_easy_install):
         # the user know what we need and how to get it installed in order to proceed.
         # Note: this check should be made more generic if we end up with more than a few
         # things to check. For now, this will suffice.
+        missing_dependencies = []
         try:
-            required_module = 'guestfs'
+            required_module = 'oz'
             __import__(required_module)
         except:
+            missing_dependencies.append(required_module)
+        # check for one of the commands we use from euca2ools
+        if(not find_executable('euca-bundle-image')):
+            missing_dependencies.append('euca2ools')
+
+        if(len(missing_dependencies) > 0):
             info_url = 'http://imgfac.org/documentation/dependencies'
-            print('###################\nSetup cannot continue due to missing dependencies that are not installed by this script: %s\nPlease see %s for more information regarding pre-install dependencies.' % (required_module, info_url))
+            print('###############################\nSetup cannot continue due to missing dependencies that are not installed by this script: %s\nPlease see %s for more information regarding pre-install dependencies.' % (missing_dependencies, info_url))
             exit(1)
     
     def easy_install(self, spec, deps=False):
@@ -77,37 +94,26 @@ except:
     print('%s not found! Unable to set version string, using "%s"' % (cmd, unknown_version))
     pkg_version = unknown_version
 
-# Set the version in imgfac/Version.py
-# used when returning version from the rest api or cli
-version_file_path = "imgfac/Version.py"
-version_file = open(version_file_path, 'w')
-version_file.write('VERSION = "%s"' % pkg_version)
-version_file.close()
+site_pkgs = get_python_lib()
+datafiles = [('/etc/imagefactory/jeos_images', ['conf/ec2_fedora_jeos.conf', 'conf/ec2_rhel_jeos.conf'])]
+packages = [ 'imagefactory_plugins' ]
+dependencies = ['glance', 'boto', 'pshere', 'ovirt-engine-sdk>=3.1.0']
 
-datafiles=[('share/man/man1', ['documentation/man/imagefactory.1', 'documentation/man/imagefactoryd.1']),
-           ('share/man/man5', ['documentation/man/imagefactory.conf.5']),
-           ('share/man/man7', ['documentation/man/imagefactory.rest.7']),
-           ('/etc/imagefactory', ['imagefactory.conf']),
-           ('/etc/pki/imagefactory', ['cert-ec2.pem']),
-           ('/etc/sysconfig', ['conf/sysconfig/imagefactoryd']),
-           ('/etc/logrotate.d', ['conf/logrotate.d/imagefactoryd']),
-           ('/etc/rc.d/init.d', ['scripts/imagefactoryd'])]
+for plugin in plugins:
+    # TODO: This really needs to set the version in each plugin's .info file as well.
+    datafiles.append( (site_pkgs + '/imagefactory_plugins/' + plugin, [ plugin + '/' + plugin + '.info' ]) )
+    packages.append( "imagefactory_plugins." + plugin )
 
-dependencies=['pycurl', 'zope.interface', 'libxml2.python', 'httplib2',
-              'argparse', 'PasteDeploy', 'oauth2', 'bottle', 'pymongo',
-              'requests', 'requests-oauth2']
-
-setup(name='imagefactory',
+setup(name='imagefactory-plugins',
       version=pkg_version,
-      description='imagefactory system image generation tool',
-      author='Red Hat, Inc. and Contributors',
+      description='Default plugins for the Image Factory system image generation tool',
+      author='Ian McLeod',
       author_email='imcleod@redhat.com',
       license='Apache License, Version 2.0',
-      url='http://imgfac.org',
-      packages=['imgfac', 'imgfac.rest', 'imgfac.picklingtools'],
       url='http://www.aeolusproject.org/imagefactory.html',
-      packages=['imgfac', 'imgfac.rest', 'imgfac.picklingtools', 'imgfac.secondary'],
-      scripts=['imagefactory', 'imagefactoryd'],
+      package_dir = {'imagefactory_plugins': ''},
+      scripts = [ 'EC2Cloud/create-ec2-factory-credentials' ],
+      packages=packages,
       data_files = datafiles,
       install_requires = dependencies,
       cmdclass={'easy_install': easy_install}

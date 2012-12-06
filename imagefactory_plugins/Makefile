@@ -1,6 +1,6 @@
 version:
-	git describe > version.txt
-	perl -p -i -e 's/-/_/g' version.txt
+	VERSION= `git describe | tr - _`
+	sed -e "s/@VERSION@/${VERSION}/g" < imagefactory-plugins.spec.in > imagefactory-plugins.spec
 
 sdist:
 	python setup.py sdist

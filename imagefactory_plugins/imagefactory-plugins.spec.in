@@ -118,7 +118,7 @@ A plugin for vSphere "clouds"
 python setup.py build
 
 %install
-python setup.py install -O1 --root=%{buildroot} --skip-build
+python setup.py --install-no-deps install -O1 --root=%{buildroot} --skip-build
 
 %post FedoraOS
 %auto_register_macro_post FedoraOS

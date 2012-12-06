@@ -1,3 +1,7 @@
 imgfac/Version.py
 
 /_site/
+/paver-minilib.zip
+*.egg-info
+/build/
+/dist/
