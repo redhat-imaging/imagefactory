@@ -5,6 +5,8 @@ import time
 import logging
 import httplib2
 import json
+import re
+import base64
 
 class CallbackWorker():
 
@@ -14,7 +16,17 @@ class CallbackWorker():
         self.callback_queue = [ ]
         self.queue_lock = threading.BoundedSemaphore()
         self.queue_not_empty = threading.Event()
-        self.callback_url = callback_url
+        self.httplib = httplib2.Http()
+        # TODO: A more flexible approach than simply supporting basic auth embedded in the URL
+        url_regex = r"^(\w*://)([^:/]+)(:)([^:/]+)(@)(.*)$"
+        sr = re.search(url_regex, callback_url)
+        if sr:
+            self.callback_url = sr.group(1) + sr.group(6)
+            auth = base64.encodestring( sr.group(2) + ':' + sr.group(4) )
+            self.headers = {'content-type':'application/json', 'Authorization' : 'Basic ' + auth}
+        else:
+            self.callback_url = callback_url
+            self.headers = {'content-type':'application/json'}
         self.shutdown = False
 
     def start(self):
@@ -106,10 +118,9 @@ class CallbackWorker():
             else:
                 self.log.debug("PUTing update to URL (%s)" % (self.callback_url))
                 try:
-                    h = httplib2.Http()
-                    resp, content = h.request(self.callback_url, 
-                                              "PUT", body=json.dumps(next_callback), 
-                                              headers={'content-type':'application/json'} )
+                    resp, content = self.httplib.request(self.callback_url, 
+                                                         "PUT", body=json.dumps(next_callback), 
+                                                         headers=self.headers )
                 except Exception, e:
                     # We treat essentially every potential error here as non-fatal and simply move on to the next update
                     # TODO: Configurable retries?
