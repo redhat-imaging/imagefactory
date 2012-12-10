@@ -357,11 +357,12 @@ class Builder(object):
 
     def _snapshot_image(self, provider, credentials, target, image_id, template, parameters):
         try:
-            if not self.app_config['secondary']:
-                secondary = SecondaryDispatcher().get_secondary(target, provider)
+            if not self.app_config['secondary'] and self.secondary_dispatcher:
+                secondary = self.secondary_dispatcher.get_secondary(target, provider)
             else:
-                # Do not allow nesting of secondaries
+                # Do not allow nesting of secondaries and do not try to use the dispatcher if it is not present
                 secondary = None
+
             if secondary:
                 self.cloud_plugin = SecondaryPlugin(SecondaryDispatcher().get_helper(secondary))
             else:    
