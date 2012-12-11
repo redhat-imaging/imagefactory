@@ -79,7 +79,7 @@ class FedoraOS(object):
         # which we do not want to modify in place
         self.activity("Copying BaseImage to modifiable TargetImage")
         self.log.debug("Copying base_image file (%s) to new target_image file (%s)" % (builder.base_image.data, builder.target_image.data))
-        oz.osutil.copyfile_sparse(builder.base_image.data, builder.target_image.data)
+        oz.ozutil.copyfile_sparse(builder.base_image.data, builder.target_image.data)
         self.image = builder.target_image.data
 
         # Retrieve original libvirt_xml from base image - update filename
