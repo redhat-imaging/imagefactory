@@ -97,7 +97,7 @@ except:
 site_pkgs = get_python_lib()
 datafiles = [('/etc/imagefactory/jeos_images', ['conf/ec2_fedora_jeos.conf', 'conf/ec2_rhel_jeos.conf'])]
 packages = [ 'imagefactory_plugins' ]
-dependencies = ['glance', 'boto', 'pshere', 'ovirt-engine-sdk>=3.1.0']
+dependencies = ['glance', 'boto', 'psphere', 'ovirt-engine-sdk>=3.1.0']
 
 for plugin in plugins:
     # TODO: This really needs to set the version in each plugin's .info file as well.
