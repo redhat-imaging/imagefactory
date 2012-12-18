@@ -102,7 +102,7 @@ __*target_image*__
       --parameters PARAMETERS
 
 __*provider_image*__  
-For the *provider* and *credential* parameters, see the [provider and credential examples][provider_examples] for more information.
+For the *provider* and *credentials* parameters, see the [provider and credential examples][provider_examples] for more information.
 
     usage: imagefactory provider_image [-h] (--id ID | --template TEMPLATE)
                                        [--parameters PARAMETERS]
@@ -130,7 +130,8 @@ __*images*__
     optional arguments:
       -h, --help  show this help message and exit
 
-__*delete*__
+__*delete*__  
+For the *provider* and *credentials* parameters, see the [provider and credential examples][provider_examples] for more information.
 
     usage: imagefactory delete [-h] [--provider PROVIDER]
                                [--credentials CREDENTIALS] [--target TARGET]
