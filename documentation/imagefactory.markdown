@@ -101,7 +101,8 @@ __*target_image*__
       --template TEMPLATE   A file containing the TDL for this image.
       --parameters PARAMETERS
 
-__*provider_image*__
+__*provider_image*__  
+For the *provider* and *credential* parameters, see the [provider and credential examples][provider_examples] for more information.
 
     usage: imagefactory provider_image [-h] (--id ID | --template TEMPLATE)
                                        [--parameters PARAMETERS]
@@ -111,10 +112,7 @@ __*provider_image*__
       target                The target type of the given provider
       provider              A file containing the provider description or a string
                             literal starting with '@' such as '@ec2-us-east-1'.
-                            See the [provider definition examples][provider_examples] for
-                            more information.
-      credentials           A file containing the provider credentials. See the [credential examples][provider_examples]
-                            for more information.
+      credentials           A file containing the provider credentials
     
     optional arguments:
       -h, --help            show this help message and exit
