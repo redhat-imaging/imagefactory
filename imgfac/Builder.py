@@ -55,6 +55,7 @@ class Builder(object):
         self._target_image_cbws = [ ]
         self._provider_image = None
         self._provider_image_cbws = [ ]
+        self._deletion_cbws = []
         self.base_thread = None
         self.target_thread = None
         self.push_thread = None
@@ -394,6 +395,9 @@ class Builder(object):
 
         @return TODO
         """
+        if parameters and ('callbacks' in parameters):
+            # This ensures we have workers in place before any potential state changes
+            self._init_callback_workers(image_object, parameters['callbacks'], self._deletion_cbws)
 
         thread_name = str(uuid.uuid4())[0:8]
         thread_kwargs = {'provider':provider, 'credentials':credentials, 'target':target, 'image_object':image_object, 'parameters':parameters}
@@ -415,11 +419,10 @@ class Builder(object):
             #self.pim.save_image(image_object)
             self.pim.delete_image_with_id(image_object.identifier)
         except Exception, e:
-            self.provider_image.status="DELETEFAILED"
+            image_object.status="DELETEFAILED"
             self.pim.save_image(image_object)
             self.log.error("Exception encountered in _delete_image_on_provider thread")
             self.log.exception(e)
-# encoding: utf-8
-
-#   Copyright 2012 Red Hat, Inc.
-#
+        finally:
+            # We only shut the workers down after a known-final state change
+            self._shutdown_callback_workers(image_object, self._deletion_cbws)

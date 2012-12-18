@@ -34,9 +34,12 @@ rest_api = Bottle(catchall=True)
 
 def converted_response(resp_dict):
     if('xml' in request.get_header('Accept', '')):
-        xml_options = XML_DUMP_STRINGS_AS_STRINGS | XML_DUMP_PRETTY | XML_DUMP_POD_LIST_AS_XML_LIST
         response.set_header('Content-Type', request.get_header('Accept', None))
-        return WriteToXMLStream(resp_dict, options=xml_options)
+        xml_options = XML_DUMP_STRINGS_AS_STRINGS | XML_DUMP_PRETTY | XML_DUMP_POD_LIST_AS_XML_LIST
+        string_stream = cStringIO.StringIO()
+        WriteToXMLStream(resp_dict, string_stream, options=xml_options)
+        converted_response = string_stream.getvalue()
+        return converted_response
     else:
         return resp_dict
 

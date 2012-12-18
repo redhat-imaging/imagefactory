@@ -1,2 +1,2 @@
 include COPYING documentation/man/* cert-ec2.pem imagefactory.conf
-include scripts/imagefactoryd conf/imagefactoryd.*
+include scripts/imagefactoryd conf/logrotate.d/imagefactoryd conf/sysconfig/imagefactoryd
