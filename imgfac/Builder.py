@@ -419,7 +419,7 @@ class Builder(object):
             #self.pim.save_image(image_object)
             self.pim.delete_image_with_id(image_object.identifier)
         except Exception, e:
-            self.provider_image.status="DELETEFAILED"
+            self.image_object.status="DELETEFAILED"
             self.pim.save_image(image_object)
             self.log.error("Exception encountered in _delete_image_on_provider thread")
             self.log.exception(e)
