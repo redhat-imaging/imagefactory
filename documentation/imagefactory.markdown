@@ -111,7 +111,10 @@ __*provider_image*__
       target                The target type of the given provider
       provider              A file containing the provider description or a string
                             literal starting with '@' such as '@ec2-us-east-1'.
-      credentials           A file containing the provider credentials
+                            See the [provider definition examples][provider_examples] for
+                            more information.
+      credentials           A file containing the provider credentials. See the [credential examples][provider_examples]
+                            for more information.
     
     optional arguments:
       -h, --help            show this help message and exit
@@ -190,3 +193,4 @@ __*plugins*__
 
 [tdl-schema]: http://aeolusproject.github.com/imagefactory/tdl/ (TDL schema documentation)
 [conf-doc]: https://github.com/aeolusproject/imagefactory/blob/master/Documentation/imagefactory_conf.md (Image Factory configuration)
+[provider_examples]: http://imgfac.org/documentation/cred_provider_examples.html (Provider Definition and Credentials examples)

@@ -17,6 +17,7 @@ title: Documentation
 
 * [The imagefactory daemon](/documentation/imagefactoryd.html "imagefactoryd")
 * [Using imagefactory on the command line](/documentation/imagefactory.html "imagefactory cli")
+* [Provider Definition and Provider Credential format examples](/documentation/cred_provider_examples.html "provider credential examples")
 
 #### Developing with imagefactory
 
