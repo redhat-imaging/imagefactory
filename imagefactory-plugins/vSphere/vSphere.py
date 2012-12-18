@@ -73,7 +73,7 @@ class vSphere(object):
 
         provider_data = self.get_dynamic_provider_data(provider)
         if provider_data is None:
-            raise ImageFactoryException("VMWare instance not found in local configuration file /etc/imagefactory/vsphere.json or as XML or JSON")
+            raise ImageFactoryException("VMWare instance not found in XML or JSON provided")
         self.generic_decode_credentials(credentials, provider_data, "vsphere")
         helper = VSphereHelper(provider_data['api-url'], self.username, self.password)
         # This call raises an exception on error
@@ -224,7 +224,7 @@ class vSphere(object):
         # BuildDispatcher is now the only location for the logic to map a provider to its data and target
         provider_data = self.get_dynamic_provider_data(provider)
         if provider_data is None:
-            raise ImageFactoryException("VMWare instance not found in local configuration file /etc/imagefactory/vsphere.json or as XML or JSON")
+            raise ImageFactoryException("VMWare instance not found in XML or JSON provided")
 
         self.generic_decode_credentials(credentials, provider_data, "vsphere")
 

@@ -204,7 +204,7 @@ class RHEVM(object):
     def rhevm_push_image_upload(self, target_image_id, provider, credentials):
         provider_data = self.get_dynamic_provider_data(provider)
         if provider_data is None:
-            raise ImageFactoryException("RHEV-M instance not found in local configuration file /etc/imagefactory/rhevm.json or as XML or JSON")
+            raise ImageFactoryException("RHEV-M instance not found in XML or JSON provided")
 
         self.generic_decode_credentials(credentials, provider_data, "rhevm")
 
@@ -230,7 +230,7 @@ class RHEVM(object):
         self.log.debug("Deleting RHEVM template (%s)" % (self.builder.provider_image.identifier_on_provider))
         provider_data = self.get_dynamic_provider_data(provider)
         if provider_data is None:
-            raise ImageFactoryException("RHEV-M instance not found in local configuration file /etc/imagefactory/rhevm.json or as XML or JSON")
+            raise ImageFactoryException("RHEV-M instance not found in XML or JSON provided")
 
         self.generic_decode_credentials(credentials, provider_data, "rhevm")
 

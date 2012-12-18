@@ -54,7 +54,7 @@ class OpenStackCloud(object):
 
         provider_data = self.get_dynamic_provider_data(provider)
         if provider_data is None:
-            raise ImageFactoryException("OpenStack KVM instance not found in local configuration file /etc/imagefactory/openstack-kvm.json or as XML or JSON")
+            raise ImageFactoryException("OpenStack KVM instance not found in XML or JSON provided")
 
         # Image is always here and it is the target_image datafile
         input_image = self.builder.target_image.data
