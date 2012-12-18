@@ -82,9 +82,13 @@ class RHEVMHelper(object):
         self.api = API(url=url, username=username, password=password)
 
     def _disconnect_api(self):
-        self.api.disconnect()
-        self.log.debug("Releasing global RHEVM API connection lock")
-        self.api_connections_lock.release()
+        try:
+            self.log.debug("Attempting API disconnect")
+            self.api.disconnect()
+        finally:
+            # Must always do this
+            self.log.debug("Releasing global RHEVM API connection lock")
+            self.api_connections_lock.release()
 
     # These are the only two genuinley public methods
     # What we create is a VM template
