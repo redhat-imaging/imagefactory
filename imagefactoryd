@@ -20,6 +20,7 @@ import os
 import os.path
 import signal
 import logging
+from imgfac.PersistentImageManager import PersistentImageManager
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.Singleton import Singleton
@@ -170,6 +171,13 @@ class Application(Singleton):
 
         self.plugin_mgr = PluginManager(self.app_config['plugins'])
         self.plugin_mgr.load()
+
+        # Instantiate any Singletons that do not have a thread-safe __init__ here
+        # And explain why
+
+        # The FilePersistentImageManager will create the storage directory if it does not exist
+        # Avoid the complexity of locking by doing the init here, before we go multi-thread
+        temp = PersistentImageManager.default_manager()
 
         debug(self.app_config['debug'])
         pem_file = self.app_config['ssl_pem'] if not self.app_config['no_ssl'] else None
