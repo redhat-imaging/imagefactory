@@ -189,14 +189,12 @@ class Application(Singleton):
             # Import and activate faulthandler if it exists
             try:
                 import faulthandler
-                logging.debug("Enabling faulthandler")
                 faultfile = open("/var/log/imagefactory.log-faulthandler", "a")
                 faultfile.write("%s - starting factory process %d\n" % (asctime(localtime()), os.getpid()))
                 faultfile.flush()
                 faulthandler.enable(file=faultfile, all_threads = True)
-                logging.debug("Enabled faulthandler")
+                logging.debug("Import of faulthandler successful")
             except:
-                logging.debug("Unable to start faulthandler - multi-thread tracebacks will not be available", exc_info=True)
                 pass
 
         if self.app_config['secondary']:
