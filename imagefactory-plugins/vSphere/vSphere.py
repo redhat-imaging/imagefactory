@@ -46,7 +46,6 @@ class vSphere(object):
     def __init__(self):
         super(vSphere, self).__init__()
         self.app_config = ApplicationConfiguration().configuration
-        self.warehouse_url = self.app_config['warehouse']
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
 
     def activity(self, activity):
