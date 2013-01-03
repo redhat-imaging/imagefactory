@@ -194,9 +194,9 @@ class VSphereHelper:
         #pprint(lease.info)
 
         url = None
-        for url in lease.info.deviceUrl:
-            if url['disk']:
-                url = url['url']
+        for url_candidate in lease.info.deviceUrl:
+            if url_candidate['disk']:
+                url = url_candidate['url']
 
         if not url:
             raise Exception("Unable to extract disk upload URL from HttpNfcLease")
