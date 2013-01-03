@@ -60,14 +60,6 @@ class vSphere(object):
         self.log.debug("Exception caught in ImageFactory")
         self.log.debug(traceback.format_exc())
 
-    def build_image(self, build_id=None):
-        try:
-            self.build_upload(build_id)
-        except:
-            self.log_exc()
-            self.status="FAILED"
-            raise
-
     def delete_from_provider(self, builder, provider, credentials, target, parameters):
         self.log.debug("Deleting vSphere image (%s)" % (self.builder.provider_image.identifier_on_provider))
 
@@ -78,13 +70,6 @@ class vSphere(object):
         helper = VSphereHelper(provider_data['api-url'], self.username, self.password)
         # This call raises an exception on error
         helper.delete_vm(self.builder.provider_image.identifier_on_provider)
-
-    def builder_cleanup(self):
-        # Sub-classes may need an opportunity to do their own cleanup
-        pass
-
-    def modify_guest(self):
-        pass
 
     def builder_should_create_target_image(self, builder, target, image_id, template, parameters):
         self.log.info('builder_should_create_target_image() called on vSphere plugin - returning True')
@@ -211,14 +196,7 @@ class vSphere(object):
         self.tdlobj = oz.TDL.TDL(xmlstring=builder.target_image.template, rootpw_required=True)
         self.builder = builder
         self.active_image = self.builder.provider_image
-        self.push_image(target_image, provider, credentials)
-
-    def push_image(self, target_image_id, provider, credentials):
-        try:
-            self.push_image_upload(target_image_id, provider, credentials)
-        except:
-            self.log_exc()
-            self.status="FAILED"
+        self.vmware_push_image_upload(target_image, provider, credentials)
 
     def vmware_push_image_upload(self, target_image_id, provider, credentials):
         # BuildDispatcher is now the only location for the logic to map a provider to its data and target
@@ -243,19 +221,6 @@ class vSphere(object):
         self.builder.provider_image.identifier_on_provider = vm_name
         self.builder.provider_account_identifier = self.username
         self.percent_complete = 100
-
-
-    def push_image_upload(self, target_image_id, provider, credentials):
-        self.status="PUSHING"
-        self.percent_complete=0
-        try:
-            self.vmware_push_image_upload(target_image_id, provider,
-                                          credentials)
-        except:
-            self.log_exc()
-            self.status="FAILED"
-            raise
-        self.status="COMPLETED"
 
     def generic_decode_credentials(self, credentials, provider_data, target):
         # convenience function for simple creds (rhev-m and vmware currently)
