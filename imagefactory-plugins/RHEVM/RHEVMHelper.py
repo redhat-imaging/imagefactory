@@ -56,7 +56,7 @@ Function to call a subprocess and gather the output.
 
     if retcode:
         cmd = ' '.join(*popenargs)
-        raise SubprocessException("'%s' failed(%d): %s" % (cmd, retcode, stderr), retcode)
+        raise Exception("'%s' failed(%d): %s" % (cmd, retcode, stderr), retcode)
     return (stdout, stderr, retcode)
 
 
