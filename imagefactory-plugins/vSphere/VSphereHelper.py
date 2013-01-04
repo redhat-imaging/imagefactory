@@ -193,15 +193,15 @@ class VSphereHelper:
         #print "For debug and general info, here is the lease info"
         #pprint(lease.info)
 
-        url = None
-        for url in lease.info.deviceUrl:
-            if url['disk']:
-                url = url['url']
+        upload_url = None
+        for url_candidate in lease.info.deviceUrl:
+            if url_candidate['disk']:
+                upload_url = str(url_candidate['url'])
 
-        if not url:
+        if not upload_url:
             raise Exception("Unable to extract disk upload URL from HttpNfcLease")
 
-        self.log.debug("Extracted image upload URL (%s) from lease" % (url))
+        self.log.debug("Extracted image upload URL (%s) from lease" % (upload_url))
 
         lease_timeout = lease.info.leaseTimeout
         self.time_at_last_poke = time()
@@ -211,7 +211,7 @@ class VSphereHelper:
         # Upload the image itself
         image_size = os.path.getsize(imagefilename)
         curl = pycurl.Curl()
-        curl.setopt(pycurl.URL, str(url))
+        curl.setopt(pycurl.URL, upload_url)
         curl.setopt(pycurl.SSL_VERIFYPEER, 0)
         curl.setopt(pycurl.POST, 1)
         curl.setopt(pycurl.POSTFIELDSIZE, image_size)
