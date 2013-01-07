@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 import logging
+import uuid
 import zope
 import inspect
 from imgfac.CloudDelegate import CloudDelegate
@@ -28,9 +29,13 @@ class MockSphere(object):
 
     def push_image_to_provider(self, builder, provider, credentials, target, target_image, parameters):
         self.log.info('%s called in MockSphere plugin' % (inspect.stack()[1][3]))
+        builder.provider_image.identifier_on_provider = str(uuid.uuid4())
+        builder.provider_image.provider_account_identifier = 'mock_user'
 
     def snapshot_image_on_provider(self, builder, provider, credentials, target, template, parameters):
         self.log.info('%s called in MockSphere plugin' % (inspect.stack()[1][3]))
+        builder.provider_image.identifier_on_provider = str(uuid.uuid4())
+        builder.provider_image.provider_account_identifier = 'mock_user'
 
     def builder_should_create_target_image(self, builder, target, image_id, template, parameters):
         self.log.info('%s called in MockSphere plugin' % (inspect.stack()[1][3]))
