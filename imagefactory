@@ -75,7 +75,7 @@ class Application(Singleton):
         self.plugin_mgr.load()
 
     def setup_logging(self):
-        logger = logging.getLogger() 
+        logger = logging.getLogger()
         if (self.app_config['output'] != 'log'):
             currhandler = logger.handlers[0]  # stdout is the only handler initially
             filehandler = logging.FileHandler('/var/log/imagefactory.log')
@@ -101,7 +101,7 @@ class Application(Singleton):
                 faulthandler.enable(file=faultfile, all_threads = True)
                 logging.debug("Enabled faulthandler")
             except:
-                logging.debug("Unable to start faulthandler - multi-thread tracebacks will not be available", exc_info=True)
+                logging.debug("Unable to start faulthandler, multi-thread tracebacks will not be available. See http://pypi.python.org/pypi/faulthandler/ for more information.")
                 pass
         elif (self.app_config['verbose']):
             logging.getLogger('').setLevel(logging.INFO)
@@ -140,7 +140,7 @@ class Application(Singleton):
             ret_provider = f.read().rstrip()
             f.close()
             return ret_provider
-            
+
     def main(self):
         command = self.app_config['command']
         returnval = {}
@@ -227,10 +227,10 @@ class Application(Singleton):
                     print ('No image found with id: %s' % image_id)
                     return
                 builder = Builder()
-                builder.delete_image(provider=provider, 
-                                     credentials=self.app_config.get('credentials'), 
-                                     target=self.app_config.get('target'), 
-                                     image_object=image, 
+                builder.delete_image(provider=provider,
+                                     credentials=self.app_config.get('credentials'),
+                                     target=self.app_config.get('target'),
+                                     image_object=image,
                                      parameters=parameters)
                 print('Deleting image with id %s' % image_id)
                 builder.delete_thread.join()

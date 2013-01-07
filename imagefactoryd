@@ -70,7 +70,7 @@ class Application(Singleton):
     def setup_logging(self):
         if (not self.app_config['foreground']):
             # We can no longer use the basicconfig convenience function to do this so do so manually
-            logger = logging.getLogger() 
+            logger = logging.getLogger()
             currhandler = logger.handlers[0]  # stdout is the only handler initially
             filehandler = logging.FileHandler('/var/log/imagefactoryd.log')
             formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s thread(%(threadName)s) Message: %(message)s')
@@ -141,7 +141,7 @@ class Application(Singleton):
                 os.close(file_descriptor)
             except OSError:
                 pass # The file descriptor wasn't open to begin with, just ignore
-          
+
         if self.app_config['debug']:
             os.open(IO_REDIRECT, os.O_RDWR | os.O_SYNC | os.O_CREAT | os.O_APPEND)
         else:
@@ -195,6 +195,7 @@ class Application(Singleton):
                 faulthandler.enable(file=faultfile, all_threads = True)
                 logging.debug("Import of faulthandler successful")
             except:
+                logging.debug("Unable to start faulthandler, multi-thread tracebacks will not be available. See http://pypi.python.org/pypi/faulthandler/ for more information.")
                 pass
 
         if self.app_config['secondary']:
