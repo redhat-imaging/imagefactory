@@ -166,7 +166,7 @@ _Note:_ The examples below use [HTTPie](http://httpie.org/ "HTTPie: a CLI, cURL-
     YES
     
     **Parameters:**  
-    __template__ - A TDL document.  
+    __template__ - An image template or component outline compatible with the TDL schema (http://imgfac.org/documentation/tdl).  
     
     **Responses:**  
     __202__ - New image  
@@ -221,7 +221,7 @@ _Note:_ The examples below use [HTTPie](http://httpie.org/ "HTTPie: a CLI, cURL-
     
     **Parameters:**  
     __base_image_id__ - The uuid of a base_image to build from. Not needed if specifying a template. This can be specified in the resource path as shown in the example below.  
-    __template__ - A TDL document for creating a base image if a base image id is not specified.  
+    __template__ - An image template or component outline compatible with the TDL schema (http://imgfac.org/documentation/tdl) for creating a base image if a base image id is not specified.  
     __target__ - A cloud target name such as 'rhevm', 'ec2', 'vsphere', 'openstack', etc... This must match the target field of a loaded cloud plugin.   
     __parameters__ - Optional parameters that may change the nature of the image being built.  This may include things such as on-disk format or the build mechanism itself.  Parameters are never required as sensible defaults will always be used and will be made part of the queryable properties of an image.
     
@@ -281,7 +281,7 @@ _Note:_ The examples below use [HTTPie](http://httpie.org/ "HTTPie: a CLI, cURL-
     
     **Parameters:**  
     __target_image_id__ - The uuid of a target image to push. Not needed if specifying a template.  This can also be specified in the resource path as shown in the example below.  
-    __template__ - A TDL document for creating base image and target image. Not needed if specifying a target image id.  
+    __template__ - An image template or component outline compatible with the TDL schema (http://imgfac.org/documentation/tdl) for creating base image and target image. Not needed if specifying a target image id.  
     __target__ - The target to which the provider belongs. This would be the same target used for building a TargetImage.  
     __provider__ - The cloud provider definition.  See the [provider definition examples][provider_examples] for more information.  
     __credentials__ - The cloud provider credentials.  See the [credential examples][provider_examples] for more information.  

@@ -24,11 +24,12 @@ title: user manual (imagefactory)
 > **imagefactory** is the command line interface to the Image Factory framework,
 allowing one to create, push, inspect, and delete images without the REST service.
 
-> Image Factory builds virtual machine images using a template document,
-which is an abstract description of the system to be built. See the 
-[TDL schema documentation][tdl-schema] for a full description of what can be
-specified in a template. Built images can then be pushed to cloud providers
-such as Amazon EC2 or VMware vSphere where they can be launched as instances.
+> Image Factory builds virtual machine images using an image template document
+(also known as a component outline), which is an abstract description of the
+system to be built. See the [TDL schema documentation][tdl-schema] for a full description
+of what can be specified in a template. Built images can then be pushed to cloud
+providers such as Amazon EC2 or VMware vSphere where they can be launched as
+instances.
 
 > Command line options are described further down in this document. For more
 configuration options, see the [Image Factory configuration][conf-doc]
@@ -79,7 +80,9 @@ __*base_image*__
     usage: imagefactory base_image [-h] [--paramaters PARAMATERS] template
     
     positional arguments:
-      template              A file containing the TDL for this image.
+      template              A file containing the image template or component
+                            outline, compatible with the TDL schema
+                            (http://imgfac.org/documentation/tdl).
     
     optional arguments:
       -h, --help            show this help message and exit
@@ -98,7 +101,9 @@ __*target_image*__
     optional arguments:
       -h, --help            show this help message and exit
       --id ID               The uuid of the BaseImage to customize.
-      --template TEMPLATE   A file containing the TDL for this image.
+      --template TEMPLATE   A file containing the image template or component
+                            outline, compatible with the TDL schema
+                            (http://imgfac.org/documentation/tdl).
       --parameters PARAMETERS
 
 __*provider_image*__  
@@ -109,15 +114,18 @@ For the *provider* and *credentials* parameters, see the [provider and credentia
                                        target provider credentials
     
     positional arguments:
-      target                The target type of the given provider
-      provider              A file containing the provider description or a string
-                            literal starting with '@' such as '@ec2-us-east-1'.
-      credentials           A file containing the provider credentials
+      target                The target type of the given cloud provider
+      provider              A file containing the cloud provider description
+                            or a string literal starting with '@' such as
+                            '@ec2-us-east-1'.
+      credentials           A file containing the cloud provider credentials
     
     optional arguments:
       -h, --help            show this help message and exit
       --id ID               The uuid of the TargetImage to push.
-      --template TEMPLATE   A file containing the TDL for this image.
+      --template TEMPLATE   A file containing the image template or component
+                            outline, compatible with the TDL schema
+                            (http://imgfac.org/documentation/tdl).
       --parameters PARAMETERS
 
 __*images*__
@@ -143,8 +151,9 @@ For the *provider* and *credentials* parameters, see the [provider and credentia
     
     optional arguments:
       -h, --help            show this help message and exit
-      --provider PROVIDER   A file containing the provider description or a string
-                            literal starting with '@' such as '@ec2-us-east-1'.
+      --provider PROVIDER   A file containing the cloud provider description or
+                            a string literal starting with '@' such as
+                            '@ec2-us-east-1'.
       --credentials CREDENTIALS
                             A file containing the provider credentials
       --target TARGET       The name of the target cloud for which to customize

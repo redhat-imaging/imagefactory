@@ -22,11 +22,12 @@ title: user manual (daemon)
 
 > **imagefactoryd** is the command for starting the Image Factory REST API.
 
-> Image Factory builds virtual machine images using a template document,
-which is an abstract description of the system to be built. See the 
-[TDL schema documentation][tdl-schema] for a full description of what can be
-specified in a template. Built images can then be pushed to cloud providers
-such as Amazon EC2 or VMware vSphere where they can be launched as instances.
+> Image Factory builds virtual machine images using an image template document
+(also known as a component outline), which is an abstract description of the
+system to be built. See the [TDL schema documentation][tdl-schema] for a full description
+of what can be specified in a template. Built images can then be pushed to cloud
+providers such as Amazon EC2 or VMware vSphere where they can be launched as
+instances.
 
 > imagefactoryd provides a RESTful API to the Image Factory framework for
 for building and pushing images. See the [Image Factory REST API][rest-doc]
