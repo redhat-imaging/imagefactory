@@ -75,7 +75,7 @@ class ApplicationConfiguration(Singleton):
             argparser.add_argument('--output', choices=('log', 'json'), default='log', help='Choose between log or json output. (default: %(default)s)')
             argparser.add_argument('--raw', action='store_true', default=False, help='Turn off pretty printing.')
             subparsers = argparser.add_subparsers(title='commands', dest='command')
-            template_help = 'A file containing the TDL for this image.'
+            template_help = 'A file containing the image template or component outline, compatible with the TDL schema (http://imgfac.org/documentation/tdl).'
             parameters_help = 'An optional JSON file containing additional parameters to pass to the builders.'
 
             cmd_base = subparsers.add_parser('base_image', help='Build a generic image.')
@@ -90,9 +90,9 @@ class ApplicationConfiguration(Singleton):
             cmd_target.add_argument('--parameters', type=argparse.FileType(), help=parameters_help)
 
             cmd_provider = subparsers.add_parser('provider_image', help='Push an image to a cloud provider.')
-            cmd_provider.add_argument('target', help='The target type of the given provider')
-            cmd_provider.add_argument('provider', help="A file containing the provider description or a string literal starting with '@' such as '@ec2-us-east-1'.")
-            cmd_provider.add_argument('credentials', type=argparse.FileType(), help='A file containing the provider credentials')
+            cmd_provider.add_argument('target', help='The target type of the given cloud provider')
+            cmd_provider.add_argument('provider', help="A file containing the cloud provider description or a string literal starting with '@' such as '@ec2-us-east-1'.")
+            cmd_provider.add_argument('credentials', type=argparse.FileType(), help='A file containing the cloud provider credentials')
             provider_group = cmd_provider.add_mutually_exclusive_group(required=True)
             provider_group.add_argument('--id', help='The uuid of the TargetImage to push.')
             provider_group.add_argument('--template', type=argparse.FileType(), help=template_help)
@@ -104,8 +104,8 @@ class ApplicationConfiguration(Singleton):
 
             cmd_delete = subparsers.add_parser('delete', help='Delete an image.')
             cmd_delete.add_argument('id', help='UUID of the image to delete')
-            cmd_delete.add_argument('--provider', type=argparse.FileType(), help="A file containing the provider description or a string literal starting with '@' such as '@ec2-us-east-1'.")
-            cmd_delete.add_argument('--credentials', type=argparse.FileType(), help='A file containing the provider credentials')
+            cmd_delete.add_argument('--provider', type=argparse.FileType(), help="A file containing the cloud provider description or a string literal starting with '@' such as '@ec2-us-east-1'.")
+            cmd_delete.add_argument('--credentials', type=argparse.FileType(), help='A file containing the cloud provider credentials')
             cmd_delete.add_argument('--target', help='The name of the target cloud for which to customize the image.')
             cmd_delete.add_argument('--parameters', type=argparse.FileType(), help=parameters_help)
 
