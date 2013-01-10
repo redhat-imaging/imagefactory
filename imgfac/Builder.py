@@ -86,6 +86,7 @@ class Builder(object):
 #####  PENDING BUILD HELPERS
     def _wait_for_final_status(self, image):
         image_id = image.identifier
+        self.log.debug("Waiting for image of type (%s) and id (%s) to enter a final status" % (str(type(image)), image_id ) )
         # Wait forever - Short of a factory crash, we have timeouts elsewhere that should ensure
         #                that the pending images eventually hit success or failure
         while(True):
@@ -94,6 +95,7 @@ class Builder(object):
             # To update its metadata, we just re-fetch it.
             image = self.pim.image_with_id(image_id)
             if image.status not in [ 'NEW','PENDING' ]:
+                self.log.debug("Image of type (%s) entered final status of (%s)" % (str(type(image)), image.status) )
                 return image
             sleep(5)
 
