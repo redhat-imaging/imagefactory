@@ -83,6 +83,20 @@ class Builder(object):
             self.notification_center.remove_observer(worker, 'status_notifier', 'image.status', sender = image)
             worker.shut_down()
 
+#####  PENDING BUILD HELPERS
+    def _wait_for_final_status(self, image):
+        image_id = image.identifier
+        # Wait forever - Short of a factory crash, we have timeouts elsewhere that should ensure
+        #                that the pending images eventually hit success or failure
+        while(True):
+            # Our local image object isn't necessarily the one that is being actively updated
+            # In fact, we know it isn't.  It has been created out of a PIM retrieval.
+            # To update its metadata, we just re-fetch it.
+            image = self.pim.image_with_id(image_id)
+            if image.status not in [ 'NEW','PENDING' ]:
+                return image
+            sleep(5)
+
 #####  BUILD IMAGE
     def build_image_from_template(self, template, parameters=None):
         """
@@ -174,12 +188,16 @@ class Builder(object):
 
     def _customize_image_for_target(self, target, image_id=None, template=None, parameters=None):
         try:
-            # If there is an ongoing base build, wait for it to finish
+            # If there is an ongoing base image build that we started, wait for it to finish
             if self.base_thread:
                 threadname=self.base_thread.getName()
                 self.log.debug("Waiting for our BaseImage builder thread (%s) to finish" % (threadname))
                 self.base_thread.join()
                 self.log.debug("BaseImage builder thread (%s) finished - continuing with TargetImage tasks" % (threadname))
+
+            # If we were called against an ongoing base_image build, wait for a terminal status on it
+            if self.base_image.status in [ "NEW", "PENDING" ]: 
+                self.base_image = self._wait_for_final_status(self.base_image)
 
             if self.base_image.status == "FAILED":
                 raise ImageFactoryException("The BaseImage (%s) for our TargetImage has failed its build.  Cannot continue." % (self.base_image.identifier))
@@ -282,12 +300,16 @@ class Builder(object):
 
     def _push_image_to_provider(self, provider, credentials, target, image_id, template, parameters):
         try:
-            # If there is an ongoing target_image build, wait for it to finish
+            # If there is an ongoing target_image build that we started, wait for it to finish
             if self.target_thread:
                 threadname=self.target_thread.getName()
                 self.log.debug("Waiting for our TargetImage builder thread (%s) to finish" % (threadname))
                 self.target_thread.join()
                 self.log.debug("TargetImage builder thread (%s) finished - continuing with ProviderImage tasks" % (threadname))
+
+            # If we were called against an ongoing target_image build, wait for a terminal status on it
+            if self.target_image.status in [ "NEW", "PENDING" ]:
+                self.target_image = self._wait_for_final_status(self.target_image) 
 
             if self.target_image.status == "FAILED":
                 raise ImageFactoryException("The TargetImage (%s) for our ProviderImage has failed its build.  Cannot continue." % (self.target_image.identifier))
