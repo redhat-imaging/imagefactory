@@ -45,6 +45,7 @@ class FilePersistentImageManager(PersistentImageManager):
             # TODO: verify that we can write to this location
             pass
         self.storage_path = storage_path
+        self.metadata_lock = BoundedSemaphore()
 
 
     def _image_from_metadata(self, metadata):
@@ -68,9 +69,13 @@ class FilePersistentImageManager(PersistentImageManager):
 
 
     def _metadata_from_file(self, metadatafile):
-        mdf = open(metadatafile, 'r')
-        metadata = json.load(mdf)
-        mdf.close()
+        self.metadata_lock.acquire()
+        try:
+            mdf = open(metadatafile, 'r')
+            metadata = json.load(mdf)
+            mdf.close()
+        finally:
+            self.metadata_lock.release()
         return metadata
 
 
@@ -153,9 +158,15 @@ class FilePersistentImageManager(PersistentImageManager):
             meta = {'type': type(image).__name__}
             for mdprop in image.metadata():
                 meta[mdprop] = getattr(image, mdprop, None)
-            mdf = open(metadata_path, 'w')
-            json.dump(meta, mdf)
-            mdf.close()
+ 
+            self.metadata_lock.acquire()
+            try:
+                mdf = open(metadata_path, 'w')
+                json.dump(meta, mdf)
+                mdf.close()
+            finally:
+                self.metadata_lock.release()
+
             self.log.debug("Saved metadata for image (%s): %s" % (image_id, meta))
         except Exception as e:
             self.log.debug('Exception caught: %s' % e)
