@@ -89,9 +89,22 @@ class FedoraOS(object):
             if disknode.prop('device') == 'disk':
                 disknode.xpathEval('source')[0].setProp('file', builder.target_image.data)
 
+        # TODO: See about doing the Oz init first, grabbing the XML from there and then replacing only the filename
+
+        # Give a unique name - Oz fails if we attempt to launch multiple guests with identical libvirt_xml names
+        input_doc.xpathEval("/domain/name")[0].setContent("factory-build-%s" % (self.active_image.identifier))
+
+        # Give a unique identifier as well
+        input_doc.xpathEval("/domain/uuid")[0].setContent(str(self.active_image.identifier))
+
+        # And a mac address
+        input_doc.xpathEval("/domain/devices/interface/mac")[0].setProp('address', oz.ozutil.generate_macaddress())
+
         libvirt_xml = input_doc.serialize(None, 1)
 
         self._init_oz()
+
+        self.guest.diskimage = builder.target_image.data
 
         try:
             self.log.debug("Doing second-stage target_image customization and ICICLE generation")
@@ -215,7 +228,7 @@ class FedoraOS(object):
 
     def _init_oz(self):
         # TODO: This is a convenience variable for refactoring - rename
-        self.new_image_id = self.base_image.identifier
+        self.new_image_id = self.active_image.identifier
 
         # Create a name combining the TDL name and the UUID for use when tagging EC2 AMIs
         self.longname = self.tdlobj.name + "-" + self.new_image_id
