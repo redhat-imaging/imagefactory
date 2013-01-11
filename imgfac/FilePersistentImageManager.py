@@ -23,6 +23,7 @@ import json
 from props import prop
 from ImageFactoryException import ImageFactoryException
 from PersistentImageManager import PersistentImageManager
+from threading import BoundedSemaphore
 
 STORAGE_PATH = '/var/lib/imagefactory/storage'
 METADATA_EXT = '.meta'
