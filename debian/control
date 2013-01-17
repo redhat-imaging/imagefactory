@@ -1,0 +1,28 @@
+Source: imagefactory
+Section: python
+Priority: extra
+Maintainer: Steve Loranz <sloranz@redhat.com>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.2
+Homepage: http://imgfac.org
+
+Package: imagefactory
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends},
+ python (>= 2.7),
+ oz,
+ openssh-client,
+ kvm,
+ libguestfs-dev,
+ python-guestfs | python-libguestfs,
+ python-libvirt,
+ python-zope.interface,
+ python-pycurl,
+ python-httplib2,
+ python-libxml2,
+ python-oauth2,
+ python-bottle
+ python-pastedeploy
+Description: imagefactory allows you to define
+ an system template and build and push images 
+ of it for a variety of public/private clouds.

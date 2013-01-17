@@ -1,0 +1,5 @@
+imagefactory (1.1.2-395-g61dc648-1) unstable; urgency=low
+
+  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+
+ -- Steve Loranz <sloranz@redhat.com>  Tue, 15 Jan 2013 15:07:49 -0800
