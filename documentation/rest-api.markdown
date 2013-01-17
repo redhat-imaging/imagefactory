@@ -490,7 +490,7 @@ _Note:_ The examples below use [HTTPie](http://httpie.org/ "HTTPie: a CLI, cURL-
                     "maintainer": {
                         "email": "aeolus-devel@lists.fedorahosted.org", 
                         "name": "Red Hat, Inc.", 
-                        "url": "http://www.aeolusproject.org/imagefactory.html"
+                        "url": "http://imgfac.org"
                     }, 
                     "targets": [
                         [
@@ -521,7 +521,7 @@ _Note:_ The examples below use [HTTPie](http://httpie.org/ "HTTPie: a CLI, cURL-
                     "maintainer": {
                         "email": "aeolus-devel@lists.fedorahosted.org", 
                         "name": "Red Hat, Inc.", 
-                        "url": "http://www.aeolusproject.org/imagefactory.html"
+                        "url": "http://imgfac.org"
                     }, 
                     "targets": [
                         [
@@ -567,7 +567,7 @@ _Note:_ The examples below use [HTTPie](http://httpie.org/ "HTTPie: a CLI, cURL-
             "maintainer": {
                 "email": "aeolus-devel@lists.fedorahosted.org", 
                 "name": "Red Hat, Inc.", 
-                "url": "http://www.aeolusproject.org/imagefactory.html"
+                "url": "http://imgfac.org"
             }, 
             "targets": [
                 [
