@@ -27,7 +27,7 @@ title: Documentation
 #### Working with Templates, Deployables, and Images
 
 * [Template Description Language \(TDL\) reference](/documentation/tdl "TDL reference")
-* [Package Manifest file (ICICLE) reference](/documentation/icicle.html "ICICLE reference")
-* [Deployable description file reference](/documentation/deployable.html "deployable reference")
+* [Package Manifest file (ICICLE) reference](/documentation/icicle "ICICLE reference")
+* [Deployable description file reference](/documentation/deployable "deployable reference")
 
 **[Frequently Asked Questions](https://github.com/aeolusproject/imagefactory/wiki "FAQ")**
