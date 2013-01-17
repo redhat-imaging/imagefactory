@@ -132,6 +132,7 @@ class Builder(object):
             self.os_plugin.create_base_image(self, template, parameters)
             # This implies a convention where the plugin can never dictate completion and must indicate failure
             # via an exception
+            self.base_image.status_detail = { 'activity': 'Base Image build complete', 'error':None }
             self.base_image.status="COMPLETE"
             self.pim.save_image(self.base_image)
         except Exception, e:
@@ -234,6 +235,7 @@ class Builder(object):
                     self.os_plugin.create_target_image(self, target, image_id, parameters)
                 if(hasattr(self.cloud_plugin, 'builder_did_create_target_image')):
                     self.cloud_plugin.builder_did_create_target_image(self, target, image_id, template, parameters)
+            self.target_image.status_detail = { 'activity': 'Target Image build complete', 'error':None }
             self.target_image.status = "COMPLETE"
             self.pim.save_image(self.target_image)
         except Exception, e:
@@ -343,6 +345,7 @@ class Builder(object):
                     self.cloud_plugin = plugin_mgr.plugin_for_target(target)
             self.provider_image.status="BUILDING"
             self.cloud_plugin.push_image_to_provider(self, provider, credentials, target, image_id, parameters)
+            self.provider_image.status_detail = { 'activity': 'Provider Image build complete', 'error':None }
             self.provider_image.status="COMPLETE"
             self.pim.save_image(self.provider_image)
         except Exception, e:
@@ -402,6 +405,7 @@ class Builder(object):
                 self.cloud_plugin = plugin_mgr.plugin_for_target(target)
             self.provider_image.status="BUILDING"
             self.cloud_plugin.snapshot_image_on_provider(self, provider, credentials, target, template, parameters)
+            self.provider_image.status_detail = { 'activity': 'Provider Image build complete', 'error':None }
             self.provider_image.status="COMPLETE"
             self.pim.save_image(self.provider_image)
         except Exception, e:
