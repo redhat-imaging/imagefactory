@@ -128,9 +128,11 @@ class Builder(object):
             template = template if(isinstance(template, Template)) else Template(template)
             plugin_mgr = PluginManager(self.app_config['plugins'])
             self.os_plugin = plugin_mgr.plugin_for_target((template.os_name, template.os_version, template.os_arch))
+            self.base_image.status="BUILDING"
             self.os_plugin.create_base_image(self, template, parameters)
             # This implies a convention where the plugin can never dictate completion and must indicate failure
             # via an exception
+            self.base_image.status_detail = { 'activity': 'Base Image build complete', 'error':None }
             self.base_image.status="COMPLETE"
             self.pim.save_image(self.base_image)
         except Exception, e:
@@ -192,13 +194,15 @@ class Builder(object):
         try:
             # If there is an ongoing base image build that we started, wait for it to finish
             if self.base_thread:
+                self.target_image.status="PENDING"
                 threadname=self.base_thread.getName()
                 self.log.debug("Waiting for our BaseImage builder thread (%s) to finish" % (threadname))
                 self.base_thread.join()
                 self.log.debug("BaseImage builder thread (%s) finished - continuing with TargetImage tasks" % (threadname))
 
             # If we were called against an ongoing base_image build, wait for a terminal status on it
-            if self.base_image.status in [ "NEW", "PENDING" ]: 
+            if self.base_image.status in [ "NEW", "PENDING" ]:
+                self.target_image.status="PENDING"
                 self.base_image = self._wait_for_final_status(self.base_image)
 
             if self.base_image.status == "FAILED":
@@ -219,6 +223,7 @@ class Builder(object):
             if not self.cloud_plugin:
                 self.log.warn("Unable to find cloud plugin for target (%s)" % (target))
 
+            self.target_image.status = "BUILDING"
             if(hasattr(self.cloud_plugin, 'builder_should_create_target_image')):
                 _should_create = self.cloud_plugin.builder_should_create_target_image(self, target, image_id, template, parameters)
             else:
@@ -230,6 +235,7 @@ class Builder(object):
                     self.os_plugin.create_target_image(self, target, image_id, parameters)
                 if(hasattr(self.cloud_plugin, 'builder_did_create_target_image')):
                     self.cloud_plugin.builder_did_create_target_image(self, target, image_id, template, parameters)
+            self.target_image.status_detail = { 'activity': 'Target Image build complete', 'error':None }
             self.target_image.status = "COMPLETE"
             self.pim.save_image(self.target_image)
         except Exception, e:
@@ -304,6 +310,7 @@ class Builder(object):
         try:
             # If there is an ongoing target_image build that we started, wait for it to finish
             if self.target_thread:
+                self.provider_image.status = "PENDING"
                 threadname=self.target_thread.getName()
                 self.log.debug("Waiting for our TargetImage builder thread (%s) to finish" % (threadname))
                 self.target_thread.join()
@@ -311,6 +318,7 @@ class Builder(object):
 
             # If we were called against an ongoing target_image build, wait for a terminal status on it
             if self.target_image.status in [ "NEW", "PENDING" ]:
+                self.provider_image.status = "PENDING"
                 self.target_image = self._wait_for_final_status(self.target_image) 
 
             if self.target_image.status == "FAILED":
@@ -335,7 +343,9 @@ class Builder(object):
                 plugin_mgr = PluginManager(self.app_config['plugins'])
                 if not self.cloud_plugin:
                     self.cloud_plugin = plugin_mgr.plugin_for_target(target)
+            self.provider_image.status="BUILDING"
             self.cloud_plugin.push_image_to_provider(self, provider, credentials, target, image_id, parameters)
+            self.provider_image.status_detail = { 'activity': 'Provider Image build complete', 'error':None }
             self.provider_image.status="COMPLETE"
             self.pim.save_image(self.provider_image)
         except Exception, e:
@@ -393,7 +403,9 @@ class Builder(object):
             else:    
                 plugin_mgr = PluginManager(self.app_config['plugins'])
                 self.cloud_plugin = plugin_mgr.plugin_for_target(target)
+            self.provider_image.status="BUILDING"
             self.cloud_plugin.snapshot_image_on_provider(self, provider, credentials, target, template, parameters)
+            self.provider_image.status_detail = { 'activity': 'Provider Image build complete', 'error':None }
             self.provider_image.status="COMPLETE"
             self.pim.save_image(self.provider_image)
         except Exception, e:
@@ -441,6 +453,7 @@ class Builder(object):
                 self.cloud_plugin.delete_from_provider(self, provider, credentials, target, parameters)
             #self.provider_image.status="DELETED"
             #self.pim.save_image(image_object)
+            image_object.status="DELETING"
             self.pim.delete_image_with_id(image_object.identifier)
         except Exception, e:
             image_object.status="DELETEFAILED"
