@@ -53,10 +53,3 @@ add the Aeolus repository for either RHEL or Fedora as described on the
 configured, yum can be used to install Image Factory with:
 
     $ sudo yum install imagefactory
-
-Other, unsupported, systems can install Image Factory using setuptools:
-
-    $ git clone git://github.com/aeolusproject/imagefactory.git
-    ...
-    $ cd imagefactory
-    $ sudo setup.py install
