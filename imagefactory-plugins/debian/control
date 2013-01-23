@@ -1,0 +1,74 @@
+Section: python
+Priority: extra
+Maintainer: Steve Loranz <sloranz@redhat.com>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.2
+Homepage: http://imgfac.org
+Version: 1.1.2-395-g61dc648-1
+
+Package: imagefactory-oz
+Architecture: any
+Source: oz
+Depends: ${misc:Depends}, ${python:Depends},
+ oz (>= 0.7.0),
+ imagefactory
+Description: Plugin for imagefactory that uses
+ Oz to build a variety of operating systems.
+
+Package: imagefactory-rhevm
+Architecture: any
+Source: rhevm
+Depends: ${misc:Depends}, ${python:Depends},
+# MISSING: ovirt-engine-sdk
+ imagefactory
+Description: Plugin for imagefactory adding support
+ for Red Hat Enterprise Virtualization.
+
+Package: imagefactory-openstack
+Architecture: any
+Source: openstack
+Depends: ${misc:Depends}, ${python:Depends},
+ python-glance,
+ imagefactory
+Description: Plugin for imagefactory adding support
+ for the OpenStack cloud platform.
+
+Package: imagefactory-vsphere
+Architecture: any
+Source: vsphere
+Depends: ${misc:Depends}, ${python:Depends},
+# MISSING: psphere
+ imagefactory
+Description: Plugin for imagefactory adding support
+ for VMware vSphere.
+
+Package: imagefactory-ec2
+Architecture: any
+Source: ec2
+Depends: ${misc:Depends}, ${python:Depends},
+# MISSING: eucatools
+ python-boto (>= 2.0),
+ imagefactory
+Description: Plugin for imagefactory adding support
+ for Amazon EC2.
+
+Package: imagefactory-ec2jeos
+Architecture: any
+Source: ec2jeos
+Depends: ${misc:Depends}, imagefactory, imagefactory-ec2
+Description: Configuration files for the imagefactory
+ EC2 plugin that enable snapshot builds from AMIs in EC2.
+
+Package: imagefactory-mockos
+Architecture: any
+Source: mockos
+Depends: ${misc:Depends}, ${python:Depends}, imagefactory
+Description: Plugin for imagefactory adding support
+ for fake images appropriate for quick testing.
+
+Package: imagefactory-mockcloud
+Architecture: any
+Source: mockcloud
+Depends: ${misc:Depends}, ${python:Depends}, imagefactory
+Description: Plugin for imagefactory adding support
+ for fake clouds appropriate for quick testing.
