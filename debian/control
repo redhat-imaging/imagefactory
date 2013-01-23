@@ -21,7 +21,7 @@ Depends: ${misc:Depends}, ${python:Depends},
  python-httplib2,
  python-libxml2,
  python-oauth2,
- python-bottle
+ python-bottle,
  python-pastedeploy
 Description: imagefactory allows you to define
  an system template and build and push images 
