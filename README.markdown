@@ -47,9 +47,6 @@ provider's management console or a cloud management tool such as
 **[Aeolus](http://www.aeolusproject.org/)**.
 
 ##Installing Image Factory##
-Installing Image Factory is quick and easy.  Fedora 15-16 and RHEL 5-6 users can
-add the Aeolus repository for either RHEL or Fedora as described on the
-[Aeolus | Get It](http://www.aeolusproject.org/get_it.html#stable) page.  Once
-configured, yum can be used to install Image Factory with:
-
-    $ sudo yum install imagefactory
+Installing Image Factory is quick and easy.  See the
+[imagefactory rpm installation](http://imgfac.org/documentation/install.html#rpm)
+instructions for more detail.
