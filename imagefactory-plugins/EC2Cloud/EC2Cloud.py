@@ -665,7 +665,7 @@ class EC2Cloud(object):
         #  if type == ebs throw an error - EBS builds must be in the target region/provider
         amis = conn.get_all_images([ ami_id ])
         ami = amis[0]
-        if (build_region != provider) and (ami.root_device_type == "ebs"):
+        if (build_region_conf['host'] != region_conf['host']) and (ami.root_device_type == "ebs"):
             self.log.error("EBS JEOS image exists in us-east-1 but not in target region (%s)" % (provider))
             raise ImageFactoryException("No EBS JEOS image for region (%s) - aborting" % (provider))
 
