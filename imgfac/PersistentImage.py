@@ -22,7 +22,7 @@ from NotificationCenter import NotificationCenter
 
 
 METADATA =  ( 'identifier', 'data', 'template', 'icicle', 'status_detail', 'status', 'percent_complete', 'parameters' )
-STATUS_STRINGS = ('NEW','PENDING', 'BUILDING', 'COMPLETE', 'FAILED', 'DELETING', 'DELETEFAILED')
+STATUS_STRINGS = ('NEW','PENDING', 'BUILDING', 'COMPLETE', 'FAILED', 'DELETING', 'DELETED', 'DELETEFAILED')
 NOTIFICATIONS = ('image.status', 'image.percentage')
 
 

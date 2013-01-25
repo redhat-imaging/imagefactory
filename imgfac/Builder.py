@@ -443,18 +443,13 @@ class Builder(object):
 
     def _delete_image(self, provider, credentials, target, image_object, parameters):
         try:
-            _type = type(image_object).__name__
-            # TODO: These tasks take some amount of time - introduce a DELETING state?
-            # TODO: It may make sense to keep images in DELETED state for a period of time to allow polling
-            # TODO: Locking, of any type?  We can't really control whether the image is in use externally - deleter beware?
-            if _type == "ProviderImage":
+            image_object.status = "DELETING"
+            if type(image_object).__name__ == "ProviderImage":
                 plugin_mgr = PluginManager(self.app_config['plugins'])
                 self.cloud_plugin = plugin_mgr.plugin_for_target(target)
                 self.cloud_plugin.delete_from_provider(self, provider, credentials, target, parameters)
-            #self.provider_image.status="DELETED"
-            #self.pim.save_image(image_object)
-            image_object.status="DELETING"
             self.pim.delete_image_with_id(image_object.identifier)
+            image_object.status = "DELETED"
         except Exception, e:
             image_object.status="DELETEFAILED"
             self.pim.save_image(image_object)
