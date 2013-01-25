@@ -189,6 +189,7 @@ class EC2Cloud(object):
 
 
     def delete_from_provider(self, builder, provider, credentials, target, parameters):
+        self.builder = builder
         self.log.debug("Deleting AMI (%s)" % (self.builder.provider_image.identifier_on_provider))
         self.activity("Preparing EC2 region details")
         region=provider
