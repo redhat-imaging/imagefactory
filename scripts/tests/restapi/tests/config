@@ -1,0 +1,40 @@
+# imgfac host, some URL formatted string, like http://hostname:8075/
+IMGFAC_URL = "http://localhost:8075/imagefactory"
+
+# target_content.xml file location
+IMGFAC_TCXML = "/etc/imagefactory/target_content.xml"
+
+# imagefactory.conf file location
+IMGFAC_CONF = "/etc/imagefactory/imagefactory.conf"
+
+# providers you want to build the target_images for
+# NOTE: if you add ec2 to this list, you'll be biulding locally and then uploading the image to ec2 (for RHEL we suggest instead to snapshot the remote AMI)
+TARGETS = ["rhevm","vsphere","ec2"]
+
+# if you want to test the push feature, add here the providers you want to push the images to
+# NOTE: you need to rename and review the .sample files in /providers for this to work
+PROVIDERS = []
+
+# providers definitions and credentials file path
+PROVIDERS_FILE_PATH = os.path.join(os.path.dirname(__file__),"../providers/")
+
+# polling interval (in secs)
+POLLING_INTERVAL = 10
+
+# build endpoints
+BASE_IMAGE_ENDPOINT = "/base_images"
+TARGET_IMAGE_ENDPOINT = "/target_images"
+PROVIDER_IMAGE_ENDPOINT = "/provider_images"
+
+# maximum number of requests build requests to send and monitor concurrently
+# NOTE: imagefactoryd allows by default for 2 concurrent builds only
+MAX_THREADS = 2
+
+# the headers to be used by python-requests for the POSTs
+REQUEST_HEADERS = {'Accept' : 'application/json', 'Content-Type' : 'application/json'}
+
+# template files list is constructed dynamically
+import os
+import glob
+TEMPLATE_FILES = glob.glob(os.path.join(os.path.dirname(__file__),"../tdls/*tdl"))
+
