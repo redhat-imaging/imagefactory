@@ -1,0 +1,8 @@
+{
+  "vsphere":
+  {
+    "api-url": "https://vsphere.host.fqdn/sdk",
+    "datastore": "datastore1",
+    "network_name": "VM Network"
+  }
+}
