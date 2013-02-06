@@ -142,7 +142,7 @@ def build_push_delete(target, index):
                             credentials_file = NamedTemporaryFile()
                             credentials_file.write(provider['credentials'])
                             provider_file = NamedTemporaryFile()
-                            provider_file.write(provider['definition'])
+                            provider_file.write(str(provider['definition']))
                             if args.remote:
                                 payload = {'provider_image': {'target': target, 'provider': provider['name'], 'credentials': provider['credentials']}}
                                 r = requests.post(args.url+'/target_images/'+target_image_id+'/provider_images', data=json.dumps(payload), headers=requests_headers)
