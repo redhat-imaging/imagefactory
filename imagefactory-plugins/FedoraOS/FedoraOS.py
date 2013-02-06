@@ -241,8 +241,11 @@ class FedoraOS(object):
         # populate a config object to pass to OZ; this allows us to specify our
         # own output dir but inherit other Oz behavior
         self.oz_config = ConfigParser.SafeConfigParser()
-        self.oz_config.read("/etc/oz/oz.cfg")
-        self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
+        if self.oz_config.read("/etc/oz/oz.cfg") != []:
+            self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
+        else:
+            raise ImageFactoryException("No Oz config file found. Can't continue.")
+
         # make this a property to enable quick cleanup on abort
         self.instance = None
 
