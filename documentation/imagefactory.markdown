@@ -54,6 +54,7 @@ documentation.
     --nodebug             Turn off the default verbose CLI logging
     --output {log,json}   Choose between log or json output. (default: log)
     --raw                 Turn off pretty printing.
+    --snapshot            Argument to select the snapshot style of build (used with provider_image command)
     
     EC2 settings:
         --ec2-32bit-util EC2_32BIT_UTIL
