@@ -30,7 +30,10 @@ from imgfac.Builder import Builder
 
 try:
     from pygments import highlight
-    from pygments.lexers import JSONLexer
+    try: # JSONLexer was renamed to JsonLexer - https://bitbucket.org/birkenfeld/pygments-main/src/ec8ce8ad7bc4/pygments/lexers/_mapping.py
+        from pygments.lexers import JsonLexer
+    except: # To keep compatibility with the older versions of pygments
+        from pygments.lexers import JSONLexer
     from pygments.formatters import TerminalFormatter
     PYGMENT = True
 except:
@@ -249,7 +252,7 @@ class Application(Singleton):
                 print highlight(formatted_returnval, JSONLexer(), TerminalFormatter())
             else:
                 if(self.app_config['debug'] and not self.app_config['raw']):
-                    print('Python module "pygment" found. Install this module if you want syntax colorization.')
+                    print('Python module "pygments" found. Install this module if you want syntax colorization.')
                 print(formatted_returnval)
 
         if thread:
