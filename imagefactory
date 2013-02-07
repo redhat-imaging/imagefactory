@@ -31,9 +31,9 @@ from imgfac.Builder import Builder
 try:
     from pygments import highlight
     try: # JSONLexer was renamed to JsonLexer - https://bitbucket.org/birkenfeld/pygments-main/src/ec8ce8ad7bc4/pygments/lexers/_mapping.py
-        from pygments.lexers import JsonLexer
-    except: # To keep compatibility with the older versions of pygments
         from pygments.lexers import JSONLexer
+    except: # To keep compatibility with the older versions of pygments
+        from pygments.lexers import JsonLexer as JSONLexer
     from pygments.formatters import TerminalFormatter
     PYGMENT = True
 except:
