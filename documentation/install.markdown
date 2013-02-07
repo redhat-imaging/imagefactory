@@ -28,7 +28,3 @@ title: Installation
 
 ---
 
-<a id="setuptools" />
-## Installing via setuptools
-
-This is currently being worked on. Please watch this space for more information soon.

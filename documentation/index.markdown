@@ -7,7 +7,7 @@ title: Documentation
 #### Installation:
 
 * [Installation via RPM](/documentation/install.html#rpm "Installation via RPM")
-* [Installation via setuptools](/documentation/install.html#setuptools "Installation via setuptools")
+* [Installation from source](https://github.com/aeolusproject/imagefactory/wiki/Installing-from-Source "Installation via setuptools")
 
 #### Setup
 
