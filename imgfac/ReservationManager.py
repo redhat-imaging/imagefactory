@@ -24,6 +24,9 @@ class ReservationManager(object):
 
     DEFAULT_MINIMUM = 21474836480
 
+    MIN_PORT = 1025
+    MAX_PORT = 65535
+
     ### Properties
     def default_minimum():
         """The property default_minimum"""
@@ -68,6 +71,8 @@ class ReservationManager(object):
                              ec2=BoundedSemaphore(i.appconfig.get('max_concurrent_ec2_sessions', 1)))
             i._named_locks = { } 
             i._named_locks_lock = BoundedSemaphore()
+            i._listen_port = cls.MIN_PORT
+            i._listen_port_lock = BoundedSemaphore()
             cls.instance = i
         return cls.instance
 
@@ -76,6 +81,16 @@ class ReservationManager(object):
         @param default_minimum Default for the minimum amount needed for a path.
         """
         pass
+
+    def get_next_listen_port(self):
+        self._listen_port_lock.acquire()
+        try:
+            self._listen_port += 1
+            if self._listen_port > self.MAX_PORT:
+                self._listen_port = self.MIN_PORT
+            return self._listen_port
+        finally:
+            self._listen_port_lock.release()
 
     def reserve_space_for_file(self, size, filepath):
         """
