@@ -38,6 +38,7 @@ from boto.s3.connection import Location
 from boto.exception import *
 from boto.ec2.blockdevicemapping import EBSBlockDeviceType, BlockDeviceMapping
 from imgfac.CloudDelegate import CloudDelegate
+from imgfac.FactoryUtils import launch_inspect_and_mount, inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info
 
 # Boto is very verbose - shut it up
 logging.getLogger('boto').setLevel(logging.INFO)
@@ -261,48 +262,13 @@ class EC2Cloud(object):
 
     def modify_oz_filesystem(self):
         self.activity("Removing unique identifiers from image - Adding cloud information")
-
-        self.log.debug("init guestfs")
-        g = guestfs.GuestFS ()
-
-        self.log.debug("add input image")
-        g.add_drive (self.image)
-
-        self.log.debug("launch guestfs")
-        g.launch ()
-
-        g.mount_options("", "/dev/VolGroup00/LogVol00", "/")
-        # F16 and upwards end up with boot on sda2 due to GRUB changes
-        if (self.tdlobj.distro == 'Fedora') and (int(self.tdlobj.update) >= 16):
-            g.mount_options("", "/dev/sda2", "/boot")
-        else:
-            g.mount_options("", "/dev/sda1", "/boot")
-
-        self.log.info("Creating cloud-info file indicating target (%s)" % (self.target))
-        tmpl = 'CLOUD_TYPE="%s"\n' % (self.target)
-        g.write("/etc/sysconfig/cloud-info", tmpl)
-
-        # In the cloud context we currently never need or want persistent net device names
-        # This is known to break networking in RHEL/VMWare and could potentially do so elsewhere
-        # Just delete the file to be safe
-        if g.is_file("/etc/udev/rules.d/70-persistent-net.rules"):
-            g.rm("/etc/udev/rules.d/70-persistent-net.rules")
-
-        # Also clear out the MAC address this image was bound to.
-        # Second argument is 0 - means don't save a backup - this confuses network init
-        g.aug_init("/", 0)
-        if g.aug_rm("/files/etc/sysconfig/network-scripts/ifcfg-eth0/HWADDR"):
-            self.log.debug("Removed HWADDR from image's /etc/sysconfig/network-scripts/ifcfg-eth0")
-            g.aug_save()
-        else:
-            self.log.debug("Failed to remove HWADDR from image's /etc/sysconfig/network-scripts/ifcfg-eth0")
-        g.aug_close()
-
-        g.sync ()
-        g.umount_all ()
-
+        guestfs_handle = launch_inspect_and_mount(self.builder.target_image.data)
+        remove_net_persist(guestfs_handle)
+        create_cloud_info(guestfs_handle, self.target)
+        shutdown_and_close(guestfs_handle)
 
     def ec2_copy_filesystem(self):
+
         self.activity("Copying image contents to single flat partition for EC2")
         target_image=self.image + ".tmp"
 
@@ -310,61 +276,41 @@ class EC2Cloud(object):
         g = guestfs.GuestFS ()
 
         self.log.debug("add input image")
+        # /dev/sda
         g.add_drive (self.image)
 
-        self.log.debug("creat target image")
+        self.log.debug("create target image")
+        # /dev/sdb
         f = open (target_image, "w")
         # TODO: Can this be larger, smaller - should it be?
         f.truncate (10000 * 1024 * 1024)
         f.close ()
         g.add_drive(target_image)
 
-        self.log.debug("creat tmp image")
-        # We need a small FS to mount target and dest on - make image file for it
-        # TODO: Use Marek's create mount point trick instead of a temp file
-        tmp_image_file = "/tmp/tmp-img-" + self.new_image_id
-        f = open (tmp_image_file, "w")
-        f.truncate (10 * 1024 * 1024)
-        f.close
-        g.add_drive(tmp_image_file)
+        g.launch()
 
-        self.log.debug("launch guestfs")
-        g.launch ()
+        g.mkmountpoint("/in")
+        g.mkmountpoint("/out")
+        g.mkmountpoint("/out/in")
 
-        # TODO: Re-enable this?
-        # Do inspection here, as libguestfs prefers we do it before mounting anything
-        #inspection = g.inspect_os()
-        # This assumes, I think reasonably, only one OS on the disk image provided by Oz
-        #rootdev = inspection[0]
+        # Input image ends up mounted at /in
+        inspect_and_mount(g, relative_mount="/in")
 
-        # At this point sda is original image - sdb is blank target - sdc is small helper
-        self.log.info("Making filesystems for EC2 transform")
-        # TODO: Make different FS types depending on the type of the original root fs
+        # Blank target image ends up mounted at /out/in
+        # Yes, this looks odd but it is the easiest way to use cp_a from guestfs
+        # cp_a is needed because we cannot use wildcards directly with guestfs
+        # TODO: Inherit the FS type from the source image instead of ext3 hardcode
         g.mkfs ("ext3", "/dev/sdb")
         g.set_e2label ("/dev/sdb", "/")
-        g.mkfs ("ext3", "/dev/sdc")
-        self.log.info("Done")
-        g.mount_options ("", "/dev/sdc", "/")
-        g.mkdir("/in")
-        g.mkdir("/out")
-        # Yes, this looks odd but it is the easiest way to use cp_a from guestfs
-        #  because we cannot use wildcards directly with guestfs
-        g.mkdir("/out/in")
-        g.mount_ro ("/dev/VolGroup00/LogVol00", "/in")
-        # F16 and upwards end up with boot on sda2 due to GRUB changes
-        if (self.tdlobj.distro == 'Fedora') and (int(self.tdlobj.update) >= 16):
-            g.mount_ro ("/dev/sda2", "/in/boot")
-        else:
-            g.mount_ro ("/dev/sda1", "/in/boot")
         g.mount_options ("", "/dev/sdb", "/out/in")
 
+        # See how nice this is
         self.log.info("Copying image contents to EC2 flat filesystem")
         g.cp_a("/in/", "/out")
-        self.log.info("Done")
 
-        g.sync ()
-        g.umount_all ()
-        os.unlink(tmp_image_file)
+        self.log.debug("Shutting down and closing libguestfs")
+        shutdown_and_close(g)
+
         self.log.debug("Copy complete - removing old image and replacing with new flat filesystem image")
         os.unlink(self.image)
         os.rename(target_image, self.image)

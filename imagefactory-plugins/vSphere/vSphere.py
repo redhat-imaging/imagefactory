@@ -26,6 +26,7 @@ import logging
 from xml.etree.ElementTree import fromstring
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
+from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info
 from VSphereHelper import VSphereHelper
 from VMDKstream import convert_to_stream
 from imgfac.CloudDelegate import CloudDelegate
@@ -146,45 +147,10 @@ class vSphere(object):
 
     def modify_oz_filesystem(self):
         self.log.debug("Doing further Factory specific modification of Oz image")
-
-        self.log.debug("init guestfs")
-        g = guestfs.GuestFS ()
-
-        self.log.debug("add input image")
-        g.add_drive (self.image)
-
-        self.log.debug("launch guestfs")
-        g.launch ()
-
-        g.mount_options("", "/dev/VolGroup00/LogVol00", "/")
-        # F16 and upwards end up with boot on sda2 due to GRUB changes
-        if (self.tdlobj.distro == 'Fedora') and (int(self.tdlobj.update) >= 16):
-            g.mount_options("", "/dev/sda2", "/boot")
-        else:
-            g.mount_options("", "/dev/sda1", "/boot")
-
-        self.log.info("Creating cloud-info file indicating target (%s)" % (self.target))
-        tmpl = 'CLOUD_TYPE="%s"\n' % (self.target)
-        g.write("/etc/sysconfig/cloud-info", tmpl)
-
-        # In the cloud context we currently never need or want persistent net device names
-        # This is known to break networking in RHEL/VMWare and could potentially do so elsewhere
-        # Just delete the file to be safe
-        if g.is_file("/etc/udev/rules.d/70-persistent-net.rules"):
-            g.rm("/etc/udev/rules.d/70-persistent-net.rules")
-
-        # Also clear out the MAC address this image was bound to.
-        g.aug_init("/", 1)
-        if g.aug_rm("/files/etc/sysconfig/network-scripts/ifcfg-eth0/HWADDR"):
-            self.log.debug("Removed HWADDR from image's /etc/sysconfig/network-scripts/ifcfg-eth0")
-            g.aug_save()
-        else:
-            self.log.debug("Failed to remove HWADDR from image's /etc/sysconfig/network-scripts/ifcfg-eth0")
-        g.aug_close()
-
-        g.sync ()
-        g.umount_all ()
-
+        guestfs_handle = launch_inspect_and_mount(builder.target_image.data)
+        remove_net_persist(guestfs_handle)
+        create_cloud_info(guestfs_handle, self.target)
+        shutdown_and_close(guestfs_handle)
 
     def push_image_to_provider(self, builder, provider, credentials, target, target_image, parameters):
         self.log.info('push_image_to_provider() called in vSphere')
