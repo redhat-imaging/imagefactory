@@ -104,7 +104,7 @@ class Application(Singleton):
                 faulthandler.enable(file=faultfile, all_threads = True)
                 logging.debug("Enabled faulthandler")
             except:
-                logging.debug("Unable to start faulthandler, multi-thread tracebacks will not be available. See http://pypi.python.org/pypi/faulthandler/ for more information.")
+                logging.debug("Unable to find python module, faulthandler... multi-thread tracebacks will not be available. See http://pypi.python.org/pypi/faulthandler/ for more information.")
                 pass
         elif (self.app_config['verbose']):
             logging.getLogger('').setLevel(logging.INFO)
