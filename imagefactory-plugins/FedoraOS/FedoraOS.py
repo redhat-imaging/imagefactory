@@ -225,12 +225,6 @@ class FedoraOS(object):
         self.res_mgr = ReservationManager()
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
 
-        if "ec2" in config_obj.jeos_images:
-            self.ec2_jeos_amis = config_obj.jeos_images['ec2']
-        else:
-            self.log.warning("No JEOS amis defined for ec2.  Snapshot builds will not be possible.")
-            self.ec2_jeos_amis = {}
-
 
     def _init_oz(self):
         # TODO: This is a convenience variable for refactoring - rename
