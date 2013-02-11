@@ -28,6 +28,7 @@ from tempfile import *
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.ReservationManager import ReservationManager
+from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist
 
 from imgfac.OSDelegate import OSDelegate
 
@@ -62,19 +63,6 @@ class FedoraOS(object):
         self.target = target
         self.base_image = builder.base_image
 
-        # Merge together any TDL-style customizations requested via our plugin-to-plugin interface
-        # with any target specific packages, repos and commands and then run a second Oz customization
-        # step.
-        self.tdlobj = oz.TDL.TDL(xmlstring=builder.base_image.template, rootpw_required=True)
-        
-        # We remove any packages and commands from the original TDL - these have already been
-        # installed/executed.  We leave the repos in place, as it is possible that the target
-        # specific packages or commands may require them.
-        self.tdlobj.packages = [ ]
-        self.tdlobj.commands = { }
-        self.add_target_content()
-        self.merge_cloud_plugin_content()
-
         # populate our target_image bodyfile with the original base image
         # which we do not want to modify in place
         self.activity("Copying BaseImage to modifiable TargetImage")
@@ -82,29 +70,44 @@ class FedoraOS(object):
         oz.ozutil.copyfile_sparse(builder.base_image.data, builder.target_image.data)
         self.image = builder.target_image.data
 
-        # Retrieve original libvirt_xml from base image - update filename
-        input_doc = libxml2.parseDoc(builder.base_image.parameters['libvirt_xml'])
-        disknodes = input_doc.xpathEval("/domain/devices/disk")
-        for disknode in disknodes:
-            if disknode.prop('device') == 'disk':
-                disknode.xpathEval('source')[0].setProp('file', builder.target_image.data)
+        # Merge together any TDL-style customizations requested via our plugin-to-plugin interface
+        # with any target specific packages, repos and commands and then run a second Oz customization
+        # step.
+        self.tdlobj = oz.TDL.TDL(xmlstring=builder.base_image.template, rootpw_required=True)
+        
+        # We remove any packages, commands and files from the original TDL - these have already been
+        # installed/executed.  We leave the repos in place, as it is possible that the target
+        # specific packages or commands may require them.
+        self.tdlobj.packages = [ ]
+        self.tdlobj.commands = { }
+        self.tdlobj.files = { } 
+        # This is user-defined target-specific packages and repos in a local config file
+        self.add_target_content()
+        # This is content deposited by cloud plugins - typically commands to run to prep the image further
+        self.merge_cloud_plugin_content()
 
-        # TODO: See about doing the Oz init first, grabbing the XML from there and then replacing only the filename
+        # If there are no new commands, packages or files, we can stop here - there is no need to run Oz again
+        if (len(self.tdlobj.packages) + len(self.tdlobj.commands) + len(self.tdlobj.files)) == 0:
+            self.log.debug("No further modification of the TargetImage to perform in the OS Plugin - returning")
+            return 
 
-        # Give a unique name - Oz fails if we attempt to launch multiple guests with identical libvirt_xml names
-        input_doc.xpathEval("/domain/name")[0].setContent("factory-build-%s" % (self.active_image.identifier))
-
-        # Give a unique identifier as well
-        input_doc.xpathEval("/domain/uuid")[0].setContent(str(self.active_image.identifier))
-
-        # And a mac address
-        input_doc.xpathEval("/domain/devices/interface/mac")[0].setProp('address', oz.ozutil.generate_macaddress())
-
-        libvirt_xml = input_doc.serialize(None, 1)
-
+        # We have some additional work to do - create a new Oz guest object that we can use to run the guest
+        # customization a second time
         self._init_oz()
 
         self.guest.diskimage = builder.target_image.data
+
+        libvirt_xml = self.guest._generate_xml("hd", None)
+
+        # One last step is required here - The persistent net rules in some Fedora and RHEL versions
+        # Will cause our new incarnation of the image to fail to get network - fix that here
+        # We unfortunately end up having to duplicate this a second time in the cloud plugins
+        # when we are done with our second  stage customizations
+        # TODO: Consider moving all of that back here
+
+        guestfs_handle = launch_inspect_and_mount(builder.target_image.data)
+        remove_net_persist(guestfs_handle)
+        shutdown_and_close(guestfs_handle)
 
         try:
             self.log.debug("Doing second-stage target_image customization and ICICLE generation")
@@ -117,7 +120,9 @@ class FedoraOS(object):
             self.guest.cleanup_install()
 
     def add_cloud_plugin_content(self, content):
-        # Expected input is a dict containing commands and files
+        # This is a method that cloud plugins can call to deposit content/commands to be run
+        # during the OS-specific first stage of the Target Image creation.
+        # The expected input is a dict containing commands and files
         # No support for repos at the moment as these introduce external deps that we may not be able to count on
         # Add this to an array which will later be merged into the TDL object used to drive Oz
         self.cloud_plugin_content.append(content)
@@ -217,13 +222,8 @@ class FedoraOS(object):
         self.cloud_plugin_content = [ ]
         config_obj = ApplicationConfiguration()
         self.app_config = config_obj.configuration
+        self.res_mgr = ReservationManager()
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-
-        if "ec2" in config_obj.jeos_images:
-            self.ec2_jeos_amis = config_obj.jeos_images['ec2']
-        else:
-            self.log.warning("No JEOS amis defined for ec2.  Snapshot builds will not be possible.")
-            self.ec2_jeos_amis = {}
 
 
     def _init_oz(self):
@@ -317,6 +317,8 @@ class FedoraOS(object):
         # any arbitrary guest that Oz is capable of producing
         try:
             self.guest = oz.GuestFactory.guest_factory(self.tdlobj, self.oz_config, None)
+            # Oz just selects a random port here - This could potentially collide if we are unlucky
+            self.guest.listen_port = self.res_mgr.get_next_listen_port()
         except:
             raise ImageFactoryException("OS plugin does not support distro (%s) update (%s) in TDL" % (self.tdlobj.distro, self.tdlobj.update) )
 
@@ -333,11 +335,10 @@ class FedoraOS(object):
 
         tdl = guest.tdl
         queue_name = "%s-%s-%s-%s" % (tdl.distro, tdl.update, tdl.arch, tdl.installtype)
-        res_mgr = ReservationManager()
-        res_mgr.get_named_lock(queue_name)
+        self.res_mgr.get_named_lock(queue_name)
         try:
             guest.generate_install_media(force_download=False)
         finally:
-            res_mgr.release_named_lock(queue_name)
+            self.res_mgr.release_named_lock(queue_name)
 
 

@@ -9,6 +9,7 @@ from xml.etree.ElementTree import fromstring
 from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.CloudDelegate import CloudDelegate
+from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info
 from glance import client as glance_client
 
 def glance_upload(image_filename, creds = {'auth_url': None, 'password': None, 'strategy': 'noauth', 'tenant': None, 'username': None},
@@ -100,7 +101,16 @@ class OpenStackCloud(object):
         pass
 
     def builder_did_create_target_image(self, builder, target, image_id, template, parameters):
-        pass
+        self.target=target
+        self.builder=builder 
+        self.modify_oz_filesystem()
+
+    def modify_oz_filesystem(self):
+        self.log.debug("Doing further Factory specific modification of Oz image")
+        guestfs_handle = launch_inspect_and_mount(self.builder.target_image.data)
+        remove_net_persist(guestfs_handle)
+        create_cloud_info(guestfs_handle, self.target)
+        shutdown_and_close(guestfs_handle)
 
     def get_dynamic_provider_data(self, provider):
         try:
