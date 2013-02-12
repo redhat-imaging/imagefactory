@@ -109,7 +109,7 @@ class EC2Cloud(object):
             # TODO: More convenience vars - revisit
             self.template = template
             self.target = target
-            self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml, rootpw_required=True)
+            self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml, rootpw_required=self.app_config["tdl_require_root_pw"])
             self._get_os_helper()
             # Add in target specific content
             self.add_target_content()
@@ -184,7 +184,7 @@ class EC2Cloud(object):
         # TODO: This is a convenience variable for refactoring - rename
         self.new_image_id = builder.provider_image.identifier
 
-        self.tdlobj = oz.TDL.TDL(xmlstring=builder.target_image.template, rootpw_required=True)
+        self.tdlobj = oz.TDL.TDL(xmlstring=builder.target_image.template, rootpw_required=self.app_config["tdl_require_root_pw"])
         self._get_os_helper()
         self.push_image_upload(target_image, provider, credentials)
 
@@ -542,7 +542,7 @@ class EC2Cloud(object):
 
 
         # Template must be defined for snapshots
-        self.tdlobj = oz.TDL.TDL(xmlstring=str(template), rootpw_required=True)
+        self.tdlobj = oz.TDL.TDL(xmlstring=str(template), rootpw_required=self.app_config["tdl_require_root_pw"])
         self._get_os_helper()
         self.os_helper.init_guest()
 

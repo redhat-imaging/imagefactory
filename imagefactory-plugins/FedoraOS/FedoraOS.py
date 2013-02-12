@@ -73,7 +73,7 @@ class FedoraOS(object):
         # Merge together any TDL-style customizations requested via our plugin-to-plugin interface
         # with any target specific packages, repos and commands and then run a second Oz customization
         # step.
-        self.tdlobj = oz.TDL.TDL(xmlstring=builder.base_image.template, rootpw_required=True)
+        self.tdlobj = oz.TDL.TDL(xmlstring=builder.base_image.template, rootpw_required=self.app_config["tdl_require_root_pw"])
         
         # We remove any packages, commands and files from the original TDL - these have already been
         # installed/executed.  We leave the repos in place, as it is possible that the target
@@ -257,7 +257,7 @@ class FedoraOS(object):
     def create_base_image(self, builder, template, parameters):
         self.log.info('create_base_image() called for FedoraOS plugin - creating a BaseImage')
 
-        self.tdlobj = oz.TDL.TDL(xmlstring=template.xml, rootpw_required=True)
+        self.tdlobj = oz.TDL.TDL(xmlstring=template.xml, rootpw_required=self.app_config["tdl_require_root_pw"])
 
         # TODO: Standardize reference scheme for the persistent image objects in our builder
         #   Having local short-name copies like this may well be a good idea though they
