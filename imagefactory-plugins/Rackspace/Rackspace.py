@@ -1,5 +1,5 @@
 #
-#   Copyright 2011 Red Hat, Inc.
+#   Copyright 2013 Red Hat, Inc.
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import string
 import libxml2
 import traceback
 import ConfigParser
-import boto.ec2
 import sys
 import json
 from time import *
@@ -38,8 +37,6 @@ from imgfac.CloudDelegate import CloudDelegate
 import novaclient
 from novaclient.v1_1 import client
 from novaclient.exceptions import NotFound
-import httplib2
-httplib2.debuglevel = 0
 import oz.Fedora
 
 def subprocess_check_output(*popenargs, **kwargs):
@@ -74,42 +71,12 @@ class Rackspace(object):
         self.oz_config = ConfigParser.SafeConfigParser()
         self.oz_config.read("/etc/oz/oz.cfg")
         self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
-        
+
         if "rackspace" in config_obj.jeos_images:
-            self.ec2_jeos_amis = config_obj.jeos_images['ec2']
+            self.rackspace_jeos_amis = config_obj.jeos_images['rackspace']
         else:
             self.log.warning("No JEOS images defined for Rackspace.  Snapshot builds will not be possible.")
-            self.ec2_jeos_amis = {}
-
-
-    def _get_os_helper(self):
-        # For now we are adopting a 'mini-plugin' approach to OS specific code within the EC2 plugin
-        # In theory, this could live in the OS plugin - however, the code in question is very tightly
-        # related to the EC2 plugin, so it probably should stay here
-        try:
-            # Change RHEL-6 to RHEL6, etc.
-            os_name = self.tdlobj.distro.translate(None, '-')
-            class_name = "%s_ec2_Helper" % (os_name)
-            module_name = "imagefactory_plugins.EC2Cloud.EC2CloudOSHelpers"
-            __import__(module_name)
-            os_helper_class = getattr(sys.modules[module_name], class_name)
-            self.os_helper = os_helper_class(self)
-        except:
-            self.log_exc()
-            raise ImageFactoryException("Unable to create EC2 OS helper object for distro (%s) in TDL" % (self.tdlobj.distro) )
-
-    def push_image_to_provider(self, builder, provider, credentials, target, target_image, parameters):
-        self.log.info('push_image_to_provider() called in Rackspace')
-
-        self.builder = builder
-        self.active_image = self.builder.provider_image
-
-        # TODO: This is a convenience variable for refactoring - rename
-        self.new_image_id = builder.provider_image.identifier
-
-        self.tdlobj = oz.TDL.TDL(xmlstring=builder.target_image.template, rootpw_required=True)
-        self._get_os_helper()
-        self.push_image_upload(target_image, provider, credentials)
+            self.rackspace_jeos_amis = {}
 
 
     def log_exc(self):
@@ -137,7 +104,7 @@ class Rackspace(object):
             raise ImageFactoryException("Unable to gain ssh access after 300 seconds - aborting")
 
     def wait_for_rackspace_instance_start(self, instance):
-        self.activity("Waiting for EC2 instance to become active")
+        self.activity("Waiting for Rackspace instance to become active")
         for i in range(600):
             if i % 10 == 0:
                 self.log.debug("Waiting for Rackspace instance to start: %d/600" % (i))
@@ -173,12 +140,10 @@ class Rackspace(object):
 	try:
   	    self.instance.delete()
 	except Exception, e:
-	    import pdb; pdb.set_trace()
             self.log.info("Failed to delete Rackspace instance.")
 
     def snapshot_image_on_provider(self, builder, provider, credentials, target, template, parameters):
         self.log.info('snapshot_image_on_provider() called in Rackspace')
-	print "\n\n\n\n\n\n\n\n\n\n\n"
 
         self.builder = builder
         self.active_image = self.builder.provider_image
@@ -191,10 +156,8 @@ class Rackspace(object):
 
         # Template must be defined for snapshots
         self.tdlobj = oz.TDL.TDL(xmlstring=str(template), rootpw_required=True)
-        self._get_os_helper()
-        self.os_helper.init_guest()
 
-        # Create a name combining the TDL name and the UUID for use when tagging EC2 AMIs
+        # Create a name combining the TDL name and the UUID for use when tagging Rackspace Images
         self.longname = self.tdlobj.name + "-" + self.new_image_id
 
         def replace(item):
@@ -224,9 +187,10 @@ class Rackspace(object):
         # Now launch it
         self.activity("Launching Rackspace JEOS image")
         #self.log.debug("Starting ami %s with instance_type %s" % (ami_id, instance_type))
-	f17 = rackspace_client.images.find(name='Fedora 17 (Beefy Miracle)')
+	rackspace_image_id = self.rackspace_jeos_amis[region][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]
+	image = rackspace_client.images.find(id=rackspace_image_id)
 	small = rackspace_client.flavors.find(name='512MB Standard Instance')
-	reservation = rackspace_client.servers.create('testing', f17, small, files=server_files)
+	reservation = rackspace_client.servers.create('imagefactory-image', image, small, files=server_files)
 
 
 
@@ -257,14 +221,14 @@ class Rackspace(object):
             self.log.debug("Waiting 60 seconds for remaining boot tasks")
             sleep(60)
 
-            self.activity("Customizing running EC2 JEOS instance")
+            self.activity("Customizing running Rackspace JEOS instance")
             self.log.debug("Stopping cron and killing any updatedb process that may be running")
             # updatedb interacts poorly with the bundle step - make sure it isn't running
 	    try:
                 self.guest.guest_execute_command(guestaddr, "/sbin/service crond stop")
                 self.guest.guest_execute_command(guestaddr, "killall -9 updatedb || /bin/true")
 	    except Exception, e:
-		import pdb; pdb.set_trace()
+		self.log.warning("Exception while executing commands on guest")
             self.log.debug("Done")
 
             # Not all JEOS images contain this - redoing it if already present is harmless
@@ -323,74 +287,3 @@ class Rackspace(object):
         self.rackspace_password = self._rackspace_get_xml_node(doc, "password")
 
         doc.freeDoc()
-
-    def abort(self):
-        # TODO: Make this progressively more robust
-
-        # In the near term, the most important thing we can do is terminate any EC2 instance we may be using
-        if self.instance:
-            instance_id = self.instance.id
-            try:
-                self.terminate_instance(self.instance)
-            except Exception, e:
-                self.log.warning("Warning, encountered - Instance %s may not be terminated ******** " % (instance_id))
-                self.log.exception(e)
-
-    # This file content is tightly bound up with our mod code above
-    # I've inserted it as class variables for convenience
-
-
-    def add_target_content(self):
-        """Merge in target specific package and repo content.
-        TDL object must already exist as self.tdlobj"""
-        doc = None
-# TODONOW: Fix
-#        if self.config_block:
-        import os.path
-        if None:
-            doc = libxml2.parseDoc(self.config_block)
-        elif os.path.isfile("/etc/imagefactory/target_content.xml"):
-            doc = libxml2.parseFile("/etc/imagefactory/target_content.xml")
-        else:
-            self.log.debug("Found neither a call-time config nor a config file - doing nothing")
-            return
-
-        # Purely to make the xpath statements below a tiny bit shorter
-        target = self.target
-        os=self.tdlobj.distro
-        version=self.tdlobj.update
-        arch=self.tdlobj.arch
-
-        # We go from most to least specific in this order:
-        #   arch -> version -> os-> target
-        # Note that at the moment we even allow an include statment that covers absolutely everything.
-        # That is, one that doesn't even specify a target - this is to support a very simple call-time syntax
-        include = doc.xpathEval("/template_includes/include[@target='%s' and @os='%s' and @version='%s' and @arch='%s']" %
-                                (target, os, version, arch))
-        if len(include) == 0:
-            include = doc.xpathEval("/template_includes/include[@target='%s' and @os='%s' and @version='%s' and not(@arch)]" %
-                                    (target, os, version))
-        if len(include) == 0:
-            include = doc.xpathEval("/template_includes/include[@target='%s' and @os='%s' and not(@version) and not(@arch)]" %
-                                        (target, os))
-        if len(include) == 0:
-            include = doc.xpathEval("/template_includes/include[@target='%s' and not(@os) and not(@version) and not(@arch)]" %
-                                            (target))
-        if len(include) == 0:
-            include = doc.xpathEval("/template_includes/include[not(@target) and not(@os) and not(@version) and not(@arch)]")
-        if len(include) == 0:
-            self.log.debug("cannot find a config section that matches our build details - doing nothing")
-            return
-
-        # OK - We have at least one config block that matches our build - take the first one, merge it and be done
-        # TODO: Merge all of them?  Err out if there is more than one?  Warn?
-        include = include[0]
-
-        packages = include.xpathEval("packages")
-        if len(packages) > 0:
-            self.tdlobj.merge_packages(str(packages[0]))
-
-        repositories = include.xpathEval("repositories")
-        if len(repositories) > 0:
-            self.tdlobj.merge_repositories(str(repositories[0]))
-

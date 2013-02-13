@@ -26,7 +26,6 @@ import subprocess
 plugins = ['EC2', 'TinMan','MockCloud','MockOS', 'OpenStack',
            'RHEVM', 'vSphere']
 
-
 # Required for Python 2.6 backwards compat
 def subprocess_check_output(*popenargs, **kwargs):
     if 'stdout' in kwargs:
@@ -48,7 +47,7 @@ pkg_version = pkg_version.rstrip('\n')
 #version_file.close()
 
 site_pkgs = get_python_lib()
-datafiles = [('/etc/imagefactory/jeos_images', ['conf/ec2_fedora_jeos.conf', 'conf/ec2_rhel_jeos.conf'])]
+datafiles = [('/etc/imagefactory/jeos_images', ['conf/ec2_fedora_jeos.conf', 'conf/ec2_rhel_jeos.conf', 'conf/rackspace_fedora_jeos.conf', 'conf/rackspace_rhel_jeos.conf'])]
 packages = [ 'imagefactory_plugins' ]
 
 for plugin in plugins:
