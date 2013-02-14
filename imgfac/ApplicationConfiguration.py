@@ -48,7 +48,8 @@ class ApplicationConfiguration(Singleton):
     def __new_argument_parser(self, appname):
         main_description = """Image Factory is an application for creating system images for use on public and private clouds."""
 
-        argparser = argparse.ArgumentParser(description=main_description, prog=appname, version=VERSION)
+        argparser = argparse.ArgumentParser(description=main_description, prog=appname)
+        argparser.add_argument('--version', action='version', default=argparse.SUPPRESS, version=VERSION, help='Show the version number and exit')
         argparser.add_argument('--verbose', action='store_true', default=False, help='Set verbose logging.')
         argparser.add_argument('--config', default='/etc/imagefactory/imagefactory.conf', help='Configuration file to use. (default: %(default)s)')
         argparser.add_argument('--imgdir', default='/tmp', help='Build image files in location specified. (default: %(default)s)')
