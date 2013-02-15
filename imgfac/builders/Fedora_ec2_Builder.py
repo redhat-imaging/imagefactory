@@ -43,6 +43,41 @@ from boto.ec2.blockdevicemapping import EBSBlockDeviceType, BlockDeviceMapping
 # Boto is very verbose - shut it up
 logging.getLogger('boto').setLevel(logging.INFO)
 
+def ssh_execute_command(guestaddr, sshprivkey, command, timeout=10,
+                        user='root', prefix=None):
+    """
+    Function to execute a command on the guest using SSH and return the output.
+    Modified version of function from ozutil to allow us to deal with non-root
+    authorized users on ec2
+    """
+    # ServerAliveInterval protects against NAT firewall timeouts
+    # on long-running commands with no output
+    #
+    # PasswordAuthentication=no prevents us from falling back to
+    # keyboard-interactive password prompting
+    #
+    # -F /dev/null makes sure that we don't use the global or per-user
+    # configuration files
+    #
+    # -t -t ensures we have a pseudo tty for sudo
+
+    cmd = ["ssh", "-i", sshprivkey,
+           "-F", "/dev/null",
+           "-o", "ServerAliveInterval=30",
+           "-o", "StrictHostKeyChecking=no",
+           "-o", "ConnectTimeout=" + str(timeout),
+           "-o", "UserKnownHostsFile=/dev/null",
+           "-t", "-t",
+           "-o", "PasswordAuthentication=no"]
+
+    if prefix:
+        command = prefix + " " + command
+
+    cmd.extend( ["%s@%s" % (user, guestaddr), command ] )
+
+    return subprocess_check_output(cmd)
+
+
 def subprocess_check_output(*popenargs, **kwargs):
     if 'stdout' in kwargs:
         raise ValueError('stdout argument not allowed, it will be overridden.')
@@ -467,12 +502,26 @@ class Fedora_ec2_Builder(BaseBuilder):
         self.guest.guest_execute_command(guestaddr, "yum -y install euca2ools")
 
     def wait_for_ec2_ssh_access(self, guestaddr):
+        # We have added an isolated change here to deal with a switch to using a non-root user
+        # as the destination for key injection - this allows the remaining code to be run unaltered
+        # by allowing direct root ssh access during customization - this is undone before the snapshot
+        if self.tdlobj.distro == "RHEL-6" and int(self.tdlobj.update) >= 4:
+            user = 'ec2-user'
+            prefix = 'sudo'
+        else:
+            user = 'root'
+            prefix = None
+
+        self.log.debug("User user (%s) and command prefix (%s) for initial ssh access testing" % (user, prefix))
+
         for i in range(300):
             if i % 10 == 0:
                 self.log.debug("Waiting for EC2 ssh access: %d/300" % (i))
 
             try:
-                stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, "/bin/true", timeout = 10)
+
+                stdout, stderr, retcode = ssh_execute_command(guestaddr, self.guest.sshprivkey, "/bin/true", 
+                                                              timeout = 10, user = user, prefix=prefix) 
                 break
             except:
                 pass
@@ -480,7 +529,35 @@ class Fedora_ec2_Builder(BaseBuilder):
             sleep(1)
 
         if i == 299:
-            raise ImageFactoryException("Unable to gain ssh access after 300 seconds - aborting")
+            raise ImageFactoryException("Unable to gain ssh access as user (%s) after 300 seconds - aborting" % (user))
+
+        
+        if user != "root":
+            # We need to copy the authorized key from wherever it currently lives to root
+
+            def execute_regular_noex(command):
+                try:
+                    ignored = ssh_execute_command(guestaddr, self.guest.sshprivkey, command, 
+                                                  timeout = 10, user = user, prefix=prefix)
+                except:
+                    pass
+
+            self.log.debug("AMI uses non-root key injection to user (%s) - enabling temporary root access" % (user))
+            # These may fail if .ssh is already present - ignore those failures and test below
+            execute_regular_noex("mkdir /root/.ssh")
+            execute_regular_noex("chmod 600 /root/.ssh")
+            execute_regular_noex("cp /home/%s/.ssh/authorized_keys /root/.ssh/authorized_keys")
+            execute_regular_noex("chmod 600 /root/.ssh/authorized_keys")
+
+            # At this point we should be able to do a regular guest_execute_command as root
+            # if we cannot - fail
+            try:
+                self.guest.guest_execute_command(guestaddr, "/bin/true")
+            except:
+                raise ImageFactoryException("Transfer of authorized key to root failed - Aborting")
+                
+
+
 
     def wait_for_ec2_instance_start(self, instance):
         for i in range(300):
