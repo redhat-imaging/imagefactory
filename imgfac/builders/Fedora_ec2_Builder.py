@@ -75,8 +75,25 @@ def ssh_execute_command(guestaddr, sshprivkey, command, timeout=10,
 
     cmd.extend( ["%s@%s" % (user, guestaddr), command ] )
 
-    return subprocess_check_output(cmd)
+    return subprocess_check_output_pty(cmd)
 
+def subprocess_check_output_pty(*popenargs, **kwargs):
+    if 'stdout' in kwargs:
+        raise ValueError('stdout argument not allowed, it will be overridden.')
+
+    # This is for use only during the times that we are operating through sudo
+    # sudo requires a tty and actually creating a pty on our end is the only way
+    # we could reliably get this to work
+    (master,slave) = os.openpty()
+    process = subprocess.Popen(stdin=slave, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, *popenargs, **kwargs)
+    stdout, stderr = process.communicate()
+    retcode = process.poll()
+    os.close(slave)
+    os.close(master)
+    if retcode:
+        cmd = ' '.join(*popenargs)
+        raise ImageFactoryException("'%s' failed(%d): %s" % (cmd, retcode, stderr))
+    return (stdout, stderr, retcode)
 
 def subprocess_check_output(*popenargs, **kwargs):
     if 'stdout' in kwargs:
@@ -546,17 +563,18 @@ class Fedora_ec2_Builder(BaseBuilder):
             # These may fail if .ssh is already present - ignore those failures and test below
             execute_regular_noex("mkdir /root/.ssh")
             execute_regular_noex("chmod 600 /root/.ssh")
-            execute_regular_noex("cp /home/%s/.ssh/authorized_keys /root/.ssh/authorized_keys")
+            execute_regular_noex("cp /home/%s/.ssh/authorized_keys /root/.ssh/authorized_keys" % (user))
             execute_regular_noex("chmod 600 /root/.ssh/authorized_keys")
 
             # At this point we should be able to do a regular guest_execute_command as root
             # if we cannot - fail
             try:
-                self.guest.guest_execute_command(guestaddr, "/bin/true")
+                stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, "echo THIS-RAN-AS-ROOT")
+                if not re.search("THIS-RAN-AS-ROOT", stdout):
+                    raise Exception()
             except:
                 raise ImageFactoryException("Transfer of authorized key to root failed - Aborting")
                 
-
 
 
     def wait_for_ec2_instance_start(self, instance):
