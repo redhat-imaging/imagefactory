@@ -79,12 +79,15 @@ class RHEVMHelper(object):
         url = self.api_details['url']
         username = self.api_details['username']
         password = self.api_details['password']
-        self.api = API(url=url, username=username, password=password)
+        self.api = API(url=url, username=username, password=password, insecure=True)
 
     def _disconnect_api(self):
         try:
             self.log.debug("Attempting API disconnect")
-            self.api.disconnect()
+            if hasattr(self, 'api') and self.api is not None:
+                self.api.disconnect()
+            else:
+                self.log.debug("API connection was not initialized.  Will not attempt to disconnect.")
         finally:
             # Must always do this
             self.log.debug("Releasing global RHEVM API connection lock")
