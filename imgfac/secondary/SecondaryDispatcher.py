@@ -93,6 +93,7 @@ class SecondaryDispatcher(Singleton):
         except Exception as e:
             self.log.debug("Exception encountered when attempting to update target_image body")
             self.log.exception(e)
+            target_image.status_detail = {'activity': 'Failed to update image.', 'error': e.message}
             target_image.status="FAILED"
         finally:
             self.pim.save_image(target_image)
