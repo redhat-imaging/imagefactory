@@ -76,7 +76,7 @@ class vSphere(object):
         return True
 
     def builder_will_create_target_image(self, builder, target, image_id, template, parameters):
-        tdlobj = oz.TDL.TDL(xmlstring=template.xml, rootpw_required=True)
+        tdlobj = oz.TDL.TDL(xmlstring=template.xml, rootpw_required=self.app_config["tdl_require_root_pw"])
         if tdlobj.distro == "RHEL-5":
             merge_content = { "commands": [ { "name": "execute-module-script", "type": "raw" , "command": "/bin/sh /root/vsphere-module.sh" } ],
                               "files" : [ { "name": "/root/vsphere-module.sh", "type": "raw", "file": rhel5_module_script } ] }
@@ -102,7 +102,7 @@ class vSphere(object):
         # This lets our logging helper know what image is being operated on
         self.active_image = self.builder.target_image
 
-        self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml, rootpw_required=True)
+        self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml, rootpw_required=self.app_config["tdl_require_root_pw"])
         # Add in target specific content
         #TODO - URGENT - make this work again
         #self.add_target_content()
@@ -158,7 +158,7 @@ class vSphere(object):
         # TODO: This is a convenience variable for refactoring - rename
         self.new_image_id = builder.provider_image.identifier
 
-        self.tdlobj = oz.TDL.TDL(xmlstring=builder.target_image.template, rootpw_required=True)
+        self.tdlobj = oz.TDL.TDL(xmlstring=builder.target_image.template, rootpw_required=self.app_config["tdl_require_root_pw"])
         self.builder = builder
         self.active_image = self.builder.provider_image
         self.vmware_push_image_upload(target_image, provider, credentials)

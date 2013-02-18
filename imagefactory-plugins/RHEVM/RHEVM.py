@@ -98,7 +98,7 @@ class RHEVM(object):
         # This lets our logging helper know what image is being operated on
         self.active_image = self.builder.target_image
 
-        self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml, rootpw_required=True)
+        self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml, rootpw_required=self.app_config["tdl_require_root_pw"])
 
         # Add in target specific content
         #TODO-URGENT: Work out how to do this in the new framework
@@ -153,7 +153,7 @@ class RHEVM(object):
         # TODO: This is a convenience variable for refactoring - rename
         self.new_image_id = builder.provider_image.identifier
 
-        self.tdlobj = oz.TDL.TDL(xmlstring=builder.target_image.template, rootpw_required=True)
+        self.tdlobj = oz.TDL.TDL(xmlstring=builder.target_image.template, rootpw_required=self.app_config["tdl_require_root_pw"])
         self.builder = builder
         self.active_image = self.builder.provider_image
         self.push_image(target_image, provider, credentials)
