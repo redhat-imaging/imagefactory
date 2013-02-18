@@ -136,6 +136,7 @@ class Builder(object):
             self.base_image.status="COMPLETE"
             self.pim.save_image(self.base_image)
         except Exception, e:
+            self.base_image.status_detail = {'activity': 'Base Image build failed with exception.', 'error': e.message}
             self.base_image.status="FAILED"
             self.pim.save_image(self.base_image)
             self.log.error("Exception encountered in _build_image_from_template thread")
@@ -239,6 +240,7 @@ class Builder(object):
             self.target_image.status = "COMPLETE"
             self.pim.save_image(self.target_image)
         except Exception, e:
+            self.target_image.status_detail={'activity': 'Target Image build failed with exception', 'error': e.message}
             self.target_image.status = "FAILED"
             self.pim.save_image(self.target_image)
             self.log.error("Exception encountered in _customize_image_for_target thread")
@@ -349,6 +351,7 @@ class Builder(object):
             self.provider_image.status="COMPLETE"
             self.pim.save_image(self.provider_image)
         except Exception, e:
+            self.provider_image.status_detail={'activity': 'Provider Image build failed with exception', 'error': e.message}
             self.provider_image.status="FAILED"
             self.pim.save_image(self.provider_image)
             self.log.error("Exception encountered in _push_image_to_provider thread")
@@ -409,6 +412,8 @@ class Builder(object):
             self.provider_image.status="COMPLETE"
             self.pim.save_image(self.provider_image)
         except Exception, e:
+            self.provider_image.status_detail = {'activity': 'Provider Image build failed with exception',
+                                                 'error': e.message}
             self.provider_image.status="FAILED"
             self.pim.save_image(self.provider_image)
             self.log.error("Exception encountered in _snapshot_image thread")
@@ -449,8 +454,10 @@ class Builder(object):
                 self.cloud_plugin = plugin_mgr.plugin_for_target(target)
                 self.cloud_plugin.delete_from_provider(self, provider, credentials, target, parameters)
             self.pim.delete_image_with_id(image_object.identifier)
+            image_object.status_detail = {'activity': 'Image deleted.', 'error': None}
             image_object.status = "DELETED"
         except Exception, e:
+            image_object.status_detail = {'activity': 'Failed to delete image.', 'error': e.message}
             image_object.status="DELETEFAILED"
             self.pim.save_image(image_object)
             self.log.error("Exception encountered in _delete_image_on_provider thread")
