@@ -5,7 +5,18 @@ title: xml_examples
 section: home
 ---
 
+
+When pushing, snapshotting, or deleting an image from a provider, you'll need to pass
+in a provider definition and credentials. Below, you'll find examples that show what
+fields need to be defined and the format used to define them.
+
 # EC2
+
+For EC2, the provider definiton is already known by imagefactory. Therefore, you only
+need to supply the name of the provider along with the credentials, an example of which
+is shown below.
+
+*Credentials:*
 
     <provider_credentials> <ec2_credentials>
       <account_number>1234-5678-9012</account_number>   
@@ -44,6 +55,8 @@ section: home
 
 # OpenStack
 
+*Credentials:*
+
     <provider_credentials><openstack_credentials>
       <username>admin</username>
       <tenant>admin</tenant>
@@ -53,7 +66,7 @@ section: home
     </openstack_credentials></provider_credentials>
 
 
-
+*Provider definition:*
 
     { 
       "glance-host": "openstack",
@@ -64,10 +77,15 @@ section: home
 
 # RHEVM
 
+*Credentials:*
+
     <provider_credentials><rhevm_credentials>
       <username>admin@internal</username>
       <password>changeme</password>
     </rhevm_credentials></provider_credentials>
+
+
+*Provider definition:*
 
     {
       "api-url":   "https://10.16.120.230:8443/api",
@@ -84,11 +102,15 @@ section: home
 
 # vSphere
 
+*Credentials:*
+
     <provider_credentials><vsphere_credentials>
       <username>admin@internal</username>
       <password>changeme</password>
     </vsphere_credentials></provider_credentials>
 
+
+*Provider definition:*
 
     {
       "api-url":   "10.16.120.224",
