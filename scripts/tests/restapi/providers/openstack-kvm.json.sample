@@ -1,0 +1,4 @@
+{
+  "glance-host": "glance.host.fqdn",
+  "glance-port": 9292
+}
