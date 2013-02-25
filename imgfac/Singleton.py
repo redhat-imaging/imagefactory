@@ -17,7 +17,7 @@ class Singleton(object):
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
-            instance = super(Singleton, cls).__new__(cls, *args, **kwargs)
+            instance = super(Singleton, cls).__new__(cls)
             instance._singleton_init(*args, **kwargs)
             cls._instance = instance
         elif args or kwargs:
