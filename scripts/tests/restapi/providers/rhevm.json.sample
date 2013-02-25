@@ -1,11 +1,8 @@
 {
-  "rhevm":
-  {
-    "nfs-dir": "/mnt/rhevm-nfs31",
-    "nfs-path": "/export-nfs31",
-    "nfs-host": "nfs.host.fqdn",
-    "api-url": "https://rhevm.host.fqdn/api",
-    "cluster": "_any_",
-    "timeout": 1800
-  }
+  "nfs-dir": "/mnt/rhevm-nfs31",
+  "nfs-path": "/export-nfs31",
+  "nfs-host": "nfs.host.fqdn",
+  "api-url": "https://rhevm.host.fqdn/api",
+  "cluster": "_any_",
+  "timeout": 1800
 }
