@@ -1,5 +1,4 @@
 #Image Factory#
-*Your infrastructure in a sky full of clouds.*
 
 Image Factory enables appliance creation and deployment to multiple virtualization
 and Cloud providers.
