@@ -11,9 +11,9 @@ def launch_inspect_and_mount(diskfile):
     g = guestfs.GuestFS()
     g.add_drive(diskfile)
     g.launch()
-    return inspect_and_mount(g)
+    return inspect_and_mount(g, diskfile=diskfile)
 
-def inspect_and_mount(guestfs_handle, relative_mount=""):
+def inspect_and_mount(guestfs_handle, relative_mount="", diskfile='*unspecified*'):
     g = guestfs_handle
     # Breaking this out allows the EC2 cloud plugin to avoid duplicating this
     inspection = g.inspect_os()
