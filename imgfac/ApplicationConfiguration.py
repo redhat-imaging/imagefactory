@@ -26,23 +26,36 @@ from imgfac.Version import VERSION as VERSION
 class ApplicationConfiguration(Singleton):
     configuration = props.prop("_configuration", "The configuration property.")
 
-    def _singleton_init(self):
+    def _singleton_init(self, configuration = None):
         super(ApplicationConfiguration, self)._singleton_init()
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        self.configuration = self.__parse_arguments()
+        self.jeos_images = { }
+
+        if configuration != None:
+            if not isinstance(configuration, dict):
+                raise Exception("ApplicationConfiguration configuration argument must be a dict")
+            self.log.debug("ApplicationConfiguration passed a dictionary - ignoring any local config files including JEOS configs")
+            self.configuration = configuration
+        else:
+            self.configuration = self.__parse_arguments()
+            self.__parse_jeos_images()
+
         if not 'debug' in self.configuration:
-            # Slightly confusing, I know - For daemon mode we have a debug argument with default False
-            # For cli, we debug by default and have a nodebug argument with default False
-            # Rest of the code assumes a 'debug' value in app_config so set it here
-            self.configuration['debug'] = not self.configuration['nodebug']
+            if 'nodebug' in self.configuration:
+                # Slightly confusing, I know - For daemon mode we have a debug argument with default False
+                # For cli, we debug by default and have a nodebug argument with default False
+                # Rest of the code assumes a 'debug' value in app_config so set it here
+                self.configuration['debug'] = not self.configuration['nodebug']
+            else:
+                # This most likely means we are being used as a module/library and are not running CLI or daemon
+                self.configuration['debug'] = False
+
         if not 'secondary' in self.configuration:
             # We use this in the non-daemon context so it needs to be set
             # TODO: Something cleaner?
             self.configuration['secondary'] = False
-        self.jeos_images = {}
-        self.__parse_jeos_images()
 
-    def __init__(self):
+    def __init__(self, configuration = None):
         pass
 
     def __new_argument_parser(self, appname):
