@@ -661,6 +661,7 @@ class EC2Cloud(object):
             sleep(20)
 
             if (user != 'root'):
+                self.log.debug("Enabling root user for customization steps...")
                 enable_root(guestaddr, key_file, user, cmd_prefix)
 
             self.activity("Customizing running EC2 JEOS instance")
@@ -799,7 +800,6 @@ class EC2Cloud(object):
             if not new_ami_id:
                 raise ImageFactoryException("Failed to produce an AMI ID")
 
-            # This replaces our Warehouse calls
             self.builder.provider_image.icicle = self.output_descriptor
             self.builder.provider_image.identifier_on_provider = new_ami_id
             self.builder.provider_account_identifier = self.ec2_access_key
