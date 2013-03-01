@@ -24,7 +24,7 @@ import traceback
 import ConfigParser
 from os.path import isfile
 from time import *
-from tempfile import *
+from tempfile import NamedTemporaryFile
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.ReservationManager import ReservationManager
@@ -112,7 +112,7 @@ class FedoraOS(object):
         try:
             self.log.debug("Doing second-stage target_image customization and ICICLE generation")
             #self.percent_complete = 30
-            self.output_descriptor = self.guest.customize_and_generate_icicle(libvirt_xml)
+            builder.target_image.icicle = self.guest.customize_and_generate_icicle(libvirt_xml)
             self.log.debug("Customization and ICICLE generation complete")
             #self.percent_complete = 50
         finally:
@@ -224,7 +224,9 @@ class FedoraOS(object):
         self.app_config = config_obj.configuration
         self.res_mgr = ReservationManager()
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-
+        self.parameters = None
+        self.install_script_object = None
+        self.guest = None
 
     def _init_oz(self):
         # TODO: This is a convenience variable for refactoring - rename
@@ -258,6 +260,10 @@ class FedoraOS(object):
         self.log.info('create_base_image() called for FedoraOS plugin - creating a BaseImage')
 
         self.tdlobj = oz.TDL.TDL(xmlstring=template.xml, rootpw_required=self.app_config["tdl_require_root_pw"])
+        if parameters:
+            self.parameters = parameters
+        else:
+            self.parameters = { }
 
         # TODO: Standardize reference scheme for the persistent image objects in our builder
         #   Having local short-name copies like this may well be a good idea though they
@@ -268,13 +274,9 @@ class FedoraOS(object):
         # Used in the logging helper function above
         self.active_image = self.base_image
 
-        self._init_oz()
-
-        self.guest.diskimage = self.base_image.data
-        # The remainder comes from the original build_upload(self, build_id)
-
-        self.status="BUILDING"
         try:
+            self._init_oz()
+            self.guest.diskimage = self.base_image.data
             self.activity("Cleaning up any old Oz guest")
             self.guest.cleanup_old_guest()
             self.activity("Generating JEOS install media")
@@ -295,12 +297,21 @@ class FedoraOS(object):
                 self.image = self.guest.diskimage
                 self.log.debug("Base install complete - Doing customization and ICICLE generation")
                 self.percent_complete = 30
-                self.output_descriptor = self.guest.customize_and_generate_icicle(libvirt_xml)
+                # Power users may wish to avoid ever booting the guest after the installer is finished
+                # They can do so by passing in a { "generate_icicle": False } KV pair in the parameters dict
+                if self.parameters.get("generate_icicle", True):
+                    builder.base_image.icicle = self.guest.customize_and_generate_icicle(libvirt_xml)
+                else:
+                    self.guest.customize(libvirt_xml)
                 self.log.debug("Customization and ICICLE generation complete")
                 self.percent_complete = 50
             finally:
                 self.activity("Cleaning up install artifacts")
-                self.guest.cleanup_install()
+                if self.guest:
+                    self.guest.cleanup_install()
+                if self.install_script_object:
+                    # NamedTemporaryFile - removed on close
+                    self.install_script_object.close()    
 
             self.log.debug("Generated disk image (%s)" % (self.guest.diskimage))
             # OK great, we now have a customized KVM image
@@ -316,7 +327,14 @@ class FedoraOS(object):
         # Cloud plugins that use KVM directly, such as RHEV-M and openstack-kvm can accept
         # any arbitrary guest that Oz is capable of producing
         try:
-            self.guest = oz.GuestFactory.guest_factory(self.tdlobj, self.oz_config, None)
+            install_script_name = None
+            install_script = self.parameters.get("install_script", None)
+            if install_file:
+                self.install_script_object = NamedTemporaryFile()
+                self.install_script_object.write(install_script)
+                self.install_script_object.flush()
+                install_script_name = self.install_script_object.name
+            self.guest = oz.GuestFactory.guest_factory(self.tdlobj, self.oz_config, install_script_name)
             # Oz just selects a random port here - This could potentially collide if we are unlucky
             self.guest.listen_port = self.res_mgr.get_next_listen_port()
         except:
