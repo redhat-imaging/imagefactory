@@ -661,7 +661,7 @@ class EC2Cloud(object):
             sleep(20)
 
             if (user != 'root'):
-                self.log.debug("Enabling root user for customization steps...")
+                self.log.debug("Temporarily enabling root user for customization steps...")
                 enable_root(guestaddr, key_file, user, cmd_prefix)
 
             self.activity("Customizing running EC2 JEOS instance")
