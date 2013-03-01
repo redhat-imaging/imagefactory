@@ -212,6 +212,9 @@ class Builder(object):
             if self.base_image.status != "COMPLETE":
                 raise ImageFactoryException("Got to TargetImage build step with a BaseImage status of (%s).  This should never happen.  Aborting." % (self.base_image.status))
 
+            # Only at this point can we be sure that our base_image has icicle associated with it
+            self.target_image.icicle = self.base_image.icicle
+
             template = template if(isinstance(template, Template)) else Template(template)
 
             plugin_mgr = PluginManager(self.app_config['plugins'])
@@ -328,6 +331,9 @@ class Builder(object):
 
             if self.target_image.status != "COMPLETE":
                 raise ImageFactoryException("Got to ProviderImage build step with a TargetImage status of (%s).  This should never happen.  Aborting." % (self.target_image.status))
+
+            # Only at this point can we be sure that our target_image has icicle associated with it
+            self.provider_image.icicle = self.target_image.icicle
 
             template = template if(isinstance(template, Template)) else Template(template)
 
