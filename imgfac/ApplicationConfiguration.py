@@ -147,11 +147,14 @@ class ApplicationConfiguration(Singleton):
 
     def __add_jeos_image(self, image_detail):
         # our multi-dimensional-dict has the following keys
-        # target - provider - os - version - arch
-        for i in range(6):
-            image_detail[i] = image_detail[i].strip()
+        # target - provider - os - version - arch - provider_image_id - user - cmd_prefix
+        for i in range(8):
+            try:
+                image_detail[i] = image_detail[i].strip()
+            except IndexError:
+                image_detail.append(None)
 
-        ( target, provider, os, version, arch, provider_image_id) = image_detail
+        (target, provider, os, version, arch, provider_image_id, user, cmd_prefix) = image_detail
         if not (target in self.jeos_images):
             self.jeos_images[target] = {}
         if not (provider in self.jeos_images[target]):
@@ -167,12 +170,13 @@ class ApplicationConfiguration(Singleton):
             #self.log.warning("JEOS image defined more than once for %s - %s - %s - %s - %s" % (target, provider, os, version, arch))
             #self.log.warning("Replacing (%s) with (%s)" % (self.jeos_images[target][provider][os][version][arch], provider_image_id))
 
-        self.jeos_images[target][provider][os][version][arch] = provider_image_id
+        self.jeos_images[target][provider][os][version][arch] = {'img_id':provider_image_id,
+                                                                 'user':user,
+                                                                 'cmd_prefix':cmd_prefix}
 
     def __parse_jeos_images(self):
         # Loop through all JEOS configuration files to populate our jeos_images dictionary
-        # TODO: Make this path itself configurable?
-        config_path = '/etc/imagefactory/jeos_images/'
+        config_path = self.configuration['jeos_config']
         listing = os.listdir(config_path)
         for infile in listing:
             fileIN = open(config_path + infile, "r")
@@ -186,7 +190,7 @@ class ApplicationConfiguration(Singleton):
                     # Whitespace
                     pass
                 image_detail = line.split(":")
-                if len(image_detail) == 6:
+                if len(image_detail) >= 6:
                     self.__add_jeos_image(image_detail)
                 else:
                     pass

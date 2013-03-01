@@ -38,22 +38,10 @@ from boto.s3.connection import Location
 from boto.exception import *
 from boto.ec2.blockdevicemapping import EBSBlockDeviceType, BlockDeviceMapping
 from imgfac.CloudDelegate import CloudDelegate
-from imgfac.FactoryUtils import launch_inspect_and_mount, inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info
+from imgfac.FactoryUtils import *
 
 # Boto is very verbose - shut it up
 logging.getLogger('boto').setLevel(logging.INFO)
-
-def subprocess_check_output(*popenargs, **kwargs):
-    if 'stdout' in kwargs:
-        raise ValueError('stdout argument not allowed, it will be overridden.')
-
-    process = subprocess.Popen(stdout=subprocess.PIPE, stderr=subprocess.STDOUT, *popenargs, **kwargs)
-    stdout, stderr = process.communicate()
-    retcode = process.poll()
-    if retcode:
-        cmd = ' '.join(*popenargs)
-        raise ImageFactoryException("'%s' failed(%d): %s" % (cmd, retcode, stderr))
-    return (stdout, stderr, retcode)
 
 
 class EC2Cloud(object):
@@ -75,7 +63,8 @@ class EC2Cloud(object):
         self.oz_config = ConfigParser.SafeConfigParser()
         self.oz_config.read("/etc/oz/oz.cfg")
         self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
-        
+        self.guest = None
+
         if "ec2" in config_obj.jeos_images:
             self.ec2_jeos_amis = config_obj.jeos_images['ec2']
         else:
@@ -228,7 +217,7 @@ class EC2Cloud(object):
             self.log.debug("This is an S3 AMI")
             s3_conn = boto.s3.connection.S3Connection(aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key, host=s3_url)
             # Disect the location to get the bucket and key for the manifest
-            (bucket, key) = split(ami.location, '/', 1)
+            (bucket, key) = string.split(ami.location, '/', 1)
             self.log.debug("Retrieving S3 AMI manifest from bucket (%s) at key (%s)" % (bucket, key))
             bucket = s3_conn.get_bucket(bucket)
             key_obj = bucket.get_key(key)
@@ -237,7 +226,7 @@ class EC2Cloud(object):
             # The XML contains only filenames - not path components
             # so extract any "directory" type stuff here
             keyprefix = ""
-            keysplit = rsplit(key,"/",1)
+            keysplit = string.rsplit(key, "/", 1)
             if len(keysplit) == 2:
                 keyprefix="%s/" % (keysplit[0])
 
@@ -471,14 +460,14 @@ class EC2Cloud(object):
         # TODO: Based on architecture associate one of two XML blocks that contain the correct
         # regional AKIs for pvgrub
 
-    def wait_for_ec2_ssh_access(self, guestaddr):
-        self.activity("Waiting for SSH access to EC2 instance")
+    def wait_for_ec2_ssh_access(self, guestaddr, sshprivkey, user='root'):
+        self.activity("Waiting for SSH access to EC2 instance (User: %s)" % user)
         for i in range(300):
             if i % 10 == 0:
                 self.log.debug("Waiting for EC2 ssh access: %d/300" % (i))
 
             try:
-                stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, "/bin/true", timeout = 10)
+                ssh_execute_command(guestaddr, sshprivkey, "/bin/true", user=user)
                 break
             except:
                 pass
@@ -504,7 +493,7 @@ class EC2Cloud(object):
                 try:
                     self.terminate_instance(instance)
                 except:
-                    log.warning("WARNING: Instance (%s) failed to start and will not terminate - it may still be running" % (instance.id), exc_info = True)
+                    self.log.warning("WARNING: Instance (%s) failed to start and will not terminate - it may still be running" % (instance.id), exc_info = True)
                     raise ImageFactoryException("Instance (%s) failed to fully start or terminate - it may still be running" % (instance.id))
                 raise ImageFactoryException("Exception encountered when waiting for instance (%s) to start" % (instance.id))
             if instance.state == u'running':
@@ -516,7 +505,7 @@ class EC2Cloud(object):
             try:
                 self.terminate_instance(instance)
             except:
-                log.warning("WARNING: Instance (%s) failed to start and will not terminate - it may still be running" % (instance.id), exc_info = True)
+                self.log.warning("WARNING: Instance (%s) failed to start and will not terminate - it may still be running" % (instance.id), exc_info = True)
                 raise ImageFactoryException("Instance (%s) failed to fully start or terminate - it may still be running" % (instance.id))
             raise ImageFactoryException("Instance failed to start after 300 seconds - stopping")
 
@@ -576,27 +565,31 @@ class EC2Cloud(object):
 
         register_url = "http://ec2.%s.amazonaws.com/" % (region_conf['host'])
 
-        ami_id = "none"
         build_region = provider
 
         try:
-            ami_id = self.ec2_jeos_amis[provider][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]
+            ami_id = self.ec2_jeos_amis[provider][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]['img_id']
+            user = self.ec2_jeos_amis[provider][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]['user']
+            cmd_prefix = self.ec2_jeos_amis[provider][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]['cmd_prefix']
         except KeyError:
-            pass
-
-        if ami_id == "none":
             try:
                 # Fallback to modification on us-east and upload cross-region
-                ami_id = self.ec2_jeos_amis['ec2-us-east-1'][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]
+                ami_id = self.ec2_jeos_amis['ec2-us-east-1'][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]['img_id']
                 build_region = 'ec2-us-east-1'
                 self.log.info("WARNING: Building in ec2-us-east-1 for upload to %s" % (provider))
                 self.log.info(" This may be a bit slow - ask the Factory team to create a region-local JEOS")
             except KeyError:
-                pass
+                self.status="FAILED"
+                raise ImageFactoryException("No available JEOS for %s %s %s in %s" % (self.tdlobj.distro, self.tdlobj.update, self.tdlobj.arch, region_conf['host']))
 
-        if ami_id == "none":
-            self.status="FAILED"
-            raise ImageFactoryException("No available JEOS for desired OS, verison combination")
+            try:
+                user = self.ec2_jeos_amis['ec2-us-east-1'][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]['user']
+                cmd_prefix = self.ec2_jeos_amis['ec2-us-east-1'][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]['cmd_prefix']
+            except:
+                user = 'root'
+                cmd_prefix = None
+
+        self.log.debug("Snapshotting %s (%s %s %s) on %s" % (ami_id, self.tdlobj.distro, self.tdlobj.update, self.tdlobj.arch, build_region))
 
         # These are the region details for the region we are building in (which may be different from the target)
         build_region_conf = self._decode_region_details(build_region)
@@ -660,12 +653,15 @@ class EC2Cloud(object):
             self.guest.sshprivkey = key_file
 
             # Ugly ATM because failed access always triggers an exception
-            self.wait_for_ec2_ssh_access(guestaddr)
+            self.wait_for_ec2_ssh_access(guestaddr, key_file, user=user)
 
             # There are a handful of additional boot tasks after SSH starts running
             # Give them an additional 20 seconds for good measure
             self.log.debug("Waiting 20 seconds for remaining boot tasks")
             sleep(20)
+
+            if (user != 'root'):
+                enable_root(guestaddr, key_file, user, cmd_prefix)
 
             self.activity("Customizing running EC2 JEOS instance")
             self.log.debug("Stopping cron and killing any updatedb process that may be running")
