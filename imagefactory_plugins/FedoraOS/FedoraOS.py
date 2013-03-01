@@ -112,7 +112,7 @@ class FedoraOS(object):
         try:
             self.log.debug("Doing second-stage target_image customization and ICICLE generation")
             #self.percent_complete = 30
-            self.output_descriptor = self.guest.customize_and_generate_icicle(libvirt_xml)
+            builder.target_image.icicle = self.guest.customize_and_generate_icicle(libvirt_xml)
             self.log.debug("Customization and ICICLE generation complete")
             #self.percent_complete = 50
         finally:
@@ -300,9 +300,9 @@ class FedoraOS(object):
                 # Power users may wish to avoid ever booting the guest after the installer is finished
                 # They can do so by passing in a { "generate_icicle": False } KV pair in the parameters dict
                 if self.parameters.get("generate_icicle", True):
-                    self.output_descriptor = self.guest.customize_and_generate_icicle(libvirt_xml)
+                    builder.base_image.icicle = self.guest.customize_and_generate_icicle(libvirt_xml)
                 else:
-                    self.output_descriptor = self.guest.customize(libvirt_xml)
+                    self.guest.customize(libvirt_xml)
                 self.log.debug("Customization and ICICLE generation complete")
                 self.percent_complete = 50
             finally:
