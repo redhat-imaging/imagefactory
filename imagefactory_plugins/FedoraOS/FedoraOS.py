@@ -330,14 +330,16 @@ class FedoraOS(object):
         # This raises an exception if the TDL contains an unsupported distro or version
         # Cloud plugins that use KVM directly, such as RHEV-M and openstack-kvm can accept
         # any arbitrary guest that Oz is capable of producing
+
+        install_script_name = None
+        install_script = self.parameters.get("install_script", None)
+        if install_script:
+            self.install_script_object = NamedTemporaryFile()
+            self.install_script_object.write(install_script)
+            self.install_script_object.flush()
+            install_script_name = self.install_script_object.name
+
         try:
-            install_script_name = None
-            install_script = self.parameters.get("install_script", None)
-            if install_file:
-                self.install_script_object = NamedTemporaryFile()
-                self.install_script_object.write(install_script)
-                self.install_script_object.flush()
-                install_script_name = self.install_script_object.name
             self.guest = oz.GuestFactory.guest_factory(self.tdlobj, self.oz_config, install_script_name)
             # Oz just selects a random port here - This could potentially collide if we are unlucky
             self.guest.listen_port = self.res_mgr.get_next_listen_port()
