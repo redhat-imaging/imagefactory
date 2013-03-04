@@ -245,6 +245,10 @@ class FedoraOS(object):
         self.oz_config = ConfigParser.SafeConfigParser()
         if self.oz_config.read("/etc/oz/oz.cfg") != []:
             self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
+            if "oz_data_dir" in self.app_config:
+                self.oz_config.set('paths', 'data_dir', self.app_config["oz_data_dir"])
+            if "oz_screenshot_dir" in self.app_config:
+                self.oz_config.set('paths', 'screenshot_dir', self.app_config["oz_screenshot_dir"])
         else:
             raise ImageFactoryException("No Oz config file found. Can't continue.")
 
