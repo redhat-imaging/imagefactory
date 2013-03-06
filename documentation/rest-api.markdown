@@ -429,6 +429,10 @@ _Note:_ The examples below use [HTTPie](http://httpie.org/ "HTTPie: a CLI, cURL-
 * __*/imagefactory/provider_images/:image_id*__
     
     __image_id__ - uuid of the image to delete  
+    __target__ - The target to which the provider belongs. Only needed if deleting a provider image.  
+    __provider__ - The cloud provider definition.  See the [provider definition examples][provider_examples] for more information. Only needed if deleting a provider image.  
+    __credentials__ - The cloud provider credentials.  See the [credential examples][provider_examples] for more information. Only needed if deleting a provider image.  
+    __parameters__ - Dictionary of optional parameters such as settirng a callback.  
     
     **Methods:**  
     **DELETE**  
