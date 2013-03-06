@@ -69,6 +69,20 @@ def subprocess_check_output(*popenargs, **kwargs):
     if 'stdout' in kwargs:
         raise ValueError('stdout argument not allowed, it will be overridden.')
 
+    process = subprocess.Popen(stdout=subprocess.PIPE, stderr=subprocess.STDOUT, *popenargs, **kwargs)
+
+    stdout, stderr = process.communicate()
+    retcode = process.poll()
+
+    if retcode:
+        cmd = ' '.join(*popenargs)
+        raise ImageFactoryException("'%s' failed(%d): %s" % (cmd, retcode, stderr))
+    return (stdout, stderr, retcode)
+
+def subprocess_check_output_pty(*popenargs, **kwargs):
+    if 'stdout' in kwargs:
+        raise ValueError('stdout argument not allowed, it will be overridden.')
+
     (master, slave) = os.openpty()
     process = subprocess.Popen(stdin=slave, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, *popenargs, **kwargs)
 
@@ -114,7 +128,10 @@ def ssh_execute_command(guestaddr, sshprivkey, command, timeout=10, user='root',
 
     cmd.extend(["%s@%s" % (user, guestaddr), command])
 
-    return subprocess_check_output(cmd)
+    if(prefix == 'sudo'):
+        return subprocess_check_output_pty(cmd)
+    else:
+        return subprocess_check_output(cmd)
 
 def enable_root(guestaddr, sshprivkey, user, prefix):
     for cmd in ('mkdir /root/.ssh',
