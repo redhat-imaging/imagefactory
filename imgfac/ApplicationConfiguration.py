@@ -159,6 +159,7 @@ class ApplicationConfiguration(Singleton):
         return configuration.__dict__
 
     def __add_jeos_image(self, image_detail):
+        log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         # our multi-dimensional-dict has the following keys
         # target - provider - os - version - arch - provider_image_id - user - cmd_prefix
         for i in range(8):
@@ -177,17 +178,15 @@ class ApplicationConfiguration(Singleton):
         if not (version in self.jeos_images[target][provider][os]):
             self.jeos_images[target][provider][os][version] = {}
         if arch in self.jeos_images[target][provider][os][version]:
-            pass
-            #TODO
-            #We really should warn here but we have a bootstrap problem - loggin isn't initialized until after the singleton is created
-            #self.log.warning("JEOS image defined more than once for %s - %s - %s - %s - %s" % (target, provider, os, version, arch))
-            #self.log.warning("Replacing (%s) with (%s)" % (self.jeos_images[target][provider][os][version][arch], provider_image_id))
+            log.warning("JEOS image defined more than once for %s - %s - %s - %s - %s" % (target, provider, os, version, arch))
+            log.warning("Replacing (%s) with (%s)" % (self.jeos_images[target][provider][os][version][arch], provider_image_id))
 
         self.jeos_images[target][provider][os][version][arch] = {'img_id':provider_image_id,
                                                                  'user':user,
                                                                  'cmd_prefix':cmd_prefix}
 
     def __parse_jeos_images(self):
+        log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         # Loop through all JEOS configuration files to populate our jeos_images dictionary
         config_path = self.configuration['jeos_config']
         listing = os.listdir(config_path)
@@ -206,9 +205,6 @@ class ApplicationConfiguration(Singleton):
                 if len(image_detail) >= 6:
                     self.__add_jeos_image(image_detail)
                 else:
-                    pass
-                    #TODO
-                    #We really should warn here but we have a bootstrap problem - loggin isn't initialized until after the singleton is created
-                    #self.log.warning("Found unparsable JEOS config line in (%s)" % (config_path + infile))
+                    log.warning("Found unparsable JEOS config line in (%s)" % (config_path + infile))
 
                 line = fileIN.readline()
