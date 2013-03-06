@@ -12,22 +12,27 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
+from imgfac.ImageFactoryException import ImageFactoryException
 import oz.RHEL_5
 import oz.RHEL_6
 import oz.Fedora
-from tempfile import *
 
 
 class Base_ec2_Helper(object):
 
     def __init__(self, plugin):
+        self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.plugin = plugin
+        self.guest = None
 
     def init_guest(self):
         raise ImageFactoryException("init_guest() not implemented in this helper")
 
     def ebs_pre_snapshot_tasks(self, guestaddr):
-        pass
+        if(self.guest):
+            self.log.debug("Removing /root/.ssh/authorized_keys file...")
+            self.guest.guest_execute_command(guestaddr, "[ -f /root/.ssh/authorized_keys ] && rm -f /root/.ssh/authorized_keys")
 
     def correct_remote_manifest(self, guestaddr, manifest):
         pass
@@ -69,13 +74,6 @@ class RHEL5_ec2_Helper(Base_ec2_Helper):
     def init_guest(self):
         self.guest = self.RHEL5RemoteGuest(self.plugin.tdlobj, self.plugin.oz_config, None)
         self._init_guest_common()
-
-    def ebs_pre_shapshot_tasks(self, guestaddr):
-        # The RHEL JEOS AMIs will refuse to inject the dynamic EC2 key if authorized_keys already exists
-        # We have to remove it here.
-        # NOTE: This means it is not possible for users to add a static authorized key during the build via a file or RPM
-        self.log.debug("Removing existing authorized_keys file to allow key injection on RHEL reboot")
-        self.guest.guest_execute_command(guestaddr, "[ -f /root/.ssh/authorized_keys ] && rm -f /root/.ssh/authorized_keys")
 
     def correct_remote_manifest(self, guestaddr, manifest):
         # We end up with a bogus block device mapping due to our EBS to S3 switch
@@ -119,13 +117,6 @@ class RHEL6_ec2_Helper(Base_ec2_Helper):
         self.guest = self.RHEL6RemoteGuest(self.plugin.tdlobj, self.plugin.oz_config, None)
         self._init_guest_common()
 
-    def ebs_pre_shapshot_tasks(self, guestaddr):
-        # The RHEL JEOS AMIs will refuse to inject the dynamic EC2 key if authorized_keys already exists
-        # We have to remove it here.
-        # NOTE: This means it is not possible for users to add a static authorized key during the build via a file or RPM
-        self.log.debug("Removing existing authorized_keys file to allow key injection on RHEL reboot")
-        self.guest.guest_execute_command(guestaddr, "[ -f /root/.ssh/authorized_keys ] && rm -f /root/.ssh/authorized_keys")
-
     def install_euca_tools(self, guestaddr):
         # For RHEL6 we need to enable EPEL, install, then disable EPEL
         # TODO: This depends on external infra which is bad, and trusts external SW, which may be bad
@@ -166,6 +157,3 @@ class Fedora_ec2_Helper(Base_ec2_Helper):
     def install_euca_tools(self, guestaddr):
         # For F13-F15 we now have a working euca2ools in the default repos
         self.guest.guest_execute_command(guestaddr, "yum -y install euca2ools")
-
-    # correct_remote_manifest() and ebs_pre_snapshot_tasks() not needed - blanks versions inherited above
-
