@@ -193,18 +193,23 @@ class ApplicationConfiguration(Singleton):
         for url in config_urls:
             filehandle = urlopen(url)
             line = filehandle.readline().strip()
+            line_number = 1
 
             while line:
                 # Lines that start with '#' are a comment
                 if line[0] == "#":
                     pass
                 # Lines that are zero length are whitespace
-                if len(line) == 0:
+                elif len(line.split()) == 0:
                     pass
-                image_detail = line.split(":")
-                if len(image_detail) >= 6:
-                    self.__add_jeos_image(image_detail)
                 else:
-                    log.warning("Found unparsable line in JEOS config (%s)" % url)
+                    image_detail = line.split(":")
+                    if len(image_detail) >= 6:
+                        self.__add_jeos_image(image_detail)
+                    else:
+                        log.warning("Failed to parse line %d in JEOS config (%s):\n%s" % (line_number, url, line))
 
                 line = filehandle.readline()
+                line_number += 1
+
+            filehandle.close()
