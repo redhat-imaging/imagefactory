@@ -22,6 +22,8 @@ import logging
 import props
 from Singleton import Singleton
 from imgfac.Version import VERSION as VERSION
+from urlgrabber import urlopen
+
 
 class ApplicationConfiguration(Singleton):
     configuration = props.prop("_configuration", "The configuration property.")
@@ -31,7 +33,7 @@ class ApplicationConfiguration(Singleton):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.jeos_images = { }
 
-        if configuration != None:
+        if configuration:
             if not isinstance(configuration, dict):
                 raise Exception("ApplicationConfiguration configuration argument must be a dict")
             self.log.debug("ApplicationConfiguration passed a dictionary - ignoring any local config files including JEOS configs")
@@ -187,24 +189,22 @@ class ApplicationConfiguration(Singleton):
 
     def __parse_jeos_images(self):
         log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
-        # Loop through all JEOS configuration files to populate our jeos_images dictionary
-        config_path = self.configuration['jeos_config']
-        listing = os.listdir(config_path)
-        for infile in listing:
-            fileIN = open(config_path + infile, "r")
-            line = fileIN.readline()
+        config_urls = self.configuration['jeos_config']
+        for url in config_urls:
+            filehandle = urlopen(url)
+            line = filehandle.readline().strip()
 
             while line:
+                # Lines that start with '#' are a comment
                 if line[0] == "#":
-                    # Comment
                     pass
-                if len(line.strip()) == 0:
-                    # Whitespace
+                # Lines that are zero length are whitespace
+                if len(line) == 0:
                     pass
                 image_detail = line.split(":")
                 if len(image_detail) >= 6:
                     self.__add_jeos_image(image_detail)
                 else:
-                    log.warning("Found unparsable JEOS config line in (%s)" % (config_path + infile))
+                    log.warning("Found unparsable line in JEOS config (%s)" % url)
 
-                line = fileIN.readline()
+                line = filehandle.readline()
