@@ -41,14 +41,8 @@ class ApplicationConfiguration(Singleton):
             self.__parse_jeos_images()
 
         if not 'debug' in self.configuration:
-            if 'nodebug' in self.configuration:
-                # Slightly confusing, I know - For daemon mode we have a debug argument with default False
-                # For cli, we debug by default and have a nodebug argument with default False
-                # Rest of the code assumes a 'debug' value in app_config so set it here
-                self.configuration['debug'] = not self.configuration['nodebug']
-            else:
-                # This most likely means we are being used as a module/library and are not running CLI or daemon
-                self.configuration['debug'] = False
+            # This most likely means we are being used as a module/library and are not running CLI or daemon
+            self.configuration['debug'] = False
 
         if not 'secondary' in self.configuration:
             # We use this in the non-daemon context so it needs to be set
@@ -85,7 +79,7 @@ class ApplicationConfiguration(Singleton):
             group_rest.add_argument('--no_oauth', action='store_true', default=False, help='Use 2 legged OAuth to protect the REST interface. (default: %(default)s)')
             group_rest.add_argument('--secondary', action='store_true', default=False, help='Operate as a secondary/helper factory. (default: %(default)s)')
         elif(appname == 'imagefactory'):
-            argparser.add_argument('--nodebug', action='store_true', default=False, help='Turn off the default verbose CLI logging')
+            argparser.add_argument('--nodebug', dest='debug', action='store_false', default=True, help='Turn off the default verbose CLI logging')
             argparser.add_argument('--output', choices=('log', 'json'), default='log', help='Choose between log or json output. (default: %(default)s)')
             argparser.add_argument('--raw', action='store_true', default=False, help='Turn off pretty printing.')
             subparsers = argparser.add_subparsers(title='commands', dest='command')
