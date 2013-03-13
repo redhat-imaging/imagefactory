@@ -270,6 +270,9 @@ def delete_image_with_id(image_id, base_image_id=None, target_image_id=None, pro
 def get_provider_image_data(request_data):
     expected_keys = {'provider', 'credentials', 'target', 'parameters'}
     if(request_data and (len(request_data) > 0)):
+        # If request data has root element then strip it off
+        data = request_data.get('provider_image') if request_data.get('provider_image') else request_data
+
         # Check that the request supplied the correct fields
         missing_keys = expected_keys.difference(set(data))
         if len(missing_keys) == 0:
