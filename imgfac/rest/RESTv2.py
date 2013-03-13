@@ -251,18 +251,36 @@ def delete_image_with_id(image_id, base_image_id=None, target_image_id=None, pro
             raise HTTPResponse(status=404, output='No image found with id: %s' % image_id)
         builder = Builder()
         request_data = form_data_for_content_type(request.headers.get('Content-Type'))
-        if(request_data and (len(request_data) > 0)):
-            builder.delete_image(provider=request_data.get('provider'),
-                                 credentials=request_data.get('credentials'),
-                                 target=request_data.get('target'),
+
+        # We only require parameters when deleting provider images
+        if image.__class__.__name__ == "ProviderImage":
+            data = get_provider_image_data(request_data)
+            builder.delete_image(provider=data.get('provider'),
+                                 credentials=data.get('credentials'),
+                                 target=data.get('target'),
                                  image_object=image,
-                                 parameters=request_data.get('parameters'))
+                                 parameters=data.get('parameters'))
         else:
             builder.delete_image(provider=None, credentials=None, target=None, image_object=image, parameters=None)
         response.status = 204
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
+
+def get_provider_image_data(request_data):
+    expected_keys = {'provider', 'credentials', 'target', 'parameters'}
+    if(request_data and (len(request_data) > 0)):
+        # Check that the request supplied the correct fields
+        missing_keys = expected_keys.difference(set(data))
+        if len(missing_keys) == 0:
+            return data
+        else:
+            message = "Invalid Request, check: [" + ", ".join(expected_keys) + "]"
+            raise HTTPResponse(status=400, output=message)
+    else:
+        message = "Invalid Request, check: [" + ", ".join(expected_keys) + "]"
+        raise HTTPResponse(status=400, output="Invalid Request, check: [" + ", ".join(expected_keys) + "]")
+
 
 @rest_api.get('/imagefactory/plugins')
 @rest_api.get('/imagefactory/plugins/')
