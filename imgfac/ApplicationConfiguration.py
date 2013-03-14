@@ -69,7 +69,9 @@ class ApplicationConfiguration(Singleton):
         group_ec2.add_argument('--ec2-64bit-util', default = 'm1.large', help='Instance type to use when launching a 64 bit utility instance')
 
         if(appname == 'imagefactoryd'):
-            argparser.add_argument('--debug', action='store_true', default=False, help='Set really verbose logging for debugging.')
+            debug_group = argparser.add_mutually_exclusive_group()
+            debug_group.add_argument('--debug', action='store_true', default=False, help='Set really verbose logging for debugging.')
+            debug_group.add_argument('--nodebug', dest='debug', action='store_false', help='Turn off the default verbose CLI logging')
             argparser.add_argument('--foreground', action='store_true', default=False, help='Stay in the foreground and avoid launching a daemon. (default: %(default)s)')
             group_rest = argparser.add_argument_group(title='REST service options')
             group_rest.add_argument('--port', type=int, default=8075, help='Port to attach the RESTful http interface to. (default: %(default)s)')
@@ -79,7 +81,9 @@ class ApplicationConfiguration(Singleton):
             group_rest.add_argument('--no_oauth', action='store_true', default=False, help='Use 2 legged OAuth to protect the REST interface. (default: %(default)s)')
             group_rest.add_argument('--secondary', action='store_true', default=False, help='Operate as a secondary/helper factory. (default: %(default)s)')
         elif(appname == 'imagefactory'):
-            argparser.add_argument('--nodebug', dest='debug', action='store_false', default=True, help='Turn off the default verbose CLI logging')
+            debug_group = argparser.add_mutually_exclusive_group()
+            debug_group.add_argument('--debug', action='store_true', default=True, help='Set really verbose logging for debugging.')
+            debug_group.add_argument('--nodebug', dest='debug', action='store_false', help='Turn off the default verbose CLI logging')
             argparser.add_argument('--output', choices=('log', 'json'), default='log', help='Choose between log or json output. (default: %(default)s)')
             argparser.add_argument('--raw', action='store_true', default=False, help='Turn off pretty printing.')
             subparsers = argparser.add_subparsers(title='commands', dest='command')
