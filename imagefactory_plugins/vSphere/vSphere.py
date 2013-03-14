@@ -147,7 +147,7 @@ class vSphere(object):
 
     def modify_oz_filesystem(self):
         self.log.debug("Doing further Factory specific modification of Oz image")
-        guestfs_handle = launch_inspect_and_mount(builder.target_image.data)
+        guestfs_handle = launch_inspect_and_mount(self.builder.target_image.data)
         remove_net_persist(guestfs_handle)
         create_cloud_info(guestfs_handle, self.target)
         shutdown_and_close(guestfs_handle)
