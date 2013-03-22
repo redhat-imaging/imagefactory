@@ -26,7 +26,10 @@ import logging
 from xml.etree.ElementTree import fromstring
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
-from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info
+from imgfac.FactoryUtils import launch_inspect_and_mount
+from imgfac.FactoryUtils import shutdown_and_close
+from imgfac.FactoryUtils import remove_net_persist
+from imgfac.FactoryUtils import create_cloud_info
 from VSphereHelper import VSphereHelper
 from VMDKstream import convert_to_stream
 from imgfac.CloudDelegate import CloudDelegate
@@ -51,8 +54,10 @@ class vSphere(object):
 
     def activity(self, activity):
         # Simple helper function
-        # Activity should be a one line human-readable string indicating the task in progress
-        # We log it at DEBUG and also set it as the status_detail on our active image
+        # Activity should be a one line human-readable string indicating
+        # the task in progress
+        # We log it at DEBUG and also set it as the status_detail on our active
+        # image
         self.log.debug(activity)
         self.active_image.status_detail['activity'] = activity
 
@@ -60,35 +65,51 @@ class vSphere(object):
         self.log.debug("Exception caught in ImageFactory")
         self.log.debug(traceback.format_exc())
 
-    def delete_from_provider(self, builder, provider, credentials, target, parameters):
-        self.log.debug("Deleting vSphere image (%s)" % (self.builder.provider_image.identifier_on_provider))
+    def delete_from_provider(self, builder, provider, credentials, target,
+                                   parameters):
+        self.log.debug("Deleting vSphere image (%s)" %
+            (self.builder.provider_image.identifier_on_provider))
 
         provider_data = self.get_dynamic_provider_data(provider)
         if provider_data is None:
-            raise ImageFactoryException("VMWare instance not found in XML or JSON provided")
+            raise ImageFactoryException("VMWare instance not found in XML or \
+                JSON provided")
         self.generic_decode_credentials(credentials, provider_data, "vsphere")
-        helper = VSphereHelper(provider_data['api-url'], self.username, self.password)
+        helper = VSphereHelper(provider_data['api-url'], self.username,
+                               self.password)
         # This call raises an exception on error
         helper.delete_vm(self.builder.provider_image.identifier_on_provider)
 
-    def builder_should_create_target_image(self, builder, target, image_id, template, parameters):
-        self.log.info('builder_should_create_target_image() called on vSphere plugin - returning True')
+    def builder_should_create_target_image(self, builder, target, image_id,
+                                                 template, parameters):
+        self.log.info('builder_should_create_target_image() called on vSphere \
+            plugin - returning True')
         return True
 
-    def builder_will_create_target_image(self, builder, target, image_id, template, parameters):
-        tdlobj = oz.TDL.TDL(xmlstring=template.xml, rootpw_required=self.app_config["tdl_require_root_pw"])
+    def builder_will_create_target_image(self, builder, target, image_id,
+                                               template, parameters):
+        tdlobj = oz.TDL.TDL(xmlstring=template.xml,
+            rootpw_required=self.app_config["tdl_require_root_pw"])
         if tdlobj.distro == "RHEL-5":
-            merge_content = { "commands": [ { "name": "execute-module-script", "type": "raw" , "command": "/bin/sh /root/vsphere-module.sh" } ],
-                              "files" : [ { "name": "/root/vsphere-module.sh", "type": "raw", "file": rhel5_module_script } ] }
+            merge_content = { "commands": [
+                                { "name": "execute-module-script",
+                                  "type": "raw",
+                                  "command": "/bin/sh /root/vsphere-module.sh" } ],
+                              "files" : [ 
+                                { "name": "/root/vsphere-module.sh",
+                                  "type": "raw",
+                                  "file": rhel5_module_script } ] }
             try:
                 builder.os_plugin.add_cloud_plugin_content(merge_content)
             except:
-                self.log.error("Failed to add RHEL-5 specific vSphere customization to cloud plugin tasks")
+                self.log.error("Failed to add RHEL-5 specific vSphere\
+                    customization to cloud plugin tasks")
                 raise
 
-    def builder_did_create_target_image(self, builder, target, image_id, template, parameters):
+    def builder_did_create_target_image(self, builder, target, image_id,
+                                              template, parameters):
         self.log.info('builder_did_create_target_image() called in vSphere plugin')
-        self.status="BUILDING"
+        self.status = "BUILDING"
 
         # TODO: This is a convenience variable for refactoring - rename
         self.new_image_id = builder.target_image.identifier
@@ -102,7 +123,8 @@ class vSphere(object):
         # This lets our logging helper know what image is being operated on
         self.active_image = self.builder.target_image
 
-        self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml, rootpw_required=self.app_config["tdl_require_root_pw"])
+        self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml,
+            rootpw_required=self.app_config["tdl_require_root_pw"])
         # Add in target specific content
         #TODO - URGENT - make this work again
         #self.add_target_content()
@@ -119,9 +141,10 @@ class vSphere(object):
         oz_config.read("/etc/oz/oz.cfg")
         oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
 
-        # In contrast to our original builders, we enter the cloud plugins with a KVM file already
-        # created as the base_image.  As a result, all the Oz building steps are gone (and can be found
-        # in the OS plugin(s)
+        # In contrast to our original builders, we enter the cloud plugins
+        # with a KVM file already
+        # created as the base_image.  As a result, all the Oz building steps
+        # are gone (and can be found in the OS plugin(s)
 
         # OS plugin has already provided the initial file for us to work with
         # which we can currently assume is a raw KVM compatible image
@@ -139,7 +162,8 @@ class vSphere(object):
         # On entry the image points to our generic KVM raw image
         # Convert to stream-optimized VMDK and then update the image property
         target_image = self.image + ".tmp.vmdk"
-        self.log.debug("Converting raw kvm image (%s) to vmware stream-optimized image (%s)" % (self.image, target_image))
+        self.log.debug("Converting raw kvm image (%s) to vmware stream-optimized\
+            image (%s)" % (self.image, target_image))
         convert_to_stream(self.image, target_image)
         self.log.debug("VMWare stream conversion complete")
         os.unlink(self.image)
@@ -152,22 +176,26 @@ class vSphere(object):
         create_cloud_info(guestfs_handle, self.target)
         shutdown_and_close(guestfs_handle)
 
-    def push_image_to_provider(self, builder, provider, credentials, target, target_image, parameters):
+    def push_image_to_provider(self, builder, provider, credentials, target,
+                                     target_image, parameters):
         self.log.info('push_image_to_provider() called in vSphere')
 
         # TODO: This is a convenience variable for refactoring - rename
         self.new_image_id = builder.provider_image.identifier
 
-        self.tdlobj = oz.TDL.TDL(xmlstring=builder.target_image.template, rootpw_required=self.app_config["tdl_require_root_pw"])
+        self.tdlobj = oz.TDL.TDL(xmlstring=builder.target_image.template,
+            rootpw_required=self.app_config["tdl_require_root_pw"])
         self.builder = builder
         self.active_image = self.builder.provider_image
         self.vmware_push_image_upload(target_image, provider, credentials)
 
     def vmware_push_image_upload(self, target_image_id, provider, credentials):
-        # BuildDispatcher is now the only location for the logic to map a provider to its data and target
+        # BuildDispatcher is now the only location for the logic to map a
+        # provider to its data and target
         provider_data = self.get_dynamic_provider_data(provider)
         if provider_data is None:
-            raise ImageFactoryException("VMWare instance not found in XML or JSON provided")
+            raise ImageFactoryException("VMWare instance not found in XML or\
+                JSON provided")
 
         self.generic_decode_credentials(credentials, provider_data, "vsphere")
 
@@ -175,14 +203,19 @@ class vSphere(object):
         input_image = self.builder.target_image.data
 
         # Example of some JSON for westford_esx
-        # {"westford_esx": {"api-url": "https://vsphere.virt.bos.redhat.com/sdk", "username": "Administrator", "password": "changeme",
+        # {"westford_esx": {"api-url": "https://vsphere.virt.bos.redhat.com/sdk",
+        #       "username": "Administrator", "password": "changeme",
         #       "datastore": "datastore1", "network_name": "VM Network" } }
 
         vm_name = "factory-image-" + self.new_image_id
-        helper = VSphereHelper(provider_data['api-url'], self.username, self.password)
-        helper.create_vm(input_image, vm_name, provider_data['compute_resource'], provider_data['datastore'], 
-                         str(10*1024*1024 + 2) + "KB", [ { "network_name": provider_data['network_name'], "type": "VirtualE1000"} ], 
-                         "512MB", 1, 'otherLinux64Guest')
+        helper = VSphereHelper(provider_data['api-url'], self.username,
+                               self.password)
+        helper.create_vm(input_image, vm_name, provider_data['compute_resource'],
+                         provider_data['datastore'], 
+                         str(10*1024*1024 + 2) + "KB",
+                         [ { "network_name": provider_data['network_name'],
+                           "type": "VirtualE1000"} ], 
+                           "512MB", 1, 'otherLinux64Guest')
         self.builder.provider_image.identifier_on_provider = vm_name
         self.builder.provider_account_identifier = self.username
         self.percent_complete = 100
@@ -192,24 +225,28 @@ class vSphere(object):
         doc = libxml2.parseDoc(credentials)
 
         self.username = None
-        _usernodes = doc.xpathEval("//provider_credentials/%s_credentials/username" % (target))
+        _usernodes = doc.xpathEval("//provider_credentials/%s_credentials/\
+            username" % (target))
         if len(_usernodes) > 0:
             self.username = _usernodes[0].content
         else:
             try:
                 self.username = provider_data['username']
             except KeyError:
-                raise ImageFactoryException("No username specified in config file or in push call")
+                raise ImageFactoryException("No username specified in config \
+                    file or in push call")
         self.provider_account_identifier = self.username
 
-        _passnodes = doc.xpathEval("//provider_credentials/%s_credentials/password" % (target))
+        _passnodes = doc.xpathEval("//provider_credentials/%s_credentials/\
+            password" % (target))
         if len(_passnodes) > 0:
             self.password = _passnodes[0].content
         else:
             try:
                 self.password = provider_data['password']
             except KeyError:
-                raise ImageFactoryException("No password specified in config file or in push call")
+                raise ImageFactoryException("No password specified in config \
+                    file or in push call")
 
         doc.freeDoc()
 
