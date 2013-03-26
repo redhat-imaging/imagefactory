@@ -14,6 +14,8 @@
 #   limitations under the License.
 
 import sys
+import traceback
+
 sys.path.insert(1, '%s/imgfac/rest' % sys.path[0])
 
 import logging
@@ -311,13 +313,37 @@ def get_plugins(plugin_id=None):
         log.exception(e)
         raise HTTPResponse(status=500, output='%s %s' % (e, traceback.format_exc()))
 
+@rest_api.get('/imagefactory/jeos')
+@log_request
+@check_accept_header
+def get_jeos_config():
+    try:
+        response.status = 200
+        return converted_response(ApplicationConfiguration().configuration['jeos_config'])
+    except Exception as e:
+        log.exception(e)
+        raise HTTPResponse(status=500, output='%s %s' % (e, traceback.format_exc()))
+
+@rest_api.get('/imagefactory/jeos/images')
+@rest_api.get('/imagefactory/jeos/images/<jeos_id>')
+@log_request
+@check_accept_header
+def get_jeos_info(jeos_id=None):
+    try:
+        if jeos_id:
+            return HTTPResponse(status=501)
+
+        response.status = 200
+        return converted_response(ApplicationConfiguration().jeos_images)
+    except Exception as e:
+        log.exception(e)
+        raise HTTPResponse(status=500, output='%s %s' % (e, traceback.format_exc()))
+
 # Things we have not yet implemented
 @rest_api.get('/imagefactory/targets')
 @rest_api.get('/imagefactory/targets/<target_id>')
 @rest_api.get('/imagefactory/targets/<target_id>/providers')
 @rest_api.get('/imagefactory/targets/<target_id>/providers/<provider_id>')
-@rest_api.get('/imagefactory/jeos')
-@rest_api.get('/imagefactory/jeos/<jeos_id>')
 @log_request
 @check_accept_header
 def method_not_implemented(**kw):
