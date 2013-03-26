@@ -22,6 +22,8 @@ import logging
 import props
 from Singleton import Singleton
 from imgfac.Version import VERSION as VERSION
+from urlgrabber import urlopen
+
 
 class ApplicationConfiguration(Singleton):
     configuration = props.prop("_configuration", "The configuration property.")
@@ -31,7 +33,7 @@ class ApplicationConfiguration(Singleton):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         self.jeos_images = { }
 
-        if configuration != None:
+        if configuration:
             if not isinstance(configuration, dict):
                 raise Exception("ApplicationConfiguration configuration argument must be a dict")
             self.log.debug("ApplicationConfiguration passed a dictionary - ignoring any local config files including JEOS configs")
@@ -157,6 +159,7 @@ class ApplicationConfiguration(Singleton):
         return configuration.__dict__
 
     def __add_jeos_image(self, image_detail):
+        log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         # our multi-dimensional-dict has the following keys
         # target - provider - os - version - arch - provider_image_id - user - cmd_prefix
         for i in range(8):
@@ -175,38 +178,36 @@ class ApplicationConfiguration(Singleton):
         if not (version in self.jeos_images[target][provider][os]):
             self.jeos_images[target][provider][os][version] = {}
         if arch in self.jeos_images[target][provider][os][version]:
-            pass
-            #TODO
-            #We really should warn here but we have a bootstrap problem - loggin isn't initialized until after the singleton is created
-            #self.log.warning("JEOS image defined more than once for %s - %s - %s - %s - %s" % (target, provider, os, version, arch))
-            #self.log.warning("Replacing (%s) with (%s)" % (self.jeos_images[target][provider][os][version][arch], provider_image_id))
+            log.warning("JEOS image defined more than once for %s - %s - %s - %s - %s" % (target, provider, os, version, arch))
+            log.warning("Replacing (%s) with (%s)" % (self.jeos_images[target][provider][os][version][arch], provider_image_id))
 
         self.jeos_images[target][provider][os][version][arch] = {'img_id':provider_image_id,
                                                                  'user':user,
                                                                  'cmd_prefix':cmd_prefix}
 
     def __parse_jeos_images(self):
-        # Loop through all JEOS configuration files to populate our jeos_images dictionary
-        config_path = self.configuration['jeos_config']
-        listing = os.listdir(config_path)
-        for infile in listing:
-            fileIN = open(config_path + infile, "r")
-            line = fileIN.readline()
+        log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        config_urls = self.configuration['jeos_config']
+        for url in config_urls:
+            filehandle = urlopen(url)
+            line = filehandle.readline().strip()
+            line_number = 1
 
             while line:
+                # Lines that start with '#' are a comment
                 if line[0] == "#":
-                    # Comment
                     pass
-                if len(line.strip()) == 0:
-                    # Whitespace
+                # Lines that are zero length are whitespace
+                elif len(line.split()) == 0:
                     pass
-                image_detail = line.split(":")
-                if len(image_detail) >= 6:
-                    self.__add_jeos_image(image_detail)
                 else:
-                    pass
-                    #TODO
-                    #We really should warn here but we have a bootstrap problem - loggin isn't initialized until after the singleton is created
-                    #self.log.warning("Found unparsable JEOS config line in (%s)" % (config_path + infile))
+                    image_detail = line.split(":")
+                    if len(image_detail) >= 6:
+                        self.__add_jeos_image(image_detail)
+                    else:
+                        log.warning("Failed to parse line %d in JEOS config (%s):\n%s" % (line_number, url, line))
 
-                line = fileIN.readline()
+                line = filehandle.readline()
+                line_number += 1
+
+            filehandle.close()
