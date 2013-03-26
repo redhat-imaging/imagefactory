@@ -32,6 +32,8 @@ log = logging.getLogger(__name__)
 
 rest_api = Bottle(catchall=True)
 
+IMAGE_TYPES = {'BaseImage':'base_image', 'TargetImage':'target_image', 'ProviderImage':'provider_image'}
+
 def converted_response(resp_dict):
     if('xml' in request.get_header('Accept', '')):
         response.set_header('Content-Type', request.get_header('Accept', None))
@@ -246,20 +248,38 @@ def get_image_file(image_id, base_image_id=None, target_image_id=None, provider_
 @check_accept_header
 def delete_image_with_id(image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
     try:
+        response.status = 204
         image = PersistentImageManager.default_manager().image_with_id(image_id)
         if(not image):
             raise HTTPResponse(status=404, output='No image found with id: %s' % image_id)
+        image_class = type(image).__name__
         builder = Builder()
-        request_data = form_data_for_content_type(request.headers.get('Content-Type'))
-        if(request_data and (len(request_data) > 0)):
+        content_type = request.headers.get('Content-Type')
+        form_data = form_data_for_content_type(content_type)
+        required_values = set(['provider', 'credentials', 'target'])
+
+        if form_data:
+            root_object = form_data.get(IMAGE_TYPES.get(image_class))
+            if root_object and (type(root_object) is dict):
+                request_data = root_object
+            else:
+                request_data = form_data
+
+            if image_class == 'ProviderImage':
+                missing_values = required_values.difference(request_data)
+                if len(missing_values) > 0:
+                    raise HTTPResponse(status=400, output='Missing required values: %s' % missing_values)
+
             builder.delete_image(provider=request_data.get('provider'),
                                  credentials=request_data.get('credentials'),
                                  target=request_data.get('target'),
                                  image_object=image,
                                  parameters=request_data.get('parameters'))
         else:
-            builder.delete_image(provider=None, credentials=None, target=None, image_object=image, parameters=None)
-        response.status = 204
+            if image_class == 'ProviderImage':
+                raise HTTPResponse(status=400, output='Missing required values:%s' % required_values)
+            else:
+                builder.delete_image(provider=None, credentials=None, target=None, image_object=image, parameters=None)
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
