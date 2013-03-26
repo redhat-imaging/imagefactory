@@ -443,6 +443,11 @@ class EC2Cloud(object):
         tmpl = string.replace(tmpl, "#KERNEL_IMAGE_NAME#", ramfs_prefix)
         tmpl = string.replace(tmpl, "#TITLE#", name)
 
+        # Starting F18 there is no menu.lst
+        if not g.exists("/boot/grub/menu.lst"):
+            g.sh("[ ! -d /boot/grub ] && mkdir /boot/grub ||:")
+            g.sh("echo > /boot/grub/menu.lst")
+
         g.write("/boot/grub/menu.lst", tmpl)
 
         # EC2 Xen nosegneg bug
