@@ -34,7 +34,8 @@ log = logging.getLogger(__name__)
 
 rest_api = Bottle(catchall=True)
 
-IMAGE_TYPES = {'BaseImage':'base_image', 'TargetImage':'target_image', 'ProviderImage':'provider_image'}
+IMAGE_TYPES = {'BaseImage': 'base_image', 'TargetImage': 'target_image', 'ProviderImage': 'provider_image',
+               'base_images': 'BaseImage', 'target_images': 'TargetImage', 'provider_images': 'ProviderImage'}
 
 def converted_response(resp_dict):
     if('xml' in request.get_header('Accept', '')):
@@ -61,15 +62,11 @@ def api_info():
 @check_accept_header
 def list_images(image_collection, base_image_id=None, target_image_id=None, list_url=None):
     try:
-        fetch_spec = {}
-        if(image_collection == 'base_images'):
-            fetch_spec['type'] = 'BaseImage'
-        elif(image_collection == 'target_images'):
-            fetch_spec['type'] = 'TargetImage'
+        _type = IMAGE_TYPES[image_collection]
+        if _type:
+            fetch_spec = {'type': _type}
             if base_image_id:
                 fetch_spec['base_image_id'] = base_image_id
-        elif(image_collection == 'provider_images'):
-            fetch_spec['type'] = 'ProviderImage'
             if target_image_id:
                 fetch_spec['target_image_id'] = target_image_id
         else:
@@ -159,62 +156,68 @@ def create_image(image_collection, base_image_id=None, target_image_id=None):
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
 
-@rest_api.get('/imagefactory/base_images/<image_id>')
-@rest_api.get('/imagefactory/target_images/<image_id>')
-@rest_api.get('/imagefactory/provider_images/<image_id>')
-@rest_api.get('/imagefactory/base_images/<base_image_id>/target_images/<image_id>')
-@rest_api.get('/imagefactory/base_images/<base_image_id>/target_images/<target_image_id>/provider_images/<image_id>')
-@rest_api.get('/imagefactory/target_images/<target_image_id>/provider_images/<image_id>')
+@rest_api.get('/imagefactory/<collection_type>/<image_id>')
+@rest_api.get('/imagefactory/base_images/<base_image_id>/<collection_type>/<image_id>')
+@rest_api.get('/imagefactory/base_images/<base_image_id>/target_images/<target_image_id>/<collection_type>/<image_id>')
+@rest_api.get('/imagefactory/target_images/<target_image_id>/<collection_type>/<image_id>')
 @log_request
 @oauth_protect
 @check_accept_header
-def image_with_id(image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
+def image_with_id(collection_type, image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
     try:
-        image = PersistentImageManager.default_manager().image_with_id(image_id)
-        if(not image):
-            raise HTTPResponse(status=404, output='No image found with id: %s' % image_id)
-        _type = type(image).__name__
-        _response = {'_type':_type,
-                     'id':image.identifier,
-                     'href':request.url}
-        for key in image.metadata():
-            if key not in ('identifier', 'data', 'base_image_id', 'target_image_id'):
-                _response[key] = getattr(image, key, None)
+        img_class = IMAGE_TYPES[collection_type]
+        if img_class:
+            fetch_spec = {'type': img_class, 'identifier': image_id}
+            try:
+                image = PersistentImageManager.default_manager().images_from_query(fetch_spec)[0]
+                _type = type(image).__name__
+                _response = {'_type': _type,
+                             'id': image.identifier,
+                             'href': request.url}
+                for key in image.metadata():
+                    if key not in ('identifier', 'data', 'base_image_id', 'target_image_id'):
+                        _response[key] = getattr(image, key, None)
 
-        api_url = '%s://%s/imagefactory' % (request.urlparts[0], request.urlparts[1])
+                api_url = '%s://%s/imagefactory' % (request.urlparts[0], request.urlparts[1])
 
-        if(_type == "BaseImage"):
-            _objtype = 'base_image'
-            _response['target_images'] = list_images('target_images',
-                                                     base_image_id = image.identifier,
-                                                     list_url='%s/target_images' % api_url)
-        elif(_type == "TargetImage"):
-            _objtype = 'target_image'
-            base_image_id = image.base_image_id
-            if(base_image_id):
-                base_image_href = '%s/base_images/%s' % (api_url, base_image_id)
-                base_image_dict = {'_type': 'BaseImage', 'id': base_image_id, 'href': base_image_href}
-                _response['base_image'] = base_image_dict
-            else:
-                _response['base_image'] = None
-            _response['provider_images'] = list_images('provider_images',
-                                                        target_image_id = image.identifier,
-                                                        list_url = '%s/provider_images' % api_url)
-        elif(_type == "ProviderImage"):
-            _objtype = 'provider_image'
-            target_image_id = image.target_image_id
-            if(target_image_id):
-                target_image_href = '%s/target_images/%s' % (api_url, target_image_id)
-                target_image_dict = {'_type': 'TargetImage', 'id': target_image_id, 'href': target_image_href}
-                _response['target_image'] = target_image_dict
-            else:
-                _response['target_image'] = None
+                if (_type == "BaseImage"):
+                    _objtype = 'base_image'
+                    _response['target_images'] = list_images('target_images',
+                                                             base_image_id=image.identifier,
+                                                             list_url='%s/target_images' % api_url)
+                elif (_type == "TargetImage"):
+                    _objtype = 'target_image'
+                    base_image_id = image.base_image_id
+                    if (base_image_id):
+                        base_image_href = '%s/base_images/%s' % (api_url, base_image_id)
+                        base_image_dict = {'_type': 'BaseImage', 'id': base_image_id, 'href': base_image_href}
+                        _response['base_image'] = base_image_dict
+                    else:
+                        _response['base_image'] = None
+                    _response['provider_images'] = list_images('provider_images',
+                                                               target_image_id=image.identifier,
+                                                               list_url='%s/provider_images' % api_url)
+                elif (_type == "ProviderImage"):
+                    _objtype = 'provider_image'
+                    target_image_id = image.target_image_id
+                    if (target_image_id):
+                        target_image_href = '%s/target_images/%s' % (api_url, target_image_id)
+                        target_image_dict = {'_type': 'TargetImage', 'id': target_image_id, 'href': target_image_href}
+                        _response['target_image'] = target_image_dict
+                    else:
+                        _response['target_image'] = None
+                else:
+                    log.error("Returning HTTP status 500 due to unknown image type: %s" % _type)
+                    raise HTTPResponse(status=500, output='Bad type for found object: %s' % _type)
+
+                response.status = 200
+                return converted_response({_objtype: _response})
+
+            except IndexError as e:
+                log.warning(e)
+                raise HTTPResponse(status=404, output='No %s found with id: %s' % (img_class, image_id))
         else:
-            log.error("Returning HTTP status 500 due to unknown image type: %s" % _type)
-            raise HTTPResponse(status=500, output='Bad type for found object: %s' % _type)
-
-        response.status = 200
-        return converted_response({_objtype:_response})
+            raise HTTPResponse(status=404, output='Unknown resource type: %s' % collection_type)
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
