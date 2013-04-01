@@ -64,7 +64,7 @@ class PluginManager(Singleton):
                 info_files.append(_file)
 
         for filename in info_files:
-            plugin_name = filename.rstrip(INFO_FILE_EXTENSION)
+            plugin_name = filename[:-len(INFO_FILE_EXTENSION)]
             md = self.metadata_for_plugin(plugin_name)
             try:
                 if(md['type'].upper() in PLUGIN_TYPES):
