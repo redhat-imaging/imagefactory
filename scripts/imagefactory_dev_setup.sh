@@ -10,11 +10,11 @@ IMAGEFACTORY_SRC=$(dirname "$WORKING_DIR")
 sudo rm -rf $IMAGEFACTORY_PLUGINS/*
 
 # Create symlinks to src plugins
-sudo ln -s "$IMAGEFACTORY_SRC/imagefactory_plugins/EC2Cloud/EC2Cloud.info" $IMAGEFACTORY_PLUGINS/EC2Cloud.info
-sudo ln -s "$IMAGEFACTORY_SRC/imagefactory_plugins/FedoraOS/FedoraOS.info" $IMAGEFACTORY_PLUGINS/FedoraOS.info
-sudo ln -s "$IMAGEFACTORY_SRC/imagefactory_plugins/MockRPMBasedOS/MockRPMBasedOS.info" $IMAGEFACTORY_PLUGINS/MockRPMBasedOS.info
-sudo ln -s "$IMAGEFACTORY_SRC/imagefactory_plugins/OpenStackCloud/OpenStackCloud.info" $IMAGEFACTORY_PLUGINS/OpenStackCloud.info
-sudo ln -s "$IMAGEFACTORY_SRC/imagefactory_plugins/MockSphere/MockSphere.info" $IMAGEFACTORY_PLUGINS/MockSphere.info
+sudo ln -s "$IMAGEFACTORY_SRC/imagefactory_plugins/EC2/EC2.info" $IMAGEFACTORY_PLUGINS/EC2.info
+sudo ln -s "$IMAGEFACTORY_SRC/imagefactory_plugins/TinMan/TinMan.info" $IMAGEFACTORY_PLUGINS/TinMan.info
+sudo ln -s "$IMAGEFACTORY_SRC/imagefactory_plugins/MockOS/MockOS.info" $IMAGEFACTORY_PLUGINS/MockOS.info
+sudo ln -s "$IMAGEFACTORY_SRC/imagefactory_plugins/OpenStack/OpenStack.info" $IMAGEFACTORY_PLUGINS/OpenStack.info
+sudo ln -s "$IMAGEFACTORY_SRC/imagefactory_plugins/MockCloud/MockCloud.info" $IMAGEFACTORY_PLUGINS/MockCloud.info
 sudo ln -s "$IMAGEFACTORY_SRC/imagefactory_plugins/RHEVM/RHEVM.info" $IMAGEFACTORY_PLUGINS/RHEVM.info
 sudo ln -s "$IMAGEFACTORY_SRC/imagefactory_plugins/vSphere/vSphere.info" $IMAGEFACTORY_PLUGINS/vSphere.info
 

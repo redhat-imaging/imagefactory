@@ -65,8 +65,8 @@ def map_provider_to_target(provider):
         return 'rackspace'
     elif provider.startswith('mock'):
         return 'mock'
-    elif provider.startswith('MockSphere'):
-        return 'MockSphere'
+    elif provider.startswith('MockCloud'):
+        return 'MockCloud'
     else:
         log.warn('No matching provider found for %s, using "condorcloud" by default.' % (provider))
         return 'condorcloud' # condorcloud ignores provider

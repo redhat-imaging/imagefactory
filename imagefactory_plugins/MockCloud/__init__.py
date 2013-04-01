@@ -14,4 +14,4 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from MockSphere import MockSphere as delegate_class
+from MockCloud import MockCloud as delegate_class

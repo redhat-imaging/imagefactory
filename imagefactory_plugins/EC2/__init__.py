@@ -14,4 +14,4 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from EC2Cloud import EC2Cloud as delegate_class
+from EC2 import EC2 as delegate_class

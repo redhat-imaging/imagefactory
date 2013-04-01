@@ -14,4 +14,4 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from FedoraOS import FedoraOS as delegate_class
+from TinMan import TinMan as delegate_class
