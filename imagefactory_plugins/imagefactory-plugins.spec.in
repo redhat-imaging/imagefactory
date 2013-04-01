@@ -32,27 +32,27 @@ imagefactory allows the creation of system images for multiple virtualization
 and cloud providers from a single template definition. See 
 http://aeolusproject.org/projects/imagefactory for more information.
 
-%package FedoraOS
+%package TinMan
 Summary: OS plugin for Fedora
 License: ASL 2.0
 Requires: oz >= 0.7.0
 Requires: imagefactory
 Requires: imagefactory-plugins
 
-%description FedoraOS
+%description TinMan
 An OS plugin to support Fedora OSes
 
-%package OpenStackCloud
+%package OpenStack
 Summary: Cloud plugin for OpenStack running on KVM
 License: ASL 2.0
 Requires: python-glance
 Requires: imagefactory
 Requires: imagefactory-plugins
 
-%description OpenStackCloud
+%description OpenStack
 A Cloud plugin to support OpenStack running on top of KVM.
 
-%package EC2Cloud
+%package EC2
 Summary: Cloud plugin for EC2
 License: ASL 2.0
 Requires: euca2ools
@@ -60,34 +60,34 @@ Requires: python-boto >= 2.0
 Requires: imagefactory
 Requires: imagefactory-plugins
 
-%description EC2Cloud
+%description EC2
 A Cloud plugin to support EC2
 
-%package EC2Cloud-JEOS-images
+%package EC2-JEOS-images
 Summary: JEOS images for various OSes to support EC2 snapshot builds
-Requires: imagefactory-plugins-EC2Cloud
+Requires: imagefactory-plugins-EC2
 
-%description EC2Cloud-JEOS-images
+%description EC2-JEOS-images
 These configuration files point to existing JEOS AMIs on EC2 that can be used to do
 "snapshot" style builds.
 
-%package MockRPMBasedOS
+%package MockOS
 Summary: Mock OS plugin
 License: ASL 2.0
 Requires: imagefactory
 Requires: imagefactory-plugins
 
-%description MockRPMBasedOS
+%description MockOS
 This plugin mimcs some of the behaviour of the RPM based OS plugins without actually doing a build.
 For testing use only.
 
-%package MockSphere
+%package MockCloud
 Summary: Mock Cloud plugin
 License: ASL 2.0
 Requires: imagefactory
 Requires: imagefactory-plugins
 
-%description MockSphere
+%description MockCloud
 This plugin mimcs some of the behaviour of a real cloud plugin without needing any real external infra.
 For testing use only.
 
@@ -120,25 +120,25 @@ python setup.py build
 %install
 python setup.py install -O1 --root=%{buildroot} --skip-build
 
-%post FedoraOS
-%auto_register_macro_post FedoraOS
-%postun FedoraOS
-%auto_register_macro_postun FedoraOS
+%post TinMan
+%auto_register_macro_post TinMan
+%postun TinMan
+%auto_register_macro_postun TinMan
 
-%post OpenStackCloud
-%auto_register_macro_post OpenStackCloud
-%postun OpenStackCloud
-%auto_register_macro_postun OpenStackCloud
+%post OpenStack
+%auto_register_macro_post OpenStack
+%postun OpenStack
+%auto_register_macro_postun OpenStack
 
-%post EC2Cloud
-%auto_register_macro_post EC2Cloud
-%postun EC2Cloud
-%auto_register_macro_postun EC2Cloud
+%post EC2
+%auto_register_macro_post EC2
+%postun EC2
+%auto_register_macro_postun EC2
 
-%post MockRPMBasedOS
-%auto_register_macro_post MockRPMBasedOS
-%postun MockRPMBasedOS
-%auto_register_macro_postun MockRPMBasedOS
+%post MockOS
+%auto_register_macro_post MockOS
+%postun MockOS
+%auto_register_macro_postun MockOS
 
 %post RHEVM
 %auto_register_macro_post RHEVM
@@ -150,35 +150,35 @@ python setup.py install -O1 --root=%{buildroot} --skip-build
 %postun vSphere
 %auto_register_macro_postun vSphere
 
-%post MockSphere
-%auto_register_macro_post MockSphere
-%postun MockSphere
-%auto_register_macro_postun MockSphere
+%post MockCloud
+%auto_register_macro_post MockCloud
+%postun MockCloud
+%auto_register_macro_postun MockCloud
 
 %files
 %dir %{python_sitelib}/imagefactory_plugins
 %{python_sitelib}/imagefactory_plugins/__init__.py*
 %{python_sitelib}/imagefactory_plugins*.egg-info
 
-%files FedoraOS
-%{python_sitelib}/imagefactory_plugins/FedoraOS/*
+%files TinMan
+%{python_sitelib}/imagefactory_plugins/TinMan/*
 
-%files OpenStackCloud
-%{python_sitelib}/imagefactory_plugins/OpenStackCloud/*
+%files OpenStack
+%{python_sitelib}/imagefactory_plugins/OpenStack/*
 
-%files EC2Cloud
-%{python_sitelib}/imagefactory_plugins/EC2Cloud/*
+%files EC2
+%{python_sitelib}/imagefactory_plugins/EC2/*
 %{_bindir}/create-ec2-factory-credentials
 
-%files EC2Cloud-JEOS-images
+%files EC2-JEOS-images
 %{_sysconfdir}/imagefactory/jeos_images/ec2_fedora_jeos.conf
 %{_sysconfdir}/imagefactory/jeos_images/ec2_rhel_jeos.conf
 
-%files MockRPMBasedOS
-%{python_sitelib}/imagefactory_plugins/MockRPMBasedOS/*
+%files MockOS
+%{python_sitelib}/imagefactory_plugins/MockOS/*
 
-%files MockSphere
-%{python_sitelib}/imagefactory_plugins/MockSphere/*
+%files MockCloud
+%{python_sitelib}/imagefactory_plugins/MockCloud/*
 
 %files RHEVM
 %{python_sitelib}/imagefactory_plugins/RHEVM/*

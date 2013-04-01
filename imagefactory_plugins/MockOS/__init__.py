@@ -14,4 +14,4 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from OpenStackCloud import OpenStackCloud as delegate_class
+from MockOS import MockOS as delegate_class

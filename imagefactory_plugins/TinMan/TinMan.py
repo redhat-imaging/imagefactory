@@ -46,7 +46,7 @@ def subprocess_check_output(*popenargs, **kwargs):
 
 
 
-class FedoraOS(object):
+class TinMan(object):
     zope.interface.implements(OSDelegate)
 
     def activity(self, activity):
@@ -58,7 +58,7 @@ class FedoraOS(object):
 
     ## INTERFACE METHOD
     def create_target_image(self, builder, target, base_image, parameters):
-        self.log.info('create_target_image() called for FedoraOS plugin - creating a TargetImage')
+        self.log.info('create_target_image() called for TinMan plugin - creating a TargetImage')
         self.active_image = builder.target_image
         self.target = target
         self.base_image = builder.base_image
@@ -218,7 +218,7 @@ class FedoraOS(object):
 
 
     def __init__(self):
-        super(FedoraOS, self).__init__()
+        super(TinMan, self).__init__()
         self.cloud_plugin_content = [ ]
         config_obj = ApplicationConfiguration()
         self.app_config = config_obj.configuration
@@ -261,7 +261,7 @@ class FedoraOS(object):
 
     ## INTERFACE METHOD
     def create_base_image(self, builder, template, parameters):
-        self.log.info('create_base_image() called for FedoraOS plugin - creating a BaseImage')
+        self.log.info('create_base_image() called for TinMan plugin - creating a BaseImage')
 
         self.tdlobj = oz.TDL.TDL(xmlstring=template.xml, rootpw_required=self.app_config["tdl_require_root_pw"])
         if parameters:

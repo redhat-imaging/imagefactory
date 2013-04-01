@@ -14,4 +14,4 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from MockRPMBasedOS import MockRPMBasedOS as delegate_class
+from OpenStack import OpenStack as delegate_class

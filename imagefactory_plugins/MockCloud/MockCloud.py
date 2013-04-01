@@ -20,7 +20,7 @@ import zope
 import inspect
 from imgfac.CloudDelegate import CloudDelegate
 
-class MockSphere(object):
+class MockCloud(object):
     zope.interface.implements(CloudDelegate)
 
 
@@ -28,24 +28,24 @@ class MockSphere(object):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
 
     def push_image_to_provider(self, builder, provider, credentials, target, target_image, parameters):
-        self.log.info('%s called in MockSphere plugin' % (inspect.stack()[1][3]))
+        self.log.info('%s called in MockCloud plugin' % (inspect.stack()[1][3]))
         builder.provider_image.identifier_on_provider = str(uuid.uuid4())
         builder.provider_image.provider_account_identifier = 'mock_user'
 
     def snapshot_image_on_provider(self, builder, provider, credentials, target, template, parameters):
-        self.log.info('%s called in MockSphere plugin' % (inspect.stack()[1][3]))
+        self.log.info('%s called in MockCloud plugin' % (inspect.stack()[1][3]))
         builder.provider_image.identifier_on_provider = str(uuid.uuid4())
         builder.provider_image.provider_account_identifier = 'mock_user'
 
     def builder_should_create_target_image(self, builder, target, image_id, template, parameters):
-        self.log.info('%s called in MockSphere plugin' % (inspect.stack()[1][3]))
+        self.log.info('%s called in MockCloud plugin' % (inspect.stack()[1][3]))
         return True
 
     def builder_will_create_target_image(self, builder, target, image_id, template, parameters):
-        self.log.info('%s called in MockSphere plugin' % (inspect.stack()[1][3]))
+        self.log.info('%s called in MockCloud plugin' % (inspect.stack()[1][3]))
 
     def builder_did_create_target_image(self, builder, target, image_id, template, parameters):
-        self.log.info('%s called in MockSphere plugin' % (inspect.stack()[1][3]))
+        self.log.info('%s called in MockCloud plugin' % (inspect.stack()[1][3]))
 
     def delete_from_provider(self, builder, provider, credentials, target, parameters):
-        self.log.info('%s called in MockSphere plugin' % (inspect.stack()[1][3]))
+        self.log.info('%s called in MockCloud plugin' % (inspect.stack()[1][3]))
