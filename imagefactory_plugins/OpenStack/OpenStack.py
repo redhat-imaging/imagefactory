@@ -48,12 +48,12 @@ def glance_upload(image_filename, creds = {'auth_url': None, 'password': None, '
     image_data.close()
     return image_meta['id']
 
-class OpenStackCloud(object):
+class OpenStack(object):
     zope.interface.implements(CloudDelegate)
 
     def __init__(self):
         # Note that we are now missing ( template, target, config_block = None):
-        super(OpenStackCloud, self).__init__()
+        super(OpenStack, self).__init__()
         self.app_config = ApplicationConfiguration().configuration
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
 

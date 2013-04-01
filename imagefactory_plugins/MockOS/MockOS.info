@@ -1,6 +1,6 @@
 {
     "type": "os",
-    "targets": [["FedoraMock",null,null], ["RHELMock","1","x86_64"]],
+    "targets": [["MockOS_A",null,null], ["MockOS_B","1","x86_64"]],
     "description": "Mock OS plugin for testing imagefactory plugin code",
     "maintainer": {
         "name": "Red Hat, Inc.",

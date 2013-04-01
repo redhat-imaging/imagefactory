@@ -23,7 +23,7 @@ import subprocess
 # If your plugin follows the standard format, all you should need to do is add the name
 # here.  If this doesn't work, you'll have to dig into the details below
 
-plugins = ['EC2Cloud', 'FedoraOS','MockSphere','MockRPMBasedOS', 'OpenStackCloud',
+plugins = ['EC2', 'TinMan','MockCloud','MockOS', 'OpenStack',
            'RHEVM', 'vSphere']
 
 
@@ -70,7 +70,7 @@ setup(name='imagefactory-plugins',
       license='Apache License, Version 2.0',
       url='http://www.aeolusproject.org/imagefactory.html',
       package_dir = {'imagefactory_plugins': ''},
-      scripts = [ 'EC2Cloud/create-ec2-factory-credentials' ],
+      scripts = [ 'EC2/create-ec2-factory-credentials' ],
       packages=packages,
       cmdclass = {'sdist': sdist},
       data_files = datafiles

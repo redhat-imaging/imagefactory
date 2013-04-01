@@ -44,7 +44,7 @@ from imgfac.FactoryUtils import *
 logging.getLogger('boto').setLevel(logging.INFO)
 
 
-class EC2Cloud(object):
+class EC2(object):
     zope.interface.implements(CloudDelegate)
 
     def activity(self, activity):
@@ -56,7 +56,7 @@ class EC2Cloud(object):
 
     def __init__(self):
         # Note that we are now missing ( template, target, config_block = None):
-        super(EC2Cloud, self).__init__()
+        super(EC2, self).__init__()
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         config_obj = ApplicationConfiguration()
         self.app_config = config_obj.configuration
@@ -73,7 +73,7 @@ class EC2Cloud(object):
 
 
     def builder_should_create_target_image(self, builder, target, image_id, template, parameters):
-        self.log.info('builder_should_create_target_image() called on EC2Cloud plugin - returning True')
+        self.log.info('builder_should_create_target_image() called on EC2 plugin - returning True')
         return True
 
 
@@ -83,7 +83,7 @@ class EC2Cloud(object):
 
 
     def builder_did_create_target_image(self, builder, target, image_id, template, parameters):
-        self.log.info('builder_did_create_target_image() called in EC2Cloud plugin')
+        self.log.info('builder_did_create_target_image() called in EC2 plugin')
         # The bulk of what is done here is EC2 specific
         # There are OS conditionals thrown in at the moment
         # For now we are putting everything into the EC2 Cloud plugin
@@ -156,7 +156,7 @@ class EC2Cloud(object):
             # Change RHEL-6 to RHEL6, etc.
             os_name = self.tdlobj.distro.translate(None, '-')
             class_name = "%s_ec2_Helper" % (os_name)
-            module_name = "imagefactory_plugins.EC2Cloud.EC2CloudOSHelpers"
+            module_name = "imagefactory_plugins.EC2.EC2CloudOSHelpers"
             __import__(module_name)
             os_helper_class = getattr(sys.modules[module_name], class_name)
             self.os_helper = os_helper_class(self)
@@ -165,7 +165,7 @@ class EC2Cloud(object):
             raise ImageFactoryException("Unable to create EC2 OS helper object for distro (%s) in TDL" % (self.tdlobj.distro) )
 
     def push_image_to_provider(self, builder, provider, credentials, target, target_image, parameters):
-        self.log.info('push_image_to_provider() called in EC2Cloud')
+        self.log.info('push_image_to_provider() called in EC2')
 
         self.builder = builder
         self.active_image = self.builder.provider_image
@@ -519,7 +519,7 @@ class EC2Cloud(object):
             instance.stop()
 
     def snapshot_image_on_provider(self, builder, provider, credentials, target, template, parameters):
-        self.log.info('snapshot_image_on_provider() called in EC2Cloud')
+        self.log.info('snapshot_image_on_provider() called in EC2')
 
         self.builder = builder
         self.active_image = self.builder.provider_image
