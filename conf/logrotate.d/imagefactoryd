@@ -7,6 +7,6 @@ notifempty
 /var/log/imagefactoryd.log {
   sharedscripts
   postrotate
-      /sbin/service imagefactory restart
+      /sbin/service imagefactoryd restart
   endscript
 }
