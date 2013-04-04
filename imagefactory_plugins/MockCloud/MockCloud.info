@@ -1,6 +1,6 @@
 {
     "type": "cloud",
-    "targets": [ ["MockCloud"] ],
+    "targets": [ ["MockCloud"], ["mock"], ["mockcloud"], ["mocksphere"], ["rhevmock"], ["ecmock"], ["mockspace"], ["mockstack"] ],
     "description": "Mock cloud plugin for testing imagefactory plugin code",
     "maintainer": {
         "name": "Red Hat, Inc.",
