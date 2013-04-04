@@ -218,6 +218,12 @@ def image_with_id(collection_type, image_id, base_image_id=None, target_image_id
                 raise HTTPResponse(status=404, output='No %s found with id: %s' % (img_class, image_id))
         else:
             raise HTTPResponse(status=404, output='Unknown resource type: %s' % collection_type)
+    except KeyError as e:
+        if collection_type == 'plugins':
+            return get_plugins(plugin_id=image_id)
+        else:
+            log.exception(e)
+            raise HTTPResponse(status=500, output=e)
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
@@ -321,8 +327,11 @@ def get_plugins(plugin_id=None):
 @check_accept_header
 def get_jeos_config():
     try:
-        response.status = 200
-        return converted_response(ApplicationConfiguration().configuration['jeos_config'])
+        jeos_confs = dict()
+        jeos_conf_list = ApplicationConfiguration().configuration['jeos_config']
+        for item in jeos_conf_list:
+            jeos_confs[jeos_conf_list.index(item)] = item
+        return converted_response(jeos_confs)
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output='%s %s' % (e, traceback.format_exc()))
