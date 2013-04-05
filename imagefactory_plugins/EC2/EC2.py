@@ -180,7 +180,8 @@ class EC2(object):
 
     def delete_from_provider(self, builder, provider, credentials, target, parameters):
         self.builder = builder
-        self.log.debug("Deleting AMI (%s)" % (self.builder.provider_image.identifier_on_provider))
+        self.active_image = self.builder.provider_image
+        self.log.debug("Deleting AMI (%s)" % (self.active_image.identifier_on_provider))
         self.activity("Preparing EC2 region details")
         region=provider
         region_conf=self._decode_region_details(region)
