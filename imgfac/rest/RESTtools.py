@@ -48,10 +48,17 @@ def form_data_for_content_type(content_type):
 def log_request(f):
     def decorated_function(*args, **kwargs):
         if(ApplicationConfiguration().configuration['debug']):
+            request_body = request.body.read()
+            if('credentials' in request_body):
+                marker = 'provider_credentials'
+                starting_index = request_body.find(marker)
+                ending_index = request_body.rfind(marker) + len(marker)
+                sensitive = request_body[starting_index:ending_index]
+                request_body = request_body.replace(sensitive, 'REDACTED')
             log.debug('Handling %s HTTP %s REQUEST for resource at %s: %s' % (request.headers.get('Content-Type'),
                                                                               request.method,
                                                                               request.path,
-                                                                              request.body.read()))
+                                                                              request_body))
         return f(*args, **kwargs)
     decorated_function.__name__ = f.__name__
     return decorated_function
