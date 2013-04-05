@@ -118,7 +118,7 @@ class ApplicationConfiguration(Singleton):
 
             cmd_delete = subparsers.add_parser('delete', help='Delete an image.')
             cmd_delete.add_argument('id', help='UUID of the image to delete')
-            cmd_delete.add_argument('--provider', type=argparse.FileType(), help="A file containing the cloud provider description or a string literal starting with '@' such as '@ec2-us-east-1'.")
+            cmd_delete.add_argument('--provider', help="A file containing the cloud provider description or a string literal starting with '@' such as '@ec2-us-east-1'.")
             cmd_delete.add_argument('--credentials', type=argparse.FileType(), help='A file containing the cloud provider credentials')
             cmd_delete.add_argument('--target', help='The name of the target cloud for which to customize the image.')
             cmd_delete.add_argument('--parameters', type=argparse.FileType(), help=parameters_help)
