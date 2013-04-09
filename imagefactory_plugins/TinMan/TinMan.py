@@ -29,8 +29,10 @@ from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.ReservationManager import ReservationManager
 from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist
-
 from imgfac.OSDelegate import OSDelegate
+from libvirt import libvirtError
+from oz.OzException import OzException
+
 
 def subprocess_check_output(*popenargs, **kwargs):
     if 'stdout' in kwargs:
@@ -343,8 +345,13 @@ class TinMan(object):
             self.guest = oz.GuestFactory.guest_factory(self.tdlobj, self.oz_config, install_script_name)
             # Oz just selects a random port here - This could potentially collide if we are unlucky
             self.guest.listen_port = self.res_mgr.get_next_listen_port()
-        except:
-            raise ImageFactoryException("OS plugin does not support distro (%s) update (%s) in TDL" % (self.tdlobj.distro, self.tdlobj.update) )
+        except libvirtError, e:
+	    raise ImageFactoryException("Cannot connect to libvirt.  Make sure libvirt is running. [Original message: %s]" %  e.message)
+	except OzException, e:
+	    if "Unsupported" in e.message:
+		raise ImageFactoryException("TinMan plugin does not support distro (%s) update (%s) in TDL" % (self.tdlobj.distro, self.tdlobj.update) )
+	    else:
+		raise e
 
     def log_exc(self):
         self.log.debug("Exception caught in ImageFactory")
