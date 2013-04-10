@@ -39,6 +39,7 @@ from boto.exception import *
 from boto.ec2.blockdevicemapping import EBSBlockDeviceType, BlockDeviceMapping
 from imgfac.CloudDelegate import CloudDelegate
 from imgfac.FactoryUtils import *
+from xml.etree import ElementTree
 
 # Boto is very verbose - shut it up
 logging.getLogger('boto').setLevel(logging.INFO)
@@ -180,16 +181,19 @@ class EC2(object):
 
     def delete_from_provider(self, builder, provider, credentials, target, parameters):
         self.builder = builder
-        self.log.debug("Deleting AMI (%s)" % (self.builder.provider_image.identifier_on_provider))
+        self.active_image = self.builder.provider_image
+        self.log.debug("Deleting AMI (%s)" % (self.active_image.identifier_on_provider))
         self.activity("Preparing EC2 region details")
         region=provider
         region_conf=self._decode_region_details(region)
         boto_loc = region_conf['boto_loc']
+        if(boto_loc == ''):
+            boto_loc = 'us-east-1'
         if region_conf['host'] != "us-east-1":
-            s3_url = "http://s3-%s.amazonaws.com/" % (region_conf['host'])
+            s3_host = 's3-%s.amazonaws.com' % region_conf['host']
         else:
             # Note to Amazon - would it be that hard to have s3-us-east-1.amazonaws.com?
-            s3_url = "http://s3.amazonaws.com/"
+            s3_host = "s3.amazonaws.com"
 
         self.ec2_decode_credentials(credentials)
         
@@ -199,9 +203,10 @@ class EC2(object):
         amis = conn.get_all_images([ self.builder.provider_image.identifier_on_provider ])
         if len(amis) == 0:
             raise ImageFactoryException("Unable to find AMI (%s) - cannot delete it" % (self.builder.provider_image.identifier_on_provider))
-
         if len(amis) > 1:
             raise ImageFactoryException("AMI lookup during delete returned more than one result - this should never happen - aborting")
+
+        ami = amis[0]
 
         if ami.root_device_type == "ebs":
             self.log.debug("This is an EBS AMI")
@@ -215,7 +220,7 @@ class EC2(object):
                 conn.delete_snapshot(bd_map[bd].snapshot_id)
         else:
             self.log.debug("This is an S3 AMI")
-            s3_conn = boto.s3.connection.S3Connection(aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key, host=s3_url)
+            s3_conn = boto.s3.connection.S3Connection(aws_access_key_id=self.ec2_access_key, aws_secret_access_key=self.ec2_secret_key, host=s3_host)
             # Disect the location to get the bucket and key for the manifest
             (bucket, key) = string.split(ami.location, '/', 1)
             self.log.debug("Retrieving S3 AMI manifest from bucket (%s) at key (%s)" % (bucket, key))
