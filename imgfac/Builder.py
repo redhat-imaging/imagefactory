@@ -456,6 +456,7 @@ class Builder(object):
         try:
             image_object.status = "DELETING"
             if type(image_object).__name__ == "ProviderImage":
+                self.provider_image = image_object
                 plugin_mgr = PluginManager(self.app_config['plugins'])
                 self.cloud_plugin = plugin_mgr.plugin_for_target(target)
                 self.cloud_plugin.delete_from_provider(self, provider, credentials, target, parameters)

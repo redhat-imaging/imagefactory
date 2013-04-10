@@ -231,7 +231,7 @@ class Application(Singleton):
                     return
                 builder = Builder()
                 builder.delete_image(provider=provider,
-                                     credentials=self.app_config.get('credentials'),
+                                     credentials=self.app_config.get('credentials').read().rstrip(),
                                      target=self.app_config.get('target'),
                                      image_object=image,
                                      parameters=parameters)
