@@ -24,7 +24,7 @@ import subprocess
 # here.  If this doesn't work, you'll have to dig into the details below
 
 plugins = ['EC2', 'TinMan','MockCloud','MockOS', 'OpenStack',
-           'RHEVM', 'vSphere', 'Rackspace']
+           'RHEVM', 'vSphere', 'RackSpace', 'IndirectionCloud']
 
 # Required for Python 2.6 backwards compat
 def subprocess_check_output(*popenargs, **kwargs):
