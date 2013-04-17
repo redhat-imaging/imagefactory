@@ -255,7 +255,7 @@ def get_image_file(image_id, base_image_id=None, target_image_id=None, provider_
 @log_request
 @oauth_protect
 @check_accept_header
-def delete_image_with_id(collection_type=None, image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
+def delete_image_with_id(image_id, collection_type=None, base_image_id=None, target_image_id=None, provider_image_id=None):
     try:
         response.status = 204
         image = PersistentImageManager.default_manager().image_with_id(image_id)
