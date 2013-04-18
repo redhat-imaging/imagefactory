@@ -30,7 +30,6 @@ argparser.add_argument('-L', help='uses the local CLI to run the tests instead o
 args = argparser.parse_args()
 test_data = json.load(args.datafile)
 args.datafile.close()
-
 builds = test_data['jeos']
 targets = test_data['targets']
 providers = test_data['providers']
@@ -48,7 +47,6 @@ build_queue = threading.BoundedSemaphore(len(builds))
 test_count = len(builds) * len(targets)
 test_index = 0
 proc_chk_interval = 10
-
 # Required for Python 2.6 backwards compat
 def subprocess_check_output(*popenargs, **kwargs):
     if 'stdout' in kwargs:
@@ -64,6 +62,7 @@ def subprocess_check_output(*popenargs, **kwargs):
 ###
 
 def create_base_image(template_args):
+    print "Building base image"
     build_queue.acquire()
     try:
         TDL = "<template><name>buildbase_image</name><os><name>%s</name><version>%s\
@@ -90,6 +89,7 @@ def create_base_image(template_args):
             if args.remote:
                 r = requests.get(args.url+'/base_images/'+base_image_id)
                 base_image_output_str = r.text
+                print "Checking status of %s" % (base_image_id,)
             else:
                 (base_image_output_str, ignore, ignore) = subprocess_check_output('%s --output json --raw images \'{"identifier":"%s"}\'' % (args.cmd, base_image_id), shell=True)
             base_image_output_dict = json.loads(base_image_output_str)['base_image']
@@ -111,6 +111,7 @@ def build_push_delete(target, index):
             base_image = base_images[index]
             if args.remote:
                 payload = {'target_image': {'target': target}}
+                print "Creating a target image"
                 r = requests.post(args.url+'/base_images/'+base_image['id']+'/target_images', data=json.dumps(payload), headers=requests_headers)
                 target_image_output_str = r.text
             else:
@@ -167,6 +168,8 @@ def build_push_delete(target, index):
                                 with p_lock:
                                     provider_images.append(provider_image_output_dict)
                                 if args.remote:
+                                    
+                                    print "Checking status of %s" % (base_image_id,)
                                     r = requests.delete(args.url+'/provider_images/'+provider_image_id)
                                 else:
                                     subprocess_check_output('%s --output json --raw delete %s --target %s --provider %s --credentials %s' % (args.cmd, provider_image_id, provider['target'], provider_file.name, credentials_file.name), shell=True)
@@ -182,7 +185,6 @@ for build in builds:
     thread_name = "%s-%s-%s.%s" % (build['os'], build['version'], build['arch'], os.getpid())
     build_thread = threading.Thread(target=create_base_image, name = thread_name, args=(build,))
     build_thread.start()
-
 for target in targets:
     for index in range(len(builds)):
         thread_name = "%s-%s.%s" % (target, index, os.getpid())
@@ -191,7 +193,6 @@ for target in targets:
 
 while(test_index < test_count):
     sleep(proc_chk_interval)
-
 for target_image in target_images:
     if args.remote:
         r = requests.delete(args.url+'/target_images/'+target_image['id'])
@@ -200,6 +201,7 @@ for target_image in target_images:
 
 for base_image in base_images:
     if args.remote:
+        print "About to delete base image: %s" % (base_image['id'],)
         r = requests.delete(args.url+'/base_images/'+base_image['id'])
     else:
         subprocess_check_output('%s --output json --raw delete %s' % (args.cmd, base_image['id']), shell=True)
