@@ -249,9 +249,9 @@ def get_image_file(image_id, base_image_id=None, target_image_id=None, provider_
         raise HTTPResponse(status=500, output=e)
 
 @rest_api.delete('/imagefactory/<collection_type>/<image_id>')
-@rest_api.delete('/imagefactory/<collection_type>/<base_image_id>/target_images/<image_id>')
-@rest_api.delete('/imagefactory/base_images/<base_image_id>/target_images/<target_image_id>/provider_images/<image_id>')
-@rest_api.delete('/imagefactory/target_images/<target_image_id>/provider_images/<image_id>')
+@rest_api.delete('/imagefactory/base_images/<base_image_id>/<collection_type>/<image_id>')
+@rest_api.delete('/imagefactory/base_images/<base_image_id>/target_images/<target_image_id>/<collection_type>/<image_id>')
+@rest_api.delete('/imagefactory/target_images/<target_image_id>/<collection_type>/<image_id>')
 @log_request
 @oauth_protect
 @check_accept_header
