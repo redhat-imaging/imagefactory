@@ -448,6 +448,12 @@ class EC2(object):
         tmpl = string.replace(tmpl, "#KERNEL_IMAGE_NAME#", ramfs_prefix)
         tmpl = string.replace(tmpl, "#TITLE#", name)
 
+        if not g.is_dir("/boot/grub"):
+            try:
+                g.mkdir_p("/boot/grub")
+            except RuntimeError:
+                raise ImageFactoryException("Unable to create /boot/grub directory - aborting")
+
         g.write("/boot/grub/menu.lst", tmpl)
 
         # EC2 Xen nosegneg bug
