@@ -135,7 +135,9 @@ class Application(Singleton):
         # by prepending them with an @
         # TODO: Make this cleaner perhaps
         # If provider starts with @ interpret the remaining string literally
-        if provider[0] == '@':
+        if not provider:
+            return None
+        elif provider[0] == '@':
             return provider[1:]
         # If not, try to read it as a file
         else:
@@ -185,8 +187,9 @@ class Application(Singleton):
                 if not 'snapshot' in parameters:
                     parameters['snapshot'] = self.app_config.get('snapshot')
                 provider = self._get_provider(self.app_config['provider'])
+                credentials = self._get_credentials(self.app_config.get('credentials'))
                 builder = BuildDispatcher().builder_for_provider_image(provider=provider,
-                                                                        credentials=self.app_config['credentials'].read().rstrip(),
+                                                                        credentials=credentials,
                                                                         target=self.app_config.get('target'),
                                                                         image_id=self.app_config.get('id'),
                                                                         template=template,
