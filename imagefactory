@@ -146,6 +146,17 @@ class Application(Singleton):
             f.close()
             return ret_provider
 
+    def _get_credentials(self, credentials_file):
+        # This returns the contents of the credentials_file
+        # If credentials file is not provided return None
+        if not credentials_file:
+	    return None
+        # If credentials file is provided, try to read contents
+        else:
+            ret_credentials = credentials_file.read().rstrip()
+            credentials_file.close()
+            return ret_credentials
+
     def main(self):
         command = self.app_config['command']
         returnval = {}
