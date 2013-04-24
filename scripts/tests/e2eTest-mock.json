@@ -2,31 +2,13 @@
     "jeos":
     [
         {
-            "os":"Fedora",
-            "version":"17",
+            "os":"MockOS_A",
+            "version":"1",
             "arch":"x86_64",
             "url":"http://download.devel.redhat.com/released/F-17/GOLD/Fedora/x86_64/os/"
-        },
-        {
-            "os":"Fedora",
-            "version":"18",
-            "arch":"x86_64",
-            "url":"http://download.devel.redhat.com/released/F-18/GOLD/Fedora/x86_64/os/"
-        },
-        {
-            "os":"RHEL-5",
-            "version":"U9",
-            "arch":"x86_64",
-            "url":"http://download.devel.redhat.com/released/RHEL-5-Server/U9/x86_64/os/"
-        },
-        {
-            "os":"RHEL-6",
-            "version":"4",
-            "arch":"x86_64",
-            "url":"http://download.devel.redhat.com/released/RHEL-6/6.4/Server/x86_64/os/"
         }
     ],
-    "targets": ["rhevm", "ec2", "vsphere", "kvm-openstack"],
+    "targets": ["mock"],
     "providers":
     [
         {
