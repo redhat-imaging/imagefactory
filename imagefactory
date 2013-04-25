@@ -153,7 +153,7 @@ class Application(Singleton):
         parameters_file = self.app_config.get('parameters')
         if(parameters_file):
             try:
-                parameters = json.reads(parameters_file.read().rstrip())
+                parameters = json.loads(parameters_file.read().rstrip())
             except:
                 logging.error("Unable to read JSON from file provided in --parameters")
                 sys.exit(1)
