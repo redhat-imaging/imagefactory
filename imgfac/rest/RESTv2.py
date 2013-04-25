@@ -248,16 +248,14 @@ def get_image_file(image_id, base_image_id=None, target_image_id=None, provider_
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
 
-@rest_api.delete('/imagefactory/base_images/<image_id>')
-@rest_api.delete('/imagefactory/target_images/<image_id>')
-@rest_api.delete('/imagefactory/provider_images/<image_id>')
-@rest_api.delete('/imagefactory/base_images/<base_image_id>/target_images/<image_id>')
-@rest_api.delete('/imagefactory/base_images/<base_image_id>/target_images/<target_image_id>/provider_images/<image_id>')
-@rest_api.delete('/imagefactory/target_images/<target_image_id>/provider_images/<image_id>')
+@rest_api.delete('/imagefactory/<collection_type>/<image_id>')
+@rest_api.delete('/imagefactory/base_images/<base_image_id>/<collection_type>/<image_id>')
+@rest_api.delete('/imagefactory/base_images/<base_image_id>/target_images/<target_image_id>/<collection_type>/<image_id>')
+@rest_api.delete('/imagefactory/target_images/<target_image_id>/<collection_type>/<image_id>')
 @log_request
 @oauth_protect
 @check_accept_header
-def delete_image_with_id(image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
+def delete_image_with_id(image_id, collection_type=None, base_image_id=None, target_image_id=None, provider_image_id=None):
     try:
         response.status = 204
         image = PersistentImageManager.default_manager().image_with_id(image_id)
