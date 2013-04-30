@@ -18,26 +18,17 @@ import zope
 import oz.Fedora
 import oz.TDL
 import subprocess
-import os
-import re
-import guestfs
-import string
 import libxml2
 import traceback
 import ConfigParser
-import sys
-import json
 from time import *
-from tempfile import *
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
-from imgfac.ReservationManager import ReservationManager
 from imgfac.CloudDelegate import CloudDelegate
-
-import novaclient
 from novaclient.v1_1 import client
 from novaclient.exceptions import NotFound
 import oz.Fedora
+
 
 def subprocess_check_output(*popenargs, **kwargs):
     if 'stdout' in kwargs:
@@ -49,7 +40,7 @@ def subprocess_check_output(*popenargs, **kwargs):
     if retcode:
         cmd = ' '.join(*popenargs)
         raise ImageFactoryException("'%s' failed(%d): %s" % (cmd, retcode, stderr))
-    return (stdout, stderr, retcode)
+    return stdout, stderr, retcode
 
 
 class Rackspace(object):
@@ -78,24 +69,24 @@ class Rackspace(object):
             self.log.warning("No JEOS images defined for Rackspace.  Snapshot builds will not be possible.")
             self.rackspace_jeos_amis = {}
 
-
     def log_exc(self):
         self.log.debug("Exception caught in ImageFactory")
         self.log.debug(traceback.format_exc())
         self.active_image.status_detail['error'] = traceback.format_exc()
 
-
     def wait_for_rackspace_ssh_access(self, guestaddr):
         self.activity("Waiting for SSH access to Rackspace instance")
         for i in range(300):
             if i % 10 == 0:
-                self.log.debug("Waiting for Rackspace ssh access: %d/300" % (i))
+                self.log.debug("Waiting for Rackspace ssh access: %d/300" % i)
 
             try:
-                stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, "/bin/true", timeout = 10)
+                stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, "/bin/true", timeout=10)
                 break
             except:
-		import pdb;pdb.set_trace()
+                import pdb
+
+                pdb.set_trace()
                 pass
 
             sleep(1)
@@ -107,40 +98,50 @@ class Rackspace(object):
         self.activity("Waiting for Rackspace instance to become active")
         for i in range(600):
             if i % 10 == 0:
-                self.log.debug("Waiting for Rackspace instance to start: %d/600" % (i))
+                self.log.debug("Waiting for Rackspace instance to start: %d/600" % i)
             try:
                 instance.get()
-                self.log.debug("Progress: %d" % (instance.progress))
-            except NotFound, e:
-                # We occasionally get errors when querying an instance that has just started - ignore them and hope for the best
-                self.log.warning("NotFound exception encountered when querying Rackspace instance (%s) - trying to continue" % (instance.id), exc_info = True)
+                self.log.debug("Progress: %d" % instance.progress)
+            except NotFound:
+                # We occasionally get errors when querying an instance that has just started. Ignore & hope for the best
+                self.log.warning(
+                    "NotFound exception encountered when querying Rackspace instance (%s) - trying to continue" % (
+                        instance.id), exc_info=True)
             except:
-                self.log.error("Exception encountered when updating status of instance (%s)" % (instance.id), exc_info = True)
-                self.status="FAILED"
+                self.log.error("Exception encountered when updating status of instance (%s)" % instance.id,
+                               exc_info=True)
+                self.status = "FAILED"
                 try:
                     self.terminate_instance(instance)
                 except:
-                    log.warning("WARNING: Instance (%s) failed to start and will not terminate - it may still be running" % (instance.id), exc_info = True)
-                    raise ImageFactoryException("Instance (%s) failed to fully start or terminate - it may still be running" % (instance.id))
-                raise ImageFactoryException("Exception encountered when waiting for instance (%s) to start" % (instance.id))
+                    self.log.warning(
+                        "WARNING: Instance (%s) failed to start and will not terminate - it may still be running" % (
+                            instance.id), exc_info=True)
+                    raise ImageFactoryException(
+                        "Instance (%s) failed to fully start or terminate - it may still be running" % instance.id)
+                raise ImageFactoryException(
+                    "Exception encountered when waiting for instance (%s) to start" % instance.id)
             if instance.status == u'ACTIVE':
                 break
             sleep(1)
         if instance.status != u'ACTIVE':
-            self.status="FAILED"
+            self.status = "FAILED"
             try:
                 self.terminate_instance(instance)
             except:
-                log.warning("WARNING: Instance (%s) failed to start and will not terminate - it may still be running" % (instance.id), exc_info = True)
-                raise ImageFactoryException("Instance (%s) failed to fully start or terminate - it may still be running" % (instance.id))
+                self.log.warning(
+                    "WARNING: Instance (%s) failed to start and will not terminate - it may still be running" % (
+                        instance.id), exc_info=True)
+                raise ImageFactoryException(
+                    "Instance (%s) failed to fully start or terminate - it may still be running" % instance.id)
             raise ImageFactoryException("Instance failed to start after 300 seconds - stopping")
 
     def terminate_instance(self, instance):
-	self.activity("Deleting Rackspace instance")
-	try:
-  	    self.instance.delete()
-	except Exception, e:
-            self.log.info("Failed to delete Rackspace instance.")
+        self.activity("Deleting Rackspace instance.")
+        try:
+            instance.delete()
+        except Exception, e:
+            self.log.info("Failed to delete Rackspace instance. %s" % e)
 
     def snapshot_image_on_provider(self, builder, provider, credentials, target, template, parameters):
         self.log.info('snapshot_image_on_provider() called in Rackspace')
@@ -153,49 +154,43 @@ class Rackspace(object):
         # TODO: so is this
         self.target = target
 
-
         # Template must be defined for snapshots
         self.tdlobj = oz.TDL.TDL(xmlstring=str(template), rootpw_required=True)
 
         # Create a name combining the TDL name and the UUID for use when tagging Rackspace Images
         self.longname = self.tdlobj.name + "-" + self.new_image_id
 
-        def replace(item):
-            if item in [self.rackspace_username, self.rackspace_password]:
-                return "REDACTED"
-            return item
-
-        self.log.debug("Being asked to push for provider %s" % (provider))
-        self.log.debug("distro: %s - update: %s - arch: %s" % (self.tdlobj.distro, self.tdlobj.update, self.tdlobj.arch))
+        self.log.debug("Being asked to push for provider %s" % provider)
+        self.log.debug(
+            "distro: %s - update: %s - arch: %s" % (self.tdlobj.distro, self.tdlobj.update, self.tdlobj.arch))
         self.rackspace_decode_credentials(credentials)
         self.log.debug("acting as Rackspace user: %s" % (str(self.rackspace_username)))
 
-        self.status="PUSHING"
-        self.percent_complete=0
+        self.status = "PUSHING"
+        self.percent_complete = 0
 
-        region=provider
-        
-	auth_url = 'https://identity.api.rackspacecloud.com/v2.0/'
+        region = provider
 
-	rackspace_client = client.Client(self.rackspace_username, self.rackspace_password, self.rackspace_account_number, auth_url, service_type="compute", region_name=region)
-	rackspace_client.authenticate()
+        auth_url = 'https://identity.api.rackspacecloud.com/v2.0/'
 
+        rackspace_client = client.Client(self.rackspace_username, self.rackspace_password,
+                                         self.rackspace_account_number, auth_url, service_type="compute",
+                                         region_name=region)
+        rackspace_client.authenticate()
 
-	mypub = open("/etc/oz/id_rsa-icicle-gen.pub")
-        server_files = { "/root/.ssh/authorized_keys":mypub }
+        mypub = open("/etc/oz/id_rsa-icicle-gen.pub")
+        server_files = {"/root/.ssh/authorized_keys": mypub}
 
         # Now launch it
         self.activity("Launching Rackspace JEOS image")
         #self.log.debug("Starting ami %s with instance_type %s" % (ami_id, instance_type))
-	rackspace_image_id = self.rackspace_jeos_amis[region][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]
-	image = rackspace_client.images.find(id=rackspace_image_id)
-	small = rackspace_client.flavors.find(name='512MB Standard Instance')
-	reservation = rackspace_client.servers.create('imagefactory-image', image, small, files=server_files)
-
-
+        rackspace_image_id = self.rackspace_jeos_amis[region][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]
+        image = rackspace_client.images.find(id=rackspace_image_id)
+        small = rackspace_client.flavors.find(name='512MB Standard Instance')
+        reservation = rackspace_client.servers.create('imagefactory-image', image, small, files=server_files)
 
         if not reservation:
-            self.status="FAILED"
+            self.status = "FAILED"
             raise ImageFactoryException("run_instances did not result in the expected single instance - stopping")
 
         self.instance = reservation
@@ -206,12 +201,12 @@ class Rackspace(object):
         # so wrap in a try/finally
         # Accidentally running a 64 bit instance doing nothing costs 56 USD week
         try:
-	    while (self.instance.accessIPv4 == ''):
+            while self.instance.accessIPv4 == '':
                 self.log.debug("Waiting to get public IP address")
-		sleep(1)
-	    	self.instance.get()
+            sleep(1)
+            self.instance.get()
             guestaddr = self.instance.accessIPv4
-	    self.guest = oz.Fedora.FedoraGuest(self.tdlobj, self.oz_config, None, "virtio", True, "virtio", True)
+            self.guest = oz.Fedora.FedoraGuest(self.tdlobj, self.oz_config, None, "virtio", True, "virtio", True)
 
             # Ugly ATM because failed access always triggers an exception
             self.wait_for_rackspace_ssh_access(guestaddr)
@@ -224,18 +219,18 @@ class Rackspace(object):
             self.activity("Customizing running Rackspace JEOS instance")
             self.log.debug("Stopping cron and killing any updatedb process that may be running")
             # updatedb interacts poorly with the bundle step - make sure it isn't running
-	    try:
-                self.guest.guest_execute_command(guestaddr, "/sbin/service crond stop")
-                self.guest.guest_execute_command(guestaddr, "killall -9 updatedb || /bin/true")
-	    except Exception, e:
-		self.log.warning("Exception while executing commands on guest")
+            self.guest.guest_execute_command(guestaddr, "/sbin/service crond stop")
+            self.guest.guest_execute_command(guestaddr, "killall -9 updatedb || /bin/true")
+        except Exception, e:
+            self.log.warning("Exception while executing commands on guest: %s" % e)
             self.log.debug("Done")
 
             # Not all JEOS images contain this - redoing it if already present is harmless
-            self.log.info("Creating cloud-info file indicating target (%s)" % (self.target))
-            self.guest.guest_execute_command(guestaddr, 'echo CLOUD_TYPE=\\\"%s\\\" > /etc/sysconfig/cloud-info' % (self.target))
+            self.log.info("Creating cloud-info file indicating target (%s)" % self.target)
+            self.guest.guest_execute_command(guestaddr,
+                                             'echo CLOUD_TYPE=\\\"%s\\\" > /etc/sysconfig/cloud-info' % self.target)
 
-            self.log.debug("Customizing guest: %s" % (guestaddr))
+            self.log.debug("Customizing guest: %s" % guestaddr)
             self.guest.mkdir_p(self.guest.icicle_tmp)
             self.guest.do_customize(guestaddr)
             self.log.debug("Customization step complete")
@@ -245,7 +240,8 @@ class Rackspace(object):
             self.log.debug("ICICLE generation complete")
 
             self.log.debug("Re-de-activate firstboot just in case it has been revived during customize")
-            self.guest.guest_execute_command(guestaddr, "[ -f /etc/init.d/firstboot ] && /sbin/chkconfig firstboot off || /bin/true")
+            self.guest.guest_execute_command(guestaddr,
+                                             "[ -f /etc/init.d/firstboot ] && /sbin/chkconfig firstboot off || /bin/true")
             self.log.debug("De-activation complete")
 
             new_image_id = None
@@ -253,28 +249,28 @@ class Rackspace(object):
             image_desc = "%s - %s" % (asctime(localtime()), self.tdlobj.description)
 
             self.log.debug("Creating a snapshot of our running Rackspace instance")
-	    #TODO: give proper name??
-	    new_image_id = self.instance.create_image(image_name)
-       	    new_image = rackspace_client.images.find(id=new_image_id)
-	    while(True):
-	        new_image.get()
-		self.log.info("Saving image: %d percent complete" % (new_image.progress))
-		if new_image.progress == 100:
-		    break
+            #TODO: give proper name??
+            new_image_id = self.instance.create_image(image_name)
+            new_image = rackspace_client.images.find(id=new_image_id)
+            while True:
+                new_image.get()
+                self.log.info("Saving image: %d percent complete" % new_image.progress)
+                if new_image.progress == 100:
+                    break
                 else:
-		    sleep(20)
+                    sleep(20)
 
-	    # This replaces our Warehouse calls
+            # This replaces our Warehouse calls
             self.builder.provider_image.icicle = self.output_descriptor
             self.builder.provider_image.identifier_on_provider = new_image_id
             self.builder.provider_account_identifier = self.rackspace_account_number
         finally:
-            self.terminate_instance(self.instance)    
+            self.terminate_instance(self.instance)
 
     def _rackspace_get_xml_node(self, doc, credtype):
-        nodes = doc.xpathEval("//provider_credentials/rackspace_credentials/%s" % (credtype))
+        nodes = doc.xpathEval("//provider_credentials/rackspace_credentials/%s" % credtype)
         if len(nodes) < 1:
-            raise ImageFactoryException("No Rackspace %s available" % (credtype))
+            raise ImageFactoryException("No Rackspace %s available" % credtype)
 
         return nodes[0].content
 
