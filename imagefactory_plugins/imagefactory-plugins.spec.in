@@ -178,6 +178,11 @@ python setup.py install -O1 --root=%{buildroot} --skip-build
 %postun Rackspace
 %auto_register_macro_postun Rackspace
 
+%post Rackspace
+%auto_register_macro_post Rackspace
+%postun Rackspace
+%auto_register_macro_postun Rackspace
+
 %files
 %dir %{python_sitelib}/imagefactory_plugins
 %{python_sitelib}/imagefactory_plugins/__init__.py*
