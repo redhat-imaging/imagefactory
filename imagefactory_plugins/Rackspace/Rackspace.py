@@ -76,23 +76,23 @@ class Rackspace(object):
 
     def wait_for_rackspace_ssh_access(self, guestaddr):
         self.activity("Waiting for SSH access to Rackspace instance")
-        for i in range(300):
-            if i % 10 == 0:
-                self.log.debug("Waiting for Rackspace ssh access: %d/300" % i)
+        for index in range(300):
+            if index % 10 == 0:
+                self.log.debug("Waiting for Rackspace ssh access: %d/300" % index)
 
             try:
-                stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, "/bin/true", timeout=10)
+                self.guest.guest_execute_command(guestaddr, "/bin/true", timeout=10)
                 break
-            except:
-                import pdb
-
-                pdb.set_trace()
-                pass
+            except Exception, e:
+                self.log.exception('Caught exception waiting for ssh access: %s' % e)
+                #import pdb
+                #pdb.set_trace()
+                #pass
 
             sleep(1)
 
-        if i == 299:
-            raise ImageFactoryException("Unable to gain ssh access after 300 seconds - aborting")
+            if index == 299:
+                raise ImageFactoryException("Unable to gain ssh access after 300 seconds - aborting")
 
     def wait_for_rackspace_instance_start(self, instance):
         self.activity("Waiting for Rackspace instance to become active")
@@ -244,9 +244,8 @@ class Rackspace(object):
                                              "[ -f /etc/init.d/firstboot ] && /sbin/chkconfig firstboot off || /bin/true")
             self.log.debug("De-activation complete")
 
-            new_image_id = None
             image_name = str(self.longname)
-            image_desc = "%s - %s" % (asctime(localtime()), self.tdlobj.description)
+            #image_desc = "%s - %s" % (asctime(localtime()), self.tdlobj.description)
 
             self.log.debug("Creating a snapshot of our running Rackspace instance")
             #TODO: give proper name??
