@@ -184,7 +184,7 @@ class Rackspace(object):
         # Now launch it
         self.activity("Launching Rackspace JEOS image")
         #self.log.debug("Starting ami %s with instance_type %s" % (ami_id, instance_type))
-        rackspace_image_id = self.rackspace_jeos_amis[region][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]
+        rackspace_image_id = self.rackspace_jeos_amis[region][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]['img_id']
         image = rackspace_client.images.find(id=rackspace_image_id)
         small = rackspace_client.flavors.find(name='512MB Standard Instance')
         reservation = rackspace_client.servers.create('imagefactory-image', image, small, files=server_files)
@@ -262,7 +262,7 @@ class Rackspace(object):
             # This replaces our Warehouse calls
             self.builder.provider_image.icicle = self.output_descriptor
             self.builder.provider_image.identifier_on_provider = new_image_id
-            self.builder.provider_account_identifier = self.rackspace_account_number
+            self.builder.provider_image.provider_account_identifier = self.rackspace_account_number
         finally:
             self.terminate_instance(self.instance)
 
