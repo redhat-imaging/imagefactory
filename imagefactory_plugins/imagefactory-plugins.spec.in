@@ -111,6 +111,24 @@ Requires: python-psphere
 %description vSphere
 A plugin for vSphere "clouds"
 
+%package Rackspace
+Summary: Cloud plugin for Rackspace
+License: ASL 2.0
+Requires: python-novaclient
+Requires: imagefactory
+Requires: imagefactory-plugins
+
+%description Rackspace
+A Cloud plugin to support Rackspace
+
+%package Rackspace-JEOS-images
+Summary: JEOS images for various OSes to support Rackspace snapshot builds
+Requires: imagefactory-plugins-Rackspace
+
+%description Rackspace-JEOS-images
+These configuration files point to existing JEOS Image ID's on Rackspace that can be used to do
+"snapshot" style builds.
+
 %prep
 %setup -q
 
@@ -155,6 +173,16 @@ python setup.py install -O1 --root=%{buildroot} --skip-build
 %postun MockCloud
 %auto_register_macro_postun MockCloud
 
+%post Rackspace
+%auto_register_macro_post Rackspace
+%postun Rackspace
+%auto_register_macro_postun Rackspace
+
+%post Rackspace
+%auto_register_macro_post Rackspace
+%postun Rackspace
+%auto_register_macro_postun Rackspace
+
 %files
 %dir %{python_sitelib}/imagefactory_plugins
 %{python_sitelib}/imagefactory_plugins/__init__.py*
@@ -174,6 +202,10 @@ python setup.py install -O1 --root=%{buildroot} --skip-build
 %{_sysconfdir}/imagefactory/jeos_images/ec2_fedora_jeos.conf
 %{_sysconfdir}/imagefactory/jeos_images/ec2_rhel_jeos.conf
 
+%files Rackspace-JEOS-images
+%{_sysconfdir}/imagefactory/jeos_images/rackspace_fedora_jeos.conf
+%{_sysconfdir}/imagefactory/jeos_images/rackspace_rhel_jeos.conf
+
 %files MockOS
 %{python_sitelib}/imagefactory_plugins/MockOS/*
 
@@ -185,3 +217,6 @@ python setup.py install -O1 --root=%{buildroot} --skip-build
 
 %files vSphere
 %{python_sitelib}/imagefactory_plugins/vSphere/*
+
+%files Rackspace
+%{python_sitelib}/imagefactory_plugins/Rackspace/*

@@ -17,16 +17,18 @@
 import logging
 import sys
 import os
-import os.path
 import json
 from Singleton import Singleton
+from ImageFactoryException import ImageFactoryException
 
 PLUGIN_TYPES = ('OS', 'CLOUD')
 INFO_FILE_EXTENSION = '.info'
 PKG_STR = 'imagefactory_plugins'
 
+
 class PluginManager(Singleton):
     """ Registers and manages ImageFactory plugins. """
+
     @property
     def plugins(self):
         """
@@ -38,7 +40,7 @@ class PluginManager(Singleton):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         sys.path.append(plugin_path)
 
-        if(os.path.exists(plugin_path)):
+        if os.path.exists(plugin_path):
             self.path = plugin_path
         else:
             msg = 'Plugin path (%s) does not exist! No plugins loaded.' % plugin_path
@@ -56,7 +58,6 @@ class PluginManager(Singleton):
         When more than one plugin is found, the first will be registered and
         all others listed as inactive.
         """
-
         info_files = list()
         directory_listing = os.listdir(self.path)
         for _file in directory_listing:
@@ -67,13 +68,15 @@ class PluginManager(Singleton):
             plugin_name = filename[:-len(INFO_FILE_EXTENSION)]
             md = self.metadata_for_plugin(plugin_name)
             try:
-                if(md['type'].upper() in PLUGIN_TYPES):
+                if md['type'].upper() in PLUGIN_TYPES:
                     for target in md['targets']:
                         target = target if isinstance(target, str) else tuple(target)
-                        if(not target in self._targets):
+                        if not target in self._targets:
                             self._targets[target] = plugin_name
                         else:
-                            msg = 'Did not register %s for %s. Plugin %s already registered.' % (plugin_name, target, self._targets[target])
+                            msg = 'Did not register %s for %s. Plugin %s already registered.' % (plugin_name,
+                                                                                                 target,
+                                                                                                 self._targets[target])
                             self._register_plugin_with_error(plugin_name, msg)
                             self.log.warn(msg)
                     self._plugins[plugin_name] = md
@@ -89,7 +92,7 @@ class PluginManager(Singleton):
                 self.log.exception(msg)
 
     def _register_plugin_with_error(self, plugin_name, error_msg):
-        self._plugins[plugin_name] = dict(ERROR = error_msg)
+        self._plugins[plugin_name] = dict(ERROR=error_msg)
 
     def metadata_for_plugin(self, plugin):
         """
@@ -99,7 +102,7 @@ class PluginManager(Singleton):
 
         @return dictionary containing the plugin's metadata
         """
-        if(plugin in self._plugins):
+        if plugin in self._plugins:
             return self._plugins[plugin]
         else:
             fp = None
@@ -112,7 +115,7 @@ class PluginManager(Singleton):
                 self.log.exception('Exception caught while loading plugin metadata: %s' % e)
                 raise e
             finally:
-                if (fp):
+                if fp:
                     fp.close()
                 return metadata
 
@@ -129,26 +132,21 @@ class PluginManager(Singleton):
     
         @return An instance of the delegate class of the plugin or None.
         """
-        plugin_name = None
         try:
             if isinstance(target, str):
-                self.log.debug("Attempting to match string target (%s)" % (target))
-                plugin_name = self._targets.get(tuple([ target ]))
+                self.log.debug("Attempting to match string target (%s)" % target)
+                plugin_name = self._targets.get(tuple([target]))
                 plugin = __import__('%s.%s' % (PKG_STR, plugin_name), fromlist=['delegate_class'])
                 return plugin.delegate_class()
-            elif(isinstance(target, tuple)):
+            elif isinstance(target, tuple):
                 _target = list(target)
                 self.log.debug("Attempting to match list target (%s)" % (str(_target)))
-                for index in range(1,len(target)+1):
+                for index in range(1, len(target) + 1):
                     plugin_name = self._targets.get(tuple(_target))
-                    if(not plugin_name):
+                    if not plugin_name:
                         _target[-index] = None
                     else:
                         plugin = __import__('%s.%s' % (PKG_STR, plugin_name), fromlist=['delegate_class'])
                         return plugin.delegate_class()
-        except ImportError as e:
-            self.log.error('ERROR: Unable to find plugin for target - %s/n%s' % (target, e))
-            return None
-        except Exception as e:
-            self.log.exception('Exception caught during plugin lookup: %s' % e)
-            return None
+        except ImportError:
+            raise ImageFactoryException("Unable to find plugin for target: %s" % str(target))
