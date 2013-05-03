@@ -290,6 +290,17 @@ class Rackspace(object):
             raise ImageFactoryException('Failed to delete Rackspace image (%s) with error (%s)' % (rackspace_image_id,
                                                                                                    str(e)))
 
+    def abort(self):
+        # TODO: Make this progressively more robust
+        # In the near term, the most important thing we can do is terminate any EC2 instance we may be using
+        if self.instance:
+            try:
+                self.log.debug('Attempting to abort instance: %s' % self.instance)
+                self.terminate_instance(self.instance)
+            except Exception, e:
+                self.log.exception(e)
+                self.log.warning("** WARNING ** Instance MAY NOT be terminated ******** ")
+
     def _rackspace_get_xml_node(self, doc, credtype):
         nodes = doc.xpathEval("//provider_credentials/rackspace_credentials/%s" % credtype)
         if len(nodes) < 1:
