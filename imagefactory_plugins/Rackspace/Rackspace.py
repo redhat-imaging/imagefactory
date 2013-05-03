@@ -98,31 +98,32 @@ class Rackspace(object):
         self.activity("Waiting for Rackspace instance to become active")
         for i in range(600):
             if i % 10 == 0:
-                self.log.debug("Waiting for Rackspace instance to start: %d/600" % i)
-            try:
-                instance.get()
-                self.log.debug("Progress: %d" % instance.progress)
-            except NotFound:
-                # We occasionally get errors when querying an instance that has just started. Ignore & hope for the best
-                self.log.warning(
-                    "NotFound exception encountered when querying Rackspace instance (%s) - trying to continue" % (
-                        instance.id), exc_info=True)
-            except:
-                self.log.error("Exception encountered when updating status of instance (%s)" % instance.id,
-                               exc_info=True)
-                self.status = "FAILED"
                 try:
-                    self.terminate_instance(instance)
-                except:
+                    instance.get()
+                    self.log.debug("Waiting %d more seconds for Rackspace instance to start, %d%% complete..." %
+                                   ((600-i), instance.progress))
+                except NotFound:
+                    # We occasionally get errors when querying an instance that has just started.
+                    # Ignore & hope for the best
                     self.log.warning(
-                        "WARNING: Instance (%s) failed to start and will not terminate - it may still be running" % (
+                        "NotFound exception encountered when querying Rackspace instance (%s) - trying to continue" % (
                             instance.id), exc_info=True)
+                except:
+                    self.log.error("Exception encountered when updating status of instance (%s)" % instance.id,
+                                   exc_info=True)
+                    self.status = "FAILED"
+                    try:
+                        self.terminate_instance(instance)
+                    except:
+                        self.log.warning(
+                            "WARNING: Instance (%s) failed to start and will not terminate - it may still be running" % (
+                                instance.id), exc_info=True)
+                        raise ImageFactoryException(
+                            "Instance (%s) failed to fully start or terminate - it may still be running" % instance.id)
                     raise ImageFactoryException(
-                        "Instance (%s) failed to fully start or terminate - it may still be running" % instance.id)
-                raise ImageFactoryException(
-                    "Exception encountered when waiting for instance (%s) to start" % instance.id)
-            if instance.status == u'ACTIVE':
-                break
+                        "Exception encountered when waiting for instance (%s) to start" % instance.id)
+                if instance.status == u'ACTIVE':
+                    break
             sleep(1)
         if instance.status != u'ACTIVE':
             self.status = "FAILED"
@@ -183,11 +184,13 @@ class Rackspace(object):
 
         # Now launch it
         self.activity("Launching Rackspace JEOS image")
-        #self.log.debug("Starting ami %s with instance_type %s" % (ami_id, instance_type))
         rackspace_image_id = self.rackspace_jeos_amis[region][self.tdlobj.distro][self.tdlobj.update][self.tdlobj.arch]['img_id']
+        instance_type = '512MB Standard Instance'
         image = rackspace_client.images.find(id=rackspace_image_id)
-        small = rackspace_client.flavors.find(name='512MB Standard Instance')
-        reservation = rackspace_client.servers.create('imagefactory-image', image, small, files=server_files)
+        small = rackspace_client.flavors.find(name=instance_type)
+        self.log.debug("Starting build server %s with instance_type %s" % (rackspace_image_id, instance_type))
+        reservation_name = 'imagefactory-snapshot-%s' % self.active_image.identifier
+        reservation = rackspace_client.servers.create(reservation_name, image, small, files=server_files)
 
         if not reservation:
             self.status = "FAILED"
@@ -221,8 +224,6 @@ class Rackspace(object):
             # updatedb interacts poorly with the bundle step - make sure it isn't running
             self.guest.guest_execute_command(guestaddr, "/sbin/service crond stop")
             self.guest.guest_execute_command(guestaddr, "killall -9 updatedb || /bin/true")
-        except Exception, e:
-            self.log.warning("Exception while executing commands on guest: %s" % e)
             self.log.debug("Done")
 
             # Not all JEOS images contain this - redoing it if already present is harmless
@@ -259,12 +260,35 @@ class Rackspace(object):
                 else:
                     sleep(20)
 
-            # This replaces our Warehouse calls
             self.builder.provider_image.icicle = self.output_descriptor
             self.builder.provider_image.identifier_on_provider = new_image_id
             self.builder.provider_image.provider_account_identifier = self.rackspace_account_number
+        except Exception, e:
+            self.log.warning("Exception while executing commands on guest: %s" % e)
         finally:
             self.terminate_instance(self.instance)
+
+    def delete_from_provider(self, builder, provider, credentials, target, parameters):
+        self.builder = builder
+        self.active_image = self.builder.provider_image
+        rackspace_image_id = self.active_image.identifier_on_provider
+        try:
+            self.log.debug("Deleting Rackspace image (%s)" % self.active_image.identifier_on_provider)
+            self.rackspace_decode_credentials(credentials)
+            self.log.debug("acting as Rackspace user: %s" % (str(self.rackspace_username)))
+
+            auth_url = 'https://identity.api.rackspacecloud.com/v2.0/'
+            rackspace_client = client.Client(self.rackspace_username, self.rackspace_password,
+                                             self.rackspace_account_number, auth_url, service_type="compute",
+                                             region_name=provider)
+            rackspace_client.authenticate()
+            image = rackspace_client.images.find(id=rackspace_image_id)
+            if image:
+                rackspace_client.images.delete(rackspace_image_id)
+                self.log.debug('Successfully deleted Rackspace image (%s)' % rackspace_image_id)
+        except Exception, e:
+            raise ImageFactoryException('Failed to delete Rackspace image (%s) with error (%s)' % (rackspace_image_id,
+                                                                                                   str(e)))
 
     def _rackspace_get_xml_node(self, doc, credtype):
         nodes = doc.xpathEval("//provider_credentials/rackspace_credentials/%s" % credtype)
