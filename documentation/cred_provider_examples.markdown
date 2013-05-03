@@ -18,11 +18,12 @@ is shown below.
 
 *Credentials:*
 
-    <provider_credentials> <ec2_credentials>
-      <account_number>1234-5678-9012</account_number>   
-      <access_key>BEEFFEEDBEEFFEEDBEEF</access_key>   
-      <secret_access_key>asdHGK46783HGAlasdfc12FjerIe7g</secret_access_key>
-      <certificate>-----BEGIN CERTIFICATE-----
+    <provider_credentials> 
+      <ec2_credentials>
+        <account_number>1234-5678-9012</account_number>   
+        <access_key>BEEFFEEDBEEFFEEDBEEF</access_key>   
+        <secret_access_key>asdHGK46783HGAlasdfc12FjerIe7g</secret_access_key>
+        <certificate>-----BEGIN CERTIFICATE-----
     ChM0WE1MIFNlY3VyaXR5IExpYnJhcnkgKGh0dHA6Ly93d3cuYWxla3NleS5jb20v
     eG1sc2VjKTEZMBcGA1UECxMQUm9vdCBDZXJ0aWZpY2F0ZTEWMBQGA1UEAxMNQWxl
     a3NleSBTYW5pbjEhMB8GCSqGSIb3DQEJARYSeG1sc2VjQGFsZWtzZXkuY29tMB4X
@@ -36,7 +37,7 @@ is shown below.
     mTqQrd9+ZIbGJnLOMQh5fhMVuOW/1lYCjWAhTCcYZPv7VXD2M70vVXDVXn6ZrqTg
     w3dcTZBoihHftE8=
     -----END CERTIFICATE-----</certificate>
-      <key>-----BEGIN PRIVATE KEY-----
+        <key>-----BEGIN PRIVATE KEY-----
     MIICdwIBADANBgkqhkiG9w0BAQEFAASCAmEwggJdAgEAAoGBAMtnxavY/9jvytQlDI/fiZ3o+j3b
     nDhE0woQVqzuLT2brUUB3bSdvLsupV/wISLFRSTaKenZ2Bgi3mTrBjEdZs/qipsw4phrwVPaUp/q
     Gz1XreE6RK4LBjlbQS+pIkLg3eem9whCXgmRZJFhX3tDIL75oWYOFFEXZaAjmQUNpj3BAgMBAAEC
@@ -50,20 +51,48 @@ is shown below.
     QEtAy9gMuRO46tJwXrN+hurJdicrbushw0GZA/TukgUnPPpldgxpkH6JFgbsl8XdrfAbMXuiAex/
     V3wdTItQ6So=
     -----END PRIVATE KEY-----</key>
-    </ec2_credentials> </provider_credentials>
+      </ec2_credentials>
+    </provider_credentials>
+
+
+*Provider definition:*
+
+The provider definition for EC2 is simply the name of the region.
+
+
+
+# Rackspace
+
+*Credentials:*
+
+    <provider_credentials>
+      <rackspace_credentials>
+        <account_number>123456</account_number>
+        <username>rackspaceuser</username>
+        <password>changeme</password>
+      </rackspace_credentials>
+    </provider_credentials>
+
+
+*Provider definition:*
+
+The provider definition for Rackspace is simply the name of the region.
+
 
 
 # OpenStack
 
 *Credentials:*
 
-    <provider_credentials><openstack_credentials>
-      <username>admin</username>
-      <tenant>admin</tenant>
-      <password>cloudpass</password>
-      <strategy>keystone</strategy>
-      <auth_url>http://openstack:5000/v2.0</auth_url>
-    </openstack_credentials></provider_credentials>
+    <provider_credentials>
+      <openstack_credentials>
+        <username>admin</username>
+        <tenant>admin</tenant>
+        <password>cloudpass</password>
+        <strategy>keystone</strategy>
+        <auth_url>http://openstack:5000/v2.0</auth_url>
+      </openstack_credentials>
+    </provider_credentials>
 
 
 *Provider definition:*
@@ -79,10 +108,12 @@ is shown below.
 
 *Credentials:*
 
-    <provider_credentials><rhevm_credentials>
-      <username>admin@internal</username>
-      <password>changeme</password>
-    </rhevm_credentials></provider_credentials>
+    <provider_credentials>
+      <rhevm_credentials>
+        <username>admin@internal</username>
+        <password>changeme</password>
+      </rhevm_credentials>
+    </provider_credentials>
 
 
 *Provider definition:*
@@ -104,10 +135,12 @@ is shown below.
 
 *Credentials:*
 
-    <provider_credentials><vsphere_credentials>
-      <username>admin@internal</username>
-      <password>changeme</password>
-    </vsphere_credentials></provider_credentials>
+    <provider_credentials>
+      <vsphere_credentials>
+        <username>admin@internal</username>
+        <password>changeme</password>
+      </vsphere_credentials>
+    </provider_credentials>
 
 
 *Provider definition:*
@@ -120,5 +153,6 @@ is shown below.
       "compute_resource":  "10.16.120.53",
       "network_name": "VM Network"
     }
+
 
 
