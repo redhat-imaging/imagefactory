@@ -39,6 +39,8 @@ class ProviderImage(PersistentImage):
         super(ProviderImage, self).__init__(image_id)
         self.target_image_id = None
         self.provider = None
+        self.identifier_on_provider = None
+        self.provider_account_identifier = None
         self.credentials = None
         self.parameters = None
 
