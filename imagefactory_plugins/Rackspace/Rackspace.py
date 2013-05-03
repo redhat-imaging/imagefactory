@@ -292,7 +292,7 @@ class Rackspace(object):
 
     def abort(self):
         # TODO: Make this progressively more robust
-        # In the near term, the most important thing we can do is terminate any EC2 instance we may be using
+        # In the near term, the most important thing we can do is terminate any Rackspace instance we may be using
         if self.instance:
             try:
                 self.log.debug('Attempting to abort instance: %s' % self.instance)
