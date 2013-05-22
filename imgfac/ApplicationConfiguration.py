@@ -189,7 +189,7 @@ class ApplicationConfiguration(Singleton):
         log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         config_urls = self.configuration['jeos_config']
         for url in config_urls:
-            filehandle = urlopen(url)
+            filehandle = urlopen(str(url))
             line = filehandle.readline().strip()
             line_number = 1
 
