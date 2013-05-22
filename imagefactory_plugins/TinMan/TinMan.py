@@ -294,7 +294,13 @@ class TinMan(object):
 
             try:
                 self.activity("Generating JEOS disk image")
-                self.guest.generate_diskimage()
+                # Newer Oz versions introduce a configurable disk size in TDL
+                # We must still detect that it is present and pass it in this call
+                try:
+                    disksize=getattr(self.guest, "disksize")
+                except AttributeError:
+                    disksize = 10
+                self.guest.generate_diskimage(size = disksize)
                 # TODO: If we already have a base install reuse it
                 #  subject to some rules about updates to underlying repo
                 self.activity("Execute JEOS install")
