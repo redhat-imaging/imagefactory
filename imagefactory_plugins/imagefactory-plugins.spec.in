@@ -32,6 +32,20 @@ imagefactory allows the creation of system images for multiple virtualization
 and cloud providers from a single template definition. See 
 http://aeolusproject.org/projects/imagefactory for more information.
 
+%package IndirectionCloud
+Summary: Cloud plugin for allowing images to modify other images
+License: ASL 2.0
+Requires: oz >= 0.7.0
+Requires: imagefactory
+Requires: imagefactory-plugins
+
+%description IndirectionCloud
+This Cloud plugin allows users to specify a Base Image to use to manipulate another Base Image
+to generate a Target Image.
+
+It was originally created to produce Live CDs and other live media using an arbitrary  host OS
+and package selection for the actual media creation tools.
+
 %package TinMan
 Summary: OS plugin for Fedora
 License: ASL 2.0
@@ -138,6 +152,11 @@ python setup.py build
 %install
 python setup.py install -O1 --root=%{buildroot} --skip-build
 
+%post IndirectionCloud
+%auto_register_macro_post IndirectionCloud
+%postun IndirectionCloud
+%auto_register_macro_postun IndirectionCloud
+
 %post TinMan
 %auto_register_macro_post TinMan
 %postun TinMan
@@ -182,6 +201,9 @@ python setup.py install -O1 --root=%{buildroot} --skip-build
 %dir %{python_sitelib}/imagefactory_plugins
 %{python_sitelib}/imagefactory_plugins/__init__.py*
 %{python_sitelib}/imagefactory_plugins*.egg-info
+
+%files IndirectionCloud
+%{python_sitelib}/imagefactory_plugins/IndirectionCloud/*
 
 %files TinMan
 %{python_sitelib}/imagefactory_plugins/TinMan/*
