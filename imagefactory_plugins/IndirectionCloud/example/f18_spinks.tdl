@@ -1,0 +1,14 @@
+<template>
+  <name>f18spinks</name>
+  <os>
+    <rootpw>ozrootpw</rootpw>
+    <name>Fedora</name>
+    <version>18</version>
+    <arch>x86_64</arch>
+    <install type='url'>
+      <url>http://mirrors.yocum.org/fedora/releases/18/Fedora/x86_64/os/</url>
+    </install>
+  </os>
+  <description>Just enough TDL to allow passing the spin kickstarts - actual ks.cfg is in a parameter</description>
+</template>
+

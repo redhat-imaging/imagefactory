@@ -1,0 +1,6 @@
+<template>
+ <commands>
+   <command name='mount'>mount /dev/vdb1 /mnt</command>
+   <command name='livecd'>livemedia-creator --make-iso --disk-image /mnt/input_image.raw --resultdir /mnt/results</command>
+ </commands>
+</template>

@@ -1,0 +1,39 @@
+This is actual output from a test run on a RHEL6 machine using the input files
+in this directory.
+
+[begin]
+
+# ./make_parameters.py fedora-livecd-desktop-flat.ks > f18_spin_ks.parameters.json
+
+# imagefactory --debug base_image --parameters f18_spin_ks.parameters.json f18_spinks.tdl
+
+============ Final Image Details ============
+UUID: 6d5aad23-7368-4e60-8fe5-b289bb2623d8
+Type: base_image
+Status: COMPLETE
+Status Details: {'error': None, 'activity': 'Base Image build complete'}
+
+# imagefactory --debug base_image f18_utility.tdl
+
+============ Final Image Details ============
+UUID: f216b47f-0444-4392-b1a4-a17f36746f7b
+Type: base_image
+Status: COMPLETE
+Status Details: {'error': None, 'activity': 'Base Image build complete'}
+
+# ./make_target_parameters.py ./utility_tasks.tdl f216b47f-0444-4392-b1a4-a17f36746f7b > f18_target_parameters.json
+# imagefactory --debug target_image --parameters f18_target_parameters.json --id 6d5aad23-7368-4e60-8fe5-b289bb2623d8 indirection
+
+============ Final Image Details ============
+UUID: fd9a6080-3e57-4f36-8f1f-55e8626ab1fa
+Type: target_image
+Status: COMPLETE
+Status Details: {'error': None, 'activity': 'Target Image build complete'}
+
+# file /var/lib/imagefactory/storage/fd9a6080-3e57-4f36-8f1f-55e8626ab1fa.body 
+/var/lib/imagefactory/storage/fd9a6080-3e57-4f36-8f1f-55e8626ab1fa.body: ISO 9660 CD-ROM filesystem data 'Linux 16 x86_64                ' (bootable)
+# mount -o loop /var/lib/imagefactory/storage/fd9a6080-3e57-4f36-8f1f-55e8626ab1fa.body /mnt/cdrom/
+# ls /mnt/cdrom/
+EFI  images  isolinux  LiveOS
+# 
+
