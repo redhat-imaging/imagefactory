@@ -356,6 +356,434 @@ class RHEVOVFDescriptor(object):
         return et
 
 
+class VsphereOVFDescriptor(object):
+    def __init__(self, disk):
+        self.disk = disk
+
+    def generate_ovf_xml(self):
+        etroot = ElementTree.Element('Envelope')
+        etroot.set("vmw:buildId", "build-880146")
+        etroot.set("xmlns", "http://schemas.dmtf.org/ovf/envelope/1")
+        etroot.set("xmlns:cim", "http://schemas.dmtf.org/wbem/wscim/1/common")
+        etroot.set("xmlns:ovf", "http://schemas.dmtf.org/ovf/envelope/1")
+        etroot.set("xmlns:rasd", "http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData")
+        etroot.set("xmlns:vmw", "http://www.vmware.com/schema/ovf")
+        etroot.set("xmlns:vssd", "http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData")
+        etroot.set("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance")
+
+        etref = ElementTree.Element('References')
+
+        etfile = ElementTree.Element('File')
+        etfile.set('ovf:href', 'disk.img')
+        etfile.set('ovf:id', 'file1')
+        etfile.set('ovf:size', str(self.disk.vol_size))
+
+        etref.append(etfile)
+
+        etroot.append(etref)
+
+        etdisksec = ElementTree.Element('DiskSection')
+
+        etinfo = ElementTree.Element('Info')
+        etinfo.text = 'Virtual disk information'
+        etdisksec.append(etinfo)
+
+        etdisk = ElementTree.Element('Disk')
+        etdisk.set("ovf:capacity", str(self.disk.vol_size))
+        etdisk.set("ovf:capacityAllocationUnits", "byte")
+        etdisk.set("ovf:diskId", "vmdisk1")
+        etdisk.set("ovf:fileRef", "file1")
+        etdisk.set("ovf:format", "http://www.vmware.com/interfaces/specifications/vmdk.html#streamOptimized")
+        etdisk.set("ovf:populatedSize", str(self.disk.sparse_size))
+        etdisksec.append(etdisk)
+        etroot.append(etdisksec)
+
+        etnetsec = ElementTree.Element('NetworkSection')
+
+        etinfo = ElementTree.Element('Info')
+        etinfo.text = 'The list of logical networks'
+        etnetsec.append(etinfo)
+
+        etnet = ElementTree.Element('Network')
+        etnet.set('ovf:name', 'VM Network')
+        etdesc = ElementTree.Element('Description')
+        etdesc.text = 'The VM Network network'
+        etnet.append(etdesc)
+        etnetsec.append(etnet)
+
+        etroot.append(etnetsec)
+
+        etvirtsys = ElementTree.Element('VirtualSystem')
+        etvirtsys.set('ovf:id', self.disk.id)
+
+        etinfo = ElementTree.Element('Info')
+        etinfo.text = 'A virtual machine'
+        etvirtsys.append(etinfo)
+
+        etname = ElementTree.Element('Name')
+        etname.text = self.disk.id
+        etvirtsys.append(etname)
+
+        # TODO this should be dynamic
+        etossec = ElementTree.Element('OperatingSystemSection')
+        etossec.set('ovf:id', '80')
+        etossec.set('ovf:version', '5')
+        etossec.set('vmw:osType', 'rhel5_64Guest')
+
+        etinfo = ElementTree.Element('Info')
+        etinfo.text = 'The kind of installed guest operating system'
+        etossec.append(etinfo)
+
+        etdesc = ElementTree.Element('Description')
+        etdesc.text = 'Red Hat Enterprise Linux 5 (64-bit)'
+        etossec.append(etdesc)
+
+        etvirtsys.append(etossec)
+
+        etvirthwsec = ElementTree.Element('VirtualHardwareSection')
+
+        etinfo = ElementTree.Element('Info')
+        etinfo.text = 'Virtual hardware requirements'
+        etvirthwsec.append(etinfo)
+
+        etsystem = ElementTree.Element('System')
+
+        etelemname = ElementTree.Element('vssd:ElementName')
+        etelemname.text = 'Virtual Hardware Family'
+        etsystem.append(etelemname)
+
+        etinstid = ElementTree.Element('vssd:InstanceID')
+        etinstid.text = '0'
+        etsystem.append(etinstid)
+
+        etvirtsysid = ElementTree.Element('vssd:VirtualSystemIdentifier')
+        etvirtsysid.text = self.disk.id
+        etsystem.append(etvirtsysid)
+
+        etvirtsystype = ElementTree.Element('vssd:VirtualSystemType')
+        etvirtsystype.text = 'vmx-04' #maybe not hardcode this?
+        etsystem.append(etvirtsystype)
+
+        etvirthwsec.append(etsystem)
+
+        etitem = ElementTree.Element('Item')
+        etalloc = ElementTree.Element('rasd:AllocationUnits')
+        etalloc.text = 'hertz * 10^6'
+        etitem.append(etalloc)
+        etdesc = ElementTree.Element('rasd:Description')
+        etdesc.text = 'Number of Virtual CPUs'
+        etitem.append(etdesc)
+        etelemname = ElementTree.Element('rasd:ElementName')
+        etelemname.text = '2 virtual CPU(s)'
+        etitem.append(etelemname)
+        etinstid = ElementTree.Element('rasd:InstanceID')
+        etinstid.text = '1'
+        etitem.append(etinstid)
+        etrestype = ElementTree.Element('rasd:ResourceType')
+        etrestype.text = '3'
+        etitem.append(etrestype)
+        etvirtqty = ElementTree.Element('rasd:VirtualQuantity')
+        etvirtqty.text = '2'
+        etitem.append(etvirtqty)
+        etvirthwsec.append(etitem)
+
+        etitem = ElementTree.Element('Item')
+        etalloc = ElementTree.Element('rasd:AllocationUnits')
+        etalloc.text = 'byte * 2^20'
+        etitem.append(etalloc)
+        etdesc = ElementTree.Element('rasd:Description')
+        etdesc.text = 'Memory Size'
+        etitem.append(etdesc)
+        etelemname = ElementTree.Element('rasd:ElementName')
+        etelemname.text = '4096 MB of memory'
+        etitem.append(etelemname)
+        etinstid = ElementTree.Element('rasd:InstanceID')
+        etinstid.text = '2'
+        etitem.append(etinstid)
+        etrestype = ElementTree.Element('rasd:ResourceType')
+        etrestype.text = '4'
+        etitem.append(etrestype)
+        etvirtqty = ElementTree.Element('rasd:VirtualQuantity')
+        etvirtqty.text = '4096'
+        etitem.append(etvirtqty)
+        etvirthwsec.append(etitem)
+
+        etitem = ElementTree.Element('Item')
+        etaddr = ElementTree.Element('rasd:Address')
+        etaddr.text = '0'
+        etitem.append(etaddr)
+        etdesc = ElementTree.Element('rasd:Description')
+        etdesc.text = 'SCSI Controller'
+        etitem.append(etdesc)
+        etelemname = ElementTree.Element('rasd:ElementName')
+        etelemname.text = 'SCSI Controller 0'
+        etitem.append(etelemname)
+        etinstid = ElementTree.Element('rasd:InstanceID')
+        etinstid.text = '3'
+        etitem.append(etinstid)
+        etressubtype = ElementTree.Element('rasd:ResourceSubType')
+        etressubtype.text = 'lsilogic'
+        etitem.append(etressubtype)
+        etrestype = ElementTree.Element('rasd:ResourceType')
+        etrestype.text = '6'
+        etitem.append(etrestype)
+        etvirthwsec.append(etitem)
+
+        etitem = ElementTree.Element('Item')
+        etaddr = ElementTree.Element('rasd:Address')
+        etaddr.text = '1'
+        etitem.append(etaddr)
+        etdesc = ElementTree.Element('rasd:Description')
+        etdesc.text = 'IDE Controller'
+        etitem.append(etdesc)
+        etelemname = ElementTree.Element('rasd:ElementName')
+        etelemname.text = 'IDE 1'
+        etitem.append(etelemname)
+        etinstid = ElementTree.Element('rasd:InstanceID')
+        etinstid.text = '4'
+        etitem.append(etinstid)
+        etrestype = ElementTree.Element('rasd:ResourceType')
+        etrestype.text = '5'
+        etitem.append(etrestype)
+        etvirthwsec.append(etitem)
+
+        etitem = ElementTree.Element('Item')
+        etaddr = ElementTree.Element('rasd:Address')
+        etaddr.text = '0'
+        etitem.append(etaddr)
+        etdesc = ElementTree.Element('rasd:Description')
+        etdesc.text = 'IDE Controller'
+        etitem.append(etdesc)
+        etelemname = ElementTree.Element('rasd:ElementName')
+        etelemname.text = 'IDE 0'
+        etitem.append(etelemname)
+        etinstid = ElementTree.Element('rasd:InstanceID')
+        etinstid.text = '5'
+        etitem.append(etinstid)
+        etrestype = ElementTree.Element('rasd:ResourceType')
+        etrestype.text = '5'
+        etitem.append(etrestype)
+        etvirthwsec.append(etitem)
+
+        etitem = ElementTree.Element('Item')
+        etitem.set('ovf:required', 'false')
+        etautoalloc = ElementTree.Element('rasd:AutomaticAllocation')
+        etautoalloc.text = 'false'
+        etitem.append(etautoalloc)
+        etelemname = ElementTree.Element('rasd:ElementName')
+        etelemname.text = 'Video card'
+        etitem.append(etelemname)
+        etinstid = ElementTree.Element('rasd:InstanceID')
+        etinstid.text = '6'
+        etitem.append(etinstid)
+        etrestype = ElementTree.Element('rasd:ResourceType')
+        etrestype.text = '24'
+        etitem.append(etrestype)
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', 'false')
+        etconfig.set('vmw:key', 'enable3DSupport')
+        etconfig.set('vmw:value', 'false')
+        etitem.append(etconfig)
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', 'false')
+        etconfig.set('vmw:key', 'useAutoDetect')
+        etconfig.set('vmw:value', 'false')
+        etitem.append(etconfig)
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', 'false')
+        etconfig.set('vmw:key', 'videoRamSizeInKB')
+        etconfig.set('vmw:value', '4096')
+        etitem.append(etconfig)
+        etvirthwsec.append(etitem)
+
+        etitem = ElementTree.Element('Item')
+        etaddronparent = ElementTree.Element('rasd:AddressOnParent')
+        etaddronparent.text = '0'
+        etitem.append(etaddronparent)
+        etelemname = ElementTree.Element('rasd:ElementName')
+        etelemname.text = 'Hard disk 0'
+        etitem.append(etelemname)
+        ethostres = ElementTree.Element('rasd:HostResource')
+        ethostres.text = 'ovf:/disk/vmdisk1'
+        etitem.append(ethostres)
+        etinstid = ElementTree.Element('rasd:InstanceID')
+        etinstid.text = '17'
+        etitem.append(etinstid)
+        etparent = ElementTree.Element('rasd:Parent')
+        etparent.text = '3'
+        etitem.append(etparent)
+        etrestype = ElementTree.Element('rasd:ResourceType')
+        etrestype.text = '17'
+        etitem.append(etrestype)
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', 'false')
+        etconfig.set('vmw:key', 'backing.writeThrough')
+        etconfig.set('vmw:value', 'false')
+        etitem.append(etconfig)
+        etvirthwsec.append(etitem)
+
+        etitem = ElementTree.Element('Item')
+        etaddronparent = ElementTree.Element('rasd:AddressOnParent')
+        etaddronparent.text = '7'
+        etitem.append(etaddronparent)
+        etautoalloc = ElementTree.Element('rasd:AutomaticAllocation')
+        etautoalloc.text = 'true'
+        etitem.append(etautoalloc)
+        etconn = ElementTree.Element('rasd:Connection')
+        etconn.text = 'VM Network'
+        etitem.append(etconn)
+        etdesc = ElementTree.Element('rasd:Description')
+        etdesc.text = 'E1000 ethernet adapter on "VM Network"'
+        etitem.append(etdesc)
+        etelemname = ElementTree.Element('rasd:ElementName')
+        etelemname.text = 'Network adapter 1'
+        etitem.append(etelemname)
+        etinstid = ElementTree.Element('rasd:InstanceID')
+        etinstid.text = '12'
+        etitem.append(etinstid)
+        etressubtype = ElementTree.Element('rasd:ResourceSubType')
+        etressubtype.text = 'E1000'
+        etitem.append(etressubtype)
+        etrestype = ElementTree.Element('rasd:ResourceType')
+        etrestype.text = '10'
+        etitem.append(etrestype)
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', 'false')
+        etconfig.set('vmw:key', 'connectable.allowGuestControl')
+        etconfig.set('vmw:value', 'true')
+        etitem.append(etconfig)
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', 'false')
+        etconfig.set('vmw:key', 'wakeOnLanEnabled')
+        etconfig.set('vmw:value', 'false')
+        etitem.append(etconfig)
+        etvirthwsec.append(etitem)
+
+        #configs
+
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', "false")
+        etconfig.set('vmw:key', "cpuHotAddEnabled")
+        etconfig.set('vmw:value', "false")
+        etvirthwsec.append(etconfig)
+
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', "false")
+        etconfig.set('vmw:key', "cpuHotRemoveEnabled")
+        etconfig.set('vmw:value', "false")
+        etvirthwsec.append(etconfig)
+
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', "false")
+        etconfig.set('vmw:key', "firmware")
+        etconfig.set('vmw:value', "bios")
+        etvirthwsec.append(etconfig)
+
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', "false")
+        etconfig.set('vmw:key', "virtualICH7MPresent")
+        etconfig.set('vmw:value', "false")
+        etvirthwsec.append(etconfig)
+
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', "false")
+        etconfig.set('vmw:key', "virtualSMCPresent")
+        etconfig.set('vmw:value', "false")
+        etvirthwsec.append(etconfig)
+
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', "false")
+        etconfig.set('vmw:key', "memoryHotAddEnabled")
+        etconfig.set('vmw:value', "false")
+        etvirthwsec.append(etconfig)
+
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', "false")
+        etconfig.set('vmw:key', "powerOpInfo.powerOffType")
+        etconfig.set('vmw:value', "soft")
+        etvirthwsec.append(etconfig)
+
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', "false")
+        etconfig.set('vmw:key', "powerOpInfo.resetType")
+        etconfig.set('vmw:value', "soft")
+        etvirthwsec.append(etconfig)
+
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', "false")
+        etconfig.set('vmw:key', "powerOpInfo.standbyAction")
+        etconfig.set('vmw:value', "checkpoint")
+        etvirthwsec.append(etconfig)
+
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', "false")
+        etconfig.set('vmw:key', "powerOpInfo.suspendType")
+        etconfig.set('vmw:value', "hard")
+        etvirthwsec.append(etconfig)
+
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', "false")
+        etconfig.set('vmw:key', "tools.afterPowerOn")
+        etconfig.set('vmw:value', "true")
+        etvirthwsec.append(etconfig)
+
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', "false")
+        etconfig.set('vmw:key', "tools.afterResume")
+        etconfig.set('vmw:value', "true")
+        etvirthwsec.append(etconfig)
+
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', "false")
+        etconfig.set('vmw:key', "tools.beforeGuestShutdown")
+        etconfig.set('vmw:value', "true")
+        etvirthwsec.append(etconfig)
+
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', "false")
+        etconfig.set('vmw:key', "tools.beforeGuestStandby")
+        etconfig.set('vmw:value', "true")
+        etvirthwsec.append(etconfig)
+
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', "false")
+        etconfig.set('vmw:key', "tools.syncTimeWithHost")
+        etconfig.set('vmw:value', "false")
+        etvirthwsec.append(etconfig)
+
+        etconfig = ElementTree.Element('vmw:Config')
+        etconfig.set('ovf:required', "false")
+        etconfig.set('vmw:key', "tools.toolsUpgradePolicy")
+        etconfig.set('vmw:value', "manual")
+        etvirthwsec.append(etconfig)
+
+        etvirtsys.append(etvirthwsec)
+
+        etprodsec = ElementTree.Element('ProductSection')
+
+        etinfo = ElementTree.Element('Info')
+        etinfo.text = 'Information about the installed software'
+        etprodsec.append(etinfo)
+
+        etprod = ElementTree.Element('Product')
+        etprod.text = 'Product Name'
+        etprodsec.append(etprod)
+
+        etvendor = ElementTree.Element('Vendor')
+        etvendor.text = 'Vendor Name'
+        etprodsec.append(etvendor)
+
+        etversion = ElementTree.Element('Version')
+        etversion.text = '1.0'
+        etprodsec.append(etversion)
+
+        etvirtsys.append(etprodsec)
+
+        etroot.append(etvirtsys)
+
+        et = ElementTree.ElementTree(etroot)
+        return et
+
 class OVFPackage(object):
     '''A directory containing an OVF descriptor and related files such as disk images'''
     def __init__(self, disk, path=None):
@@ -468,6 +896,20 @@ class RHEVOVFPackage(OVFPackage):
         return super(RHEVOVFPackage, self).make_ova_package(gzip=True)
 
 
+class VsphereOVFPackage(OVFPackage):
+    def __init__(self, disk, base_image, path=None):
+        disk = VsphereDisk(disk, base_image)
+        super(VsphereOVFPackage, self).__init__(disk, path)
+        self.disk_path = os.path.join(self.path, "disk.img")
+        self.ovf_path  = os.path.join(self.path, "desc.ovf")
+
+    def new_ovf_descriptor(self):
+        return VsphereOVFDescriptor(disk=self.disk)
+
+    def copy_disk(self):
+        copyfile_sparse(self.disk.path, self.disk_path)
+
+
 class RHEVMetaFile(object):
     def __init__(self,
                  img_uuid,
@@ -553,3 +995,15 @@ class RHEVDisk(object):
             return unpack[5]
         else:
             return None
+
+class VsphereDisk(object):
+    def __init__(self, path, base_image):
+        self.path = path
+        self.base_image = base_image
+        self.id = os.path.basename(self.path).split('.')[0]
+
+        self.vol_size = os.stat(self.base_image).st_size
+        self.sparse_size = os.stat(self.path).st_blocks*512
+
+        # self.raw_create_time = os.path.getctime(self.path)
+        # self.create_time = time.gmtime(self.raw_create_time)
