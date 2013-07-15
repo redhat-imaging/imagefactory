@@ -32,6 +32,16 @@ imagefactory allows the creation of system images for multiple virtualization
 and cloud providers from a single template definition. See 
 http://aeolusproject.org/projects/imagefactory for more information.
 
+%package OVA
+Summary: Cloud plugin for generating OVA archives
+License: ASL 2.0
+Requires: oz >= 0.7.0
+Requires: imagefactory
+Requires: imagefactory-plugins
+
+%description OVA
+This Cloud plugin allows users to specify a Base Image to generate an OVA archive from.
+
 %package IndirectionCloud
 Summary: Cloud plugin for allowing images to modify other images
 License: ASL 2.0
@@ -152,6 +162,11 @@ python setup.py build
 %install
 python setup.py install -O1 --root=%{buildroot} --skip-build
 
+%post OVA
+%auto_register_macro_post OVA
+%postun OVA
+%auto_register_macro_postun OVA
+
 %post IndirectionCloud
 %auto_register_macro_post IndirectionCloud
 %postun IndirectionCloud
@@ -201,6 +216,9 @@ python setup.py install -O1 --root=%{buildroot} --skip-build
 %dir %{python_sitelib}/imagefactory_plugins
 %{python_sitelib}/imagefactory_plugins/__init__.py*
 %{python_sitelib}/imagefactory_plugins*.egg-info
+
+%files OVA
+%{python_sitelib}/imagefactory_plugins/OVA/*
 
 %files IndirectionCloud
 %{python_sitelib}/imagefactory_plugins/IndirectionCloud/*
