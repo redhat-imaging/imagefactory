@@ -21,7 +21,7 @@ import inspect
 from imgfac.CloudDelegate import CloudDelegate
 from imgfac.PersistentImageManager import PersistentImageManager
 from imgfac.TargetImage import TargetImage
-from imgfac.OVFUtils import RHEVOVFPackage, VsphereOVFPackage
+from imagefactory_plugins.ovfcommon.ovfcommon import RHEVOVFPackage, VsphereOVFPackage
 from imgfac.ImageFactoryException import ImageFactoryException
 from oz.ozutil import copyfile_sparse
 

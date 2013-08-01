@@ -54,6 +54,9 @@ for plugin in plugins:
     datafiles.append( (site_pkgs + '/imagefactory_plugins/' + plugin, [ plugin + '/' + plugin + '.info' ]) )
     packages.append( "imagefactory_plugins." + plugin )
 
+# ovfcommon is not a proper plugin, so add it separately
+packages.append( "imagefactory_plugins.ovfcommon" )
+
 class sdist(_sdist):
     """ custom sdist command to prepare imagefactory-plugins.spec file """
     def run(self):
