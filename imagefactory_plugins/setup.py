@@ -24,7 +24,7 @@ import subprocess
 # here.  If this doesn't work, you'll have to dig into the details below
 
 plugins = ['EC2', 'TinMan','MockCloud','MockOS', 'OpenStack',
-           'RHEVM', 'vSphere', 'Rackspace', 'IndirectionCloud']
+           'RHEVM', 'vSphere', 'Rackspace', 'IndirectionCloud', 'OVA']
 
 # Required for Python 2.6 backwards compat
 def subprocess_check_output(*popenargs, **kwargs):
@@ -53,6 +53,9 @@ packages = [ 'imagefactory_plugins' ]
 for plugin in plugins:
     datafiles.append( (site_pkgs + '/imagefactory_plugins/' + plugin, [ plugin + '/' + plugin + '.info' ]) )
     packages.append( "imagefactory_plugins." + plugin )
+
+# ovfcommon is not a proper plugin, so add it separately
+packages.append( "imagefactory_plugins.ovfcommon" )
 
 class sdist(_sdist):
     """ custom sdist command to prepare imagefactory-plugins.spec file """
