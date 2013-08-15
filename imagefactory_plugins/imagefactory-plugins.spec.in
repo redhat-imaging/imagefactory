@@ -15,7 +15,7 @@ exit 0
 Summary: Default plugins for the Image Factory system image generation tool
 Name: imagefactory-plugins
 Version: @VERSION@
-Release: 1%{?dist}
+Release: @RELEASE@%{?dist}
 Source0: http://repos.fedorapeople.org/repos/aeolus/imagefactory/%{version}/tarball/%{name}-%{version}.tar.gz
 License: ASL 2.0
 Group: Applications/System
@@ -106,6 +106,7 @@ Requires: imagefactory-plugins-EC2
 These configuration files point to existing JEOS AMIs on EC2 that can be used to do
 "snapshot" style builds.
 
+%if 0%{?build_mock}
 %package MockOS
 Summary: Mock OS plugin
 License: ASL 2.0
@@ -125,6 +126,7 @@ Requires: imagefactory-plugins
 %description MockCloud
 This plugin mimcs some of the behaviour of a real cloud plugin without needing any real external infra.
 For testing use only.
+%endif
 
 %package RHEVM
 Summary: RHEVM Cloud plugin
@@ -174,6 +176,13 @@ python setup.py build
 %install
 python setup.py install -O1 --root=%{buildroot} --skip-build
 
+# TODO: Cleaner negative conditional
+%if 0%{?build_mock}
+%else
+rm -rf %{buildroot}%{python_sitelib}/imagefactory_plugins/MockOS
+rm -rf %{buildroot}%{python_sitelib}/imagefactory_plugins/MockCloud
+%endif
+
 %post OVA
 %auto_register_macro_post OVA
 %postun OVA
@@ -199,10 +208,17 @@ python setup.py install -O1 --root=%{buildroot} --skip-build
 %postun EC2
 %auto_register_macro_postun EC2
 
+%if 0%{?build_mock}
 %post MockOS
 %auto_register_macro_post MockOS
 %postun MockOS
 %auto_register_macro_postun MockOS
+
+%post MockCloud
+%auto_register_macro_post MockCloud
+%postun MockCloud
+%auto_register_macro_postun MockCloud
+%endif
 
 %post RHEVM
 %auto_register_macro_post RHEVM
@@ -213,11 +229,6 @@ python setup.py install -O1 --root=%{buildroot} --skip-build
 %auto_register_macro_post vSphere
 %postun vSphere
 %auto_register_macro_postun vSphere
-
-%post MockCloud
-%auto_register_macro_post MockCloud
-%postun MockCloud
-%auto_register_macro_postun MockCloud
 
 %post Rackspace
 %auto_register_macro_post Rackspace
@@ -257,11 +268,13 @@ python setup.py install -O1 --root=%{buildroot} --skip-build
 %{_sysconfdir}/imagefactory/jeos_images/rackspace_fedora_jeos.conf
 %{_sysconfdir}/imagefactory/jeos_images/rackspace_rhel_jeos.conf
 
+%if 0%{?build_mock}
 %files MockOS
 %{python_sitelib}/imagefactory_plugins/MockOS/*
 
 %files MockCloud
 %{python_sitelib}/imagefactory_plugins/MockCloud/*
+%endif
 
 %files RHEVM
 %{python_sitelib}/imagefactory_plugins/RHEVM/*
