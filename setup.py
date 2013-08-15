@@ -17,37 +17,47 @@ from distutils.command.sdist import sdist as _sdist
 import os
 import os.path
 import subprocess
+import time
 
-# Required for Python 2.6 backwards compat
-def subprocess_check_output(*popenargs, **kwargs):
-    if 'stdout' in kwargs:
-        raise ValueError('stdout argument not allowed, it will be overridden.')
+VERSION = '1.1.3'
+RELEASE = '0'
 
-    process = subprocess.Popen(stdout=subprocess.PIPE, stderr=subprocess.STDOUT, *popenargs, **kwargs)
-    stdout, stderr = process.communicate()
-    retcode = process.poll()
-    if retcode:
-        cmd = ' '.join(*popenargs)
-        raise Exception("'%s' failed(%d): %s" % (cmd, retcode, stderr))
-    return (stdout, stderr, retcode)
+class sdist(_sdist):
+    """ custom sdist command, to prep imagefactory.spec file """
 
-try:
-    (pkg_version, ignore, ignore) = subprocess_check_output('/usr/bin/git describe | tr - _', shell=True)
-    pkg_version = pkg_version.rstrip('\n')
-except:
-    pkg_version = 9999
+    def run(self):
+        global VERSION
+        global RELEASE
 
-def create_version_py():
-    version_file_path = "imgfac/Version.py"
-    version_file = open(version_file_path, 'w')
-    version_file.write('VERSION = "%s"' % pkg_version)
-    version_file.close()
+        # Create a development release string for later use
+        git_head = subprocess.Popen("git log -1 --pretty=format:%h",
+                                    shell=True,
+                                    stdout=subprocess.PIPE).communicate()[0].strip()
+        date = time.strftime("%Y%m%d%H%M%S", time.gmtime())
+        git_release = "%sgit%s" % (date, git_head)
 
-def modify_specfile():
-    cmd = (' sed -e "s/@VERSION@/%s/g" < imagefactory.spec.in ' % pkg_version) + " > imagefactory.spec"
-    print cmd
-    #cmd = (""" sed -e "s/@VERSION@/%s/g" < imagefactory.spec.in """ % pkg_version) + " > imagefactory.spec"
-    os.system(cmd)
+        # Expand macros in imagefactory.spec.in
+        spec_in = open('imagefactory.spec.in', 'r')
+        spec = open('imagefactory.spec', 'w')
+        for line in spec_in.xreadlines():
+            if "@VERSION@" in line:
+                line = line.replace("@VERSION@", VERSION)
+            elif "@RELEASE@" in line:
+                # If development release, include date+githash in %{release}
+                if RELEASE.startswith('0'):
+                    RELEASE += '.' + git_release
+                line = line.replace("@RELEASE@", RELEASE)
+            spec.write(line)
+        spec_in.close()
+        spec.close()
+
+        # Create Version.py to allow internal version repording via the API
+        version_out = open("imgfac/Version.py", 'w')
+        version_out.write('VERSION = "%s-%s"\n' % (VERSION, RELEASE))
+        version_out.close()
+
+        # Run parent constructor
+        _sdist.run(self)
 
 datafiles=[('share/man/man1', ['documentation/man/imagefactory.1', 'documentation/man/imagefactoryd.1']),
            ('share/man/man5', ['documentation/man/imagefactory.conf.5']),
@@ -58,15 +68,8 @@ datafiles=[('share/man/man1', ['documentation/man/imagefactory.1', 'documentatio
            ('/etc/logrotate.d', ['conf/logrotate.d/imagefactoryd']),
            ('/etc/rc.d/init.d', ['scripts/imagefactoryd'])]
 
-class sdist(_sdist):
-    """ custom sdist command to prepare imagefactory.spec file """
-    def run(self):
-        create_version_py()
-        modify_specfile()
-        _sdist.run(self)
-
 setup(name='imagefactory',
-      version=pkg_version,
+      version=VERSION,
       description='Image Factory system image generation tool',
       author='Ian McLeod',
       author_email='imcleod@redhat.com',

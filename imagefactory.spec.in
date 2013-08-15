@@ -1,7 +1,7 @@
 Summary: System image generation tool
 Name: imagefactory
 Version: @VERSION@
-Release: 1%{?dist}
+Release: @RELEASE@%{?dist}
 Source0: http://repos.fedorapeople.org/repos/aeolus/imagefactory/%{version}/tarball/%{name}-%{version}.tar.gz
 License: ASL 2.0
 Group: Applications/System
