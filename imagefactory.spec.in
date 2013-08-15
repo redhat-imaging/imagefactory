@@ -26,15 +26,6 @@ imagefactory allows the creation of system images for multiple virtualization
 and cloud providers from a single template definition. See 
 http://aeolusproject.org/projects/imagefactory for more information.
 
-%package secondary
-Summary: Remote/Secondary Image Factory functionality
-Requires: python-requests
-Requires: python-requests-oauth
-
-%description secondary
-Additional modules to allow the use of primary and secondary factories.
-This is mainly useful when operating the primary factory behind a restrictive firewall.
-
 %prep
 %setup -q
 
@@ -62,9 +53,6 @@ if [ $1 = 0 ] ; then
     /sbin/service imagefactoryd stop >/dev/null 2>&1
     /sbin/chkconfig --del imagefactoryd
 fi
-
-%files secondary
-%{python_sitelib}/imgfac/secondary
 
 %files
 %doc COPYING
