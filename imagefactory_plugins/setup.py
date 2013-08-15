@@ -28,7 +28,7 @@ plugins = ['EC2', 'TinMan','MockCloud','MockOS', 'OpenStack',
            'RHEVM', 'vSphere', 'Rackspace', 'IndirectionCloud', 'OVA']
 
 VERSION = '1.1.3'
-RELEASE = '0'
+RELEASE = '1'
 
 class sdist(_sdist):
     """ custom sdist command, to prep imagefactory-plugins.spec file """
