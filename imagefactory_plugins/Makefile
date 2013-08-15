@@ -1,17 +1,16 @@
-version:
-	git describe > version.txt
-	perl -p -i -e 's/-/_/g' version.txt
-
 sdist:
 	python setup.py sdist
 
-signed-rpm: sdist version
+signed-rpm: sdist
 	rpmbuild -ba imagefactory-plugins.spec --sign --define "_sourcedir `pwd`/dist"
 
-rpm: sdist version
+rpm: sdist
+	rpmbuild -ba imagefactory-plugins.spec --define "build_mock 1" --define "_sourcedir `pwd`/dist"
+
+rpmnomock: sdist
 	rpmbuild -ba imagefactory-plugins.spec --define "_sourcedir `pwd`/dist"
 
-srpm: sdist version
+srpm: sdist
 	rpmbuild -bs imagefactory-plugins.spec --define "_sourcedir `pwd`/dist"
 
 pylint:
@@ -21,4 +20,4 @@ unittests:
 	python -m unittest discover -v
 
 clean:
-	rm -rf MANIFEST build dist imagefactory-plugins.spec version.txt
+	rm -rf MANIFEST build dist imagefactory-plugins.spec

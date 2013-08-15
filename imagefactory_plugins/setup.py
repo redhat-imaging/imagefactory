@@ -18,6 +18,7 @@ from distutils.sysconfig import get_python_lib
 import os
 import os.path
 import subprocess
+import time
 
 # ****** IF ADDING A NEW PLUGIN ******
 # If your plugin follows the standard format, all you should need to do is add the name
@@ -26,25 +27,41 @@ import subprocess
 plugins = ['EC2', 'TinMan','MockCloud','MockOS', 'OpenStack',
            'RHEVM', 'vSphere', 'Rackspace', 'IndirectionCloud', 'OVA']
 
-# Required for Python 2.6 backwards compat
-def subprocess_check_output(*popenargs, **kwargs):
-    if 'stdout' in kwargs:
-        raise ValueError('stdout argument not allowed, it will be overridden.')
+VERSION = '1.1.3'
+RELEASE = '0'
 
-    process = subprocess.Popen(stdout=subprocess.PIPE, stderr=subprocess.STDOUT, *popenargs, **kwargs)
-    stdout, stderr = process.communicate()
-    retcode = process.poll()
-    if retcode:
-        cmd = ' '.join(*popenargs)
-        raise Exception("'%s' failed(%d): %s" % (cmd, retcode, stderr))
-    return (stdout, stderr, retcode)
+class sdist(_sdist):
+    """ custom sdist command, to prep imagefactory-plugins.spec file """
 
-#version_file_path = "imgfac/Version.py"
-#version_file = open(version_file_path, 'w')
-(pkg_version, ignore, ignore) = subprocess_check_output('/usr/bin/git describe | tr - _', shell=True)
-pkg_version = pkg_version.rstrip('\n')
-#version_file.write('VERSION = "%s"' % pkg_version)
-#version_file.close()
+    def run(self):
+        global VERSION
+        global RELEASE
+
+        # Create a development release string for later use
+        git_head = subprocess.Popen("git log -1 --pretty=format:%h",
+                                    shell=True,
+                                    stdout=subprocess.PIPE).communicate()[0].strip()
+        date = time.strftime("%Y%m%d%H%M%S", time.gmtime())
+        git_release = "%sgit%s" % (date, git_head)
+
+        # Expand macros in imagefactory-plugins.spec.in
+        spec_in = open('imagefactory-plugins.spec.in', 'r')
+        spec = open('imagefactory-plugins.spec', 'w')
+        for line in spec_in.xreadlines():
+            if "@VERSION@" in line:
+                line = line.replace("@VERSION@", VERSION)
+            elif "@RELEASE@" in line:
+                # If development release, include date+githash in %{release}
+                if RELEASE.startswith('0'):
+                    RELEASE += '.' + git_release
+                line = line.replace("@RELEASE@", RELEASE)
+            spec.write(line)
+        spec_in.close()
+        spec.close()
+
+        # Run parent constructor
+        _sdist.run(self)
+
 
 site_pkgs = get_python_lib()
 datafiles = [('/etc/imagefactory/jeos_images', ['conf/ec2_fedora_jeos.conf', 'conf/ec2_rhel_jeos.conf', 'conf/rackspace_fedora_jeos.conf', 'conf/rackspace_rhel_jeos.conf'])]
@@ -57,15 +74,8 @@ for plugin in plugins:
 # ovfcommon is not a proper plugin, so add it separately
 packages.append( "imagefactory_plugins.ovfcommon" )
 
-class sdist(_sdist):
-    """ custom sdist command to prepare imagefactory-plugins.spec file """
-    def run(self):
-        cmd = (""" sed -e "s/@VERSION@/%s/g" < imagefactory-plugins.spec.in """ % pkg_version) + " > imagefactory-plugins.spec"
-        os.system(cmd)
-        _sdist.run(self)
-
 setup(name='imagefactory-plugins',
-      version=pkg_version,
+      version=VERSION,
       description='Default plugins for the Image Factory system image generation tool',
       author='Ian McLeod',
       author_email='imcleod@redhat.com',
