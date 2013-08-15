@@ -1,2 +1,2 @@
-include */*.info
+include COPYING */*.info
 recursive-include conf *

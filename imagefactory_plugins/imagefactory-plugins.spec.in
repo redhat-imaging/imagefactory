@@ -225,6 +225,7 @@ python setup.py install -O1 --root=%{buildroot} --skip-build
 %auto_register_macro_postun Rackspace
 
 %files
+%doc COPYING
 %dir %{python_sitelib}/imagefactory_plugins
 %{python_sitelib}/imagefactory_plugins/__init__.py*
 %{python_sitelib}/imagefactory_plugins*.egg-info
