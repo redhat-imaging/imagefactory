@@ -1,11 +1,11 @@
-%define auto_register_macro_post() # create it if it doesn't already exist as a link \
+%global auto_register_macro_post() # create it if it doesn't already exist as a link \
 # If it is an existing file other than a link, do nothing \
 [ -L %{_sysconfdir}/imagefactory/plugins.d/%1.info ] || \
 [ -e %{_sysconfdir}/imagefactory/plugins.d/%1.info ] || \
 ln -s %{python_sitelib}/imagefactory_plugins/%1/%1.info %{_sysconfdir}/imagefactory/plugins.d/%1.info \
 exit 0 
 
-%define auto_register_macro_postun() if [ "\$1" = "0" ]; then \
+%global auto_register_macro_postun() if [ "\$1" = "0" ]; then \
   # clean up the link if it exists - if it doesn't or if this is a regular file, do nothing \
   [ -L %{_sysconfdir}/imagefactory/plugins.d/%1.info ] && rm -f  %{_sysconfdir}/imagefactory/plugins.d/%1.info \
 fi \
