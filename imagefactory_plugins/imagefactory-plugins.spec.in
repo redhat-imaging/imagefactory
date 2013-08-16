@@ -37,7 +37,6 @@ http://aeolusproject.org/projects/imagefactory for more information.
 Summary: common utilities to manipulate ovf-related objects
 License: ASL 2.0
 Requires: oz >= 0.7.0
-Requires: imagefactory
 Requires: imagefactory-plugins
 
 %description ovfcommon
@@ -48,9 +47,9 @@ plugins.
 Summary: Cloud plugin for generating OVA archives
 License: ASL 2.0
 Requires: oz >= 0.7.0
-Requires: imagefactory
 Requires: imagefactory-plugins
 Requires: imagefactory-plugins-ovfcommon
+Requires: imagefactory-plugin-api = 1.0
 
 %description OVA
 This Cloud plugin allows users to specify a Base Image to generate an OVA
@@ -60,8 +59,8 @@ archive from.
 Summary: Cloud plugin for allowing images to modify other images
 License: ASL 2.0
 Requires: oz >= 0.7.0
-Requires: imagefactory
 Requires: imagefactory-plugins
+Requires: imagefactory-plugin-api = 1.0
 
 %description IndirectionCloud
 This Cloud plugin allows users to specify a Base Image to use to manipulate
@@ -74,8 +73,8 @@ arbitrary  host OS and package selection for the actual media creation tools.
 Summary: OS plugin for Fedora
 License: ASL 2.0
 Requires: oz >= 0.7.0
-Requires: imagefactory
 Requires: imagefactory-plugins
+Requires: imagefactory-plugin-api = 1.0
 
 %description TinMan
 An OS plugin to support Fedora OSes
@@ -84,8 +83,8 @@ An OS plugin to support Fedora OSes
 Summary: Cloud plugin for OpenStack running on KVM
 License: ASL 2.0
 Requires: python-glance
-Requires: imagefactory
 Requires: imagefactory-plugins
+Requires: imagefactory-plugin-api = 1.0
 
 %description OpenStack
 A Cloud plugin to support OpenStack running on top of KVM.
@@ -95,8 +94,8 @@ Summary: Cloud plugin for EC2
 License: ASL 2.0
 Requires: euca2ools
 Requires: python-boto >= 2.0
-Requires: imagefactory
 Requires: imagefactory-plugins
+Requires: imagefactory-plugin-api = 1.0
 
 %description EC2
 A Cloud plugin to support EC2
@@ -113,8 +112,8 @@ to do "snapshot" style builds.
 %package MockOS
 Summary: Mock OS plugin
 License: ASL 2.0
-Requires: imagefactory
 Requires: imagefactory-plugins
+Requires: imagefactory-plugin-api = 1.0
 
 %description MockOS
 This plugin mimcs some of the behaviour of the RPM based OS plugins without
@@ -125,8 +124,8 @@ For testing use only.
 %package MockCloud
 Summary: Mock Cloud plugin
 License: ASL 2.0
-Requires: imagefactory
 Requires: imagefactory-plugins
+Requires: imagefactory-plugin-api = 1.0
 
 %description MockCloud
 This plugin mimcs some of the behaviour of a real cloud plugin without needing
@@ -139,10 +138,10 @@ For testing use only.
 %package RHEVM
 Summary: RHEVM Cloud plugin
 License: ASL 2.0
-Requires: imagefactory
 Requires: imagefactory-plugins
 Requires: imagefactory-plugins-ovfcommon
 Requires: ovirt-engine-sdk >= 3.1.0
+Requires: imagefactory-plugin-api = 1.0
 
 %description RHEVM
 A plugin for RHEVM "clouds"
@@ -150,9 +149,9 @@ A plugin for RHEVM "clouds"
 %package vSphere
 Summary: vSphere Cloud plugin
 License: ASL 2.0
-Requires: imagefactory
 Requires: imagefactory-plugins
 Requires: python-psphere
+Requires: imagefactory-plugin-api = 1.0
 
 %description vSphere
 A plugin for vSphere "clouds"
@@ -161,8 +160,8 @@ A plugin for vSphere "clouds"
 Summary: Cloud plugin for Rackspace
 License: ASL 2.0
 Requires: python-novaclient
-Requires: imagefactory
 Requires: imagefactory-plugins
+Requires: imagefactory-plugin-api = 1.0
 
 %description Rackspace
 A Cloud plugin to support Rackspace
