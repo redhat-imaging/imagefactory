@@ -19,6 +19,7 @@ Requires(post): chkconfig
 Requires(preun): chkconfig
 # This is for /sbin/service
 Requires(preun): initscripts
+BuildRequires: python2
 BuildRequires: python-setuptools
 
 %description

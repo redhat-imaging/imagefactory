@@ -21,6 +21,7 @@ License: ASL 2.0
 Group: Applications/System
 URL: http://www.aeolusproject.org/imagefactory.html
 BuildArch: noarch
+BuildRequires: python2
 BuildRequires: python-setuptools
 Requires: imagefactory
 
