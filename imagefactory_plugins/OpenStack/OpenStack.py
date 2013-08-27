@@ -184,7 +184,7 @@ class OpenStack(object):
 
         # For interested parties, this is the QCOW header struct in C
         # struct qcow_header {
-        #    uint32_t magic;·
+        #    uint32_t magic;
         #    uint32_t version;
         #    uint64_t backing_file_offset;
         #    uint32_t backing_file_size;
