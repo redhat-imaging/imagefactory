@@ -249,21 +249,27 @@ rm -rf %{buildroot}%{python_sitelib}/imagefactory_plugins/MockCloud
 %{python_sitelib}/imagefactory_plugins*.egg-info
 
 %files ovfcommon
+%dir %{python_sitelib}/imagefactory_plugins/ovfcommon
 %{python_sitelib}/imagefactory_plugins/ovfcommon/*
 
 %files OVA
+%dir %{python_sitelib}/imagefactory_plugins/OVA
 %{python_sitelib}/imagefactory_plugins/OVA/*
 
 %files IndirectionCloud
+%dir %{python_sitelib}/imagefactory_plugins/IndirectionCloud
 %{python_sitelib}/imagefactory_plugins/IndirectionCloud/*
 
 %files TinMan
+%dir %{python_sitelib}/imagefactory_plugins/TinMan
 %{python_sitelib}/imagefactory_plugins/TinMan/*
 
 %files OpenStack
+%dir %{python_sitelib}/imagefactory_plugins/OpenStack
 %{python_sitelib}/imagefactory_plugins/OpenStack/*
 
 %files EC2
+%dir %{python_sitelib}/imagefactory_plugins/EC2
 %{python_sitelib}/imagefactory_plugins/EC2/*
 %{_bindir}/create-ec2-factory-credentials
 
@@ -277,19 +283,24 @@ rm -rf %{buildroot}%{python_sitelib}/imagefactory_plugins/MockCloud
 
 %if 0%{?build_mock}
 %files MockOS
+%dir %{python_sitelib}/imagefactory_plugins/MockOS
 %{python_sitelib}/imagefactory_plugins/MockOS/*
 
 %files MockCloud
+%dir %{python_sitelib}/imagefactory_plugins/MockCloud
 %{python_sitelib}/imagefactory_plugins/MockCloud/*
 %endif
 
 %files RHEVM
+%dir %{python_sitelib}/imagefactory_plugins/RHEVM
 %{python_sitelib}/imagefactory_plugins/RHEVM/*
 
 %files vSphere
+%dir %{python_sitelib}/imagefactory_plugins/vSphere
 %{python_sitelib}/imagefactory_plugins/vSphere/*
 
 %files Rackspace
+%dir %{python_sitelib}/imagefactory_plugins/Rackspace
 %{python_sitelib}/imagefactory_plugins/Rackspace/*
 
 %changelog
