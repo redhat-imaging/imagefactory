@@ -230,6 +230,30 @@ class TinMan(object):
         self.install_script_object = None
         self.guest = None
 
+    def abort(self):
+        self.log.debug("ABORT called in TinMan plugin")
+        # If we have an active Oz VM destroy it - if not do nothing but log why we did nothing
+        if not self.guest:
+            self.log.debug("No Oz guest object present - nothing to do")
+            return
+
+        try:
+            # Oz doesn't keep the active domain object as an instance variable so we have to look it up
+            guest_dom = self.guest.libvirt_conn.lookupByName(self.tdlobj.name)
+        except Exception, e:
+            self.log.exception(e)
+            self.log.debug("No Oz VM found with name (%s) - nothing to do" % (self.tdlobj.name))
+            self.log.debug("This likely means the local VM has already been destroyed or never started")
+            return
+
+        try:
+            self.log.debug("Attempting to destroy local guest/domain (%s)" % (self.tdlobj.name))
+            guest_dom.destroy()
+        except Exception, e:
+            self.log.exception(e)
+            self.log.warning("Exception encountered while destroying domain - it may still exist")
+
+
     def _init_oz(self):
         # TODO: This is a convenience variable for refactoring - rename
         self.new_image_id = self.active_image.identifier
@@ -352,12 +376,12 @@ class TinMan(object):
             # Oz just selects a random port here - This could potentially collide if we are unlucky
             self.guest.listen_port = self.res_mgr.get_next_listen_port()
         except libvirtError, e:
-	    raise ImageFactoryException("Cannot connect to libvirt.  Make sure libvirt is running. [Original message: %s]" %  e.message)
-	except OzException, e:
-	    if "Unsupported" in e.message:
-		raise ImageFactoryException("TinMan plugin does not support distro (%s) update (%s) in TDL" % (self.tdlobj.distro, self.tdlobj.update) )
-	    else:
-		raise e
+            raise ImageFactoryException("Cannot connect to libvirt.  Make sure libvirt is running. [Original message: %s]" %  e.message)
+        except OzException, e:
+            if "Unsupported" in e.message:
+                raise ImageFactoryException("TinMan plugin does not support distro (%s) update (%s) in TDL" % (self.tdlobj.distro, self.tdlobj.update) )
+            else:
+                raise e
 
     def log_exc(self):
         self.log.debug("Exception caught in ImageFactory")
