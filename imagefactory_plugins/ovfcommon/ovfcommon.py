@@ -83,7 +83,7 @@ class RHEVOVFDescriptor(object):
         etdisk.set('ovf:diskId', str(self.vol_uuid))
         vol_size_str = str((self.disk.vol_size + (1024*1024*1024) - 1) / (1024*1024*1024))
         etdisk.set('ovf:size', vol_size_str)
-        etdisk.set('ovf:vm_snapshot_id', '00000000-0000-0000-0000-000000000000')
+        etdisk.set('ovf:vm_snapshot_id', str(uuid.uuid4()))
         etdisk.set('ovf:actual_size', vol_size_str)
         etdisk.set('ovf:format', 'http://www.vmware.com/specifications/vmdk.html#sparse')
         etdisk.set('ovf:parentRef', '')
