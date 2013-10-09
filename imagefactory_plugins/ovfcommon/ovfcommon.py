@@ -434,10 +434,6 @@ class VsphereOVFDescriptor(object):
         etinfo.text = 'The kind of installed guest operating system'
         etossec.append(etinfo)
 
-        etdesc = ElementTree.Element('Description')
-        etdesc.text = 'Red Hat Enterprise Linux 5 (64-bit)'
-        etossec.append(etdesc)
-
         etvirtsys.append(etossec)
 
         etvirthwsec = ElementTree.Element('VirtualHardwareSection')
@@ -530,73 +526,6 @@ class VsphereOVFDescriptor(object):
         etvirthwsec.append(etitem)
 
         etitem = ElementTree.Element('Item')
-        etaddr = ElementTree.Element('rasd:Address')
-        etaddr.text = '1'
-        etitem.append(etaddr)
-        etdesc = ElementTree.Element('rasd:Description')
-        etdesc.text = 'IDE Controller'
-        etitem.append(etdesc)
-        etelemname = ElementTree.Element('rasd:ElementName')
-        etelemname.text = 'IDE 1'
-        etitem.append(etelemname)
-        etinstid = ElementTree.Element('rasd:InstanceID')
-        etinstid.text = '4'
-        etitem.append(etinstid)
-        etrestype = ElementTree.Element('rasd:ResourceType')
-        etrestype.text = '5'
-        etitem.append(etrestype)
-        etvirthwsec.append(etitem)
-
-        etitem = ElementTree.Element('Item')
-        etaddr = ElementTree.Element('rasd:Address')
-        etaddr.text = '0'
-        etitem.append(etaddr)
-        etdesc = ElementTree.Element('rasd:Description')
-        etdesc.text = 'IDE Controller'
-        etitem.append(etdesc)
-        etelemname = ElementTree.Element('rasd:ElementName')
-        etelemname.text = 'IDE 0'
-        etitem.append(etelemname)
-        etinstid = ElementTree.Element('rasd:InstanceID')
-        etinstid.text = '5'
-        etitem.append(etinstid)
-        etrestype = ElementTree.Element('rasd:ResourceType')
-        etrestype.text = '5'
-        etitem.append(etrestype)
-        etvirthwsec.append(etitem)
-
-        etitem = ElementTree.Element('Item')
-        etitem.set('ovf:required', 'false')
-        etautoalloc = ElementTree.Element('rasd:AutomaticAllocation')
-        etautoalloc.text = 'false'
-        etitem.append(etautoalloc)
-        etelemname = ElementTree.Element('rasd:ElementName')
-        etelemname.text = 'Video card'
-        etitem.append(etelemname)
-        etinstid = ElementTree.Element('rasd:InstanceID')
-        etinstid.text = '6'
-        etitem.append(etinstid)
-        etrestype = ElementTree.Element('rasd:ResourceType')
-        etrestype.text = '24'
-        etitem.append(etrestype)
-        etconfig = ElementTree.Element('vmw:Config')
-        etconfig.set('ovf:required', 'false')
-        etconfig.set('vmw:key', 'enable3DSupport')
-        etconfig.set('vmw:value', 'false')
-        etitem.append(etconfig)
-        etconfig = ElementTree.Element('vmw:Config')
-        etconfig.set('ovf:required', 'false')
-        etconfig.set('vmw:key', 'useAutoDetect')
-        etconfig.set('vmw:value', 'false')
-        etitem.append(etconfig)
-        etconfig = ElementTree.Element('vmw:Config')
-        etconfig.set('ovf:required', 'false')
-        etconfig.set('vmw:key', 'videoRamSizeInKB')
-        etconfig.set('vmw:value', '4096')
-        etitem.append(etconfig)
-        etvirthwsec.append(etitem)
-
-        etitem = ElementTree.Element('Item')
         etaddronparent = ElementTree.Element('rasd:AddressOnParent')
         etaddronparent.text = '0'
         etitem.append(etaddronparent)
@@ -607,7 +536,7 @@ class VsphereOVFDescriptor(object):
         ethostres.text = 'ovf:/disk/vmdisk1'
         etitem.append(ethostres)
         etinstid = ElementTree.Element('rasd:InstanceID')
-        etinstid.text = '17'
+        etinstid.text = '4'
         etitem.append(etinstid)
         etparent = ElementTree.Element('rasd:Parent')
         etparent.text = '3'
@@ -639,7 +568,7 @@ class VsphereOVFDescriptor(object):
         etelemname.text = 'Network adapter 1'
         etitem.append(etelemname)
         etinstid = ElementTree.Element('rasd:InstanceID')
-        etinstid.text = '12'
+        etinstid.text = '5'
         etitem.append(etinstid)
         etressubtype = ElementTree.Element('rasd:ResourceSubType')
         etressubtype.text = 'E1000'
@@ -659,103 +588,6 @@ class VsphereOVFDescriptor(object):
         etitem.append(etconfig)
         etvirthwsec.append(etitem)
 
-        #configs
-
-        etconfig = ElementTree.Element('vmw:Config')
-        etconfig.set('ovf:required', "false")
-        etconfig.set('vmw:key', "cpuHotAddEnabled")
-        etconfig.set('vmw:value', "false")
-        etvirthwsec.append(etconfig)
-
-        etconfig = ElementTree.Element('vmw:Config')
-        etconfig.set('ovf:required', "false")
-        etconfig.set('vmw:key', "cpuHotRemoveEnabled")
-        etconfig.set('vmw:value', "false")
-        etvirthwsec.append(etconfig)
-
-        etconfig = ElementTree.Element('vmw:Config')
-        etconfig.set('ovf:required', "false")
-        etconfig.set('vmw:key', "firmware")
-        etconfig.set('vmw:value', "bios")
-        etvirthwsec.append(etconfig)
-
-        etconfig = ElementTree.Element('vmw:Config')
-        etconfig.set('ovf:required', "false")
-        etconfig.set('vmw:key', "virtualICH7MPresent")
-        etconfig.set('vmw:value', "false")
-        etvirthwsec.append(etconfig)
-
-        etconfig = ElementTree.Element('vmw:Config')
-        etconfig.set('ovf:required', "false")
-        etconfig.set('vmw:key', "virtualSMCPresent")
-        etconfig.set('vmw:value', "false")
-        etvirthwsec.append(etconfig)
-
-        etconfig = ElementTree.Element('vmw:Config')
-        etconfig.set('ovf:required', "false")
-        etconfig.set('vmw:key', "memoryHotAddEnabled")
-        etconfig.set('vmw:value', "false")
-        etvirthwsec.append(etconfig)
-
-        etconfig = ElementTree.Element('vmw:Config')
-        etconfig.set('ovf:required', "false")
-        etconfig.set('vmw:key', "powerOpInfo.powerOffType")
-        etconfig.set('vmw:value', "soft")
-        etvirthwsec.append(etconfig)
-
-        etconfig = ElementTree.Element('vmw:Config')
-        etconfig.set('ovf:required', "false")
-        etconfig.set('vmw:key', "powerOpInfo.resetType")
-        etconfig.set('vmw:value', "soft")
-        etvirthwsec.append(etconfig)
-
-        etconfig = ElementTree.Element('vmw:Config')
-        etconfig.set('ovf:required', "false")
-        etconfig.set('vmw:key', "powerOpInfo.standbyAction")
-        etconfig.set('vmw:value', "checkpoint")
-        etvirthwsec.append(etconfig)
-
-        etconfig = ElementTree.Element('vmw:Config')
-        etconfig.set('ovf:required', "false")
-        etconfig.set('vmw:key', "powerOpInfo.suspendType")
-        etconfig.set('vmw:value', "hard")
-        etvirthwsec.append(etconfig)
-
-        etconfig = ElementTree.Element('vmw:Config')
-        etconfig.set('ovf:required', "false")
-        etconfig.set('vmw:key', "tools.afterPowerOn")
-        etconfig.set('vmw:value', "true")
-        etvirthwsec.append(etconfig)
-
-        etconfig = ElementTree.Element('vmw:Config')
-        etconfig.set('ovf:required', "false")
-        etconfig.set('vmw:key', "tools.afterResume")
-        etconfig.set('vmw:value', "true")
-        etvirthwsec.append(etconfig)
-
-        etconfig = ElementTree.Element('vmw:Config')
-        etconfig.set('ovf:required', "false")
-        etconfig.set('vmw:key', "tools.beforeGuestShutdown")
-        etconfig.set('vmw:value', "true")
-        etvirthwsec.append(etconfig)
-
-        etconfig = ElementTree.Element('vmw:Config')
-        etconfig.set('ovf:required', "false")
-        etconfig.set('vmw:key', "tools.beforeGuestStandby")
-        etconfig.set('vmw:value', "true")
-        etvirthwsec.append(etconfig)
-
-        etconfig = ElementTree.Element('vmw:Config')
-        etconfig.set('ovf:required', "false")
-        etconfig.set('vmw:key', "tools.syncTimeWithHost")
-        etconfig.set('vmw:value', "false")
-        etvirthwsec.append(etconfig)
-
-        etconfig = ElementTree.Element('vmw:Config')
-        etconfig.set('ovf:required', "false")
-        etconfig.set('vmw:key', "tools.toolsUpgradePolicy")
-        etconfig.set('vmw:value', "manual")
-        etvirthwsec.append(etconfig)
 
         etvirtsys.append(etvirthwsec)
 
