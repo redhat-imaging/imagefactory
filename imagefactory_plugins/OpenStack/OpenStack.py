@@ -14,6 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import hashlib
 import logging
 import zope
 import libxml2
@@ -27,26 +28,84 @@ from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.CloudDelegate import CloudDelegate
 from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info
-from glance import client as glance_client
+from keystoneclient.v2_0 import client
+import glanceclient as glance_client
 
-def glance_upload(image_filename, creds = {'auth_url': None, 'password': None, 'strategy': 'noauth', 'tenant': None, 'username': None},
-                  host = "0.0.0.0", port = "9292", token = None, name = 'Factory Test Image', disk_format = 'raw'):
+def keystone_authenticate(**kwargs):
+    user = kwargs.get('username')
+    pwd = kwargs.get('password')
+    tenant = kwargs.get('tenant')
+    url = kwargs.get('auth_url', 'http://127.0.0.1:35357/v2.0')
 
-    image_meta = {'container_format': 'bare',
-     'disk_format': disk_format,
-     'is_public': True,
-     'min_disk': 0,
-     'min_ram': 0,
-     'name': name,
-     'properties': {'distro': 'rhel'}}
+    keystone = client.Client(username=user, password=pwd, tenant_name=tenant, auth_url=url)
+    return keystone.auth_ref
 
+def glance_upload(image, auth_token=None, **kwargs):
 
-    c = glance_client.Client(host=host, port=port,
-                             auth_tok=token, creds=creds)
-    image_data = open(image_filename, "r")
-    image_meta = c.add_image(image_meta, image_data)
+    if image is None:
+         raise ImageFactoryException("No image is provided")
+
+    url = kwargs.setdefault("url", "http://127.0.0.1:9292")
+    image_data = open(image, "r")
+
+    image_meta = {
+     'container_format': kwargs.setdefault('container_format', 'bare'),
+     'disk_format': kwargs.setdefault('disk_format', 'raw'),
+     'is_public': kwargs.setdefault('is_public', False),
+     'min_disk': kwargs.setdefault('min_disk', 0),
+     'min_ram': kwargs.setdefault('min_ram', 0),
+     'name': kwargs.setdefault('name', 'Factory Test Image'),
+     'data': image_data,
+    }
+
+    c = glance_client.Client('1', url, token=auth_token)
+    image_meta = c.images.create(**image_meta)
     image_data.close()
-    return image_meta['id']
+    return image_meta.id
+
+# Copied from Keystone's keystone/common/cms.py file.
+PKI_ANS1_PREFIX = 'MII'
+
+def is_ans1_token(token):
+    '''
+    thx to ayoung for sorting this out.
+
+    base64 decoded hex representation of MII is 3082
+    In [3]: binascii.hexlify(base64.b64decode('MII='))
+    Out[3]: '3082'
+
+    re: http://www.itu.int/ITU-T/studygroups/com17/languages/X.690-0207.pdf
+
+    pg4: For tags from 0 to 30 the first octet is the identfier
+    pg10: Hex 30 means sequence, followed by the length of that sequence.
+    pg5: Second octet is the length octet
+    first bit indicates short or long form, next 7 bits encode the number
+    of subsequent octets that make up the content length octets as an
+    unsigned binary int
+
+    82 = 10000010 (first bit indicates long form)
+    0000010 = 2 octets of content length
+    so read the next 2 octets to get the length of the content.
+
+    In the case of a very large content length there could be a requirement to
+    have more than 2 octets to designate the content length, therefore
+    requiring us to check for MIM, MIQ, etc.
+    In [4]: base64.b64encode(binascii.a2b_hex('3083'))
+    Out[4]: 'MIM='
+    In [5]: base64.b64encode(binascii.a2b_hex('3084'))
+    Out[5]: 'MIQ='
+    Checking for MI would become invalid at 16 octets of content length
+    10010000 = 90
+    In [6]: base64.b64encode(binascii.a2b_hex('3090'))
+    Out[6]: 'MJA='
+    Checking for just M is insufficient
+
+    But we will only check for MII:
+    Max length of the content using 2 octets is 7FFF or 32767
+    It's not practical to support a token of this length or greater in http
+    therefore, we will check for MII only and ignore the case of larger tokens
+    '''
+    return token[:3] == PKI_ANS1_PREFIX
 
 class OpenStack(object):
     zope.interface.implements(CloudDelegate)
@@ -91,9 +150,18 @@ class OpenStack(object):
         else:
             self.log.debug("Uploading image to glance, assuming raw format")
             disk_format='raw'
-        image_id = glance_upload(input_image, creds = self.credentials_dict, token = self.credentials_token,
-                                 host=provider_data['glance-host'], port=provider_data['glance-port'],
-                                 name=image_name, disk_format=disk_format)
+
+        if self.credentials_token is None:
+            auth_ref = keystone_authenticate(**self.credentials_dict)
+            if is_ans1_token(auth_ref.auth_token):
+                self.credentials_token = hashlib.md5(auth_ref.auth_token).hexdigest()
+            else:
+                self.credentials_token = auth_ref.auth_token
+
+        provider_data['name']  = image_name
+        provider_data['disk_format'] = disk_format
+
+        image_id = glance_upload(input_image, self.credentials_token, **provider_data)
 
         self.builder.provider_image.identifier_on_provider = image_id
         if 'username' in self.credentials_dict:
@@ -107,8 +175,10 @@ class OpenStack(object):
         doc = libxml2.parseDoc(credentials)
 
         self.credentials_dict = { }
-        for authprop in [ 'auth_url', 'password', 'strategy', 'tenant', 'username']:
-            self.credentials_dict[authprop] = self._get_xml_node(doc, authprop)
+        for authprop in [ 'auth_url', 'password', 'tenant', 'username']:
+            value = self._get_xml_node(doc, authprop)
+            if value is not None:
+                self.credentials_dict[authprop] = value
         self.credentials_token = self._get_xml_node(doc, 'token')
 
     def _get_xml_node(self, doc, credtype):
@@ -143,6 +213,12 @@ class OpenStack(object):
         # using this avoids the performance penalty of uploading
         # (and launching) raw disk images on slow storage
         if self.app_config.get('openstack_image_format', 'raw') == 'qcow2':
+
+            # Prevent double convert if the image is already qcow2
+            if self.check_qcow_size(input_image) is not None:
+                self.log.debug("No conversion require. Image already in qcow2 format.")
+                return
+
             self.log.debug("Converting RAW image to compressed qcow2 format")
             rc = os.system("qemu-img convert -c -O qcow2 %s %s" %
                             (input_image, input_image + ".tmp.qcow2"))
