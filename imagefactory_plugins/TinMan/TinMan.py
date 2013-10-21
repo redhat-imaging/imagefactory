@@ -57,6 +57,8 @@ class TinMan(object):
         # We log it at DEBUG and also set it as the status_detail on our active image
         self.log.debug(activity)
         self.active_image.status_detail['activity'] = activity
+        # Update the image meta to file, so that the REST api can get the latest status
+        self.pim.save_image(self.active_image)
 
     ## INTERFACE METHOD
     def create_target_image(self, builder, target, base_image, parameters):
@@ -64,6 +66,7 @@ class TinMan(object):
         self.active_image = builder.target_image
         self.target = target
         self.base_image = builder.base_image
+        self.pim = builder.pim
 
         # populate our target_image bodyfile with the original base image
         # which we do not want to modify in place
@@ -303,6 +306,7 @@ class TinMan(object):
         # Set to the image object that is actively being created or modified
         # Used in the logging helper function above
         self.active_image = self.base_image
+        self.pim = builder.pim
 
         try:
             self._init_oz()
