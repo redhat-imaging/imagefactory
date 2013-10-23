@@ -67,7 +67,20 @@ class OVA(object):
         else:
             raise ImageFactoryException("OVA plugin only support rhevm and vsphere images")
 
-        pkg = klass(disk=self.image.data, base_image=self.base_image.data)
+        klass_parameters = dict()
+
+        if self.parameters:
+            params = ['ovf_cpu_count','ovf_memory_mb',
+                      'rhevm_default_display_type','rhevm_description','rhevm_os_descriptor',
+                      'vsphere_product_name','vsphere_product_vendor_name','vsphere_product_version']
+
+            for param in params:
+                if (self.parameters.get(param) and 
+                    klass.__init__.func_code.co_varnames.__contains__(param)):
+                    klass_parameters[param] = self.parameters.get(param)
+
+        pkg = klass(disk=self.image.data, base_image=self.base_image.data,
+                    **klass_parameters)
         ova = pkg.make_ova_package()
         copyfile_sparse(ova, self.image.data)
         pkg.delete()
