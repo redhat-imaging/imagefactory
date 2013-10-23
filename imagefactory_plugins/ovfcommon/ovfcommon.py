@@ -362,8 +362,18 @@ class RHEVOVFDescriptor(object):
 
 
 class VsphereOVFDescriptor(object):
-    def __init__(self, disk):
+    def __init__(self, disk,
+                 ovf_cpu_count,
+                 ovf_memory_mb,
+                 vsphere_product_name,
+                 vsphere_product_vendor_name,
+                 vsphere_product_version):
         self.disk = disk
+        self.ovf_cpu_count = ovf_cpu_count
+        self.ovf_memory_mb = ovf_memory_mb
+        self.vsphere_product_name = vsphere_product_name
+        self.vsphere_product_vendor_name = vsphere_product_vendor_name
+        self.vsphere_product_version = vsphere_product_version
 
     def generate_ovf_xml(self):
         etroot = ElementTree.Element('Envelope')
@@ -475,7 +485,7 @@ class VsphereOVFDescriptor(object):
         etdesc.text = 'Number of Virtual CPUs'
         etitem.append(etdesc)
         etelemname = ElementTree.Element('rasd:ElementName')
-        etelemname.text = '2 virtual CPU(s)'
+        etelemname.text = "%s virtual CPU(s)" % self.ovf_cpu_count
         etitem.append(etelemname)
         etinstid = ElementTree.Element('rasd:InstanceID')
         etinstid.text = '1'
@@ -484,7 +494,7 @@ class VsphereOVFDescriptor(object):
         etrestype.text = '3'
         etitem.append(etrestype)
         etvirtqty = ElementTree.Element('rasd:VirtualQuantity')
-        etvirtqty.text = '2'
+        etvirtqty.text = self.ovf_cpu_count
         etitem.append(etvirtqty)
         etvirthwsec.append(etitem)
 
@@ -496,7 +506,7 @@ class VsphereOVFDescriptor(object):
         etdesc.text = 'Memory Size'
         etitem.append(etdesc)
         etelemname = ElementTree.Element('rasd:ElementName')
-        etelemname.text = '4096 MB of memory'
+        etelemname.text = "%s MB of memory" % self.ovf_memory_mb
         etitem.append(etelemname)
         etinstid = ElementTree.Element('rasd:InstanceID')
         etinstid.text = '2'
@@ -505,7 +515,7 @@ class VsphereOVFDescriptor(object):
         etrestype.text = '4'
         etitem.append(etrestype)
         etvirtqty = ElementTree.Element('rasd:VirtualQuantity')
-        etvirtqty.text = '4096'
+        etvirtqty.text = self.ovf_memory_mb
         etitem.append(etvirtqty)
         etvirthwsec.append(etitem)
 
@@ -603,15 +613,15 @@ class VsphereOVFDescriptor(object):
         etprodsec.append(etinfo)
 
         etprod = ElementTree.Element('Product')
-        etprod.text = 'Product Name'
+        etprod.text = self.vsphere_product_name
         etprodsec.append(etprod)
 
         etvendor = ElementTree.Element('Vendor')
-        etvendor.text = 'Vendor Name'
+        etvendor.text = self.vsphere_product_vendor_name
         etprodsec.append(etvendor)
 
         etversion = ElementTree.Element('Version')
-        etversion.text = '1.0'
+        etversion.text = self.vsphere_product_version
         etprodsec.append(etversion)
 
         etvirtsys.append(etprodsec)
@@ -748,14 +758,30 @@ class RHEVOVFPackage(OVFPackage):
 
 
 class VsphereOVFPackage(OVFPackage):
-    def __init__(self, disk, base_image, path=None):
+    def __init__(self, disk, base_image, path=None,
+                 ovf_cpu_count="2",
+                 ovf_memory_mb="4096",
+                 vsphere_product_name="Product Name",
+                 vsphere_product_vendor_name="Vendor Name",
+                 vsphere_product_version="1.0"):
         disk = VsphereDisk(disk, base_image)
         super(VsphereOVFPackage, self).__init__(disk, path)
         self.disk_path = os.path.join(self.path, "disk.img")
         self.ovf_path  = os.path.join(self.path, "desc.ovf")
 
+        self.ovf_cpu_count = ovf_cpu_count
+        self.ovf_memory_mb = ovf_memory_mb
+        self.vsphere_product_name = vsphere_product_name
+        self.vsphere_product_vendor_name = vsphere_product_vendor_name
+        self.vsphere_product_version = vsphere_product_version
+
     def new_ovf_descriptor(self):
-        return VsphereOVFDescriptor(disk=self.disk)
+        return VsphereOVFDescriptor(self.disk,
+                                    self.ovf_cpu_count,
+                                    self.ovf_memory_mb,
+                                    self.vsphere_product_name,
+                                    self.vsphere_product_vendor_name,
+                                    self.vsphere_product_version)
 
     def copy_disk(self):
         copyfile_sparse(self.disk.path, self.disk_path)
