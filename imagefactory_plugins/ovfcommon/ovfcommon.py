@@ -29,8 +29,9 @@ from imgfac.PersistentImageManager import PersistentImageManager
 
 class RHEVOVFDescriptor(object):
     def __init__(self, img_uuid, vol_uuid, tpl_uuid, disk,
-                 ovf_name=None, ovf_desc=None,
-                 pool_id="00000000-0000-0000-0000-000000000000"):
+                 ovf_name=None,
+                 pool_id="00000000-0000-0000-0000-000000000000",
+                 rhevm_description=None):
         self.img_uuid = img_uuid
         self.vol_uuid = vol_uuid
         self.tpl_uuid = tpl_uuid
@@ -41,10 +42,10 @@ class RHEVOVFDescriptor(object):
         else:
             self.ovf_name = ovf_name
 
-        if ovf_desc is None:
-            self.ovf_desc = "Created by Image Factory"
+        if rhevm_description is None:
+            self.rhevm_description = "Created by Image Factory"
         else:
-            self.ovf_desc = ovf_desc
+            self.rhevm_description = rhevm_description
 
         self.pool_id = pool_id
 
@@ -119,7 +120,7 @@ class RHEVOVFDescriptor(object):
         # spec also has 'TemplateName'
 
         ete = ElementTree.Element('Description')
-        ete.text = self.ovf_desc
+        ete.text = self.rhevm_description
         etcon.append(ete)
 
         ete = ElementTree.Element('Domain')
@@ -684,7 +685,7 @@ class OVFPackage(object):
 
 
 class RHEVOVFPackage(OVFPackage):
-    def __init__(self, disk, path=None, ovf_name=None, ovf_desc=None, base_image=None):
+    def __init__(self, disk, path=None, ovf_name=None, rhevm_description=None, base_image=None):
         disk = RHEVDisk(disk)
         super(RHEVOVFPackage, self).__init__(disk, path)
         # We need these three unique identifiers when generating XML and the meta file
@@ -702,7 +703,7 @@ class RHEVOVFPackage(OVFPackage):
                                      self.tpl_uuid + '.ovf')
 
         self.ovf_name = ovf_name
-        self.ovf_desc = ovf_desc
+        self.rhevm_description = rhevm_description
 
 
     def new_ovf_descriptor(self):
@@ -710,7 +711,7 @@ class RHEVOVFPackage(OVFPackage):
                                  vol_uuid=self.vol_uuid,
                                  tpl_uuid=self.tpl_uuid,
                                  ovf_name=self.ovf_name,
-                                 ovf_desc=self.ovf_desc,
+                                 rhevm_description=self.rhevm_description,
                                  disk=self.disk)
 
     def copy_disk(self):
