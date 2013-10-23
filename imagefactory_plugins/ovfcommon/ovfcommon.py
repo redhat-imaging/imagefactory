@@ -29,9 +29,13 @@ from imgfac.PersistentImageManager import PersistentImageManager
 
 class RHEVOVFDescriptor(object):
     def __init__(self, img_uuid, vol_uuid, tpl_uuid, disk,
-                 ovf_name=None,
-                 pool_id="00000000-0000-0000-0000-000000000000",
-                 rhevm_description=None):
+                 ovf_name,
+                 ovf_cpu_count,
+                 ovf_memory_mb,
+                 rhevm_description,
+                 rhevm_default_display_type,
+                 rhevm_os_descriptor,
+                 pool_id="00000000-0000-0000-0000-000000000000"):
         self.img_uuid = img_uuid
         self.vol_uuid = vol_uuid
         self.tpl_uuid = tpl_uuid
@@ -42,11 +46,11 @@ class RHEVOVFDescriptor(object):
         else:
             self.ovf_name = ovf_name
 
-        if rhevm_description is None:
-            self.rhevm_description = "Created by Image Factory"
-        else:
-            self.rhevm_description = rhevm_description
-
+        self.ovf_cpu_count = ovf_cpu_count
+        self.ovf_memory_mb = ovf_memory_mb
+        self.rhevm_description = rhevm_description
+        self.rhevm_default_display_type = rhevm_default_display_type
+        self.rhevm_os_descriptor = rhevm_os_descriptor
         self.pool_id = pool_id
 
     def generate_ovf_xml(self):
@@ -146,7 +150,7 @@ class RHEVOVFDescriptor(object):
 
         ete = ElementTree.Element('default_display_type')
         # vnc = 0, gxl = 1
-        ete.text = "0"
+        ete.text = self.rhevm_default_display_type
         etcon.append(ete)
 
         ete = ElementTree.Element('default_boot_sequence')
@@ -167,7 +171,7 @@ class RHEVOVFDescriptor(object):
 
         ete = ElementTree.Element('Description')
         # This is rigid, must be "Other", "OtherLinux", "RHEL6", or such
-        ete.text = "OtherLinux"
+        ete.text = self.rhevm_os_descriptor
         etsec.append(ete)
 
         etcon.append(etsec)
@@ -176,7 +180,7 @@ class RHEVOVFDescriptor(object):
         etsec.set('xsi:type', "ovf:VirtualHardwareSection_Type")
 
         ete = ElementTree.Element('Info')
-        ete.text = "1 CPU, 512 Memory"
+        ete.text = "%s CPU, %s Memory" % (self.ovf_cpu_count, self.ovf_memory_mb)
         etsec.append(ete)
 
         etsys = ElementTree.Element('System')
@@ -189,7 +193,7 @@ class RHEVOVFDescriptor(object):
         etitem = ElementTree.Element('Item')
 
         ete = ElementTree.Element('rasd:Caption')
-        ete.text = "1 virtual CPU"
+        ete.text = "%s virtual CPU" % self.ovf_cpu_count
         etitem.append(ete)
 
         ete = ElementTree.Element('rasd:Description')
@@ -209,7 +213,7 @@ class RHEVOVFDescriptor(object):
         etitem.append(ete)
 
         ete = ElementTree.Element('rasd:cpu_per_socket')
-        ete.text = "1"
+        ete.text = self.ovf_cpu_count
         etitem.append(ete)
 
         etsec.append(etitem)
@@ -217,7 +221,7 @@ class RHEVOVFDescriptor(object):
         etitem = ElementTree.Element('Item')
 
         ete = ElementTree.Element('rasd:Caption')
-        ete.text = "512 MB of memory"
+        ete.text = "%s MB of memory" % self.ovf_memory_mb
         etitem.append(ete)
 
         ete = ElementTree.Element('rasd:Description')
@@ -237,7 +241,7 @@ class RHEVOVFDescriptor(object):
         etitem.append(ete)
 
         ete = ElementTree.Element('rasd:VirtualQuantity')
-        ete.text = "512"
+        ete.text = self.ovf_memory_mb
         etitem.append(ete)
 
         etsec.append(etitem)
@@ -685,7 +689,14 @@ class OVFPackage(object):
 
 
 class RHEVOVFPackage(OVFPackage):
-    def __init__(self, disk, path=None, ovf_name=None, rhevm_description=None, base_image=None):
+    def __init__(self, disk, path=None, base_image=None,
+                 ovf_name=None,
+                 ovf_cpu_count="1",
+                 ovf_memory_mb="512",
+                 rhevm_description="Created by Image Factory",
+                 rhevm_default_display_type="0",
+                 rhevm_os_descriptor="OtherLinux"):
+
         disk = RHEVDisk(disk)
         super(RHEVOVFPackage, self).__init__(disk, path)
         # We need these three unique identifiers when generating XML and the meta file
@@ -703,16 +714,23 @@ class RHEVOVFPackage(OVFPackage):
                                      self.tpl_uuid + '.ovf')
 
         self.ovf_name = ovf_name
+        self.ovf_cpu_count = ovf_cpu_count
+        self.ovf_memory_mb = ovf_memory_mb
         self.rhevm_description = rhevm_description
-
+        self.rhevm_default_display_type = rhevm_default_display_type
+        self.rhevm_os_descriptor = rhevm_os_descriptor
 
     def new_ovf_descriptor(self):
-        return RHEVOVFDescriptor(img_uuid=self.img_uuid,
-                                 vol_uuid=self.vol_uuid,
-                                 tpl_uuid=self.tpl_uuid,
-                                 ovf_name=self.ovf_name,
-                                 rhevm_description=self.rhevm_description,
-                                 disk=self.disk)
+        return RHEVOVFDescriptor(self.img_uuid,
+                                 self.vol_uuid,
+                                 self.tpl_uuid,
+                                 self.disk,
+                                 self.ovf_name,
+                                 self.ovf_cpu_count,
+                                 self.ovf_memory_mb,
+                                 self.rhevm_description,
+                                 self.rhevm_default_display_type,
+                                 self.rhevm_os_descriptor)
 
     def copy_disk(self):
         os.makedirs(os.path.dirname(self.disk_path))
