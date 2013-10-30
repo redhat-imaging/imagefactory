@@ -29,7 +29,12 @@ from imgfac.PersistentImageManager import PersistentImageManager
 
 class RHEVOVFDescriptor(object):
     def __init__(self, img_uuid, vol_uuid, tpl_uuid, disk,
-                 ovf_name=None, ovf_desc=None,
+                 ovf_name,
+                 ovf_cpu_count,
+                 ovf_memory_mb,
+                 rhevm_description,
+                 rhevm_default_display_type,
+                 rhevm_os_descriptor,
                  pool_id="00000000-0000-0000-0000-000000000000"):
         self.img_uuid = img_uuid
         self.vol_uuid = vol_uuid
@@ -41,11 +46,11 @@ class RHEVOVFDescriptor(object):
         else:
             self.ovf_name = ovf_name
 
-        if ovf_desc is None:
-            self.ovf_desc = "Created by Image Factory"
-        else:
-            self.ovf_desc = ovf_desc
-
+        self.ovf_cpu_count = ovf_cpu_count
+        self.ovf_memory_mb = ovf_memory_mb
+        self.rhevm_description = rhevm_description
+        self.rhevm_default_display_type = rhevm_default_display_type
+        self.rhevm_os_descriptor = rhevm_os_descriptor
         self.pool_id = pool_id
 
     def generate_ovf_xml(self):
@@ -119,7 +124,7 @@ class RHEVOVFDescriptor(object):
         # spec also has 'TemplateName'
 
         ete = ElementTree.Element('Description')
-        ete.text = self.ovf_desc
+        ete.text = self.rhevm_description
         etcon.append(ete)
 
         ete = ElementTree.Element('Domain')
@@ -145,7 +150,7 @@ class RHEVOVFDescriptor(object):
 
         ete = ElementTree.Element('default_display_type')
         # vnc = 0, gxl = 1
-        ete.text = "0"
+        ete.text = self.rhevm_default_display_type
         etcon.append(ete)
 
         ete = ElementTree.Element('default_boot_sequence')
@@ -166,7 +171,7 @@ class RHEVOVFDescriptor(object):
 
         ete = ElementTree.Element('Description')
         # This is rigid, must be "Other", "OtherLinux", "RHEL6", or such
-        ete.text = "OtherLinux"
+        ete.text = self.rhevm_os_descriptor
         etsec.append(ete)
 
         etcon.append(etsec)
@@ -175,7 +180,7 @@ class RHEVOVFDescriptor(object):
         etsec.set('xsi:type', "ovf:VirtualHardwareSection_Type")
 
         ete = ElementTree.Element('Info')
-        ete.text = "1 CPU, 512 Memory"
+        ete.text = "%s CPU, %s Memory" % (self.ovf_cpu_count, self.ovf_memory_mb)
         etsec.append(ete)
 
         etsys = ElementTree.Element('System')
@@ -188,7 +193,7 @@ class RHEVOVFDescriptor(object):
         etitem = ElementTree.Element('Item')
 
         ete = ElementTree.Element('rasd:Caption')
-        ete.text = "1 virtual CPU"
+        ete.text = "%s virtual CPU" % self.ovf_cpu_count
         etitem.append(ete)
 
         ete = ElementTree.Element('rasd:Description')
@@ -208,7 +213,7 @@ class RHEVOVFDescriptor(object):
         etitem.append(ete)
 
         ete = ElementTree.Element('rasd:cpu_per_socket')
-        ete.text = "1"
+        ete.text = self.ovf_cpu_count
         etitem.append(ete)
 
         etsec.append(etitem)
@@ -216,7 +221,7 @@ class RHEVOVFDescriptor(object):
         etitem = ElementTree.Element('Item')
 
         ete = ElementTree.Element('rasd:Caption')
-        ete.text = "512 MB of memory"
+        ete.text = "%s MB of memory" % self.ovf_memory_mb
         etitem.append(ete)
 
         ete = ElementTree.Element('rasd:Description')
@@ -236,7 +241,7 @@ class RHEVOVFDescriptor(object):
         etitem.append(ete)
 
         ete = ElementTree.Element('rasd:VirtualQuantity')
-        ete.text = "512"
+        ete.text = self.ovf_memory_mb
         etitem.append(ete)
 
         etsec.append(etitem)
@@ -357,8 +362,18 @@ class RHEVOVFDescriptor(object):
 
 
 class VsphereOVFDescriptor(object):
-    def __init__(self, disk):
+    def __init__(self, disk,
+                 ovf_cpu_count,
+                 ovf_memory_mb,
+                 vsphere_product_name,
+                 vsphere_product_vendor_name,
+                 vsphere_product_version):
         self.disk = disk
+        self.ovf_cpu_count = ovf_cpu_count
+        self.ovf_memory_mb = ovf_memory_mb
+        self.vsphere_product_name = vsphere_product_name
+        self.vsphere_product_vendor_name = vsphere_product_vendor_name
+        self.vsphere_product_version = vsphere_product_version
 
     def generate_ovf_xml(self):
         etroot = ElementTree.Element('Envelope')
@@ -470,7 +485,7 @@ class VsphereOVFDescriptor(object):
         etdesc.text = 'Number of Virtual CPUs'
         etitem.append(etdesc)
         etelemname = ElementTree.Element('rasd:ElementName')
-        etelemname.text = '2 virtual CPU(s)'
+        etelemname.text = "%s virtual CPU(s)" % self.ovf_cpu_count
         etitem.append(etelemname)
         etinstid = ElementTree.Element('rasd:InstanceID')
         etinstid.text = '1'
@@ -479,7 +494,7 @@ class VsphereOVFDescriptor(object):
         etrestype.text = '3'
         etitem.append(etrestype)
         etvirtqty = ElementTree.Element('rasd:VirtualQuantity')
-        etvirtqty.text = '2'
+        etvirtqty.text = self.ovf_cpu_count
         etitem.append(etvirtqty)
         etvirthwsec.append(etitem)
 
@@ -491,7 +506,7 @@ class VsphereOVFDescriptor(object):
         etdesc.text = 'Memory Size'
         etitem.append(etdesc)
         etelemname = ElementTree.Element('rasd:ElementName')
-        etelemname.text = '4096 MB of memory'
+        etelemname.text = "%s MB of memory" % self.ovf_memory_mb
         etitem.append(etelemname)
         etinstid = ElementTree.Element('rasd:InstanceID')
         etinstid.text = '2'
@@ -500,7 +515,7 @@ class VsphereOVFDescriptor(object):
         etrestype.text = '4'
         etitem.append(etrestype)
         etvirtqty = ElementTree.Element('rasd:VirtualQuantity')
-        etvirtqty.text = '4096'
+        etvirtqty.text = self.ovf_memory_mb
         etitem.append(etvirtqty)
         etvirthwsec.append(etitem)
 
@@ -598,15 +613,15 @@ class VsphereOVFDescriptor(object):
         etprodsec.append(etinfo)
 
         etprod = ElementTree.Element('Product')
-        etprod.text = 'Product Name'
+        etprod.text = self.vsphere_product_name
         etprodsec.append(etprod)
 
         etvendor = ElementTree.Element('Vendor')
-        etvendor.text = 'Vendor Name'
+        etvendor.text = self.vsphere_product_vendor_name
         etprodsec.append(etvendor)
 
         etversion = ElementTree.Element('Version')
-        etversion.text = '1.0'
+        etversion.text = self.vsphere_product_version
         etprodsec.append(etversion)
 
         etvirtsys.append(etprodsec)
@@ -684,7 +699,14 @@ class OVFPackage(object):
 
 
 class RHEVOVFPackage(OVFPackage):
-    def __init__(self, disk, path=None, ovf_name=None, ovf_desc=None, base_image=None):
+    def __init__(self, disk, path=None, base_image=None,
+                 ovf_name=None,
+                 ovf_cpu_count="1",
+                 ovf_memory_mb="512",
+                 rhevm_description="Created by Image Factory",
+                 rhevm_default_display_type="0",
+                 rhevm_os_descriptor="OtherLinux"):
+
         disk = RHEVDisk(disk)
         super(RHEVOVFPackage, self).__init__(disk, path)
         # We need these three unique identifiers when generating XML and the meta file
@@ -702,16 +724,23 @@ class RHEVOVFPackage(OVFPackage):
                                      self.tpl_uuid + '.ovf')
 
         self.ovf_name = ovf_name
-        self.ovf_desc = ovf_desc
-
+        self.ovf_cpu_count = ovf_cpu_count
+        self.ovf_memory_mb = ovf_memory_mb
+        self.rhevm_description = rhevm_description
+        self.rhevm_default_display_type = rhevm_default_display_type
+        self.rhevm_os_descriptor = rhevm_os_descriptor
 
     def new_ovf_descriptor(self):
-        return RHEVOVFDescriptor(img_uuid=self.img_uuid,
-                                 vol_uuid=self.vol_uuid,
-                                 tpl_uuid=self.tpl_uuid,
-                                 ovf_name=self.ovf_name,
-                                 ovf_desc=self.ovf_desc,
-                                 disk=self.disk)
+        return RHEVOVFDescriptor(self.img_uuid,
+                                 self.vol_uuid,
+                                 self.tpl_uuid,
+                                 self.disk,
+                                 self.ovf_name,
+                                 self.ovf_cpu_count,
+                                 self.ovf_memory_mb,
+                                 self.rhevm_description,
+                                 self.rhevm_default_display_type,
+                                 self.rhevm_os_descriptor)
 
     def copy_disk(self):
         os.makedirs(os.path.dirname(self.disk_path))
@@ -729,14 +758,30 @@ class RHEVOVFPackage(OVFPackage):
 
 
 class VsphereOVFPackage(OVFPackage):
-    def __init__(self, disk, base_image, path=None):
+    def __init__(self, disk, base_image, path=None,
+                 ovf_cpu_count="2",
+                 ovf_memory_mb="4096",
+                 vsphere_product_name="Product Name",
+                 vsphere_product_vendor_name="Vendor Name",
+                 vsphere_product_version="1.0"):
         disk = VsphereDisk(disk, base_image)
         super(VsphereOVFPackage, self).__init__(disk, path)
         self.disk_path = os.path.join(self.path, "disk.img")
         self.ovf_path  = os.path.join(self.path, "desc.ovf")
 
+        self.ovf_cpu_count = ovf_cpu_count
+        self.ovf_memory_mb = ovf_memory_mb
+        self.vsphere_product_name = vsphere_product_name
+        self.vsphere_product_vendor_name = vsphere_product_vendor_name
+        self.vsphere_product_version = vsphere_product_version
+
     def new_ovf_descriptor(self):
-        return VsphereOVFDescriptor(disk=self.disk)
+        return VsphereOVFDescriptor(self.disk,
+                                    self.ovf_cpu_count,
+                                    self.ovf_memory_mb,
+                                    self.vsphere_product_name,
+                                    self.vsphere_product_vendor_name,
+                                    self.vsphere_product_version)
 
     def copy_disk(self):
         copyfile_sparse(self.disk.path, self.disk_path)
