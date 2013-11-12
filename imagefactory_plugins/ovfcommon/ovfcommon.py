@@ -442,8 +442,8 @@ class VsphereOVFDescriptor(object):
         # TODO this should be dynamic
         etossec = ElementTree.Element('OperatingSystemSection')
         etossec.set('ovf:id', '80')
-        etossec.set('ovf:version', '5')
-        etossec.set('vmw:osType', 'rhel5_64Guest')
+        etossec.set('ovf:version', '6')
+        etossec.set('vmw:osType', 'rhel6_64Guest')
 
         etinfo = ElementTree.Element('Info')
         etinfo.text = 'The kind of installed guest operating system'
@@ -472,7 +472,7 @@ class VsphereOVFDescriptor(object):
         etsystem.append(etvirtsysid)
 
         etvirtsystype = ElementTree.Element('vssd:VirtualSystemType')
-        etvirtsystype.text = 'vmx-04' #maybe not hardcode this?
+        etvirtsystype.text = 'vmx-07 vmx-08' #maybe not hardcode this?
         etsystem.append(etvirtsystype)
 
         etvirthwsec.append(etsystem)
