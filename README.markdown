@@ -5,15 +5,11 @@ and Cloud providers.
 
 ##Features##
 *   Build guest images for a growing list of operating system and cloud combinations.
-    * Current guest OS support: Fedora 7-16, RHEL 5.x and 6.x
-    * Current cloud support: Red Hat Enterprise Virtualization, VMware vSphere, Amazon EC2, Rackspace
+    * Current guest OS support: Fedora 7-19, RHEL 5.x and 6.x
+    * Current cloud support: Red Hat Enterprise Virtualization, VMware vSphere, Amazon EC2, Rackspace, OpenStack, and more...
 *   Image Factory supports "build and upload" or snapshotting of existing images.
 *   RESTful API makes integrating Image Factory into existing workflows simple.
 
-## Dev Setup ##
-If you are wanting to use Imagefactory in a dev environment then you can run from source.  Run the 'imagefactory_dev_setup.sh' script found in the scripts directory.  This will setup a dev environment which allows you to run from source.  Once this is complete run ./imagefactoryd --foreground to start the server.
-
-N.B. You can edit the imagefactory.conf file to set the default runtime options.  See: imagefactoryd --help for a list of available options.
 
 ##Using Image Factory##
 Building an image begins with a template describing what to build. See an example
@@ -46,11 +42,16 @@ push the image into the cloud.
 
     $ sudo imagefactory --provider ec2-us-west-1 --credentials ec2_credentials.xml
 
-That's it!  You can now launch an instance of this image using either the cloud
-provider's management console or a cloud management tool such as 
-**[Aeolus](http://www.aeolusproject.org/)**.
+That's it!  You can now launch an instance of this image using the cloud
+provider's management console.
 
 ##Installing Image Factory##
 Installing Image Factory is quick and easy.  See the
 [imagefactory rpm installation](http://imgfac.org/documentation/install.html#rpm)
 instructions for more detail.
+
+## Dev Setup ##
+If you are wanting to use Imagefactory in a dev environment, then you can run from source.  Run the 'imagefactory_dev_setup.sh' script found in the scripts directory.  This will setup a dev environment which allows you to run from source.  Once this is complete run ./imagefactoryd --foreground to start the server.
+
+## Documentation ##
+More documentation on how to configure, use, and develop for imagefactory can be found on the [Image Factory website](http://imgfac.org). 
