@@ -12,9 +12,14 @@ from imgfac.ImageFactoryException import ImageFactoryException
 import subprocess
 
 
-def launch_inspect_and_mount(diskfile):
+def launch_inspect_and_mount(diskfile, readonly=False):
     g = guestfs.GuestFS()
-    g.add_drive(diskfile)
+    # Added to allow plugins that wish to inspect base images without modifying them
+    # (once FINISHED images should never be changed)
+    if readonly:
+        g.add_drive_ro(diskfile)
+    else:
+        g.add_drive(diskfile)
     g.launch()
     return inspect_and_mount(g, diskfile=diskfile)
 
