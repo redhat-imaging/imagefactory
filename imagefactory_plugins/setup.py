@@ -25,10 +25,11 @@ import time
 # here.  If this doesn't work, you'll have to dig into the details below
 
 plugins = ['EC2', 'TinMan','MockCloud','MockOS', 'OpenStack',
-           'RHEVM', 'vSphere', 'Rackspace', 'IndirectionCloud', 'OVA']
+           'RHEVM', 'vSphere', 'Rackspace', 'IndirectionCloud',
+           'OVA', 'Docker']
 
-VERSION = '1.1.3'
-RELEASE = '2'
+VERSION = '1.1.4'
+RELEASE = '0'
 
 class sdist(_sdist):
     """ custom sdist command, to prep imagefactory-plugins.spec file """
