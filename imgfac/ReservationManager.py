@@ -71,7 +71,9 @@ class ReservationManager(object):
                              ec2=BoundedSemaphore(i.appconfig.get('max_concurrent_ec2_sessions', 1)))
             i._named_locks = { } 
             i._named_locks_lock = BoundedSemaphore()
-            i._listen_port = cls.MIN_PORT
+            # Initialize based on PID to prevent conflicts from multiple CLI runs on the same machine
+            # TODO: This is TinMan/Oz specific - move it to the plugin
+            i._listen_port = cls.MIN_PORT + (os.getpid() % (cls.MAX_PORT - cls.MIN_PORT))
             i._listen_port_lock = BoundedSemaphore()
             cls.instance = i
         return cls.instance
