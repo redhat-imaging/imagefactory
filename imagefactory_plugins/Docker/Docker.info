@@ -1,0 +1,12 @@
+{
+    "type": "cloud",
+    "targets": [ [ "docker"] ],
+    "description": "Docker base image plugin for imagefactory",
+    "maintainer": {
+        "name": "Red Hat, Inc.",
+        "email": "aeolus-devel@lists.fedorahosted.org",
+        "url": "http://imgfac.org"
+    },
+    "version": "1.0",
+    "license": "Copyright 2013 Red Hat, Inc. - http://www.apache.org/licenses/LICENSE-2.0"
+}
