@@ -77,11 +77,11 @@ fi
 %{python_sitelib}/imagefactory-*.egg-info
 %{_bindir}/imagefactory
 %{_bindir}/imagefactoryd
-%{_mandir}/man1/*
-%{_mandir}/man5/*
-%{_mandir}/man7/*
 
 %changelog
+* Thu Jan 30 2014 Steve Loranz <sloranz@redhat.com> - 1.1.3-1
+- Remove references to man directories. Documentation will be hosted @ imgfac.org.
+
 * Thu Aug 15 2013 Ian McLeod <imcleod@redhat.com> - 1.1.3
 - Rebase with upstream
 

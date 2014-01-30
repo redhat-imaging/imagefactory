@@ -14,8 +14,6 @@
 
 from distutils.core import setup
 from distutils.command.sdist import sdist as _sdist
-import os
-import os.path
 import subprocess
 import time
 
@@ -59,10 +57,7 @@ class sdist(_sdist):
         # Run parent constructor
         _sdist.run(self)
 
-datafiles=[('share/man/man1', ['documentation/man/imagefactory.1', 'documentation/man/imagefactoryd.1']),
-           ('share/man/man5', ['documentation/man/imagefactory.conf.5']),
-           ('share/man/man7', ['documentation/man/imagefactory.rest.7']),
-           ('/etc/imagefactory', ['imagefactory.conf']),
+datafiles=[('/etc/imagefactory', ['imagefactory.conf']),
            ('/etc/pki/imagefactory', ['cert-ec2.pem']),
            ('/etc/sysconfig', ['conf/sysconfig/imagefactoryd']),
            ('/etc/logrotate.d', ['conf/logrotate.d/imagefactoryd']),
