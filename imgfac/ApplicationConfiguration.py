@@ -16,6 +16,7 @@
 
 import sys
 import os
+import os.path
 import argparse
 import json
 import logging
@@ -188,9 +189,34 @@ class ApplicationConfiguration(Singleton):
     def __parse_jeos_images(self):
         log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         config_urls = self.configuration['jeos_config']
-        for url in config_urls:
-            filehandle = urlopen(str(url))
-            line = filehandle.readline().strip()
+        # Expand directories from the config and url-ify files
+	# Read inlist - replace directories with their contents
+	nextlist = [ ]
+	for path in config_urls:
+	    if os.path.isdir(path):
+		for filename in os.listdir(path):
+		    fullname = os.path.join(path, filename)
+		    if os.path.isfile(fullname):
+			nextlist.append(fullname)
+	    else:
+		nextlist.append(path)
+
+	# Read nextlist - replace files with file:// URLs
+	finalist = [ ]
+	for path in nextlist:
+	    if os.path.isfile(path):
+		finalist.append("file://" + path)
+	    else:
+		finalist.append(path)
+
+
+        for url in finalist:
+            try:
+                filehandle = urlopen(str(url))
+                line = filehandle.readline().strip()
+            except:
+                log.warning("Failed to open JEOS URL (%s)" % url)
+                continue
             line_number = 1
 
             while line:
