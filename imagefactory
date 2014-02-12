@@ -274,14 +274,25 @@ class Application(Singleton):
             thread.join()
 
         if (image and (self.app_config['output'] == 'log')):
+            if image.status == "FAILED":
+                print
+                print "Image build FAILED with error: %s" % (image.status_detail['error'])
+                sys.exit(1)
             print
             print "============ Final Image Details ============"
             print "UUID: %s" % (image.identifier)
             print "Type: %s" % (command)
+            print "Image filename: " + image.data
             if command == "provider_image" and image.status == "COMPLETE":
                 print "Image ID on provider: %s" % (image.identifier_on_provider)
-            print "Status: %s" % (image.status)
-            print "Status Details: %s" % (image.status_detail)
+            if image.status == "COMPLETE":
+                print "Image build completed SUCCESSFULLY!"
+                sys.exit(0)
+            else:
+                print "WARNING - Reached end of build with an unexpected status - this should not happen"
+                print "Status: %s" % (image.status)
+                print "Status Details: %s" % (image.status_detail)
+                sys.exit(1)
 
 if __name__ == "__main__":
     sys.exit(Application().main())
