@@ -136,6 +136,8 @@ class PluginManager(Singleton):
             if isinstance(target, str):
                 self.log.debug("Attempting to match string target (%s)" % target)
                 plugin_name = self._targets.get(tuple([target]))
+                if not plugin_name:
+                    raise ImageFactoryException("No plugin .info file loaded for target: %s" % (target))
                 plugin = __import__('%s.%s' % (PKG_STR, plugin_name), fromlist=['delegate_class'])
                 return plugin.delegate_class()
             elif isinstance(target, tuple):
@@ -148,5 +150,7 @@ class PluginManager(Singleton):
                     else:
                         plugin = __import__('%s.%s' % (PKG_STR, plugin_name), fromlist=['delegate_class'])
                         return plugin.delegate_class()
-        except ImportError:
-            raise ImageFactoryException("Unable to find plugin for target: %s" % str(target))
+        except ImportError as e:
+            self.log.exception(e)
+            raise ImageFactoryException("Unable to import plugin for target: %s" % str(target))
+
