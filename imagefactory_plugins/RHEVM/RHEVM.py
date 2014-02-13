@@ -111,12 +111,6 @@ class RHEVM(object):
         # so we must change it
         self.tdlobj.name = "factory-build-" + self.new_image_id
 
-        # populate a config object to pass to OZ; this allows us to specify our
-        # own output dir but inherit other Oz behavior
-        oz_config = ConfigParser.SafeConfigParser()
-        oz_config.read("/etc/oz/oz.cfg")
-        oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
-
         # In contrast to our original builders, we enter the cloud plugins with a KVM file already
         # created as the base_image.  As a result, all the Oz building steps are gone (and can be found
         # in the OS plugin(s)
