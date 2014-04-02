@@ -7,7 +7,7 @@
     "description": "Plugin to support most Oz customize capable guest types",
     "maintainer": {
         "name": "Red Hat, Inc.",
-        "email": "aeolus-devel@lists.fedorahosted.org",
+        "email": "imagefactory-devel@lists.fedorahosted.org",
         "url": "http://imgfac.org"
     },
     "version": "1.0",
