@@ -91,18 +91,17 @@ class ApplicationConfiguration(Singleton):
             argparser.add_argument('--raw', action='store_true', default=False, help='Turn off pretty printing.')
             subparsers = argparser.add_subparsers(title='commands', dest='command')
             template_help = 'A file containing the image template or component outline, compatible with the TDL schema (http://imgfac.org/documentation/tdl).'
-            parameters_help = 'An optional JSON file containing additional parameters to pass to the builders.'
 
             cmd_base = subparsers.add_parser('base_image', help='Build a generic image.')
             cmd_base.add_argument('template', type=argparse.FileType(), help=template_help)
-            cmd_base.add_argument('--parameters', type=argparse.FileType(), help=parameters_help)
+            self.__add_param_arguments(cmd_base)
 
             cmd_target = subparsers.add_parser('target_image', help='Customize an image for a given cloud.')
             cmd_target.add_argument('target', help='The name of the target cloud for which to customize the image.')
             target_group = cmd_target.add_mutually_exclusive_group(required=True)
             target_group.add_argument('--id', help='The uuid of the BaseImage to customize.')
             target_group.add_argument('--template', type=argparse.FileType(), help=template_help)
-            cmd_target.add_argument('--parameters', type=argparse.FileType(), help=parameters_help)
+            self.__add_param_arguments(cmd_target)
 
             cmd_provider = subparsers.add_parser('provider_image', help='Push an image to a cloud provider.')
             cmd_provider.add_argument('target', help='The target type of the given cloud provider')
@@ -111,7 +110,7 @@ class ApplicationConfiguration(Singleton):
             provider_group = cmd_provider.add_mutually_exclusive_group(required=True)
             provider_group.add_argument('--id', help='The uuid of the TargetImage to push.')
             provider_group.add_argument('--template', type=argparse.FileType(), help=template_help)
-            cmd_provider.add_argument('--parameters', type=argparse.FileType(), help=parameters_help)
+            self.__add_param_arguments(cmd_provider)
             cmd_provider.add_argument('--snapshot', action='store_true', default=False, help='Use snapshot style building. (default: %(default)s)')
 
             cmd_list = subparsers.add_parser('images', help='List images of a given type or get details of an image.')
@@ -122,11 +121,18 @@ class ApplicationConfiguration(Singleton):
             cmd_delete.add_argument('--provider', help="A file containing the cloud provider description or a string literal starting with '@' such as '@ec2-us-east-1'.")
             cmd_delete.add_argument('--credentials', type=argparse.FileType(), help='A file containing the cloud provider credentials')
             cmd_delete.add_argument('--target', help='The name of the target cloud for which to customize the image.')
-            cmd_delete.add_argument('--parameters', type=argparse.FileType(), help=parameters_help)
+            self.__add_param_arguments(cmd_delete)
 
             cmd_plugins = subparsers.add_parser('plugins', help='List active plugins or get details of a specific plugin.')
             cmd_plugins.add_argument('--id')
         return argparser
+
+    def __add_param_arguments(self, parser):
+        # We do this for all three image types so lets make it a util function
+        parameters_help = 'An optional JSON file containing additional parameters to pass to the builders.'
+        parser.add_argument('--parameters', type=argparse.FileType(), help=parameters_help)
+        parser.add_argument('--parameter', nargs=2, action='append', help='A parameter name and the literal value to assign it.  Can be used more than once.')
+        parser.add_argument('--file-parameter', nargs=2, action='append', help='A parameter name and a file to insert into it.  Can be used more than once.')
 
     def __parse_arguments(self):
         appname = sys.argv[0].rpartition('/')[2]

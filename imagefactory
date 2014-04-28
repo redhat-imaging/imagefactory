@@ -20,6 +20,7 @@ import logging
 import signal
 import os
 import json
+import pprint
 from time import asctime, localtime
 from imgfac.Singleton import Singleton
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
@@ -172,6 +173,23 @@ class Application(Singleton):
                 sys.exit(1)
         else:
             parameters={ }
+
+        # Note that this means individually specified parameters or file-parameters will
+        # override what is in the original --parameters JSON file if it exists
+	if self.app_config.get('parameter'):
+	    for parpair in self.app_config.get('parameter'):
+		parameters[parpair[0]] = parpair[1]
+
+	if self.app_config.get('file_parameter'):
+	    for parpair in self.app_config.get('file_parameter'):
+		try:
+		    parameters[parpair[0]] = open(parpair[1]).read()
+		except:
+		    logging.error("Unable to read file %s referenced in --file-parameter argument" % (parpair[1]))
+		    sys.exit(1)
+
+        logging.debug("Parameters are:")
+        logging.debug("\n%s" % (pprint.pformat(parameters)))
 
         if(command in ('base_image', 'target_image', 'provider_image')):
             template = None
