@@ -315,6 +315,7 @@ class TinMan(object):
 
             # We want to save this later for use by RHEV-M and Condor clouds
             libvirt_xml=""
+            gfs = None
 
             try:
                 self.activity("Generating JEOS disk image")
@@ -336,7 +337,18 @@ class TinMan(object):
                 # Power users may wish to avoid ever booting the guest after the installer is finished
                 # They can do so by passing in a { "generate_icicle": False } KV pair in the parameters dict
                 if self.parameters.get("generate_icicle", True):
-                    builder.base_image.icicle = self.guest.customize_and_generate_icicle(libvirt_xml)
+                    if self.parameters.get("offline_icicle", False):
+                        self.guest.customize(libvirt_xml)
+                        gfs = launch_inspect_and_mount(self.image, readonly=True)
+                        # Monkey-patching is bad
+                        # TODO: Work with Chris to incorporate a more elegant version of this into Oz itself
+                        def libguestfs_execute_command(gfs, cmd, timeout):
+                            stdout = gfs.sh(cmd)
+                            return (stdout, None, 0)
+                        self.guest.guest_execute_command = libguestfs_execute_command
+                        builder.base_image.icicle = self.guest.do_icicle(gfs)                            
+                    else:
+                        builder.base_image.icicle = self.guest.customize_and_generate_icicle(libvirt_xml)
                 else:
                     self.guest.customize(libvirt_xml)
                 self.log.debug("Customization and ICICLE generation complete")
@@ -348,6 +360,8 @@ class TinMan(object):
                 if self.install_script_object:
                     # NamedTemporaryFile - removed on close
                     self.install_script_object.close()    
+                if gfs:
+                    shutdown_and_close(gfs)
 
             self.log.debug("Generated disk image (%s)" % (self.guest.diskimage))
             # OK great, we now have a customized KVM image
