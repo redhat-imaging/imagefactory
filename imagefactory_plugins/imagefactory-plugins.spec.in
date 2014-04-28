@@ -58,7 +58,7 @@ archive from.
 %package IndirectionCloud
 Summary: Cloud plugin for allowing images to modify other images
 License: ASL 2.0
-Requires: oz >= 0.7.0
+Requires: oz >= 0.12.0
 Requires: imagefactory-plugins
 Requires: imagefactory-plugin-api = 1.0
 
@@ -72,7 +72,7 @@ arbitrary  host OS and package selection for the actual media creation tools.
 %package TinMan
 Summary: OS plugin for Fedora
 License: ASL 2.0
-Requires: oz >= 0.7.0
+Requires: oz >= 0.12.0
 Requires: imagefactory-plugins
 Requires: imagefactory-plugin-api = 1.0
 

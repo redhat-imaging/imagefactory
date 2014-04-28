@@ -1,6 +1,7 @@
 #!/usr/bin/python
 #
 #   Copyright 2012 Red Hat, Inc.
+#   Portions Copyright (C) 2012,2013  Chris Lalancette <clalancette@gmail.com>
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -20,8 +21,14 @@ import oz.TDL
 import oz.GuestFactory
 import oz.ozutil
 import guestfs
+# TODO: We've had to migrate to lxml here because of Oz changes
+#       see if we can't move the libvirt stuff as well
+# For now we import both
 import libxml2
+import lxml
 import ConfigParser
+import tempfile
+import base64
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.CloudDelegate import CloudDelegate
 from imgfac.PersistentImageManager import PersistentImageManager
@@ -64,6 +71,40 @@ from imgfac.ReservationManager import ReservationManager
 # results_location - /results/images/boot.iso
 
 # Description: Location inside of the working space image from which to extract the results.
+
+# Borrowed from Oz by Chris Lalancette
+def data_from_type(name, contenttype, content):
+    '''
+    A function to get data out of some content, possibly decoding it depending
+    on the content type.  This function understands three types of content:
+    raw (where no decoding is necessary), base64 (where the data needs to be
+    base64 decoded), and url (where the data needs to be downloaded).  Because
+    the data might be large, all data is sent to file handle, which is returned
+    from the function.
+    '''
+
+    out = tempfile.NamedTemporaryFile()
+    if contenttype == 'raw':
+        out.write(content)
+    elif contenttype == 'base64':
+        base64.decode(StringIO.StringIO(content), out)
+    elif contenttype == 'url':
+        url = urlparse.urlparse(content)
+        if url.scheme == "file":
+            with open(url.netloc + url.path) as f:
+                out.write("".join(f.readlines()))
+        else:
+            oz.ozutil.http_download_file(content, out.fileno(), False, None)
+    else:
+        raise oz.OzException.OzException("Type for %s must be 'raw', 'url' or 'base64'" % (name))
+
+    # make sure the data is flushed to disk for uses of the file through
+    # the name
+    out.flush()
+    out.seek(0)
+
+    return out
+
 
 class IndirectionCloud(object):
     zope.interface.implements(CloudDelegate)
@@ -188,32 +229,28 @@ class IndirectionCloud(object):
         # if it does they will be ignored
         # TODO: Submit an Oz patch to make this shorter or a utility function within the TDL class
 
-        doc = libxml2.parseDoc(partial_tdl)
+        doc = lxml.etree.fromstring(partial_tdl)
         self.tdlobj.doc = doc 
 
-        packageslist = doc.xpathEval('/template/packages/package')
+        packageslist = doc.xpath('/template/packages/package')
         self.tdlobj._add_packages(packageslist)
 
-        for afile in doc.xpathEval('/template/files/file'):
-            name = afile.prop('name')
+        for afile in doc.xpath('/template/files/file'):
+            name = afile.get('name')
             if name is None:
                 raise Exception("File without a name was given")
-            contenttype = afile.prop('type')
+            contenttype = afile.get('type')
             if contenttype is None:
                 contenttype = 'raw'
 
-            content = afile.getContent().strip()
-            if contenttype == 'raw':
-                self.files[name] = content
-            elif contenttype == 'base64':
-                if len(content) == 0:
-                    self.tdlobj.files[name] = ""
-                else:
-                    self.tdlobj.files[name] = base64.b64decode(content)
+            content = afile.text
+            if content:
+                content = content.strip()
             else:
-                raise Exception("File type for %s must be 'raw' or 'base64'" % (name))
+                content = ''
+            self.tdlobj.files[name] = data_from_type(name, contenttype, content)
 
-        repositorieslist = doc.xpathEval('/template/repositories/repository')
+        repositorieslist = doc.xpath('/template/repositories/repository')
         self.tdlobj._add_repositories(repositorieslist)
 
         self.tdlobj.commands = self.tdlobj._parse_commands()
