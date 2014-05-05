@@ -367,13 +367,15 @@ class VsphereOVFDescriptor(object):
                  ovf_memory_mb,
                  vsphere_product_name,
                  vsphere_product_vendor_name,
-                 vsphere_product_version):
+                 vsphere_product_version,
+                 vsphere_virtual_system_type):
         self.disk = disk
         self.ovf_cpu_count = ovf_cpu_count
         self.ovf_memory_mb = ovf_memory_mb
         self.vsphere_product_name = vsphere_product_name
         self.vsphere_product_vendor_name = vsphere_product_vendor_name
         self.vsphere_product_version = vsphere_product_version
+        self.vsphere_virtual_system_type = vsphere_virtual_system_type
 
     def generate_ovf_xml(self):
         etroot = ElementTree.Element('Envelope')
@@ -472,7 +474,7 @@ class VsphereOVFDescriptor(object):
         etsystem.append(etvirtsysid)
 
         etvirtsystype = ElementTree.Element('vssd:VirtualSystemType')
-        etvirtsystype.text = 'vmx-07 vmx-08' #maybe not hardcode this?
+        etvirtsystype.text = self.vsphere_virtual_system_type 
         etsystem.append(etvirtsystype)
 
         etvirthwsec.append(etsystem)
@@ -763,7 +765,8 @@ class VsphereOVFPackage(OVFPackage):
                  ovf_memory_mb="4096",
                  vsphere_product_name="Product Name",
                  vsphere_product_vendor_name="Vendor Name",
-                 vsphere_product_version="1.0"):
+                 vsphere_product_version="1.0",
+                 vsphere_virtual_system_type="vmx-07 vmx-08"):
         disk = VsphereDisk(disk, base_image)
         super(VsphereOVFPackage, self).__init__(disk, path)
         self.disk_path = os.path.join(self.path, "disk.img")
@@ -774,6 +777,7 @@ class VsphereOVFPackage(OVFPackage):
         self.vsphere_product_name = vsphere_product_name
         self.vsphere_product_vendor_name = vsphere_product_vendor_name
         self.vsphere_product_version = vsphere_product_version
+        self.vsphere_virtual_system_type = vsphere_virtual_system_type
 
     def new_ovf_descriptor(self):
         return VsphereOVFDescriptor(self.disk,
@@ -781,7 +785,8 @@ class VsphereOVFPackage(OVFPackage):
                                     self.ovf_memory_mb,
                                     self.vsphere_product_name,
                                     self.vsphere_product_vendor_name,
-                                    self.vsphere_product_version)
+                                    self.vsphere_product_version,
+                                    self.vsphere_virtual_system_type)
 
     def copy_disk(self):
         copyfile_sparse(self.disk.path, self.disk_path)
