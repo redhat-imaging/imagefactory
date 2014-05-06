@@ -154,3 +154,29 @@ def enable_root(guestaddr, sshprivkey, user, prefix):
             raise Exception('Running /bin/id on %s as root: %s' % (guestaddr, stdout))
     except Exception as e:
         raise ImageFactoryException('Transfer of authorized_keys to root from %s must have failed - Aborting - %s' % (user, e))
+
+# Our generic "parameters" dict passed to the plugins may be derived from either
+# real JSON or from individual parameters passed on the command line.  In the case
+# of command line parameters, all dict values are strings.  Plugins that want to
+# accept non-string parameters should be prepared to do a string conversion.
+
+def parameter_cast_to_bool(ival):
+    """
+    Function to take an input that may be a string, an int or a bool
+    If input is a string it is made lowecase
+    Returns True if ival is boolean True, a non-zero integer, "Yes",
+    "True" or "1"
+    Returns False in ival is boolean False, zero, "No", "False" or "0"
+    In all other cases, returns None
+    """
+    if type(ival) is bool:
+        return ival
+    if type(ival) is int:
+        return bool(ival)
+    if type(ival) is str:
+        lower = ival.lower()
+        if lower == 'no' or lower == 'false' or lower == '0':
+            return False
+        if lower == 'yes' or lower == 'true' or lower == '1':
+            return True
+    return None

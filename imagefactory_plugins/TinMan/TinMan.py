@@ -30,6 +30,7 @@ from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.ReservationManager import ReservationManager
 from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist
 from imgfac.OSDelegate import OSDelegate
+from imgfac.FactoryUtils import parameter_cast_to_bool
 from libvirt import libvirtError
 from oz.OzException import OzException
 
@@ -336,8 +337,8 @@ class TinMan(object):
                 self.percent_complete = 30
                 # Power users may wish to avoid ever booting the guest after the installer is finished
                 # They can do so by passing in a { "generate_icicle": False } KV pair in the parameters dict
-                if self.parameters.get("generate_icicle", True):
-                    if self.parameters.get("offline_icicle", False):
+                if parameter_cast_to_bool(self.parameters.get("generate_icicle", True)):
+                    if parameter_cast_to_bool(self.parameters.get("offline_icicle", False)):
                         self.guest.customize(libvirt_xml)
                         gfs = launch_inspect_and_mount(self.image, readonly=True)
                         # Monkey-patching is bad
