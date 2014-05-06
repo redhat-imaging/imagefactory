@@ -29,9 +29,7 @@ plugins = ['EC2', 'TinMan','MockCloud','MockOS', 'OpenStack',
            'OVA', 'Docker']
 
 VERSION = '1.1.5'
-# TODO: When doing the final 1.1.5 release, increment this to 2 to correct for earlier
-#       error setting it at 1
-RELEASE = '0'
+RELEASE = '2'
 
 class sdist(_sdist):
     """ custom sdist command, to prep imagefactory-plugins.spec file """
