@@ -196,25 +196,24 @@ class ApplicationConfiguration(Singleton):
         log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         config_urls = self.configuration['jeos_config']
         # Expand directories from the config and url-ify files
-	# Read inlist - replace directories with their contents
-	nextlist = [ ]
-	for path in config_urls:
-	    if os.path.isdir(path):
-		for filename in os.listdir(path):
-		    fullname = os.path.join(path, filename)
-		    if os.path.isfile(fullname):
-			nextlist.append(fullname)
-	    else:
-		nextlist.append(path)
+        # Read inlist - replace directories with their contents
+        nextlist = []
+        for path in config_urls:
+            if os.path.isdir(path):
+                for filename in os.listdir(path):
+                    fullname = os.path.join(path, filename)
+                    if os.path.isfile(fullname):
+                        nextlist.append(fullname)
+            else:
+                nextlist.append(path)
 
-	# Read nextlist - replace files with file:// URLs
-	finalist = [ ]
-	for path in nextlist:
-	    if os.path.isfile(path):
-		finalist.append("file://" + path)
-	    else:
-		finalist.append(path)
-
+        # Read nextlist - replace files with file:// URLs
+        finalist = []
+        for path in nextlist:
+            if os.path.isfile(path):
+                finalist.append("file://" + path)
+            else:
+                finalist.append(path)
 
         for url in finalist:
             try:

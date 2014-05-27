@@ -28,6 +28,7 @@ class OSDelegate(Interface):
 
         @param builder The Builder object coordinating image creation.
         @param template A Template object.
+        @param parameters Dictionary of target specific parameters.
 
         @return A BaseImage object.
         """
@@ -46,5 +47,11 @@ class OSDelegate(Interface):
 
     def add_cloud_plugin_content(self, content):
         """
-        TODO: Describe add_cloud_plugin_content
+        This is a method that cloud plugins can call to deposit content/commands to
+        be run during the OS-specific first stage of the Target Image creation.
+
+        There is no support for repos at the moment as these introduce external
+        dependencies that we may not be able to resolve.
+
+        @param content dict containing commands and file.
         """

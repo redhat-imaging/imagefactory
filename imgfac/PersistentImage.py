@@ -21,8 +21,9 @@ from Notification import Notification
 from NotificationCenter import NotificationCenter
 
 
-METADATA =  ( 'identifier', 'data', 'template', 'icicle', 'status_detail', 'status', 'percent_complete', 'parameters' )
-STATUS_STRINGS = ('NEW','PENDING', 'BUILDING', 'COMPLETE', 'FAILED', 'DELETING', 'DELETED', 'DELETEFAILED')
+METADATA = ('identifier', 'data', 'template', 'icicle', 'status_detail', 'status', 'percent_complete', 'parameters',
+            'properties')
+STATUS_STRINGS = ('NEW', 'PENDING', 'BUILDING', 'COMPLETE', 'FAILED', 'DELETING', 'DELETED', 'DELETEFAILED')
 NOTIFICATIONS = ('image.status', 'image.percentage')
 
 
@@ -36,18 +37,21 @@ class PersistentImage(object):
     template = prop("_template")
     icicle = prop("_icicle")
     status_detail = prop("_status_detail")
+    parameters = prop("_parameters")
+    properties = prop("_properties")
 
     def status():
         doc = "A string value."
+
         def fget(self):
             return self._status
 
         def fset(self, value):
             value = value.upper()
-            if(value == self._status):
+            if value == self._status:
                 # Do not update or send a notification if nothing has changed
                 return
-            if(value in STATUS_STRINGS):
+            if value in STATUS_STRINGS:
                 old_value = self._status
                 self._status = value
                 notification = Notification(message=NOTIFICATIONS[0],
@@ -62,6 +66,7 @@ class PersistentImage(object):
 
     def percent_complete():
         doc = "The percentage through an operation."
+
         def fget(self):
             return self._percent_complete
 
@@ -91,13 +96,23 @@ class PersistentImage(object):
         # 'activity' should be set to a single line indicating, in as much detail as reasonably possible,
         #   what it is that the plugin operating on this image is doing at any given time.
         # 'error' should remain None unless an exception or other fatal error has occurred.  Error may
-        #   be a multiline string
-        self.status_detail = { 'activity': 'Initializing image prior to Cloud/OS customization', 'error':None }
+        #   be a multi-line string
+        self.status_detail = {'activity': 'Initializing image prior to Cloud/OS customization', 'error': None}
         # Setting these to None or setting initial value via the properties breaks the prop code above
         self._status = "NEW"
         self._percent_complete = 0
         self.icicle = None
-        self.parameters = { }
+        self.parameters = {}
+        self.properties = {}
+
+    def update(self, percentage=None, status=None, detail=None, error=None):
+        if percentage:
+            self.percent_complete = percentage
+        if status:
+            self.status = status
+        if detail:
+            self.status_detail['activity'] = detail
+        self.status_detail['error'] = error
 
     def metadata(self):
         self.log.debug("Executing metadata in class (%s) my metadata is (%s)" % (self.__class__, METADATA))

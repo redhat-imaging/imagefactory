@@ -1,0 +1,14 @@
+{
+    "type": "os",
+    "targets": [ ["Fedora", null, null], ["RHEL-6", null, null], ["RHEL-5", null, null], ["RHEL-7", null, null],
+                 ["Ubuntu", null, null], ["CentOS-6", null, null], ["CentOS-5", null, null], ["Windows", null, null]
+               ],
+    "description": "Plugin to support building OS base images using OpenStack Nova.",
+    "maintainer": {
+        "name": "Red Hat, Inc.",
+        "email": "imagefactory-devel@lists.fedorahosted.org",
+        "url": "http://imgfac.org"
+    },
+    "version": "1.0",
+    "license": "Copyright 2012 Red Hat, Inc. - http://www.apache.org/licenses/LICENSE-2.0"
+}
