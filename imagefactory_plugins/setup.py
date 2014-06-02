@@ -28,9 +28,7 @@ plugins = ['EC2', 'TinMan','MockCloud','MockOS', 'OpenStack',
            'RHEVM', 'vSphere', 'Rackspace', 'IndirectionCloud',
            'OVA', 'Docker']
 
-VERSION = '1.1.5'
-# TODO: When doing the final 1.1.5 release, increment this to 2 to correct for earlier
-#       error setting it at 1
+VERSION = '1.1.6'
 RELEASE = '0'
 
 class sdist(_sdist):
