@@ -7,6 +7,9 @@ License: ASL 2.0
 Group: Applications/System
 URL: http://www.aeolusproject.org/imagefactory.html
 BuildArch: noarch
+%if 0%{?rhel} == 6
+ExcludeArch: i386 ppc64
+%endif
 Requires: python-pycurl
 Requires: python-libguestfs
 Requires: python-zope-interface
@@ -79,6 +82,10 @@ fi
 %{_bindir}/imagefactoryd
 
 %changelog
+* Tue May 6 2014 Ian McLeod <imcleod@redhat.com> - 1.1.5-1
+- Rebase with upstream
+- Improved CLI parameter passing support
+
 * Thu Jan 30 2014 Steve Loranz <sloranz@redhat.com> - 1.1.3-1
 - Remove references to man directories. Documentation will be hosted @ imgfac.org.
 
