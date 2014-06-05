@@ -63,9 +63,8 @@ class RHEL5_ec2_Helper(Base_ec2_Helper):
         def connect_to_libvirt(self):
             pass
 
-        def guest_execute_command(self, guestaddr, command, timeout=30,
-                                  tunnels=None):
-            return super(RHEL5_ec2_Helper.RHEL5RemoteGuest, self).guest_execute_command(guestaddr, command, timeout, tunnels)
+        def guest_execute_command(self, guestaddr, command, timeout=30):
+            return super(RHEL5_ec2_Helper.RHEL5RemoteGuest, self).guest_execute_command(guestaddr, command, timeout)
 
         def guest_live_upload(self, guestaddr, file_to_upload, destination,
                               timeout=30):
@@ -105,9 +104,8 @@ class RHEL6_ec2_Helper(Base_ec2_Helper):
         def connect_to_libvirt(self):
             pass
 
-        def guest_execute_command(self, guestaddr, command, timeout=30,
-                                  tunnels=None):
-            return super(RHEL6_ec2_Helper.RHEL6RemoteGuest, self).guest_execute_command(guestaddr, command, timeout, tunnels)
+        def guest_execute_command(self, guestaddr, command, timeout=30):
+            return super(RHEL6_ec2_Helper.RHEL6RemoteGuest, self).guest_execute_command(guestaddr, command, timeout)
 
         def guest_live_upload(self, guestaddr, file_to_upload, destination,
                               timeout=30):
@@ -141,9 +139,8 @@ class Fedora_ec2_Helper(Base_ec2_Helper):
         def connect_to_libvirt(self):
             pass
 
-        def guest_execute_command(self, guestaddr, command, timeout=30,
-                                  tunnels=None):
-            return super(Fedora_ec2_Helper.FedoraRemoteGuest, self).guest_execute_command(guestaddr, command, timeout, tunnels)
+        def guest_execute_command(self, guestaddr, command, timeout=30):
+            return super(Fedora_ec2_Helper.FedoraRemoteGuest, self).guest_execute_command(guestaddr, command, timeout)
 
         def guest_live_upload(self, guestaddr, file_to_upload, destination,
                               timeout=30):

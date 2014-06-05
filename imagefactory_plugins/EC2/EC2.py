@@ -472,6 +472,8 @@ class EC2(object):
         # regional AKIs for pvgrub
 
     def wait_for_ec2_ssh_access(self, guestaddr, sshprivkey, user='root'):
+        if user is None:
+            user='root'
         self.activity("Waiting for SSH access to EC2 instance (User: %s)" % user)
         for i in range(300):
             if i % 10 == 0:
@@ -948,9 +950,9 @@ class EC2(object):
         region_conf=self._decode_region_details(region)
         aki = region_conf[self.tdlobj.arch]
 
-        # Use our F16 - 32 bit JEOS image as the utility image for uploading to the EBS volume
+        # Use our F20 - 32 bit JEOS image as the utility image for uploading to the EBS volume
         try:
-            ami_id = self.ec2_jeos_amis['ec2-' + region_conf['host']]['Fedora']['16']['i386']
+            ami_info = self.ec2_jeos_amis['ec2-' + region_conf['host']]['Fedora']['20']['i386']
         except KeyError:
             raise ImageFactoryException("No Fedora 16 i386 JEOS/utility image in region (%s) - aborting" % (provider))
 
@@ -980,8 +982,8 @@ class EC2(object):
         key_file=key_file_object.name
 
         # Now launch it
-        self.activity("Launching EC2 utility image")
-        reservation = conn.run_instances(ami_id, instance_type=instance_type, key_name=key_name, security_groups = [ factory_security_group_name ])
+        self.activity("Launching EC2 utility image (%s)" % (ami_info['img_id']))
+        reservation = conn.run_instances(ami_info['img_id'], instance_type=instance_type, key_name=key_name, security_groups = [ factory_security_group_name ])
 
         if len(reservation.instances) != 1:
             self.status="FAILED"
@@ -1001,12 +1003,16 @@ class EC2(object):
             self.guest.sshprivkey = key_file
 
             # Ugly ATM because failed access always triggers an exception
-            self.wait_for_ec2_ssh_access(guestaddr)
+            self.wait_for_ec2_ssh_access(guestaddr, key_file, ami_info['user'])
 
             # There are a handful of additional boot tasks after SSH starts running
             # Give them an additional 20 seconds for good measure
             self.log.debug("Waiting 20 seconds for remaining boot tasks")
             sleep(20)
+
+            if (ami_info['user'] != 'root'):
+                self.log.debug("Temporarily enabling root user for customization steps...")
+                enable_root(guestaddr, key_file, ami_info['user'], ami_info['cmd_prefix'])
 
             self.activity("Creating 10 GiB volume in (%s) to hold new image" % (self.instance.placement))
             volume = conn.create_volume(10, self.instance.placement)
