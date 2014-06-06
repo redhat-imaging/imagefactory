@@ -16,13 +16,16 @@
 
 import logging
 import zope
-import os.path
-import shutil
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.OSDelegate import OSDelegate
 from imgfac.ImageFactoryException import ImageFactoryException
 from novaimagebuilder.Builder import Builder as NIB
 from novaimagebuilder.StackEnvironment import StackEnvironment
+from time import sleep
+#TODO: remove dependency on Oz
+from ConfigParser import SafeConfigParser
+from oz.TDL import TDL
+import oz.GuestFactory
 
 PROPERTY_NAME_GLANCE_ID = 'x-image-properties-glance_id'
 
@@ -97,10 +100,50 @@ class Nova(object):
         self.nib.run()
 
         builder.base_image.update(10, 'BUILDING', 'Waiting for Nova Image Builder to complete...')
-        os_image_id = self.nib.wait_for_completion(180)
-        if os_image_id:
-            builder.base_image.properties[PROPERTY_NAME_GLANCE_ID] = os_image_id
-            builder.base_image.update(100, 'COMPLETE', 'Image stored in glance with id (%s)' % os_image_id)
+        jeos_image_id = self.nib.wait_for_completion(180)
+        if jeos_image_id:
+            builder.base_image.update(30, 'BUILDING',
+                                      'JEOS image in glance with id (%s), starting customization...' % jeos_image_id)
+
+            jeos_instance = self.nib.env.launch_instance(root_disk=("glance", jeos_image_id))
+            self.log.debug('Launched Nova instance (id: %s) for customization & icicle generation.' % jeos_instance.id)
+            jeos_instance_addr = str(jeos_instance.add_floating_ip().ip)
+            self.log.debug('Using address %s to reach instance %s' % (jeos_instance_addr, jeos_instance.id))
+
+            oz_config = SafeConfigParser()
+            if oz_config.read("/etc/oz/oz.cfg") != []:
+                oz_config.set('paths', 'output_dir', self.app_config['imgdir'])
+                if 'oz_data_dir' in self.app_config:
+                    oz_config.set('paths', 'data_dir', self.app_config['oz_data_dir'])
+                if 'oz_screenshot_dir' in self.app_config:
+                    oz_config.set('paths', 'screenshot_dir', self.app_config['oz_screenshot_dir'])
+            else:
+                raise ImageFactoryException('No Oz config file found. Cannot continue.')
+
+            oz_guest = oz.GuestFactory.guest_factory(tdl=TDL(str(template)),
+                                                     config=oz_config,
+                                                     auto=install_script)
+
+            if self._confirm_ssh_access(oz_guest, jeos_instance_addr):
+                self.log.debug('Starting base image customization.')
+                oz_guest.do_customize(jeos_instance_addr)
+                self.log.debug('Completed base image customization.')
+
+                self.log.debug('Starting ICICLE generation.')
+                builder.base_image.update(90, 'BUILDING', 'Starting ICICLE generation (glance: %s)...' % jeos_image_id)
+                builder.base_image.icicle = oz_guest.do_icicle(jeos_instance_addr)
+                self.log.debug('Completed ICICLE generation')
+            else:
+                raise ImageFactoryException('Unable to reach %s via ssh.' % jeos_instance_addr)
+
+            if jeos_instance.shutoff():
+                base_image_id = jeos_instance.create_snapshot()
+                builder.base_image.properties[PROPERTY_NAME_GLANCE_ID] = base_image_id
+                builder.base_image.update(100, 'COMPLETE', 'Image stored in glance with id (%s)' % base_image_id)
+                jeos_instance.terminate()
+            else:
+                raise ImageFactoryException('JEOS build instance (%s) never shutdown in Nova.' % jeos_instance.id)
+
         else:
             exc_msg = 'Nova Image Builder failed to return a Glance ID, failing...'
             builder.base_image.update(status='FAILED', error=exc_msg)
@@ -119,7 +162,11 @@ class Nova(object):
 
         @return A TargetImage object.
         """
-        self.log.info('create_target_image() currently unsupported for Nova plugin')
+        self.log.info('create_target_image() called for Nova plugin - creating a TargetImage')
+
+        glance_id = base_image.properties[PROPERTY_NAME_GLANCE_ID]
+        stack_env = StackEnvironment()
+        nova_instance = stack_env.launch_instance(root_disk=('glance', glance_id))
 
         ### TODO: Snapshot the image in glance, launch in nova, and ssh in to customize.
         # The following is incomplete and not correct as it assumes local manipulation of the image
@@ -153,3 +200,23 @@ class Nova(object):
         @param content dict containing commands and file.
         """
         self._cloud_plugin_content.append(content)
+
+    def _confirm_ssh_access(self, guest, addr, timeout=300):
+        confirmation = False
+
+        for index in range(timeout):
+            if index % 10 == 0:
+                self.log.debug('Checking ssh access to %s - %d' % (addr, index))
+            try:
+                guest.guest_execute_command(addr, '/bin/true', timeout=10)
+                confirmation = True
+                break
+            except Exception as e:
+                self.log.exception('Caught exception while checking ssh access to %s: %s' % (addr, e))
+
+            sleep(1)
+
+        if not confirmation:
+            self.log.debug('Unable to confirm ssh access to %s after %s minutes...' % (addr, timeout/60))
+
+        return confirmation
