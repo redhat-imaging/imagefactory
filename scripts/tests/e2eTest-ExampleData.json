@@ -26,7 +26,7 @@
             "url":"http://download.devel.redhat.com/released/RHEL-6/6.4/Server/x86_64/os/"
         }
     ],
-    "targets": ["rhevm", "ec2", "vsphere", "kvm-openstack"],
+    "targets": ["rhevm", "ec2", "vsphere", "openstack-kvm"],
     "providers":
     [
         {

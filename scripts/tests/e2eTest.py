@@ -30,7 +30,7 @@ description = 'Attempts an end to end test of the imagefactory command line inte
 argparser = argparse.ArgumentParser()
 argparser.add_argument('datafile', type=argparse.FileType('r'))
 argparser.add_argument('--cmd', default='/usr/bin/imagefactory', help='Path to the imagefactory command. (default: %(default)s)')
-argparser.add_argument('--url', default='https://localhost:8075/imagefactory', help='URL of the imagefactory instance to test. (default: %(default)s)')
+argparser.add_argument('--url', default='http://localhost:8075/imagefactory', help='URL of the imagefactory instance to test. (default: %(default)s)')
 argparser.add_argument('-L', help='uses the local CLI to run the tests instead of the REST api interface. (default: %(default)s)', action='store_false', dest='remote')
 
 args = argparser.parse_args()
@@ -213,4 +213,6 @@ for base_image in base_images:
         subprocess_check_output('%s --output json --raw delete %s' % (args.cmd, base_image['id']), shell=True)
 
 print json.dumps({"failures":failures, "base_images":base_images, "target_images":target_images}, indent=2)
+if len(failures) > 0:
+    sys.exit(1)
 sys.exit(0)
