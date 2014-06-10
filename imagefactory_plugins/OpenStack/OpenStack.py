@@ -27,26 +27,17 @@ from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.CloudDelegate import CloudDelegate
 from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info
-from glance import client as glance_client
-
-def glance_upload(image_filename, creds = {'auth_url': None, 'password': None, 'strategy': 'noauth', 'tenant': None, 'username': None},
-                  host = "0.0.0.0", port = "9292", token = None, name = 'Factory Test Image', disk_format = 'raw'):
-
-    image_meta = {'container_format': 'bare',
-     'disk_format': disk_format,
-     'is_public': True,
-     'min_disk': 0,
-     'min_ram': 0,
-     'name': name,
-     'properties': {'distro': 'rhel'}}
-
-
-    c = glance_client.Client(host=host, port=port,
-                             auth_tok=token, creds=creds)
-    image_data = open(image_filename, "r")
-    image_meta = c.add_image(image_meta, image_data)
-    image_data.close()
-    return image_meta['id']
+try:
+    from keystoneclient.v2_0 import client
+    import glanceclient as glance_client
+    GLANCE_VERSION = 2
+except ImportError:
+    try:
+       # backward compatible
+       from glance import client as glance_client
+       GLANCE_VERSION = 1
+    except ImportError:
+       raise ImageFactoryException("Glance client not found.")
 
 class OpenStack(object):
     zope.interface.implements(CloudDelegate)
@@ -56,6 +47,12 @@ class OpenStack(object):
         super(OpenStack, self).__init__()
         self.app_config = ApplicationConfiguration().configuration
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+
+        self.version = GLANCE_VERSION
+        if self.version == 2:
+            self.credentials_attrs = [ 'auth_url', 'password', 'tenant', 'username']
+        else:
+             self.credentials_attrs = [ 'auth_url', 'password', 'strategy', 'tenant', 'username']
 
     def activity(self, activity):
         # Simple helper function
@@ -91,9 +88,21 @@ class OpenStack(object):
         else:
             self.log.debug("Uploading image to glance, assuming raw format")
             disk_format='raw'
-        image_id = glance_upload(input_image, creds = self.credentials_dict, token = self.credentials_token,
-                                 host=provider_data['glance-host'], port=provider_data['glance-port'],
-                                 name=image_name, disk_format=disk_format)
+
+        # Support openstack grizzly keystone authentication and glance upload
+        if self.version == 2:
+            if self.credentials_token is None:
+                self.credentials_token = self.keystone_authenticate(**self.credentials_dict)
+
+            provider_data['name']  = image_name
+            provider_data['disk_format'] = disk_format
+
+            image_id = self.glance_upload_v2(input_image, self.credentials_token, **provider_data)
+        else:
+            # Also support backward compatible for folsom
+            image_id = self.glance_upload(input_image, creds = self.credentials_dict, token = self.credentials_token,
+                                     host=provider_data['glance-host'], port=provider_data['glance-port'],
+                                     name=image_name, disk_format=disk_format)
 
         self.builder.provider_image.identifier_on_provider = image_id
         if 'username' in self.credentials_dict:
@@ -107,8 +116,10 @@ class OpenStack(object):
         doc = libxml2.parseDoc(credentials)
 
         self.credentials_dict = { }
-        for authprop in [ 'auth_url', 'password', 'strategy', 'tenant', 'username']:
-            self.credentials_dict[authprop] = self._get_xml_node(doc, authprop)
+        for authprop in self.credentials_attrs:
+            value = self._get_xml_node(doc, authprop)
+            if value is not None:
+                self.credentials_dict[authprop] = value
         self.credentials_token = self._get_xml_node(doc, 'token')
 
     def _get_xml_node(self, doc, credtype):
@@ -143,6 +154,12 @@ class OpenStack(object):
         # using this avoids the performance penalty of uploading
         # (and launching) raw disk images on slow storage
         if self.app_config.get('openstack_image_format', 'raw') == 'qcow2':
+
+            # Prevent double convert if the image is already qcow2
+            if self.check_qcow_size(input_image) is not None:
+                self.log.debug("No conversion require. Image already in qcow2 format.")
+                return
+
             self.log.debug("Converting RAW image to compressed qcow2 format")
             rc = os.system("qemu-img convert -c -O qcow2 %s %s" %
                             (input_image, input_image + ".tmp.qcow2"))
@@ -175,6 +192,60 @@ class OpenStack(object):
             pass
 
         return None
+
+    def keystone_authenticate(self, **kwargs):
+        user = kwargs.get('username')
+        pwd = kwargs.get('password')
+        tenant = kwargs.get('tenant')
+        url = kwargs.get('auth_url', 'http://127.0.0.1:5000/v2.0')
+
+        keystone = client.Client(username=user, password=pwd, tenant_name=tenant, auth_url=url)
+        keystone.authenticate()
+        return keystone.auth_token
+
+    def glance_upload(self, image_filename, creds = {'auth_url': None, 'password': None, 'strategy': 'noauth', 'tenant': None, 'username': None},
+                      host = "0.0.0.0", port = "9292", token = None, name = 'Factory Test Image', disk_format = 'raw'):
+
+        image_meta = {'container_format': 'bare',
+         'disk_format': disk_format,
+         'is_public': True,
+         'min_disk': 0,
+         'min_ram': 0,
+         'name': name,
+         'properties': {'distro': 'rhel'}}
+
+
+        c = glance_client.Client(host=host, port=port,
+                                 auth_tok=token, creds=creds)
+        image_data = open(image_filename, "r")
+        image_meta = c.add_image(image_meta, image_data)
+        image_data.close()
+        return image_meta['id']
+
+    def glance_upload_v2(self, image, auth_token=None, **kwargs):
+        if image is None:
+             raise ImageFactoryException("No image is provided")
+
+        glance_host = kwargs.setdefault("glance-host", "127.0.0.1")
+        glance_port = kwargs.setdefault("glance-port", "9292")
+        glance_url = "http://%s:%s" % (glance_host, glance_port)
+
+        image_data = open(image, "r")
+
+        image_meta = {
+         'container_format': kwargs.setdefault('container_format', 'bare'),
+         'disk_format': kwargs.setdefault('disk_format', 'raw'),
+         'is_public': kwargs.setdefault('is_public', False),
+         'min_disk': kwargs.setdefault('min_disk', 0),
+         'min_ram': kwargs.setdefault('min_ram', 0),
+         'name': kwargs.setdefault('name', 'Factory Test Image'),
+         'data': image_data,
+        }
+
+        c = glance_client.Client('1', glance_url, token=auth_token)
+        image_meta = c.images.create(**image_meta)
+        image_data.close()
+        return image_meta.id
 
     # FIXME : cut/paste from RHEVMHelper.py, should refactor into a common utility class
     def check_qcow_size(self, filename):
