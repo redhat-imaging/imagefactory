@@ -17,6 +17,7 @@
 import logging
 import zope
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
+from imgfac.FactoryUtils import enable_root
 from imgfac.OSDelegate import OSDelegate
 from imgfac.ImageFactoryException import ImageFactoryException
 from novaimagebuilder.Builder import Builder as NIB
@@ -105,14 +106,39 @@ class Nova(object):
             builder.base_image.update(30, 'BUILDING',
                                       'JEOS image in glance with id (%s), starting customization...' % jeos_image_id)
 
-            jeos_instance = self.nib.env.launch_instance(root_disk=("glance", jeos_image_id))
+            self.log.debug('Launching Nova instance with image (%s) for customization & icicle generation.' %
+                           jeos_image_id)
+            img_name = self.nib.env.glance.images.get(jeos_image_id).name
+            jeos_instance = self.nib.env.launch_instance('Customize %s and Generate ICICLE' % img_name, jeos_image_id)
             self.log.debug('Launched Nova instance (id: %s) for customization & icicle generation.' % jeos_instance.id)
-            jeos_instance_addr = str(jeos_instance.add_floating_ip().ip)
-            self.log.debug('Using address %s to reach instance %s' % (jeos_instance_addr, jeos_instance.id))
+
+            # Get an IP address to use below for ssh connections to the instance.
+            jeos_instance_addr = None
+            for index in range(0, 120, 5):
+                if len(jeos_instance.instance.networks) > 0:
+                    #jeos_instance_addr = str(jeos_instance.add_floating_ip().ip)
+                    jeos_instance_addr = str(jeos_instance.instance.networks['private'][0])
+                    self.log.debug('Using address %s to reach instance %s' % (jeos_instance_addr, jeos_instance.id))
+                    break
+                else:
+                    sleep(5)
+
+            if not jeos_instance_addr:
+                raise ImageFactoryException('Unable to obtain an IP address for instance %s' % jeos_instance.id)
+
+            private_key_file = jeos_instance.key_dir + jeos_instance.key_pair.name
+
+            # Enable root for customization steps
+            user = parameters.get('default_user')
+            if user and user != 'root':
+                cmd_prefix = parameters.get('command_prefix')
+                self.log.debug('Temporarily enabling root user for customization steps...')
+                enable_root(jeos_instance_addr, private_key_file, user, cmd_prefix)
 
             oz_config = SafeConfigParser()
             if oz_config.read("/etc/oz/oz.cfg") != []:
                 oz_config.set('paths', 'output_dir', self.app_config['imgdir'])
+                oz_config.set('paths', 'sshprivkey', private_key_file)
                 if 'oz_data_dir' in self.app_config:
                     oz_config.set('paths', 'data_dir', self.app_config['oz_data_dir'])
                 if 'oz_screenshot_dir' in self.app_config:
@@ -137,7 +163,7 @@ class Nova(object):
                 raise ImageFactoryException('Unable to reach %s via ssh.' % jeos_instance_addr)
 
             if jeos_instance.shutoff():
-                base_image_id = jeos_instance.create_snapshot()
+                base_image_id = jeos_instance.create_snapshot(template.name + '-base')
                 builder.base_image.properties[PROPERTY_NAME_GLANCE_ID] = base_image_id
                 builder.base_image.update(100, 'COMPLETE', 'Image stored in glance with id (%s)' % base_image_id)
                 jeos_instance.terminate()
@@ -204,7 +230,7 @@ class Nova(object):
     def _confirm_ssh_access(self, guest, addr, timeout=300):
         confirmation = False
 
-        for index in range(timeout):
+        for index in range(timeout/10):
             if index % 10 == 0:
                 self.log.debug('Checking ssh access to %s - %d' % (addr, index))
             try:
