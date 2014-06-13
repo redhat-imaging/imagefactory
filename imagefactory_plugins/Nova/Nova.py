@@ -17,7 +17,7 @@
 import logging
 import zope
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
-from imgfac.FactoryUtils import enable_root
+from imgfac.FactoryUtils import enable_root, disable_root
 from imgfac.OSDelegate import OSDelegate
 from imgfac.ImageFactoryException import ImageFactoryException
 from novaimagebuilder.Builder import Builder as NIB
@@ -111,11 +111,16 @@ class Nova(object):
             img_name = self.nib.env.glance.images.get(jeos_image_id).name
             jeos_instance = self.nib.env.launch_instance('Customize %s and Generate ICICLE' % img_name, jeos_image_id)
             self.log.debug('Launched Nova instance (id: %s) for customization & icicle generation.' % jeos_instance.id)
+            if not jeos_instance.open_ssh():  # Add a security group for ssh access
+                raise ImageFactoryException('Failed to add security group for ssh, cannot continue...')
 
             # Get an IP address to use below for ssh connections to the instance.
             jeos_instance_addr = None
             for index in range(0, 120, 5):
+                self.log.debug('Networks associated with instance %s: %s' % (jeos_instance.id,
+                                                                             jeos_instance.instance.networks))
                 if len(jeos_instance.instance.networks) > 0:
+                    #TODO: Enable and test using a floating IP instead of the fixed private IP
                     #jeos_instance_addr = str(jeos_instance.add_floating_ip().ip)
                     jeos_instance_addr = str(jeos_instance.instance.networks['private'][0])
                     self.log.debug('Using address %s to reach instance %s' % (jeos_instance_addr, jeos_instance.id))
@@ -130,8 +135,8 @@ class Nova(object):
 
             # Enable root for customization steps
             user = parameters.get('default_user')
+            cmd_prefix = parameters.get('command_prefix')
             if user and user != 'root':
-                cmd_prefix = parameters.get('command_prefix')
                 self.log.debug('Temporarily enabling root user for customization steps...')
                 enable_root(jeos_instance_addr, private_key_file, user, cmd_prefix)
 
@@ -159,6 +164,14 @@ class Nova(object):
                 builder.base_image.update(90, 'BUILDING', 'Starting ICICLE generation (glance: %s)...' % jeos_image_id)
                 builder.base_image.icicle = oz_guest.do_icicle(jeos_instance_addr)
                 self.log.debug('Completed ICICLE generation')
+
+                # Disable ssh access for root
+                if user and user != 'root':
+                    disable_root(jeos_instance_addr, private_key_file, user, cmd_prefix)
+                    self.log.debug('Disabling root ssh access now that customization is complete...')
+
+                jeos_instance.close_ssh()  # Remove security group for ssh access
+
             else:
                 raise ImageFactoryException('Unable to reach %s via ssh.' % jeos_instance_addr)
 

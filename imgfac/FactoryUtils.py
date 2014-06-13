@@ -10,6 +10,7 @@ import os
 import re
 from imgfac.ImageFactoryException import ImageFactoryException
 import subprocess
+import logging
 
 
 def launch_inspect_and_mount(diskfile, readonly=False):
@@ -141,19 +142,30 @@ def ssh_execute_command(guestaddr, sshprivkey, command, timeout=10, user='root',
 def enable_root(guestaddr, sshprivkey, user, prefix):
     for cmd in ('mkdir /root/.ssh',
                 'chmod 600 /root/.ssh',
+                'rm -f /root/.ssh/authorized_keys',
                 'cp /home/%s/.ssh/authorized_keys /root/.ssh' % user,
                 'chmod 600 /root/.ssh/authorized_keys'):
         try:
             ssh_execute_command(guestaddr, sshprivkey, cmd, user=user, prefix=prefix)
+            log = logging.getLogger(__name__)
+            log.debug('Executing command on %s as %s: %s' % (guestaddr, user, cmd))
         except Exception as e:
             pass
-
     try:
         stdout, stderr, retcode = ssh_execute_command(guestaddr, sshprivkey, '/bin/id')
         if not re.search('uid=0', stdout):
             raise Exception('Running /bin/id on %s as root: %s' % (guestaddr, stdout))
     except Exception as e:
         raise ImageFactoryException('Transfer of authorized_keys to root from %s must have failed - Aborting - %s' % (user, e))
+
+def disable_root(guestaddr, sshprivkey, user, prefix):
+    for cmd in('rm -rf /root/.ssh'):
+        try:
+            ssh_execute_command(guestaddr, sshprivkey, cmd, user=user, prefix=prefix)
+            log = logging.getLogger(__name__)
+            log.debug('Executing command on %s as %s: %s' % (guestaddr, user, cmd))
+        except Exception as e:
+            pass
 
 # Our generic "parameters" dict passed to the plugins may be derived from either
 # real JSON or from individual parameters passed on the command line.  In the case
