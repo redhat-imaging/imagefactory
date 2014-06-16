@@ -138,7 +138,16 @@ class Nova(object):
             cmd_prefix = parameters.get('command_prefix')
             if user and user != 'root':
                 self.log.debug('Temporarily enabling root user for customization steps...')
-                enable_root(jeos_instance_addr, private_key_file, user, cmd_prefix)
+                for index in range(0, 120, 5):
+                    try:
+                        enable_root(jeos_instance_addr, private_key_file, user, cmd_prefix)
+                        break
+                    except ImageFactoryException as e:
+                        if index < 120:
+                            self.log.debug(e)
+                            sleep(5)
+                        else:
+                            raise e
 
             oz_config = SafeConfigParser()
             if oz_config.read("/etc/oz/oz.cfg") != []:

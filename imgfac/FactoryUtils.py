@@ -142,7 +142,6 @@ def ssh_execute_command(guestaddr, sshprivkey, command, timeout=10, user='root',
 def enable_root(guestaddr, sshprivkey, user, prefix):
     for cmd in ('mkdir /root/.ssh',
                 'chmod 600 /root/.ssh',
-                'rm -f /root/.ssh/authorized_keys',
                 'cp /home/%s/.ssh/authorized_keys /root/.ssh' % user,
                 'chmod 600 /root/.ssh/authorized_keys'):
         try:
