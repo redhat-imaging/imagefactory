@@ -127,9 +127,8 @@ class Nova(object):
                 self.log.debug('Networks associated with instance %s: %s' % (jeos_instance.id,
                                                                              jeos_instance.instance.networks))
                 if len(jeos_instance.instance.networks) > 0:
-                    #TODO: Enable and test using a floating IP instead of the fixed private IP
-                    #jeos_instance_addr = str(jeos_instance.add_floating_ip().ip)
-                    jeos_instance_addr = str(jeos_instance.instance.networks['private'][0])
+                    jeos_instance_addr = str(jeos_instance.add_floating_ip().ip)
+                    #jeos_instance_addr = str(jeos_instance.instance.networks['private'][0])
                     self.log.debug('Using address %s to reach instance %s' % (jeos_instance_addr, jeos_instance.id))
                     break
                 else:
