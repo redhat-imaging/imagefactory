@@ -16,6 +16,9 @@
 
 import logging
 import zope
+import os.path
+import shutil
+import libxml2
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.FactoryUtils import enable_root, disable_root
 from imgfac.OSDelegate import OSDelegate
@@ -23,6 +26,7 @@ from imgfac.ImageFactoryException import ImageFactoryException
 from novaimagebuilder.Builder import Builder as NIB
 from novaimagebuilder.StackEnvironment import StackEnvironment
 from time import sleep
+from base64 import b64decode
 #TODO: remove dependency on Oz
 from ConfigParser import SafeConfigParser
 from oz.TDL import TDL
@@ -166,9 +170,7 @@ class Nova(object):
             else:
                 raise ImageFactoryException('No Oz config file found. Cannot continue.')
 
-            oz_guest = oz.GuestFactory.guest_factory(tdl=TDL(str(template)),
-                                                     config=oz_config,
-                                                     auto=install_script)
+            oz_guest = oz.GuestFactory.guest_factory(tdl=TDL(str(template)), config=oz_config, auto=None)
 
             if self._confirm_ssh_access(oz_guest, jeos_instance_addr):
                 self.log.debug('Starting base image customization.')
@@ -218,30 +220,125 @@ class Nova(object):
         """
         self.log.info('create_target_image() called for Nova plugin - creating a TargetImage')
 
-        glance_id = base_image.properties[PROPERTY_NAME_GLANCE_ID]
-        stack_env = StackEnvironment()
-        nova_instance = stack_env.launch_instance(root_disk=('glance', glance_id))
+        # Merge together any TDL-style customizations requested via our plugin-to-plugin interface  with any target
+        #  specific packages, repos and commands and then run a second Oz customization step.
+        tdl = TDL(xmlstring=base_image.template, rootpw_required=self.app_config['tdl_require_root_pw'])
 
-        ### TODO: Snapshot the image in glance, launch in nova, and ssh in to customize.
-        # The following is incomplete and not correct as it assumes local manipulation of the image
-        # self.log.info('create_target_image() called for Nova plugin - creating TargetImage')
-        # base_img_path = base_image.data
-        # target_img_path = builder.target_image.data
-        #
-        # builder.target_image.update(status='PENDING', detail='Copying base image...')
-        # if os.path.exists(base_img_path) and os.path.getsize(base_img_path):
-        #     try:
-        #         shutil.copyfile(base_img_path, target_img_path)
-        #     except IOError as e:
-        #         builder.target_image.update(status='FAILED', error='Error copying base image: %s' % e)
-        #         self.log.exception(e)
-        #         raise e
-        # else:
-        #     glance_id = base_image.properties[PROPERTY_NAME_GLANCE_ID]
-        #     base_img_file = StackEnvironment().download_image_from_glance(glance_id)
-        #     with open(builder.target_image.data, 'wb') as target_img_file:
-        #         shutil.copyfileobj(base_img_file, target_img_file)
-        #     base_img_file.close()
+        # We remove any packages, commands and files from the original TDL - these have already been
+        # installed/executed.  We leave the repos in place, as it is possible that the target
+        # specific packages or commands may require them.
+        tdl.packages = []
+        tdl.commands = {}
+        tdl.files = {}
+
+        # Get user defined repositories and packages from a local config file
+        repositories, packages = self._target_content(tdl, target)
+        if repositories:
+            tdl.merge_repositories(repositories)
+        if packages:
+            tdl.merge_packages(packages)
+
+        # Content provided by the target plugin for the target plugin
+        if len(self._cloud_plugin_content) > 0:
+            tdl = self.merge_cloud_content_with_tdl(self._cloud_plugin_content, tdl)
+
+        # If there are no new commands, packages or files, we can stop here
+        if (len(tdl.packages) + len(tdl.commands) + len(tdl.files)) == 0:
+            self.log.debug('No further modification of the TargetImage to perform in the OS Plugin - returning')
+            return
+
+        base_image_id = base_image.properties[PROPERTY_NAME_GLANCE_ID]
+        stack_env = StackEnvironment()
+        base_instance = stack_env.launch_instance(name='Target Image Prep',
+                                                  root_disk=('glance', base_image_id),
+                                                  flavor=parameters.get('flavor'))
+        if not base_instance:
+            raise ImageFactoryException('Reached timeout waiting for base instance...')
+        self.log.debug('Launched Nova instance (id: %s) for target specific customization.' % base_instance.id)
+
+        if not base_instance.open_ssh():  # Add A security group for ssh access
+            raise ImageFactoryException('Failed to add security group for ssh, cannot continue...')
+
+        # Get an IP address to use for ssh connections
+        base_instance_addr = None
+        for index in range(0, 120, 5):
+            self.log.debug('Networks associated with instance %s: %s' % (base_instance.id,
+                                                                         base_instance.instance.networks))
+            if len(base_instance.instance.networks) > 0:
+                base_instance_addr = str(base_instance.add_floating_ip().ip)
+                self.log.debug('Using address %s to reach instance %s' % (base_instance_addr, base_instance.id))
+                break
+            else:
+                sleep(5)
+
+        if not base_instance_addr:
+            raise ImageFactoryException('Unable to obtain IP address for instance %s' % base_instance.id)
+
+        private_key_file = base_instance.key_dir + base_instance.key_pair.name
+
+        # Enable root for target prep steps
+        user = parameters.get('default_user')
+        cmd_prefix = parameters.get('command_prefix')
+        if user and user != 'root':
+            self.log.debug('Temporarily enabling root user for targe preparation steps...')
+            for index in range(0, 120, 5):
+                try:
+                    enable_root(base_instance_addr, private_key_file, user, cmd_prefix)
+                    break
+                except Exception as e:
+                    if index < 120:
+                        self.log.debug(e)
+                        sleep(5)
+                    else:
+                        raise e
+
+        oz_config = SafeConfigParser()
+        if oz_config.read("/etc/oz/oz.cfg") != []:
+            oz_config.set('paths', 'output_dir', self.app_config['imgdir'])
+            oz_config.set('paths', 'sshprivkey', private_key_file)
+            if 'oz_data_dir' in self.app_config:
+                oz_config.set('paths', 'data_dir', self.app_config['oz_data_dir'])
+            if 'oz_screenshot_dir' in self.app_config:
+                oz_config.set('paths', 'screenshot_dir', self.app_config['oz_screenshot_dir'])
+        else:
+            raise ImageFactoryException('No Oz config file found. Cannot continue.')
+
+        oz_guest = oz.GuestFactory.guest_factory(tdl=tdl, config=oz_config, auto=None)
+
+        if self._confirm_ssh_access(oz_guest, base_instance_addr):
+            self.log.debug('Starting base image customization.')
+            oz_guest.do_customize(base_instance_addr)
+            self.log.debug('Completed base image customization.')
+
+            self.log.debug('Starting ICICLE generation.')
+            builder.target_image.update(85, 'BUILDING', 'Starting ICICLE generation (glance: %s)...' % base_image_id)
+            builder.target_image.icicle = oz_guest.do_icicle(base_instance_addr)
+            self.log.debug('Completed ICICLE generation')
+
+            # Disable ssh access for root
+            if user and user != 'root':
+                disable_root(base_instance_addr, private_key_file, user, cmd_prefix)
+                self.log.debug('Disabling root ssh access now that customization is complete...')
+
+            base_instance.close_ssh()  # Remove security group for ssh access
+
+        else:
+            raise ImageFactoryException('Unable to reach %s via ssh.' % base_instance_addr)
+
+        if base_instance.shutoff():
+            target_image_id = base_instance.create_snapshot(tdl.name + '-base')
+            builder.target_image.properties[PROPERTY_NAME_GLANCE_ID] = target_image_id
+            builder.target_image.update(90, 'BUILDING', 'Target Image stored in glance with id (%s)' % target_image_id)
+            base_instance.terminate()
+        else:
+            raise ImageFactoryException('JEOS build instance (%s) never shutdown in Nova.' % base_instance.id)
+
+        builder.target_image.update(95, 'BUILDING', 'Downloading target image...')
+        target_img_fileobj = StackEnvironment().download_image_from_glance(target_image_id)
+        with open(builder.target_image.data, 'wb') as target_img_file:
+            shutil.copyfileobj(target_img_fileobj, target_img_file)
+            target_img_file.close()
+        target_img_fileobj.close()
 
     def add_cloud_plugin_content(self, content):
         """
@@ -254,6 +351,96 @@ class Nova(object):
         @param content dict containing commands and file.
         """
         self._cloud_plugin_content.append(content)
+
+    def merge_cloud_content_with_tdl(self, contents, tdl):
+        for item in contents:
+            if 'files' in item:
+                for entry in item['files']:
+                    if not 'name' in entry:
+                        raise ImageFactoryException('File given without a name')
+                    if not 'type' in entry:
+                        raise ImageFactoryException('File given without a type')
+                    if not 'file' in entry:
+                        raise ImageFactoryException('File given without any content')
+                    if entry['type'] == 'raw':
+                        tdl.files[entry['name']] = entry['file']
+                    elif entry['type'] == 'base64':
+                        if len(entry['file']) == 0:
+                            self.log.warning('File given with zero length... %s' % entry['name'])
+                            tdl.files[entry['name']] = ''
+                        else:
+                            tdl.files[entry['name']] = b64decode(entry['file'])
+                    else:
+                        raise ImageFactoryException('File given with invalid type (%s)' % entry['type'])
+
+            if 'commands' in item:
+                for entry in item['commands']:
+                    if not 'name' in entry:
+                        raise ImageFactoryException('Command given without a name')
+                    if not 'type' in entry:
+                        raise ImageFactoryException('Command given without a type')
+                    if not 'command' in entry:
+                        raise ImageFactoryException('Command given without any content')
+                    if entry['type'] == 'raw':
+                        tdl.commands[entry['name']] = entry['command']
+                    elif entry['type'] == 'base64':
+                        if len(entry['command']) == 0:
+                            self.log.warning('Command given with zero length... %s' % entry['name'])
+                            tdl.commands[entry['name']] = ''
+                        else:
+                            tdl.commands[entry['name']] = b64decode(entry['command'])
+                    else:
+                        raise ImageFactoryException('Command given with invalid type (%s)' % entry['type'])
+
+        return tdl
+
+    def _target_content(self, tdl, target):
+        target_xml = '/etc/imagefactory/target_content.xml'
+        if os.path.isfile(target_xml):
+            doc = libxml2.parseFile(target_xml)
+        else:
+            self.log.debug("Found neither a call-time config nor a config file - doing nothing")
+            return None, None
+
+        # We go from most to least specific in this order:
+        #   arch -> version -> os-> target
+        # Note that at the moment we even allow an include statment that covers absolutely everything.
+        # That is, one that doesn't even specify a target - this is to support a very simple call-time syntax
+        include = doc.xpathEval("/template_includes/include[@target='%s' and @os='%s' and @version='%s' and @arch='%s']"
+                                % (target, tdl.distro, tdl.update, tdl.arch))
+        if len(include) == 0:
+            include = doc.xpathEval("/template_includes/include[@target='%s' and @os='%s' and @version='%s' and \
+            not(@arch)]" % (target, tdl.distro, tdl.update))
+        if len(include) == 0:
+            include = doc.xpathEval("/template_includes/include[@target='%s' and @os='%s' and not(@version) and \
+            not(@arch)]" % (target, tdl.distro))
+        if len(include) == 0:
+            include = doc.xpathEval("/template_includes/include[@target='%s' and not(@os) and not(@version) and \
+            not(@arch)]" % (target))
+        if len(include) == 0:
+            include = doc.xpathEval("/template_includes/include[not(@target) and not(@os) and not(@version) and \
+            not(@arch)]")
+        if len(include) == 0:
+            self.log.debug("cannot find a config section that matches our build details - doing nothing")
+            return None, None
+
+        # OK - We have at least one config block that matches our build - take the first one, merge it and be done
+        # TODO: Merge all of them?  Err out if there is more than one?  Warn?
+        include = include[0]
+
+        packages = include.xpathEval("packages")
+        if len(packages) > 0:
+            ret_pkgs = packages[0]
+        else:
+            ret_pkgs = None
+
+        repositories = include.xpathEval("repositories")
+        if len(repositories) > 0:
+            ret_repos = repositories[0]
+        else:
+            ret_repos = None
+
+        return ret_repos, ret_pkgs
 
     def _confirm_ssh_access(self, guest, addr, timeout=300):
         confirmation = False
