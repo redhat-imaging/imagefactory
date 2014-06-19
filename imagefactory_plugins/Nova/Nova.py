@@ -94,7 +94,9 @@ class Nova(object):
                           'flavor': parameters.get('flavor'),
                           'storage': parameters.get('storage'),
                           'name': template.name,
-                          'direct_boot': False}
+                          'direct_boot': parameters.get('direct_boot', False),
+                          'timeout': parameters.get('timeout', 1800),
+                          'public': parameters.get('public', False)}
 
         builder.base_image.update(10, 'BUILDING', 'Created Nova Image Builder instance...')
         self.nib = NIB(install_os, install_location, install_type, install_script, install_config)
