@@ -111,7 +111,12 @@ class Nova(object):
             self.log.debug('Launching Nova instance with image (%s) for customization & icicle generation.' %
                            jeos_image_id)
             img_name = self.nib.env.glance.images.get(jeos_image_id).name
-            jeos_instance = self.nib.env.launch_instance('Customize %s and Generate ICICLE' % img_name, jeos_image_id)
+            jeos_instance = self.nib.env.launch_instance(name='Customize %s and Generate ICICLE' % img_name,
+                                                         root_disk=jeos_image_id,
+                                                         flavor=parameters.get('flavor', None))
+            if not jeos_instance:
+                raise ImageFactoryException('Reached timeout waiting for customization instance...')
+
             self.log.debug('Launched Nova instance (id: %s) for customization & icicle generation.' % jeos_instance.id)
             if not jeos_instance.open_ssh():  # Add a security group for ssh access
                 raise ImageFactoryException('Failed to add security group for ssh, cannot continue...')
