@@ -22,6 +22,7 @@ import subprocess
 import libxml2
 import traceback
 import ConfigParser
+import base64
 from os.path import isfile
 from time import *
 from tempfile import NamedTemporaryFile
@@ -148,7 +149,7 @@ class TinMan(object):
                         else:
                             self.tdlobj.files[fileentry['name']] = base64.b64decode(fileentry['file'])
                     else:
-                        raise ImageFactoryException("File given with invalid type (%s)" % (file['type']))
+                        raise ImageFactoryException("File given with invalid type (%s)" % (fileentry['type']))
 
             if 'commands' in content:
                 for command in content['commands']:
@@ -165,7 +166,7 @@ class TinMan(object):
                             self.log.warning("Command with zero length given")
                             self.tdlobj.commands[command['name']] = ""
                         else:
-                            self.tdlobj.commandss[command['name']] = base64.b64decode(command['command'])
+                            self.tdlobj.commands[command['name']] = base64.b64decode(command['command'])
                     else:
                         raise ImageFactoryException("Command given with invalid type (%s)" % (command['type']))
 
