@@ -23,7 +23,7 @@ from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.FactoryUtils import enable_root, disable_root
 from imgfac.OSDelegate import OSDelegate
 from imgfac.ImageFactoryException import ImageFactoryException
-from novaimagebuilder.Builder import Builder as NIB
+from novaimagebuilder.Builder import Builder
 from novaimagebuilder.StackEnvironment import StackEnvironment
 from time import sleep
 from base64 import b64decode
@@ -52,7 +52,7 @@ class Nova(object):
         """
         Abort the current operation.
         """
-        if self.nib and isinstance(self.nib, NIB):
+        if self.nib and isinstance(self.nib, Builder):
             status = self.nib.abort()
             self.log.debug('aborting... status: %s' % status)
         else:
@@ -103,7 +103,7 @@ class Nova(object):
                           'public': parameters.get('public', False)}
 
         builder.base_image.update(10, 'BUILDING', 'Created Nova Image Builder instance...')
-        self.nib = NIB(install_os, install_location, install_type, install_script, install_config)
+        self.nib = Builder(install_os, install_location, install_type, install_script, install_config)
         self.nib.run()
 
         builder.base_image.update(10, 'BUILDING', 'Waiting for Nova Image Builder to complete...')
@@ -126,18 +126,7 @@ class Nova(object):
                 raise ImageFactoryException('Failed to add security group for ssh, cannot continue...')
 
             # Get an IP address to use below for ssh connections to the instance.
-            jeos_instance_addr = None
-            for index in range(0, 120, 5):
-                self.log.debug('Networks associated with instance %s: %s' % (jeos_instance.id,
-                                                                             jeos_instance.instance.networks))
-                if len(jeos_instance.instance.networks) > 0:
-                    jeos_instance_addr = str(jeos_instance.add_floating_ip().ip)
-                    #jeos_instance_addr = str(jeos_instance.instance.networks['private'][0])
-                    self.log.debug('Using address %s to reach instance %s' % (jeos_instance_addr, jeos_instance.id))
-                    break
-                else:
-                    sleep(5)
-
+            jeos_instance_addr = self._ipaddr_for_instance(jeos_instance)
             if not jeos_instance_addr:
                 raise ImageFactoryException('Unable to obtain an IP address for instance %s' % jeos_instance.id)
 
@@ -147,27 +136,14 @@ class Nova(object):
             user = parameters.get('default_user')
             cmd_prefix = parameters.get('command_prefix')
             if user and user != 'root':
-                self.log.debug('Temporarily enabling root user for customization steps...')
-                for index in range(0, 120, 5):
-                    try:
-                        enable_root(jeos_instance_addr, private_key_file, user, cmd_prefix)
-                        break
-                    except ImageFactoryException as e:
-                        if index < 120:
-                            self.log.debug(e)
-                            sleep(5)
-                        else:
-                            raise e
+                if self._enable_root_from_user_with_command_prefix(user, cmd_prefix, jeos_instance_addr,
+                                                                   private_key_file):
+                    self.log.debug('Temporarily enabled root user for image customization steps...')
+                else:
+                    raise ImageFactoryException('Unable to access %s as root. Cannot continue...' % jeos_instance_addr)
 
-            oz_config = SafeConfigParser()
-            if oz_config.read("/etc/oz/oz.cfg") != []:
-                oz_config.set('paths', 'output_dir', self.app_config['imgdir'])
-                oz_config.set('paths', 'sshprivkey', private_key_file)
-                if 'oz_data_dir' in self.app_config:
-                    oz_config.set('paths', 'data_dir', self.app_config['oz_data_dir'])
-                if 'oz_screenshot_dir' in self.app_config:
-                    oz_config.set('paths', 'screenshot_dir', self.app_config['oz_screenshot_dir'])
-            else:
+            oz_config = self._oz_config(private_key_file)
+            if not oz_config:
                 raise ImageFactoryException('No Oz config file found. Cannot continue.')
 
             oz_guest = oz.GuestFactory.guest_factory(tdl=TDL(str(template)), config=oz_config, auto=None)
@@ -260,17 +236,7 @@ class Nova(object):
             raise ImageFactoryException('Failed to add security group for ssh, cannot continue...')
 
         # Get an IP address to use for ssh connections
-        base_instance_addr = None
-        for index in range(0, 120, 5):
-            self.log.debug('Networks associated with instance %s: %s' % (base_instance.id,
-                                                                         base_instance.instance.networks))
-            if len(base_instance.instance.networks) > 0:
-                base_instance_addr = str(base_instance.add_floating_ip().ip)
-                self.log.debug('Using address %s to reach instance %s' % (base_instance_addr, base_instance.id))
-                break
-            else:
-                sleep(5)
-
+        base_instance_addr = self._ipaddr_for_instance(base_instance)
         if not base_instance_addr:
             raise ImageFactoryException('Unable to obtain IP address for instance %s' % base_instance.id)
 
@@ -280,27 +246,13 @@ class Nova(object):
         user = parameters.get('default_user')
         cmd_prefix = parameters.get('command_prefix')
         if user and user != 'root':
-            self.log.debug('Temporarily enabling root user for targe preparation steps...')
-            for index in range(0, 120, 5):
-                try:
-                    enable_root(base_instance_addr, private_key_file, user, cmd_prefix)
-                    break
-                except Exception as e:
-                    if index < 120:
-                        self.log.debug(e)
-                        sleep(5)
-                    else:
-                        raise e
+            if self._enable_root_from_user_with_command_prefix(user, cmd_prefix, base_instance_addr, private_key_file):
+                self.log.debug('Temporarily enabled root user for target preparation steps...')
+            else:
+                raise ImageFactoryException('Unable to access %s as root. Cannot continue...' % base_instance_addr)
 
-        oz_config = SafeConfigParser()
-        if oz_config.read("/etc/oz/oz.cfg") != []:
-            oz_config.set('paths', 'output_dir', self.app_config['imgdir'])
-            oz_config.set('paths', 'sshprivkey', private_key_file)
-            if 'oz_data_dir' in self.app_config:
-                oz_config.set('paths', 'data_dir', self.app_config['oz_data_dir'])
-            if 'oz_screenshot_dir' in self.app_config:
-                oz_config.set('paths', 'screenshot_dir', self.app_config['oz_screenshot_dir'])
-        else:
+        oz_config = self._oz_config(private_key_file)
+        if not oz_config:
             raise ImageFactoryException('No Oz config file found. Cannot continue.')
 
         oz_guest = oz.GuestFactory.guest_factory(tdl=tdl, config=oz_config, auto=None)
@@ -353,6 +305,13 @@ class Nova(object):
         self._cloud_plugin_content.append(content)
 
     def merge_cloud_content_with_tdl(self, contents, tdl):
+        """
+        Merge 'files' and 'commands' content into an existing TDL instance.
+
+        @param contents: Array of content.
+        @param tdl: TDL instance
+        @return: @raise ImageFactoryException:
+        """
         for item in contents:
             if 'files' in item:
                 for entry in item['files']:
@@ -416,7 +375,7 @@ class Nova(object):
             not(@arch)]" % (target, tdl.distro))
         if len(include) == 0:
             include = doc.xpathEval("/template_includes/include[@target='%s' and not(@os) and not(@version) and \
-            not(@arch)]" % (target))
+            not(@arch)]" % target)
         if len(include) == 0:
             include = doc.xpathEval("/template_includes/include[not(@target) and not(@os) and not(@version) and \
             not(@arch)]")
@@ -461,3 +420,40 @@ class Nova(object):
             self.log.debug('Unable to confirm ssh access to %s after %s minutes...' % (addr, timeout/60))
 
         return confirmation
+
+    def _oz_config(self, private_key_file):
+        config = SafeConfigParser()
+        if config.read("/etc/oz/oz.cfg"):
+            config.set('paths', 'output_dir', self.app_config['imgdir'])
+            config.set('paths', 'sshprivkey', private_key_file)
+            if 'oz_data_dir' in self.app_config:
+                config.set('paths', 'data_dir', self.app_config['oz_data_dir'])
+            if 'oz_screenshot_dir' in self.app_config:
+                config.set('paths', 'screenshot_dir', self.app_config['oz_screenshot_dir'])
+            return config
+        else:
+            return None
+
+    def _ipaddr_for_instance(self, srvr_instance):
+        for index in range(0, 120, 5):
+            self.log.debug('Networks associated with instance %s: %s' % (srvr_instance.id,
+                                                                         srvr_instance.instance.networks))
+            if len(srvr_instance.instance.networks) > 0:
+                jeos_instance_addr = str(srvr_instance.add_floating_ip().ip)
+                self.log.debug('Using address %s to reach instance %s' % (jeos_instance_addr, srvr_instance.id))
+                return srvr_instance
+            else:
+                sleep(5)
+        return None
+
+    def _enable_root_from_user_with_command_prefix(self, user, cmd_prefix, ip_addr, private_key):
+        for index in range(0, 120, 5):
+            try:
+                enable_root(ip_addr, private_key, user, cmd_prefix)
+                return True
+            except Exception as e:
+                if index < 120:
+                    self.log.debug(e)
+                    sleep(5)
+                else:
+                    return False
