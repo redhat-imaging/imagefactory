@@ -286,11 +286,11 @@ class Nova(object):
             raise ImageFactoryException('JEOS build instance (%s) never shutdown in Nova.' % base_instance.id)
 
         builder.target_image.update(95, 'BUILDING', 'Downloading target image...')
-        target_img_fileobj = StackEnvironment().download_image_from_glance(target_image_id)
+        target_img_download = StackEnvironment().download_image_from_glance(target_image_id)
         with open(builder.target_image.data, 'wb') as target_img_file:
-            shutil.copyfileobj(target_img_fileobj, target_img_file)
+            shutil.copyfileobj(target_img_download, target_img_file)
             target_img_file.close()
-        target_img_fileobj.close()
+        target_img_download.close()
 
     def add_cloud_plugin_content(self, content):
         """
