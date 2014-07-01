@@ -20,7 +20,7 @@ import os.path
 import shutil
 import libxml2
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
-from imgfac.FactoryUtils import enable_root, disable_root
+from imgfac.FactoryUtils import enable_root, disable_root, ssh_execute_command
 from imgfac.OSDelegate import OSDelegate
 from imgfac.ImageFactoryException import ImageFactoryException
 from novaimagebuilder.Builder import Builder
@@ -125,15 +125,20 @@ class Nova(object):
             if not jeos_instance.open_ssh():  # Add a security group for ssh access
                 raise ImageFactoryException('Failed to add security group for ssh, cannot continue...')
 
+            user = parameters.get('default_user')
+            private_key_file = jeos_instance.key_dir + jeos_instance.key_pair.name
             # Get an IP address to use below for ssh connections to the instance.
-            jeos_instance_addr = self._ipaddr_for_instance(jeos_instance)
+            if self._networking_is_active_for_instance(jeos_instance):
+                jeos_instance_addr = self._get_ipaddr_for_instance(jeos_instance, user, private_key_file)
+                if not jeos_instance_addr:
+                    jeos_instance_addr = self._create_ipaddr_for_instance(jeos_instance)
+            else:
+                raise ImageFactoryException('Networking not active for instance %s, cannot continue!' %
+                                            jeos_instance.id)
             if not jeos_instance_addr:
                 raise ImageFactoryException('Unable to obtain an IP address for instance %s' % jeos_instance.id)
 
-            private_key_file = jeos_instance.key_dir + jeos_instance.key_pair.name
-
             # Enable root for customization steps
-            user = parameters.get('default_user')
             cmd_prefix = parameters.get('command_prefix')
             if user and user != 'root':
                 if self._enable_root_from_user_with_command_prefix(user, cmd_prefix, jeos_instance_addr,
@@ -198,7 +203,7 @@ class Nova(object):
 
         # Merge together any TDL-style customizations requested via our plugin-to-plugin interface  with any target
         #  specific packages, repos and commands and then run a second Oz customization step.
-        tdl = TDL(xmlstring=base_image.template, rootpw_required=self.app_config['tdl_require_root_pw'])
+        tdl = TDL(xmlstring=builder.target_image.template, rootpw_required=self.app_config['tdl_require_root_pw'])
 
         # We remove any packages, commands and files from the original TDL - these have already been
         # installed/executed.  We leave the repos in place, as it is possible that the target
@@ -235,15 +240,19 @@ class Nova(object):
         if not base_instance.open_ssh():  # Add A security group for ssh access
             raise ImageFactoryException('Failed to add security group for ssh, cannot continue...')
 
+        user = parameters.get('default_user', 'root')
+        private_key_file = base_instance.key_dir + base_instance.key_pair.name
         # Get an IP address to use for ssh connections
-        base_instance_addr = self._ipaddr_for_instance(base_instance)
+        if self._networking_is_active_for_instance(base_instance):
+            base_instance_addr = self._get_ipaddr_for_instance(base_instance, user, private_key_file)
+            if not base_instance_addr:
+                base_instance_addr = self._create_ipaddr_for_instance(base_instance)
+        else:
+            raise ImageFactoryException('Networking not active for instance %s, cannot continue!' % base_instance.id)
         if not base_instance_addr:
             raise ImageFactoryException('Unable to obtain IP address for instance %s' % base_instance.id)
 
-        private_key_file = base_instance.key_dir + base_instance.key_pair.name
-
         # Enable root for target prep steps
-        user = parameters.get('default_user')
         cmd_prefix = parameters.get('command_prefix')
         if user and user != 'root':
             if self._enable_root_from_user_with_command_prefix(user, cmd_prefix, base_instance_addr, private_key_file):
@@ -434,17 +443,42 @@ class Nova(object):
         else:
             return None
 
-    def _ipaddr_for_instance(self, srvr_instance):
+    def _networking_is_active_for_instance(self, srvr_instance):
         for index in range(0, 120, 5):
-            self.log.debug('Networks associated with instance %s: %s' % (srvr_instance.id,
-                                                                         srvr_instance.instance.networks))
+            self.log.debug('Polling for networks associated with instance %s' % srvr_instance.id)
             if len(srvr_instance.instance.networks) > 0:
-                jeos_instance_addr = str(srvr_instance.add_floating_ip().ip)
-                self.log.debug('Using address %s to reach instance %s' % (jeos_instance_addr, srvr_instance.id))
-                return srvr_instance
+                return True
             else:
                 sleep(5)
+        return False
+
+    def _get_ipaddr_for_instance(self, srvr_instance, user, key):
+        for index in range(0, 1200, 5):
+            try:
+                for network in srvr_instance.instance.networks.values():
+                    for address in network:
+                        try:
+                            stdout, stderr, retcode = ssh_execute_command(str(address), key, '/bin/id', user=user)
+                            if retcode == 0:
+                                self.log.debug('Connected to %s' % address)
+                                return address
+                        except Exception as e:
+                            self.log.debug('Failed to connect to instance %s with address %s. Caught exception %s' %
+                                           (srvr_instance.id, address, e))
+            except Exception as e:
+                self.log.exception('Caught exception while polling networks of instance %s: %s' % (srvr_instance.id, e))
+                return None
+            sleep(5)
         return None
+
+    def _create_ipaddr_for_instance(self, srvr_instance):
+        try:
+            address = str(srvr_instance.add_floating_ip().ip)
+            self.log.debug('Using address %s to reach instance %s' % (address, srvr_instance.id))
+            return address
+        except Exception as e:
+            self.log.exception('Caught exception trying to add floating IP to instance %s: %s' % (srvr_instance.id, e))
+            return None
 
     def _enable_root_from_user_with_command_prefix(self, user, cmd_prefix, ip_addr, private_key):
         for index in range(0, 120, 5):
