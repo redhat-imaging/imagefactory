@@ -185,6 +185,13 @@ License: ASL 2.0
 %description Docker
 A Cloud plugin to support Docker
 
+%package Nova
+Summary: Base plugin for Openstack/Nova
+License: ASL 2.0
+
+%description Nova
+A base OS plugin to build images using Openstack/Nova
+
 %prep
 %setup -q
 
@@ -258,6 +265,11 @@ rm -rf %{buildroot}%{python_sitelib}/imagefactory_plugins/MockCloud
 %postun Docker
 %auto_register_macro_postun Docker
 
+%post Nova
+%auto_register_macro_post Nova
+%postun Nova
+%auto_register_macro_postun Nova
+
 %files
 %doc COPYING
 %dir %{python_sitelib}/imagefactory_plugins
@@ -322,6 +334,10 @@ rm -rf %{buildroot}%{python_sitelib}/imagefactory_plugins/MockCloud
 %files Docker
 %dir %{python_sitelib}/imagefactory_plugins/Docker
 %{python_sitelib}/imagefactory_plugins/Docker/*
+
+%files Nova
+%dir %{python_sitelib}/imagefactory_plugins/Nova
+%{python_sitelib}/imagefactory_plugins/Nova/*
 
 %changelog
 * Tue May 6 2014 Ian McLeod <imcleod@redhat.com> - 1.1.5-2
