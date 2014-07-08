@@ -20,6 +20,7 @@ import libxml2
 import json
 import os
 import struct
+import getpass
 from xml.etree.ElementTree import fromstring
 from imgfac.Template import Template
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
@@ -51,6 +52,9 @@ class OpenStack(object):
         self.version = GLANCE_VERSION
         if self.version == 2:
             self.credentials_attrs = [ 'auth_url', 'password', 'tenant', 'username']
+            self.openrc_credentials_attrs = { 'OS_AUTH_URL': 'auth_url',
+                                              'OS_TENANT_NAME': 'tenant',
+                                              'OS_USERNAME': 'username'}
         else:
              self.credentials_attrs = [ 'auth_url', 'password', 'strategy', 'tenant', 'username']
 
@@ -113,7 +117,11 @@ class OpenStack(object):
         self.activity("Preparing OpenStack credentials")
         # TODO: Validate these - in particular, ensure that if some nodes are missing at least
         #       a minimal acceptable set of auth is present
-        doc = libxml2.parseDoc(credentials)
+        try:
+            doc = libxml2.parseDoc(credentials)
+        except libxml2.parserError:
+            self._populate_credentials_dict_from_openrc(credentials)
+            return
 
         self.credentials_dict = { }
         for authprop in self.credentials_attrs:
@@ -129,6 +137,18 @@ class OpenStack(object):
             return None
 
         return nodes[0].content
+
+    def _populate_credentials_dict_from_openrc(self, credentials_str):
+        credentials_list = credentials_str.split('\n')
+        self.credentials_dict = {}
+        for authprop in self.openrc_credentials_attrs.keys():
+            corresponding_authprop = self.openrc_credentials_attrs[authprop]
+            matching = [line for line in credentials_list if authprop in line]
+            if matching == []:
+                raise ImageFactoryException("Credentials file does not have required field - " + authprop)
+            self.credentials_dict[corresponding_authprop] = matching[0][matching[0].index('=') + 1 : ].strip('"')
+        self.credentials_dict['password'] = getpass.getpass(prompt='Please enter your OpenStack Password:\n')
+        self.credentials_token = None
 
     def snapshot_image_on_provider(self, builder, provider, credentials, template, parameters):
         # TODO: Implement snapshot builds
