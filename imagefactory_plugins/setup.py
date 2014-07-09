@@ -22,11 +22,12 @@ import time
 
 # ****** IF ADDING A NEW PLUGIN ******
 # If your plugin follows the standard format, all you should need to do is add the name
-# here.  If this doesn't work, you'll have to dig into the details below
+# here.  If this doesn't work, you'll have to dig into the details below.
+# Actually, you'll need to edit imagefactory-plugins.spec.in as well.
 
-plugins = ['EC2', 'TinMan','MockCloud','MockOS', 'OpenStack',
+plugins = ['EC2', 'TinMan', 'MockCloud', 'MockOS', 'OpenStack',
            'RHEVM', 'vSphere', 'Rackspace', 'IndirectionCloud',
-           'OVA', 'Docker']
+           'OVA', 'Docker', 'Nova']
 
 VERSION = '1.1.6'
 RELEASE = '0'

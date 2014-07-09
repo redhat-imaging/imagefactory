@@ -185,6 +185,17 @@ License: ASL 2.0
 %description Docker
 A Cloud plugin to support Docker
 
+%package Nova
+Summary: OS plugin that allows imagefactory to use Nova instances to build base images.
+License: ASL 2.0
+Requires: python-novaclient
+Requires: oz >= 0.12.0
+Requires: imagefactory-plugins
+Requires: imagefactory-plugin-api = 1.0
+
+%description Nova
+An alternative to the TinMan plugin for creating base images using an OpenStack cloud.
+
 %prep
 %setup -q
 
@@ -258,6 +269,11 @@ rm -rf %{buildroot}%{python_sitelib}/imagefactory_plugins/MockCloud
 %postun Docker
 %auto_register_macro_postun Docker
 
+%post Nova
+%auto_register_macro_post Nova
+%postrun Nova
+%auto_register_macro_postrun Nova
+
 %files
 %doc COPYING
 %dir %{python_sitelib}/imagefactory_plugins
@@ -323,7 +339,14 @@ rm -rf %{buildroot}%{python_sitelib}/imagefactory_plugins/MockCloud
 %dir %{python_sitelib}/imagefactory_plugins/Docker
 %{python_sitelib}/imagefactory_plugins/Docker/*
 
+%files Nova
+%dir %{python_sitelib}/imagefactory_plugins/Nova
+%{python_sitelib}/imagefactory_plugins/Nova/*
+
 %changelog
+* Wed Jul 9 2014 Steve Loranz <sloranz@redhat.com> - 1.1.6
+- Add Nova plugin
+
 * Tue May 6 2014 Ian McLeod <imcleod@redhat.com> - 1.1.5-2
 - Rebase with upstream
 - Improved parameters parsing that couples with improved parameters CLI support in core imagefactory
