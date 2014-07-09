@@ -100,7 +100,8 @@ class Nova(object):
                           'name': template.name,
                           'direct_boot': parameters.get('direct_boot', False),
                           'timeout': parameters.get('timeout', 1800),
-                          'public': parameters.get('public', False)}
+                          'public': parameters.get('public', False),
+                          'floating_ip': parameters.get('request_floating_ip', False)}
 
         builder.base_image.update(10, 'BUILDING', 'Created Nova Image Builder instance...')
         self.nib = Builder(install_os, install_location, install_type, install_script, install_config)
