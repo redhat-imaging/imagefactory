@@ -454,7 +454,7 @@ class Nova(object):
         return False
 
     def _get_ipaddr_for_instance(self, srvr_instance, user, key):
-        for index in range(0, 1200, 5):
+        for index in range(0, 300, 5):
             try:
                 for network in srvr_instance.instance.networks.values():
                     for address in network:
