@@ -130,7 +130,10 @@ class Nova(object):
             private_key_file = jeos_instance.key_dir + jeos_instance.key_pair.name
             # Get an IP address to use below for ssh connections to the instance.
             if self._networking_is_active_for_instance(jeos_instance):
-                jeos_instance_addr = self._get_ipaddr_for_instance(jeos_instance, user, private_key_file)
+                if install_config['floating_ip']:
+                    jeos_instance_addr = self._create_ipaddr_for_instance(jeos_instance)
+                else:
+                    jeos_instance_addr = self._get_ipaddr_for_instance(jeos_instance, user, private_key_file)
                 if not jeos_instance_addr:
                     jeos_instance_addr = self._create_ipaddr_for_instance(jeos_instance)
             else:
@@ -245,7 +248,10 @@ class Nova(object):
         private_key_file = base_instance.key_dir + base_instance.key_pair.name
         # Get an IP address to use for ssh connections
         if self._networking_is_active_for_instance(base_instance):
-            base_instance_addr = self._get_ipaddr_for_instance(base_instance, user, private_key_file)
+            if parameters.get('request_floating_ip', False):
+                base_instance_addr = self._create_ipaddr_for_instance(base_instance)
+            else:
+                base_instance_addr = self._get_ipaddr_for_instance(base_instance, user, private_key_file)
             if not base_instance_addr:
                 base_instance_addr = self._create_ipaddr_for_instance(base_instance)
         else:
