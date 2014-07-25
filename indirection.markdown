@@ -6,8 +6,8 @@ Step 1: Create utility image
 
 Utility image is the image that contains any special tools needed to customize 
 an image.  In the example here, the utility image will contain 
-diskimage-builder and instack-undercloud packages.  The following kickstart
-file will be passed in to imagefactory as utility_image.ks:
+diskimage-builder, instack-undercloud, and git packages.  The following
+kickstart file will be passed in to imagefactory as utility_image.ks:
 
 ```
 url --url=http://ftp.linux.ncsu.edu/pub/fedora/linux/releases/20/Fedora/x86_64/os/
@@ -48,8 +48,6 @@ reboot
 diskimage-builder
 instack-undercloud
 git
-kernel-headers
-kernel-devel
 %end
 ```
 
