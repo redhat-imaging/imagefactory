@@ -27,6 +27,7 @@ lang en_US.UTF-8
 skipx
 
 network --device eth0 --bootproto dhcp
+rootpw ROOTPW
 firewall --disabled
 authconfig --enableshadow --enablemd5
 selinux --enforcing
@@ -89,8 +90,8 @@ and utility_image.ks live:
 ```
 imagefactory --debug base_image --file-parameter install_script utility_image.ks utility_image.tdl
 ```
-
-Step 2: Create a base image
+Please take note of the image ID when you see a 
+Step 2: Create input image
 
 After a utility image is built, another base image needs to be created to be
 used as input image.  Since both utility image and input image are base_image,
@@ -108,7 +109,7 @@ keyboard us
 lang en_US.UTF-8
 skipx
 network --device eth0 --bootproto dhcp
-rootpw %ROOTPW%
+rootpw ROOTPW
 firewall --disabled
 authconfig --enableshadow --enablemd5
 selinux --enforcing
@@ -150,3 +151,7 @@ The following command should be run from the directory where input_image.tdl and
 ```
 imagefactory --debug base_image --file-parameter install_script input_image.ks input_image.tdl
 ```
+
+Step 3: Customize input image by running commands in utility image
+
+The following TDL template will
