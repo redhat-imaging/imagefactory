@@ -89,3 +89,64 @@ and utility_image.ks live:
 ```
 imagefactory --debug base_image --file-parameter install_script utility_image.ks utility_image.tdl
 ```
+
+Step 2: Create a base image
+
+After a utility image is built, another base image needs to be created to be
+used as input image.  Since both utility image and input image are base_image,
+it is possible to use one image for both.  diskimage-builder can only modify
+images without logical volumes.  The following kickstart file (input_image.ks)
+will create a Fedora 20 image that fits this criteria:
+
+```
+url --url=http://ftp.linux.ncsu.edu/pub/fedora/linux/releases/20/Fedora/x86_64/os/
+# Without the Everything repo, we cannot install cloud-init
+repo --name="fedora-everything" --baseurl=http://ftp.linux.ncsu.edu/pub/fedora/linux/releases/20/Everything/x86_64/os/
+install
+text
+keyboard us
+lang en_US.UTF-8
+skipx
+network --device eth0 --bootproto dhcp
+rootpw %ROOTPW%
+firewall --disabled
+authconfig --enableshadow --enablemd5
+selinux --enforcing
+timezone --utc America/New_York
+bootloader --location=mbr --append="console=tty0 console=ttyS0,115200"
+zerombr
+clearpart --all --drives=vda
+part / --fstype="ext4" --size=3000
+reboot
+
+%packages
+@core
+cloud-init
+tar
+
+%end
+```
+
+The following TDL template (input_image.tdl) is needed to build the input image:
+
+```
+<template>
+  <name>f20-jeos</name>
+  <os>
+    <name>Fedora</name>
+    <version>20</version>
+    <arch>x86_64</arch>
+    <install type='url'>
+      <url>http://ftp.linux.ncsu.edu/pub/fedora/linux/releases/20/Fedora/x86_64/os/</url>
+    </install>
+  </os>
+  <description>Fedora 20 JEOS Image</description>
+</template>
+
+```
+
+The following command should be run from the directory where input_image.tdl and input_image.ks live:
+
+```
+imagefactory --debug base_image --file-parameter install_script input_image.ks input_image.tdl
+```
