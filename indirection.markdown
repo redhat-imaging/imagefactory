@@ -5,8 +5,8 @@ section: blog
 Indirection plugin is the most versatile plugin for ImageFactory. Indirection
 allows the user to go beyond just package installation and configuration.
 Originally it was developed to generate LiveCD images using the
-livemedia-creator project in Fedora. More on that can be found (
-"https://github.com/redhat-imaging/imagefactory/blob/master/imagefactory_plugins/IndirectionCloud/README.md"
+livemedia-creator project in Fedora. More on that can be found 
+("https://github.com/redhat-imaging/imagefactory/blob/master/imagefactory_plugins/IndirectionCloud/README.md"
 here).
 Such flexibility is achieved by breaking up the image building process into
 three steps.
