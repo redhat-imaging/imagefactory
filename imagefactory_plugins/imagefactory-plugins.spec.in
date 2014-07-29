@@ -164,6 +164,7 @@ A plugin for vSphere "clouds"
 Summary: Cloud plugin for Rackspace
 License: ASL 2.0
 Requires: python-novaclient
+Requires: python-pyrax
 Requires: imagefactory-plugins
 Requires: imagefactory-plugin-api = 1.0
 
