@@ -1,3 +1,7 @@
+---
+layout: blog_post
+section: blog
+---
 Indirection plugin is the most versatile plugin for ImageFactory. Indirection
 allows the user to automate image customization of any tool. Such flexibility 
 is achieved by breaking up the image building process into three steps.
@@ -168,19 +172,21 @@ example in all possible ways.
 **--parameter utility_image** - The image id for utility image
 
 **--parameter input_image_device** - The name of the device where the base_image
-is presented to the utility VM. Default is /dev/vdb1.
+is presented to the utility VM. Default is /dev/vdb1. The filesystem on this
+device is also referred to as workspace.
 
-**--parameter input_image_file** - The path to the copy of input image on work
-space. Default is /input_image.raw. Only input_image_device or
-input_image_file can be provided.
-
-**--file-parameter utility_customizations** - Partial TDL with commands to be
-exectuted after the utility image is launched in run level 3
+**--parameter input_image_file** - The path to the copy of input image in the
+workspace. Default is /input_image.raw. Either input_image_device or
+input_image_file can be provided at a time.
 
 **--parameter results_location** - Full path to the customized image in the
 filesystem presented as work space. Default is /results/images/boot.iso
 
-The utility image is used to launch a VM in run level 3. This VM has an
+**--file-parameter utility_customizations** - Name of file containing partial
+TDL with commands to be exectuted after the utility image is launched in run
+level 3
+
+The utility image is used to launch a VM in run level 3. The utility VM has an
 unmounted filesystem attached as '/dev/vdb1' or input_image_device with the
 following characteristics:
 
@@ -198,7 +204,7 @@ The TDL below does the following:
 it
 5. Runs all the commands needed to build the ovecloud-compute [1].
 disk-image-create command takes -o argument which specifies the name of output
-image. Since the work space was mounted as /mnt the full path should be
+image. Since the workspace was mounted at /mnt the full path should be
 '/mnt/overloud-compute' in order for the indirection plugin to find it at
 /overcloud-compute.qcow2
 
