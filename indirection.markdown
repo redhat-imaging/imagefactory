@@ -258,10 +258,13 @@ disk-image-create \
 </template>
 ```
 
-The command that will execute the target image build looks like the following:
+Finally the following command will execute the target image build:
 
 ```
-imagefactory --debug target_image --id [input_image_id] --parameter utility_image [utility_image_id] --file-parameter utility_customizations dib_overcloud_compute.tdl --parameter results_location "/deploy-ramdisk.qcow2" indirection
+imagefactory --debug target_image --id [input_image_id] \
+        --parameter utility_image [utility_image_id] \
+        --file-parameter utility_customizations dib_overcloud_compute.tdl \
+        --parameter results_location "/deploy-ramdisk.qcow2" indirection
 ```
 
 
