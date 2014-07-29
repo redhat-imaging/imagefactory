@@ -1,12 +1,12 @@
-Indirection plugin is the most versatile plugin for ImageFactory.  Indirection
-allows the user to automate image customization of any tool.  Such flexibility 
+Indirection plugin is the most versatile plugin for ImageFactory. Indirection
+allows the user to automate image customization of any tool. Such flexibility 
 is achieved by breaking up the image building process into three steps.
 
 ###Step 1: Create utility image
 
 Utility image is the image that contains any special tools needed to customize 
-an image.  In the example here, the utility image will contain 
-diskimage-builder, instack-undercloud, and git packages.  The following
+an image. In the example here, the utility image will contain 
+diskimage-builder, instack-undercloud, and git packages. The following
 kickstart file will be passed in to imagefactory as utility_image.ks:
 
 ```
@@ -52,7 +52,7 @@ git
 %end
 ```
 
-The above TDL does not contain administrative password property.  ImageFactory will
+The above TDL does not contain administrative password property. ImageFactory will
 complain unless /etc/imagefactory/imagefactory.conf has root password
 enforcement disabled in following manner:
 
@@ -65,7 +65,7 @@ enforcement disabled in following manner:
 ```
 
 In addition to the kickstart file, ImageFactory requires a TDL template
-to build an image.  Let's call this file utility_image.tdl:
+to build an image. Let's call this file utility_image.tdl:
 ```
 <template>
   <name>f20-jeos</name>
@@ -95,10 +95,10 @@ utility image
 ###Step 2: Create input image
 
 After a utility image is built, another base image needs to be created to be
-used as input image.  Since both utility image and input image are base_image,
-it is possible to use one image for both.  diskimage-builder can only modify
-images without logical volumes.  The following kickstart file (input_image.ks)
-will create a Fedora 20 image that fits this criteria:
+used as input image. Since both utility image and input image are base_image,
+it is possible to use one image for both. Because diskimage-builder can only
+modify images without logical volumes, the following kickstart file
+(input_image.ks) will create a Fedora 20 image that fits this criteria:
 
 ```
 url --url=http://ftp.linux.ncsu.edu/pub/fedora/linux/releases/20/Fedora/x86_64/os/
@@ -156,33 +156,38 @@ input_image.tdl
 ```
 Please take note of the image id when ImageFactory finishes building input
 image.
-###Step 3: Create target image using the following parameters
+###Step 3: Create target image 
 
---id - The image id for the input image
+The indirection plugin takes the following parameters. Some of the parameters
+have default values and as a result will not be present in the command used to
+build the target image. However, they are discussed here so one can modify this
+example in all possible ways.
+
+_--id_ - The image id for the input image
 
 --parameter utility_image - The image id for utility image
 
 --parameter input_image_device - The name of the device where the base_image
-is presented to the utility VM.  Default is /dev/vdb1.
+is presented to the utility VM. Default is /dev/vdb1.
 
 --parameter input_image_file - The path to the copy of input image on work
-space.  Default is /input_image.raw.  Only input_image_device or
+space. Default is /input_image.raw. Only input_image_device or
 input_image_file can be provided.
 
 --file-parameter utility_customizations - Partial TDL with commands to be
 exectuted after the utility image is launched in run level 3
 
 --parameter results_location - Full path to the customized image in the
-filesystem presented as work space.  Default is /results/images/boot.iso
+filesystem presented as work space. Default is /results/images/boot.iso
 
-The utility image is used to launch a VM in run level 3.  This VM has an
+The utility image is used to launch a VM in run level 3. This VM has an
 unmounted filesystem attached as '/dev/vdb1' or input_image_device with the
 following characteristics:
 
 1. The input image is available as '/input_image.raw' or input_image_file
 
 2. Once the customization TDL has finished running the plugin expects to find
-the resulting image at '/results/images/boot.iso' or results_location.  
+the resulting image at '/results/images/boot.iso' or results_location. 
 
 The TDL below does the following:
 
@@ -193,7 +198,7 @@ The TDL below does the following:
 it
 5. Runs all the commands needed to build the ovecloud-compute [1].
 disk-image-create command takes -o argument which specifies the name of output
-image.  Since the work space was mounted as /mnt the full path should be
+image. Since the work space was mounted as /mnt the full path should be
 '/mnt/overloud-compute' in order for the indirection plugin to find it at
 /overcloud-compute.qcow2
 
