@@ -195,7 +195,7 @@ following characteristics:
 2. Once the customization TDL has finished running the plugin expects to find
 the resulting image at '/results/images/boot.iso' or results_location. 
 
-The TDL below does the following:
+The partial TDL (dib_overcloud_compute.tdl) below does the following:
 
 1. Mounts the workspace filesystem to /mnt 
 2. Makes a copy of sudoers files
@@ -258,13 +258,11 @@ disk-image-create \
 </template>
 ```
 
-Finally the following command will execute the target image build:
+The following command will execute the target image build:
 
 ```
 imagefactory --debug target_image --id [input_image_id] \
         --parameter utility_image [utility_image_id] \
         --file-parameter utility_customizations dib_overcloud_compute.tdl \
-        --parameter results_location "/deploy-ramdisk.qcow2" indirection
+        --parameter results_location "/overcloud-computer.qcow2" indirection
 ```
-
-
