@@ -2,7 +2,7 @@ Indirection plugin is the most versatile plugin for ImageFactory.  Indirection
 allows the user to automate image customization of any tool.  Such flexibility 
 is achieved by breaking up the image building process into three steps.
 
-Step 1: Create utility image
+###Step 1: Create utility image
 
 Utility image is the image that contains any special tools needed to customize 
 an image.  In the example here, the utility image will contain 
@@ -90,8 +90,9 @@ and utility_image.ks live:
 ```
 imagefactory --debug base_image --file-parameter install_script utility_image.ks utility_image.tdl
 ```
-Please take note of the image ID when you see a 
-Step 2: Create input image
+Please take note of the image ID when ImageFactory finishes building the
+utility image 
+###Step 2: Create input image
 
 After a utility image is built, another base image needs to be created to be
 used as input image.  Since both utility image and input image are base_image,
@@ -153,8 +154,9 @@ and input_image.ks live:
 imagefactory --debug base_image --file-parameter install_script input_image.ks
 input_image.tdl
 ```
-
-Step 3: Create target image using the following parameters
+Please take note of the image id when ImageFactory finishes building input
+image.
+###Step 3: Create target image using the following parameters
 
 --id - The image id for the input image
 
