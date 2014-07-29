@@ -163,21 +163,21 @@ have default values and as a result will not be present in the command used to
 build the target image. However, they are discussed here so one can modify this
 example in all possible ways.
 
-_--id_ - The image id for the input image
+**--id** - The image id for the input image
 
---parameter utility_image - The image id for utility image
+**--parameter utility_image** - The image id for utility image
 
---parameter input_image_device - The name of the device where the base_image
+**--parameter input_image_device** - The name of the device where the base_image
 is presented to the utility VM. Default is /dev/vdb1.
 
---parameter input_image_file - The path to the copy of input image on work
+**--parameter input_image_file** - The path to the copy of input image on work
 space. Default is /input_image.raw. Only input_image_device or
 input_image_file can be provided.
 
---file-parameter utility_customizations - Partial TDL with commands to be
+**--file-parameter utility_customizations** - Partial TDL with commands to be
 exectuted after the utility image is launched in run level 3
 
---parameter results_location - Full path to the customized image in the
+**--parameter results_location** - Full path to the customized image in the
 filesystem presented as work space. Default is /results/images/boot.iso
 
 The utility image is used to launch a VM in run level 3. This VM has an
