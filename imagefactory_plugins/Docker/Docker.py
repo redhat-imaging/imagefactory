@@ -34,7 +34,7 @@ from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.CloudDelegate import CloudDelegate
-from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info
+from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info, parameter_cast_to_bool
 
 class Docker(object):
     zope.interface.implements(CloudDelegate)
@@ -128,8 +128,8 @@ class Docker(object):
         self.log.debug("Creating tar of root directory of input image %s saving as output image %s" % 
                        (builder.base_image.data, builder.target_image.data) )
         guestfs_handle.tar_out_opts("/", builder.target_image.data)
-        # TODO: Conditional on a parameter
-        if True:
+        wrap_metadata = parameter_cast_to_bool(parameters.get('create_docker_metadata', True))
+        if wrap_metadata:
             # Get any parameters and if they are not set, create our defaults
             repository = parameters.get('repository',tdlobj.name)
             tag = parameters.get('tag','latest')
@@ -143,7 +143,13 @@ class Docker(object):
             tdict['createdtime'] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
             tdict['arch'] = "amd64"
             tdict['idstring'] = docker_image_id
-            tdict['size'] = os.path.getsize(builder.target_image.data)
+	    size = 0
+            self.log.debug("Reading raw tar file to generate unpacked size estimate")
+	    with tarfile.open(builder.target_image.data, "r") as tar:
+		for tarinfo in tar:
+		    if tarinfo.isfile():
+			size += tarinfo.size
+            tdict['size'] = size
 
             image_json = self.docker_json_template.format(**tdict) 
 
