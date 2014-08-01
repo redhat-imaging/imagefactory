@@ -145,10 +145,13 @@ class Docker(object):
             tdict['idstring'] = docker_image_id
 	    size = 0
             self.log.debug("Reading raw tar file to generate unpacked size estimate")
-	    with tarfile.open(builder.target_image.data, "r") as tar:
-		for tarinfo in tar:
-		    if tarinfo.isfile():
-			size += tarinfo.size
+            tar =  tarfile.open(builder.target_image.data, "r")
+            try:
+                for tarinfo in tar:
+                    if tarinfo.isfile():
+                        size += tarinfo.size
+            finally:
+                tar.close()
             tdict['size'] = size
 
             image_json = self.docker_json_template.format(**tdict) 
