@@ -272,7 +272,7 @@ rm -rf %{buildroot}%{python_sitelib}/imagefactory_plugins/MockCloud
 
 %post Nova
 %auto_register_macro_post Nova
-%postrun Nova
+%postun Nova
 %auto_register_macro_postrun Nova
 
 %files
