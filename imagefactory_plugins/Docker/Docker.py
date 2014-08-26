@@ -237,9 +237,12 @@ class Docker(object):
                 shutil.move(builder.target_image.data, layerfile_path)
 
                 outtar = tarfile.TarFile(name=builder.target_image.data, mode="w")
-                # this, conveniently, adds our temp dir recursively but with the leading path elements stripped
-                # this is what docker wants
-                outtar.add(tempdir,arcname="")
+                # It turns out that in at least some configurations or versions, Docker will
+                # complain if the repositories file is not the last file in the archive
+                # we add our single image directory first and then the repositories file to
+                # avoid this
+                outtar.add(imagedir, arcname=docker_image_id)
+                outtar.add(repositories_path, arcname='repositories')
                 outtar.close()
             finally:
                 if tempdir:
