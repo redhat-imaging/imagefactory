@@ -155,6 +155,11 @@ class IndirectionCloud(object):
         self._init_oz()
         utility_image_tmp = self.app_config['imgdir'] + "/tmp-utility-image-" + str(builder.target_image.identifier)
         self.guest.diskimage = utility_image_tmp
+        # Below we will create this file as a qcow2 image using the original utility image as
+        # a backing store - For the follow-on XML generation to work correctly, we need to force
+        # Oz to use qcow2 as the image type
+        self.guest.image_type = 'qcow2'
+
         if 'utility_cpus' in parameters:
             self.guest.install_cpus = int(parameters['utility_cpus'])
 
@@ -181,9 +186,10 @@ class IndirectionCloud(object):
         else:
             self.log.info('No additional repos, packages, files or commands specified for utility tasks')
 
-        # Make a copy of the utlity image - this will be modified and then discarded
-        self.log.debug("Creating temporary working copy of utlity image (%s) as (%s)" % (self.active_image.data, utility_image_tmp))
-        oz.ozutil.copyfile_sparse(self.active_image.data, utility_image_tmp)
+        # Create a qcow2 image using the original utility image file (which may be read-only) as a
+        # backing store.
+        self.log.debug("Creating temporary writeable qcow2 working copy of utlity image (%s) as (%s)" % (self.active_image.data, utility_image_tmp))
+        self.guest._internal_generate_diskimage(image_filename=utility_image_tmp, backing_filename=self.active_image.data)
 
         if input_image_file: 
             # Here we finally involve the actual Base Image content - it is made available for the utlity image to modify
