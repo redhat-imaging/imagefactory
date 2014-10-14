@@ -43,10 +43,54 @@ class Docker(object):
                           "gzip":  "gzip -c %s > %s",
                           "bzip2": "bzip2 -c %s > %s" }
 
-    docker_json_template = """{{
+    # The templates below allow us to generate base images without a running docker locally
+
+    # imcleod@redhat.com - 26-Aug-2014
+    # We know of at least two different output JSON formats.  These relate to some JSON marshaling
+    # changes in the docker 1.0.0 timeframe.  At the time of this comment, the upstream registry will
+    # only accept the older 0.11.1 format which is what we default to.
+    # Note that there is a separate "VERSION" file in each subdirectory.  As of this comment
+    # that file always contains 1.0
+
+    docker_json_template_0_11_1 = """{{
+  "id": "{idstring}",
+  "comment": "{commentstring}",
+  "created": "{createdtime}",
+  "container_config": {{
+    "Cmd": null,
+    "Env": null,
+    "StdinOnce": false,
+    "OpenStdin": false,
+    "Tty": false,
+    "ExposedPorts": null,
+    "AttachStdin": false,
+    "AttachStdout": false,
+    "Image": "",
+    "Volumes": null,
+    "WorkingDir": "",
+    "Entrypoint": null,
+    "NetworkDisabled": false,
+    "OnBuild": null,
+    "CpuShares": 0,
+    "MemorySwap": 0,
+    "Memory": 0,
+    "User": "",
+    "Domainname": "",
+    "Hostname": "",
+    "AttachStderr": false,
+    "PortSpecs": null
+  }},
+  "docker_version": "0.11.1",
+  "architecture": "{arch}",
+  "os": "{os}",
+  "Size": {size}
+}}"""
+
+
+    docker_json_template_1_0_0 = """{{
     "Comment": "{commentstring}",
     "Container": "",
-    "DockerVersion": "{dockerversion}",
+    "DockerVersion": "1.0.0",
     "Parent": "",
     "Author": "",
     "Os": "{os}",
@@ -82,6 +126,9 @@ class Docker(object):
     "Size": {size}
 }}
 """
+
+    docker_templates_dict = { "0.11.1": docker_json_template_0_11_1,
+                          "1.0.0":  docker_json_template_1_0_0 }
 
     def __init__(self):
         super(Docker, self).__init__()
@@ -136,9 +183,13 @@ class Docker(object):
             docker_image_id = parameters.get('docker_image_id', self._generate_docker_id())
             rdict = { repository: { tag: docker_image_id } }
                        
+            dockerversion = parameters.get('dockerversion', '0.11.1')
+            if not dockerversion in self.docker_templates_dict:
+                raise Exception("No docker JSON template available for specified docker version (%s)" % (dockerversion))
+            docker_json_template=self.docker_templates_dict[dockerversion]
+
             tdict = { }
             tdict['commentstring'] = parameters.get('comment', 'Created by Image Factory')
-            tdict['dockerversion'] = parameters.get('dockerversion', '1.0.0')
             tdict['os'] = parameters.get('os', 'linux')
             tdict['createdtime'] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
             tdict['arch'] = "amd64"
@@ -154,7 +205,7 @@ class Docker(object):
                 tar.close()
             tdict['size'] = size
 
-            image_json = self.docker_json_template.format(**tdict) 
+            image_json = docker_json_template.format(**tdict) 
 
             # Create directory
             storagedir = os.path.dirname(builder.target_image.data)
@@ -178,16 +229,20 @@ class Docker(object):
 
                 versionfile_path = os.path.join(imagedir,'VERSION')
                 versionfile = open(versionfile_path, 'w')
-                versionfile.write(tdict['dockerversion'])
+                # TODO - Track version developments and compatibility
+                versionfile.write("1.0")
                 versionfile.close()
 
                 layerfile_path = os.path.join(imagedir,'layer.tar')
                 shutil.move(builder.target_image.data, layerfile_path)
 
                 outtar = tarfile.TarFile(name=builder.target_image.data, mode="w")
-                # this, conveniently, adds our temp dir recursively but with the leading path elements stripped
-                # this is what docker wants
-                outtar.add(tempdir,arcname="")
+                # It turns out that in at least some configurations or versions, Docker will
+                # complain if the repositories file is not the last file in the archive
+                # we add our single image directory first and then the repositories file to
+                # avoid this
+                outtar.add(imagedir, arcname=docker_image_id)
+                outtar.add(repositories_path, arcname='repositories')
                 outtar.close()
             finally:
                 if tempdir:
