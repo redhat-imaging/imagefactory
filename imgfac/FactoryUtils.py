@@ -28,8 +28,10 @@ def inspect_and_mount(guestfs_handle, relative_mount="", diskfile='*unspecified*
     g = guestfs_handle
     # Breaking this out allows the EC2 cloud plugin to avoid duplicating this
     inspection = g.inspect_os()
-    if len(inspection) == 0:
+    if len(inspection) == 0 and len(relative_mount) != 0:
         raise Exception("Unable to find an OS on disk image (%s)" % (diskfile))
+    if len(inspection) == 0:
+        return inspect_ostree(guestfs_handle, diskfile)
     if len(inspection) > 1:
         raise Exception("Found multiple OSes on disk image (%s)" % (diskfile))
     filesystems = g.inspect_get_mountpoints(inspection[0])
@@ -44,6 +46,46 @@ def inspect_and_mount(guestfs_handle, relative_mount="", diskfile='*unspecified*
     for mountpoint in mountpoints:
         g.mount_options("", fshash[mountpoint], relative_mount + mountpoint)
 
+    return g
+
+def inspect_ostree(g, diskfile):
+    """Make a best effort attempt to find and mount up the root rpm-ostree"""
+    trees = [ ]
+    for fs in g.list_filesystems():
+	try:
+	    g.mount_options("", fs[0], "/")
+	except:
+	    continue
+	if not g.is_dir("/ostree/deploy"):
+	    continue
+	for subdir in g.ls("/ostree/deploy"):
+	    if not g.is_dir("/ostree/deploy/" + subdir + "/deploy"):
+		continue
+	    for candidate in g.ls("/ostree/deploy/" + subdir + "/deploy"):
+		if re.match(".*\.[0-9]$", candidate):
+		    trees.append({ 'device': fs[0], 'os': subdir, 'root': candidate })
+	g.umount_all()
+
+    if len(trees) == 0:
+        raise Exception("Unable to find libguestfs inspectable image or rpm-ostree image on (%s)" % (diskfile))
+    if len(trees) > 1:
+        raise Exception("Multiple rpm-ostrees found on image (%s). This should never happen" % (diskfile))
+
+    tree = trees[0]
+    g.mount_options("", tree['device'], "/")
+    ostree = "/sysroot/ostree/deploy/" + tree['os'] + "/"
+    # shared /var for all deployment roots
+    realvar = ostree + "var"
+    # deployment root we actually want to inspect
+    root = ostree + "deploy/" + tree['root']
+    # Oddly, bind mount the root onto itself so that it becomes a mount point
+    # we can move later
+    g.debug('sh', [ 'mount', '-o', 'bind', root, root ] )
+    # bind mount the shared var here
+    varbindmntpoint = root + "/var"
+    g.debug('sh', [ 'mount', '-o', 'bind', realvar, varbindmntpoint ] )
+    # Now mount --move the root to /sysroot
+    g.debug('sh', [ 'mount', '--move', root , '/sysroot' ])
     return g
 
 def shutdown_and_close(guestfs_handle):
