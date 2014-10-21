@@ -345,6 +345,9 @@ rm -rf %{buildroot}%{python_sitelib}/imagefactory_plugins/MockCloud
 %{python_sitelib}/imagefactory_plugins/Nova/*
 
 %changelog
+* Tue Oct 21 2014 Ian McLeod <imcleod@redhat.com> - 1.1.6-1
+- Upstream 1.1.6 release
+
 * Wed Jul 9 2014 Steve Loranz <sloranz@redhat.com> - 1.1.6
 - Add Nova plugin
 

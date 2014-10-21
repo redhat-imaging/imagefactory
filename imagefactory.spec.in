@@ -82,6 +82,9 @@ fi
 %{_bindir}/imagefactoryd
 
 %changelog
+* Tue Oct 21 2014 Ian McLeod <imcleod@redhat.com> -1.1.6-1
+- Upstream 1.1.6 release
+
 * Tue May 6 2014 Ian McLeod <imcleod@redhat.com> - 1.1.5-1
 - Rebase with upstream
 - Improved CLI parameter passing support
