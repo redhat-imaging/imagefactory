@@ -271,7 +271,12 @@ class TinMan(object):
         # populate a config object to pass to OZ; this allows us to specify our
         # own output dir but inherit other Oz behavior
         self.oz_config = ConfigParser.SafeConfigParser()
-        if self.oz_config.read("/etc/oz/oz.cfg") != []:
+        if self.parameters.get("oz_config", None) != None:
+            oz_config_path = self.parameters.get("oz_config",None)
+        else:
+            # Default oz location
+            oz_config_path="/etc/oz/oz.cfg"
+        if self.oz_config.read(oz_config_path) != []:
             self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
             if "oz_data_dir" in self.app_config:
                 self.oz_config.set('paths', 'data_dir', self.app_config["oz_data_dir"])
