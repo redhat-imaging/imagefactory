@@ -145,6 +145,22 @@ def subprocess_check_output_pty(*popenargs, **kwargs):
         raise ImageFactoryException("'%s' failed(%d): %s" % (cmd, retcode, stderr))
     return (stdout, stderr, retcode)
 
+def get_qemu_compat_option():
+    """
+    In RHEL7, qemu-img defaults to generating a qcow2 that RHEL6 can't read.
+    This function will return an array of arguments suitable for inserting
+    into a qemu-img subprocess array that will cause it to use a lowest
+    common denominator compatibility mode.
+    """
+    devnull=open('/dev/null', 'w')
+    proc = subprocess.Popen(['qemu-img', 'convert', '-O', 'qcow2', '-o', '?'],
+                            stdout=subprocess.PIPE, stderr=devnull) 
+    stdout, stderr = proc.communicate()
+    if rc == 0:
+        if stdout.find('compat') >= 0:
+            return []
+    return ['-o', 'compat=0.10']
+
 def ssh_execute_command(guestaddr, sshprivkey, command, timeout=10, user='root', prefix=None):
     """
     Function to execute a command on the guest using SSH and return the output.

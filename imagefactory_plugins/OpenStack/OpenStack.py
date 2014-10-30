@@ -26,7 +26,7 @@ from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.CloudDelegate import CloudDelegate
-from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info
+from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info, subprocess_check_output, get_qemu_compat_option
 try:
     from keystoneclient.v2_0 import client
     import glanceclient as glance_client
@@ -161,8 +161,10 @@ class OpenStack(object):
                 return
 
             self.log.debug("Converting RAW image to compressed qcow2 format")
-            rc = os.system("qemu-img convert -c -O qcow2 %s %s" %
-                            (input_image, input_image + ".tmp.qcow2"))
+            argv = ['qemu-img', 'convert', '-c', '-O', 'qcow2']
+            argv.extend(get_qemu_compat_option())
+            argv.extend([input_image, input_image + ".tmp.qcow2"])
+            (stdout, stderr, rc) = subprocess_check_output(argv)
             if rc == 0:
                 os.unlink(input_image)
                 os.rename(input_image + ".tmp.qcow2", input_image)
