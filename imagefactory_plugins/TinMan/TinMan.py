@@ -34,6 +34,7 @@ from imgfac.OSDelegate import OSDelegate
 from imgfac.FactoryUtils import parameter_cast_to_bool
 from libvirt import libvirtError
 from oz.OzException import OzException
+import json
 
 
 def subprocess_check_output(*popenargs, **kwargs):
@@ -272,11 +273,22 @@ class TinMan(object):
         # own output dir but inherit other Oz behavior
         self.oz_config = ConfigParser.SafeConfigParser()
         if self.oz_config.read("/etc/oz/oz.cfg") != []:
+            if self.parameters.get("oz_overrides", None) != None:
+                oz_overrides = json.loads(self.parameters.get("oz_overrides",None).replace("'", "\""))
+                for i in oz_overrides:
+                    for key,val in oz_overrides[i].items():
+                        self.oz_config.set(i, key, str(val))
+
             self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
             if "oz_data_dir" in self.app_config:
                 self.oz_config.set('paths', 'data_dir', self.app_config["oz_data_dir"])
             if "oz_screenshot_dir" in self.app_config:
                 self.oz_config.set('paths', 'screenshot_dir', self.app_config["oz_screenshot_dir"])
+            print "=============== Final Oz Config ================"
+            for section in self.oz_config.sections():
+                print "[ {0} ]".format(section)
+                for option in self.oz_config.options(section):
+                    print "  {0} = {1}".format(option, self.oz_config.get(section,option))
         else:
             raise ImageFactoryException("No Oz config file found. Can't continue.")
 

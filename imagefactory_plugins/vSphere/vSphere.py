@@ -30,6 +30,7 @@ from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, re
 from VSphereHelper import VSphereHelper
 from VMDKstream import convert_to_stream
 from imgfac.CloudDelegate import CloudDelegate
+from imgfac.FactoryUtils import check_qcow_size
 
 rhel5_module_script='''echo "alias scsi_hostadapter2 mptbase" >> /etc/modprobe.conf
 echo "alias scsi_hostadapter3 mptspi" >> /etc/modprobe.conf
@@ -130,6 +131,13 @@ class vSphere(object):
         self.status="COMPLETED"
 
     def vmware_transform_image(self):
+        if (check_qcow_size(self.image)) is not None:
+            import subprocess
+            print "Input image is qcow; converting to raw"
+            raw_output_fname = "{0}.raw".format(self.image)
+            qemucmd = ['qemu-img', 'convert', '-f', 'qcow2', '-O', 'raw', self.image, raw_output_fname]
+            subprocess.check_call(qemucmd)
+            self.image = raw_output_fname
         # On entry the image points to our generic KVM raw image
         # Convert to stream-optimized VMDK and then update the image property
         target_image = self.image + ".tmp.vmdk"
