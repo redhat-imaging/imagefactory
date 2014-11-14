@@ -29,7 +29,7 @@ from tempfile import *
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.CloudDelegate import CloudDelegate
-from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info
+from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info, get_qemu_compat_option
 from xml.etree.ElementTree import fromstring
 from RHEVMHelper import RHEVMHelper
 
@@ -126,7 +126,11 @@ class RHEVM(object):
         if ("rhevm_image_format" in self.app_config) and  (self.app_config["rhevm_image_format"] == "qcow2"):
             self.log.debug("Converting RAW image to compressed qcow2 format")
             # TODO: When RHEV adds support, use the -c option to compress these images to save space
-            qemu_img_cmd = [ "qemu-img", "convert", "-O", "qcow2", self.image, self.image + ".tmp.qcow2" ]
+            # Note we use compat=0.10 to ensure that if we're running on RHEL7, we still
+            # produce QCOW2 images that RHEL6-era qemu understands.
+            qemu_img_cmd = [ "qemu-img", "convert", "-O", "qcow2" ]
+            qemu_img_cmd.extend(get_qemu_compat_option())
+            qemu_img_cmd.extend([ self.image, self.image + ".tmp.qcow2" ])
             (stdout, stderr, retcode) = subprocess_check_output(qemu_img_cmd)
             os.unlink(self.image)
             os.rename(self.image + ".tmp.qcow2", self.image)
