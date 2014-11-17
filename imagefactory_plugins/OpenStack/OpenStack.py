@@ -19,7 +19,6 @@ import zope
 import libxml2
 import json
 import os
-import struct
 from xml.etree.ElementTree import fromstring
 from imgfac.Template import Template
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
@@ -27,6 +26,7 @@ from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.CloudDelegate import CloudDelegate
 from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info
+from imgfac.FactoryUtils import check_qcow_size
 try:
     from keystoneclient.v2_0 import client
     import glanceclient as glance_client
@@ -82,7 +82,7 @@ class OpenStack(object):
         else:
             image_name = 'ImageFactory created image - %s' % (self.builder.provider_image.identifier)
 
-        if self.check_qcow_size(input_image):
+        if check_qcow_size(input_image):
             self.log.debug("Uploading image to glance, detected qcow format")
             disk_format='qcow2'
         else:
@@ -156,7 +156,7 @@ class OpenStack(object):
         if self.app_config.get('openstack_image_format', 'raw') == 'qcow2':
 
             # Prevent double convert if the image is already qcow2
-            if self.check_qcow_size(input_image) is not None:
+            if check_qcow_size(input_image) is not None:
                 self.log.debug("No conversion require. Image already in qcow2 format.")
                 return
 
@@ -246,41 +246,3 @@ class OpenStack(object):
         image_meta = c.images.create(**image_meta)
         image_data.close()
         return image_meta.id
-
-    # FIXME : cut/paste from RHEVMHelper.py, should refactor into a common utility class
-    def check_qcow_size(self, filename):
-        # Detect if an image is in qcow format
-        # If it is, return the size of the underlying disk image
-        # If it isn't, return None
-
-        # For interested parties, this is the QCOW header struct in C
-        # struct qcow_header {
-        #    uint32_t magic;
-        #    uint32_t version;
-        #    uint64_t backing_file_offset;
-        #    uint32_t backing_file_size;
-        #    uint32_t cluster_bits;
-        #    uint64_t size; /* in bytes */
-        #    uint32_t crypt_method;
-        #    uint32_t l1_size;
-        #    uint64_t l1_table_offset;
-        #    uint64_t refcount_table_offset;
-        #    uint32_t refcount_table_clusters;
-        #    uint32_t nb_snapshots;
-        #    uint64_t snapshots_offset;
-        # };
-
-        # And in Python struct format string-ese
-        qcow_struct=">IIQIIQIIQQIIQ" # > means big-endian
-        qcow_magic = 0x514649FB # 'Q' 'F' 'I' 0xFB
-
-        f = open(filename,"r")
-        pack = f.read(struct.calcsize(qcow_struct))
-        f.close()
-
-        unpack = struct.unpack(qcow_struct, pack)
-
-        if unpack[0] == qcow_magic:
-            return unpack[5]
-        else:
-            return None
