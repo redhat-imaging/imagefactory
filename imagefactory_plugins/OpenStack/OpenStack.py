@@ -26,7 +26,7 @@ from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.CloudDelegate import CloudDelegate
 from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info
-from imgfac.FactoryUtils import check_qcow_size
+from imgfac.FactoryUtils import check_qcow_size, subprocess_check_output, qemu_convert_cmd
 try:
     from keystoneclient.v2_0 import client
     import glanceclient as glance_client
@@ -154,20 +154,15 @@ class OpenStack(object):
         # using this avoids the performance penalty of uploading
         # (and launching) raw disk images on slow storage
         if self.app_config.get('openstack_image_format', 'raw') == 'qcow2':
-
-            # Prevent double convert if the image is already qcow2
-            if check_qcow_size(input_image) is not None:
-                self.log.debug("No conversion require. Image already in qcow2 format.")
-                return
-
-            self.log.debug("Converting RAW image to compressed qcow2 format")
-            rc = os.system("qemu-img convert -c -O qcow2 %s %s" %
-                            (input_image, input_image + ".tmp.qcow2"))
-            if rc == 0:
-                os.unlink(input_image)
-                os.rename(input_image + ".tmp.qcow2", input_image)
-            else:
-                raise ImageFactoryException("qemu-img convert failed!")
+            # None of the existing input base_image plugins produce compressed qcow2 output
+            # the step below is either going from raw to compressed qcow2 or
+            # uncompressed qcow2 to compressed qcow2
+            self.log.debug("Converting image to compressed qcow2 format")
+            tmp_output = input_image + ".tmp.qcow2"
+            convert_cmd = qemu_convert_cmd(input_image, tmp_output, True)
+            (stdout, stderr, retcode) = subprocess_check_output(convert_cmd)
+            os.unlink(input_image)
+            os.rename(tmp_output, input_image)
 
     def modify_oz_filesystem(self):
         self.log.debug("Doing further Factory specific modification of Oz image")

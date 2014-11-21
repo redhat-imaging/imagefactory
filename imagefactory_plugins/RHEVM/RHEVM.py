@@ -30,6 +30,7 @@ from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.CloudDelegate import CloudDelegate
 from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info
+from imgfac.FactoryUtils import check_qcow_size, qemu_convert_cmd
 from xml.etree.ElementTree import fromstring
 from RHEVMHelper import RHEVMHelper
 
@@ -122,11 +123,13 @@ class RHEVM(object):
         # Add the cloud-info file
         self.modify_oz_filesystem()
 
-        # Finally, if our format is qcow2, do the transformation here
-        if ("rhevm_image_format" in self.app_config) and  (self.app_config["rhevm_image_format"] == "qcow2"):
-            self.log.debug("Converting RAW image to compressed qcow2 format")
+        # Finally, if our format is qcow2, do the transformation here if needed
+        if ("rhevm_image_format" in self.app_config) and  (self.app_config["rhevm_image_format"] == "qcow2") \
+           and not check_qcow_size(self.image):
+            self.log.debug("Converting RAW image to qcow2 format")
             # TODO: When RHEV adds support, use the -c option to compress these images to save space
-            qemu_img_cmd = [ "qemu-img", "convert", "-O", "qcow2", self.image, self.image + ".tmp.qcow2" ]
+            #       (at that point, remove the qcow check as we always want to compress)
+            qemu_img_cmd = qemu_convert_cmd( self.image, self.image + ".tmp.qcow2" )
             (stdout, stderr, retcode) = subprocess_check_output(qemu_img_cmd)
             os.unlink(self.image)
             os.rename(self.image + ".tmp.qcow2", self.image)

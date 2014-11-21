@@ -12,7 +12,7 @@ from imgfac.ImageFactoryException import ImageFactoryException
 import subprocess
 import logging
 import struct
-
+import tempfile
 
 def launch_inspect_and_mount(diskfile, readonly=False):
     g = guestfs.GuestFS()
@@ -236,8 +236,17 @@ def parameter_cast_to_bool(ival):
     return None
 
 def check_qcow_size(filename):
+    # Return the size of the underlying disk image in qcow file
+    # Return None if the file is not a qcow disk image
+    unpack = unpack_qcow_header(filename)
+    if unpack:
+        return unpack[5]
+    else:
+        return None
+
+def unpack_qcow_header(filename):
     # Detect if an image is in qcow format
-    # If it is, return the size of the underlying disk image
+    # If it is, return the full qcow header as an unpacked array
     # If it isn't, return None
 
     # For interested parties, this is the QCOW header struct in C
@@ -268,6 +277,31 @@ def check_qcow_size(filename):
     unpack = struct.unpack(qcow_struct, pack)
 
     if unpack[0] == qcow_magic:
-        return unpack[5]
+        return unpack
     else:
         return None
+
+def _qemu_compat_supported():
+    # There appears to be no reliable way of knowing if this compat option is available
+    # other than trying to use it and capturing the return code/state
+
+    tf = tempfile.NamedTemporaryFile()
+    tf.close()
+    # Very mild race here as someone else might grab an identically named
+    # temp file.  We will live with it.
+    try:
+        cmd = [ 'qemu-img', 'create', '-f', 'qcow2', '-o', 'compat=0.10', tf.name, '1G' ]
+        subprocess_check_output(cmd)
+        os.unlink(tf.name)
+        return True
+    except ImageFactoryException:
+        return False
+
+def qemu_convert_cmd(inputfn, outputfn, compress=False):
+    convert_cmd = [ 'qemu-img', 'convert', '-O', 'qcow2' ]
+    if compress:
+        convert_cmd += [ '-c' ]
+    if _qemu_compat_supported():
+        convert_cmd += [ '-o', 'compat=0.10' ]
+    convert_cmd += [ inputfn, outputfn ]
+    return convert_cmd
