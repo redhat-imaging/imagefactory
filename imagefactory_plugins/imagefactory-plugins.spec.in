@@ -1,3 +1,12 @@
+# Some Openstack supporting packages from EPEL have been removed due to updated
+# deps that override RHEL and, thus, violate EPEL rules.  We would like to 
+# eventually support these features as part of an EL6 and EL7 set of factory
+# plugin packages in RDO.  Until this is sorted out we must disable things when
+# building on RHEL.
+# TODO: If we end up building as part of RDO either remove this for RDO
+# SPEC builds or find a way to detect an RDO build and automagically negate this
+%define include_openstack %{?rhel:0}%{!?rhel:1}
+
 %global auto_register_macro_post() # create it if it doesn't already exist as a link \
 # If it is an existing file other than a link, do nothing \
 [ -L %{_sysconfdir}/imagefactory/plugins.d/%1.info ] || \
@@ -82,6 +91,7 @@ Requires: imagefactory-plugin-api = 1.0
 %description TinMan
 An OS plugin to support Fedora OSes
 
+%if 0%{include_openstack}
 %package OpenStack
 Summary: Cloud plugin for OpenStack running on KVM
 License: ASL 2.0
@@ -91,6 +101,37 @@ Requires: imagefactory-plugin-api = 1.0
 
 %description OpenStack
 A Cloud plugin to support OpenStack running on top of KVM.
+
+%package Rackspace
+Summary: Cloud plugin for Rackspace
+License: ASL 2.0
+Requires: python-novaclient
+Requires: python-pyrax
+Requires: imagefactory-plugins
+Requires: imagefactory-plugin-api = 1.0
+
+%description Rackspace
+A Cloud plugin to support Rackspace
+
+%package Rackspace-JEOS-images
+Summary: JEOS images for various OSes to support Rackspace snapshot builds
+Requires: imagefactory-plugins-Rackspace
+
+%description Rackspace-JEOS-images
+These configuration files point to existing JEOS Image ID's on Rackspace that
+can be used to do "snapshot" style builds.
+
+%package Nova
+Summary: OS plugin that allows imagefactory to use Nova instances to build base images.
+License: ASL 2.0
+Requires: python-novaclient
+Requires: oz >= 0.12.0
+Requires: imagefactory-plugins
+Requires: imagefactory-plugin-api = 1.0
+
+%description Nova
+An alternative to the TinMan plugin for creating base images using an OpenStack cloud.
+%endif
 
 %package EC2
 Summary: Cloud plugin for EC2
@@ -160,42 +201,12 @@ Requires: VMDKstream
 %description vSphere
 A plugin for vSphere "clouds"
 
-%package Rackspace
-Summary: Cloud plugin for Rackspace
-License: ASL 2.0
-Requires: python-novaclient
-Requires: python-pyrax
-Requires: imagefactory-plugins
-Requires: imagefactory-plugin-api = 1.0
-
-%description Rackspace
-A Cloud plugin to support Rackspace
-
-%package Rackspace-JEOS-images
-Summary: JEOS images for various OSes to support Rackspace snapshot builds
-Requires: imagefactory-plugins-Rackspace
-
-%description Rackspace-JEOS-images
-These configuration files point to existing JEOS Image ID's on Rackspace that
-can be used to do "snapshot" style builds.
-
 %package Docker
 Summary: Cloud plugin for Docker
 License: ASL 2.0
 
 %description Docker
 A Cloud plugin to support Docker
-
-%package Nova
-Summary: OS plugin that allows imagefactory to use Nova instances to build base images.
-License: ASL 2.0
-Requires: python-novaclient
-Requires: oz >= 0.12.0
-Requires: imagefactory-plugins
-Requires: imagefactory-plugin-api = 1.0
-
-%description Nova
-An alternative to the TinMan plugin for creating base images using an OpenStack cloud.
 
 %prep
 %setup -q
@@ -213,6 +224,15 @@ rm -rf %{buildroot}%{python_sitelib}/imagefactory_plugins/MockOS
 rm -rf %{buildroot}%{python_sitelib}/imagefactory_plugins/MockCloud
 %endif
 
+%if 0%{include_openstack}
+%else
+rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/OpenStack
+rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Nova
+rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Rackspace
+rm -f  %{buildroot}%{_sysconfdir}/imagefactory/jeos_images/rackspace_fedora_jeos.conf
+rm -f  %{buildroot}%{_sysconfdir}/imagefactory/jeos_images/rackspace_rhel_jeos.conf
+%endif
+
 %post OVA
 %auto_register_macro_post OVA
 %postun OVA
@@ -228,10 +248,27 @@ rm -rf %{buildroot}%{python_sitelib}/imagefactory_plugins/MockCloud
 %postun TinMan
 %auto_register_macro_postun TinMan
 
+%if 0%{include_openstack}
 %post OpenStack
 %auto_register_macro_post OpenStack
 %postun OpenStack
 %auto_register_macro_postun OpenStack
+
+%post Rackspace
+%auto_register_macro_post Rackspace
+%postun Rackspace
+%auto_register_macro_postun Rackspace
+
+%post Nova
+%auto_register_macro_post Nova
+%postun Nova
+%auto_register_macro_postrun Nova
+%endif
+
+%post RHEVM
+%%auto_register_macro_post RHEVM
+%postun RHEVM
+%auto_register_macro_postun RHEVM
 
 %post EC2
 %auto_register_macro_post EC2
@@ -250,30 +287,15 @@ rm -rf %{buildroot}%{python_sitelib}/imagefactory_plugins/MockCloud
 %auto_register_macro_postun MockCloud
 %endif
 
-%post RHEVM
-%auto_register_macro_post RHEVM
-%postun RHEVM
-%auto_register_macro_postun RHEVM
-
 %post vSphere
 %auto_register_macro_post vSphere
 %postun vSphere
 %auto_register_macro_postun vSphere
 
-%post Rackspace
-%auto_register_macro_post Rackspace
-%postun Rackspace
-%auto_register_macro_postun Rackspace
-
 %post Docker
 %auto_register_macro_post Docker
 %postun Docker
 %auto_register_macro_postun Docker
-
-%post Nova
-%auto_register_macro_post Nova
-%postun Nova
-%auto_register_macro_postrun Nova
 
 %files
 %doc COPYING
@@ -297,9 +319,23 @@ rm -rf %{buildroot}%{python_sitelib}/imagefactory_plugins/MockCloud
 %dir %{python_sitelib}/imagefactory_plugins/TinMan
 %{python_sitelib}/imagefactory_plugins/TinMan/*
 
+%if 0%{include_openstack}
 %files OpenStack
 %dir %{python_sitelib}/imagefactory_plugins/OpenStack
 %{python_sitelib}/imagefactory_plugins/OpenStack/*
+
+%files Rackspace
+%dir %{python_sitelib}/imagefactory_plugins/Rackspace
+%{python_sitelib}/imagefactory_plugins/Rackspace/*
+
+%files Rackspace-JEOS-images
+%{_sysconfdir}/imagefactory/jeos_images/rackspace_fedora_jeos.conf
+%{_sysconfdir}/imagefactory/jeos_images/rackspace_rhel_jeos.conf
+
+%files Nova
+%dir %{python_sitelib}/imagefactory_plugins/Nova
+%{python_sitelib}/imagefactory_plugins/Nova/*
+%endif
 
 %files EC2
 %dir %{python_sitelib}/imagefactory_plugins/EC2
@@ -309,10 +345,6 @@ rm -rf %{buildroot}%{python_sitelib}/imagefactory_plugins/MockCloud
 %files EC2-JEOS-images
 %{_sysconfdir}/imagefactory/jeos_images/ec2_fedora_jeos.conf
 %{_sysconfdir}/imagefactory/jeos_images/ec2_rhel_jeos.conf
-
-%files Rackspace-JEOS-images
-%{_sysconfdir}/imagefactory/jeos_images/rackspace_fedora_jeos.conf
-%{_sysconfdir}/imagefactory/jeos_images/rackspace_rhel_jeos.conf
 
 %if 0%{?build_mock}
 %files MockOS
@@ -332,17 +364,9 @@ rm -rf %{buildroot}%{python_sitelib}/imagefactory_plugins/MockCloud
 %dir %{python_sitelib}/imagefactory_plugins/vSphere
 %{python_sitelib}/imagefactory_plugins/vSphere/*
 
-%files Rackspace
-%dir %{python_sitelib}/imagefactory_plugins/Rackspace
-%{python_sitelib}/imagefactory_plugins/Rackspace/*
-
 %files Docker
 %dir %{python_sitelib}/imagefactory_plugins/Docker
 %{python_sitelib}/imagefactory_plugins/Docker/*
-
-%files Nova
-%dir %{python_sitelib}/imagefactory_plugins/Nova
-%{python_sitelib}/imagefactory_plugins/Nova/*
 
 %changelog
 * Tue Oct 21 2014 Ian McLeod <imcleod@redhat.com> - 1.1.6-1
