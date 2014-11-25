@@ -369,6 +369,9 @@ rm -f  %{buildroot}%{_sysconfdir}/imagefactory/jeos_images/rackspace_rhel_jeos.c
 %{python_sitelib}/imagefactory_plugins/Docker/*
 
 %changelog
+* Mon Nov 24 2014 Ian McLeod <imcleod@redhat.com> - 1.1.6-2
+- Assorted fixes and features to enable rpm-ostree-toolbox integration
+
 * Tue Oct 21 2014 Ian McLeod <imcleod@redhat.com> - 1.1.6-1
 - Upstream 1.1.6 release
 
