@@ -266,7 +266,7 @@ rm -f  %{buildroot}%{_sysconfdir}/imagefactory/jeos_images/rackspace_rhel_jeos.c
 %endif
 
 %post RHEVM
-%%auto_register_macro_post RHEVM
+%auto_register_macro_post RHEVM
 %postun RHEVM
 %auto_register_macro_postun RHEVM
 
