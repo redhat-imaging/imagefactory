@@ -22,6 +22,8 @@ from imgfac.CloudDelegate import CloudDelegate
 from imgfac.PersistentImageManager import PersistentImageManager
 from imgfac.TargetImage import TargetImage
 from imagefactory_plugins.ovfcommon.ovfcommon import RHEVOVFPackage, VsphereOVFPackage
+from imagefactory_plugins.ovfcommon.ovfcommon import VirtualBoxOVFPackage
+from imagefactory_plugins.ovfcommon.ovfcommon import LibvirtVagrantOVFPackage
 from imgfac.ImageFactoryException import ImageFactoryException
 from oz.ozutil import copyfile_sparse
 
@@ -46,8 +48,22 @@ class OVA(object):
         self.log.info('builder_did_create_target_image() called in OVA plugin')
         self.status="BUILDING"
 
+        # NOTE: This is unique to the OVA plugin at the moment
+        # The ID passed in as the "base" image is actually a target image for the cloud
+        # type that will be the ultimate target of the OVA.  This allows us to reuse the
+        # existing target plugin code for disk format transformation and focus on the OVF
+        # specific work in this plugin
+
+        # The target image containing the disk in the correct format
+        # Again, the builder things this is a base image but it is actually a target image
         self.target_image = builder.base_image
+
+        # The base image that this origin target image was created from
         self.base_image = PersistentImageManager.default_manager().image_with_id(self.target_image.base_image_id)
+
+        # A convenience variable pointing at the target image we are creating
+        # Take note - self.target_image is the image we are sourcing from
+        #             self.image is us, another target image
         self.image = builder.target_image
         self.parameters = parameters
 
@@ -61,26 +77,39 @@ class OVA(object):
 
     def generate_ova(self):
         if self.target_image.target == 'rhevm':
-            klass = RHEVOVFPackage
+            ova_format = self.parameters.get('rhevm_ova_format', 'rhevm')
+            if ova_format == 'rhevm':
+                klass = RHEVOVFPackage
+            elif ova_format == 'vagrant-libvirt':
+                klass = LibvirtVagrantOVFPackage
+            else:
+                raise ImageFactoryException("Unknown rhevm ova_format (%s) requested - must be 'rhevm' or 'libvirt-vagrant'" % (ova_format) )
         elif self.target_image.target == 'vsphere':
-            klass = VsphereOVFPackage
+            ova_format = self.parameters.get('vsphere_ova_format', 'vsphere')
+            if ova_format == 'vsphere':
+                klass = VsphereOVFPackage
+            elif ova_format == 'vagrant-virtualbox':
+                klass = VirtualBoxOVFPackage
+            else:
+                raise ImageFactoryException("Unknown vsphere ova_format (%s) requested - must be 'vsphere' or 'virtualbox'" % (ova_format) )
         else:
-            raise ImageFactoryException("OVA plugin only support rhevm and vsphere images")
+            raise ImageFactoryException("OVA plugin only supports rhevm and vsphere target images")
 
         klass_parameters = dict()
 
         if self.parameters:
-            params = ['ovf_cpu_count','ovf_memory_mb',
+            params = ['ovf_cpu_count','ovf_memory_mb','ovf_name',
                       'rhevm_default_display_type','rhevm_description','rhevm_os_descriptor',
                       'vsphere_product_name','vsphere_product_vendor_name','vsphere_product_version',
-                      'vsphere_virtual_system_type']
+                      'vsphere_virtual_system_type',
+                      'vagrant_sync_directory']
 
             for param in params:
                 if (self.parameters.get(param) and 
                     klass.__init__.func_code.co_varnames.__contains__(param)):
                     klass_parameters[param] = self.parameters.get(param)
 
-        pkg = klass(disk=self.image.data, base_image=self.base_image.data,
+        pkg = klass(disk=self.image.data, base_image=self.base_image,
                     **klass_parameters)
         ova = pkg.make_ova_package()
         copyfile_sparse(ova, self.image.data)

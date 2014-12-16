@@ -16,6 +16,7 @@
 
 from xml.etree import ElementTree
 from oz.ozutil import copyfile_sparse
+import oz.TDL
 import os
 import tarfile
 from shutil import rmtree
@@ -26,6 +27,13 @@ import tempfile
 from stat import *
 from imgfac.PersistentImageManager import PersistentImageManager
 from imgfac.FactoryUtils import check_qcow_size
+from imgfac.ImageFactoryException import ImageFactoryException
+# Yes - again with two different XML libraries
+# lxml.etree is required by Oz and is what I used to rebuild the
+# Virtualbox XML format.
+# TODO: Unify these
+import lxml.etree
+import datetime
 
 
 class RHEVOVFDescriptor(object):
@@ -768,7 +776,7 @@ class VsphereOVFPackage(OVFPackage):
                  vsphere_product_vendor_name="Vendor Name",
                  vsphere_product_version="1.0",
                  vsphere_virtual_system_type="vmx-07 vmx-08"):
-        disk = VsphereDisk(disk, base_image)
+        disk = VsphereDisk(disk, base_image.data)
         super(VsphereOVFPackage, self).__init__(disk, path)
         self.disk_path = os.path.join(self.path, "disk.img")
         self.ovf_path  = os.path.join(self.path, "desc.ovf")
@@ -853,3 +861,1015 @@ class VsphereDisk(object):
 
         # self.raw_create_time = os.path.getctime(self.path)
         # self.create_time = time.gmtime(self.raw_create_time)
+
+class LibvirtVagrantOVFPackage(OVFPackage):
+    def __init__(self, disk, path=None, base_image=None, 
+                 vagrant_sync_directory = "/vagrant"):
+        super(LibvirtVagrantOVFPackage, self).__init__(disk,path)
+        self.vagrant_sync_directory = vagrant_sync_directory
+        # The base image can be either raw or qcow2 - determine size and save for later
+        qcow_size = check_qcow_size(base_image.data)
+        if qcow_size:
+            self.disk_size=qcow_size
+        else:
+            self.disk_size = os.stat(base_image.data).st_size
+
+    def make_ova_package(self):
+        return super(LibvirtVagrantOVFPackage, self).make_ova_package(gzip=True)
+
+    def copy_disk(self):
+        copyfile_sparse(self.disk, os.path.join(self.path,"box.img"))
+
+    def sync(self):
+        self.copy_disk()
+
+        vagrantfile = """Vagrant.configure('2') do |config|
+        config.vm.synced_folder ".", "%s", type: "rsync"
+        config.vm.provider :libvirt do |libvirt|
+                libvirt.driver = 'kvm'
+                libvirt.connect_via_ssh = false
+                libvirt.username = 'root'
+                libvirt.storage_pool_name = 'default'
+        end
+end
+""" % (self.vagrant_sync_directory)
+
+        vagrantfile_path = os.path.join(self.path, "Vagrantfile")
+        vf = open(vagrantfile_path, 'w')
+        vf.write(vagrantfile)
+        vf.close()
+
+        size_in_gb = int(self.disk_size / (1024 ** 3)) + 1
+        metadata_json = '{"provider": "libvirt", "format": "qcow2", "virtual_size": %d}' % (size_in_gb)
+        metadata_json_path = os.path.join(self.path, "metadata.json")
+        mj = open(metadata_json_path, 'w')
+        mj.write(metadata_json)
+        mj.close()
+
+class VirtualBoxOVFPackage(OVFPackage):
+    def __init__(self, disk, path=None, base_image=None,
+                 ovf_name=None,
+                 ovf_cpu_count="1",
+                 ovf_memory_mb="512",
+                 vagrant_sync_directory="/vagrant"):
+        super(VirtualBoxOVFPackage, self).__init__(disk, path)
+        self.ovf_path  = os.path.join(self.path, "box.ovf")        
+
+        if ovf_name:
+            self.ovf_name = ovf_name.replace(' ','_')
+        else:
+            self.ovf_name = 'vagrant-virtualbox-box'
+        self.disk_image_name = self.ovf_name + ".vmdk"
+        self.ovf_cpu_count = ovf_cpu_count
+        self.ovf_memory_mb = ovf_memory_mb
+        self.vagrant_sync_directory = vagrant_sync_directory
+
+        # We need the base image libvirt XML to obtain the MAC address originally used
+        # when running the installer.  Virtualbox Vagrant seems to prefer guests that have
+        # this explicitly defined
+        libvirt_xml = base_image.parameters.get('libvirt_xml', None)
+        if not libvirt_xml:
+            raise ImageFactoryException("Passed a base image without libvirt XML - Need MAC address from this")
+
+        doc = lxml.etree.fromstring(libvirt_xml)
+        mac_addr = doc.xpath('/domain/devices/interface[@type="bridge"]/mac/@address')[0]
+        # VirtualBox prefers this to be a flat string without the traditional colons
+        self.mac_addr = mac_addr.replace(':','')
+
+        # ARCH - used to select OS type
+        self.arch = oz.TDL.TDL(base_image.template).arch
+        self.base_image = base_image
+        # The base image can be either raw or qcow2 - determine size and save for later
+        qcow_size = check_qcow_size(base_image.data)
+        if qcow_size:
+            self.disk_size=qcow_size
+        else:
+            self.disk_size = os.stat(base_image.data).st_size
+
+
+    def new_ovf_descriptor(self):
+        return VirtualBoxOVFDescriptor(self.disk,
+                                      self.disk_size,
+                                      self.ovf_name,
+                                      self.ovf_cpu_count,
+                                      self.ovf_memory_mb,
+                                      self.arch,
+                                      self.disk_image_name,
+                                      self.mac_addr)
+
+    def copy_disk(self):
+        copyfile_sparse(self.disk, os.path.join(self.path,self.disk_image_name))
+
+    def sync(self):
+        super(VirtualBoxOVFPackage, self).sync()
+
+        vagrantfile = '''Vagrant.configure("2") do |config|
+  config.vm.base_mac = "%s"
+  config.vm.synced_folder ".", "%s", type: "rsync"
+end
+''' % (self.mac_addr, self.vagrant_sync_directory)
+        vagrantfile_path = os.path.join(self.path, "Vagrantfile")
+        vf = open(vagrantfile_path, 'w')
+        vf.write(vagrantfile)
+        vf.close()
+
+        metadata_json = '{"provider":"virtualbox"}\n'
+        metadata_json_path = os.path.join(self.path, "metadata.json")
+        mj = open(metadata_json_path, 'w')
+        mj.write(metadata_json)
+        mj.close()
+
+    def make_ova_package(self):
+        # Stream optimized vmdk is already compressed at the sector level
+        # no real benefit to further compression here
+        return super(VirtualBoxOVFPackage, self).make_ova_package(gzip=False)
+
+class VirtualBoxOVFDescriptor(object):
+    def __init__(self, disk,
+                 disk_size,
+                 ovf_name,
+                 ovf_cpu_count,
+                 ovf_memory_mb,
+                 arch,
+                 disk_image_name,
+                 mac_addr):
+        self.disk = disk
+        self.disk_size = disk_size
+
+        self.ovf_name = ovf_name
+
+        self.ovf_cpu_count = ovf_cpu_count
+        self.ovf_memory_mb = ovf_memory_mb
+
+        self.arch = arch
+        self.disk_image_name = disk_image_name
+        self.mac_addr = mac_addr
+
+    def generate_ovf_xml(self):
+
+	# lxml.etree favors use of the full namespace in constructors
+	VSSD = '{http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData}'
+	RASD = '{http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData}'
+	VBOX = '{http://www.virtualbox.org/ovf/machine}'
+	OVF = '{http://schemas.dmtf.org/ovf/envelope/1}'
+	XSI = '{http://www.w3.org/2001/XMLSchema-instance}'
+	nsmap = {'vssd': 'http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData', 'rasd': 'http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData', 'vbox': 'http://www.virtualbox.org/ovf/machine', None: 'http://schemas.dmtf.org/ovf/envelope/1', 'ovf': 'http://schemas.dmtf.org/ovf/envelope/1', 'xsi': 'http://www.w3.org/2001/XMLSchema-instance'}
+
+        # OS ID and description translation
+        # VirtualBox uses a wide variety of these but they are so vague that it is
+        # difficult to imagine them being genuinely useful to the hypervisor.
+        # For example "Ubuntu" and "Red Hat Enterprise Linux" are IDs despite the fact
+        # that they span a family of OSes that go as far back as the 2.6 kernel.
+        # The only plausibly meaningful information in this field is whether or not
+        # the OS in question is 32 bit or 64 bit.  So, we use RHEL and RHEL_64 bit as
+        # the two possibilities.
+
+        # TODO: If anyone encounters issues with this approach please let us know
+        if self.arch == 'x86_64':
+            os_id = '80'
+            os_desc = 'RedHat_64'
+        elif self.arch == 'i386':
+            os_id = '79'
+            os_desc = 'RedHat'
+        else:
+            raise ImageFactoryException("Virtualbox OVF architecture must be i386 or x86_64")
+
+        # Variable items
+	box_conf = { 'diskfile': self.disk_image_name,
+		     'capacity': str(self.disk_size),
+                     'cpu_count': str(self.ovf_cpu_count),
+		     'machine_name': self.ovf_name,
+		     'memory': str(self.ovf_memory_mb),
+		     'os_id': os_id,
+		     'os_desc': os_desc,
+		     'mac_addr': self.mac_addr }
+
+	# Time - used in multiple locations below - create once for consistent timestamp
+	now = time.time()
+	# Format preferred by virtualbox property timestamps
+	nowvbstr = nowvbstr = '%d' % ( now * 10 ** 9 )
+	# Format for other OVF timestamps
+	nowstr = datetime.datetime.utcfromtimestamp(now).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+	# UUID for disk image
+	disk_uuid = str(uuid.uuid4())
+
+	# UUID for overall machine
+	machine_uuid = str(uuid.uuid4())
+
+
+	el_0 = lxml.etree.Element(OVF + 'Envelope', nsmap = nsmap)
+	el_0.attrib[OVF + 'version'] = '1.0'
+	el_0.attrib['{http://www.w3.org/XML/1998/namespace}lang'] = 'en-US'
+
+	el_1 = lxml.etree.Element(OVF + 'References')
+
+	el_2 = lxml.etree.Element(OVF + 'File')
+	el_2.attrib[OVF + 'href'] = box_conf['diskfile']
+	el_2.attrib[OVF + 'id'] = 'file1'
+	el_1.append(el_2)
+	el_0.append(el_1)
+
+	el_1 = lxml.etree.Element(OVF + 'DiskSection')
+
+	el_2 = lxml.etree.Element(OVF + 'Info')
+	el_2.text = 'List of the virtual disks used in the package'
+	el_1.append(el_2)
+
+	el_2 = lxml.etree.Element(OVF + 'Disk')
+	el_2.attrib[OVF + 'capacity'] = box_conf['capacity']
+	el_2.attrib[OVF + 'diskId'] = 'vmdisk1'
+	el_2.attrib[OVF + 'fileRef'] = 'file1'
+	el_2.attrib[OVF + 'format'] = 'http://www.vmware.com/interfaces/specifications/vmdk.html#streamOptimized'
+	el_2.attrib[VBOX + 'uuid'] = disk_uuid
+	el_1.append(el_2)
+	el_0.append(el_1)
+
+	el_1 = lxml.etree.Element(OVF + 'NetworkSection')
+
+	el_2 = lxml.etree.Element(OVF + 'Info')
+	el_2.text = 'Logical networks used in the package'
+	el_1.append(el_2)
+
+	el_2 = lxml.etree.Element(OVF + 'Network')
+	el_2.attrib[OVF + 'name'] = 'NAT'
+
+	el_3 = lxml.etree.Element(OVF + 'Description')
+	el_3.text = 'Logical network used by this appliance.'
+	el_2.append(el_3)
+	el_1.append(el_2)
+	el_0.append(el_1)
+
+	el_1 = lxml.etree.Element(OVF + 'VirtualSystem')
+	el_1.attrib[OVF + 'id'] = box_conf['machine_name']
+
+	el_2 = lxml.etree.Element(OVF + 'Info')
+	el_2.text = 'A virtual machine'
+	el_1.append(el_2)
+
+	el_2 = lxml.etree.Element(OVF + 'OperatingSystemSection')
+	#el_2.attrib[OVF + 'id'] = '80'
+	el_2.attrib[OVF + 'id'] = box_conf['os_id']
+
+	el_3 = lxml.etree.Element(OVF + 'Info')
+	el_3.text = 'The kind of installed guest operating system'
+	el_2.append(el_3)
+
+	el_3 = lxml.etree.Element(OVF + 'Description')
+	#el_3.text = 'RedHat_64'
+	el_3.text = box_conf['os_desc']
+	el_2.append(el_3)
+
+	el_3 = lxml.etree.Element(VBOX + 'OSType')
+	#el_3.text = 'RedHat_64'
+	el_3.text = box_conf['os_desc']
+	el_3.attrib[OVF + 'required'] = 'false'
+	el_2.append(el_3)
+	el_1.append(el_2)
+
+	el_2 = lxml.etree.Element(OVF + 'VirtualHardwareSection')
+
+	el_3 = lxml.etree.Element(OVF + 'Info')
+	el_3.text = 'Virtual hardware requirements for a virtual machine'
+	el_2.append(el_3)
+
+	el_3 = lxml.etree.Element(OVF + 'System')
+
+	el_4 = lxml.etree.Element(VSSD + 'ElementName')
+	el_4.text = 'Virtual Hardware Family'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(VSSD + 'InstanceID')
+	el_4.text = '0'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(VSSD + 'VirtualSystemIdentifier')
+	#el_4.text = 'packer-centos-6.5-x86_64'
+	el_4.text = box_conf['machine_name']
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(VSSD + 'VirtualSystemType')
+	el_4.text = 'virtualbox-2.2'
+	el_3.append(el_4)
+	el_2.append(el_3)
+
+	el_3 = lxml.etree.Element(OVF + 'Item')
+
+	el_4 = lxml.etree.Element(RASD + 'Caption')
+	el_4.text = '1 virtual CPU'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'Description')
+	el_4.text = 'Number of virtual CPUs'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'ElementName')
+	el_4.text = '%s virtual CPU' % (box_conf['cpu_count'])
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'InstanceID')
+	el_4.text = '1'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'ResourceType')
+	el_4.text = '3'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'VirtualQuantity')
+	el_4.text = box_conf['cpu_count']
+	el_3.append(el_4)
+	el_2.append(el_3)
+
+	el_3 = lxml.etree.Element(OVF + 'Item')
+
+	el_4 = lxml.etree.Element(RASD + 'AllocationUnits')
+	el_4.text = 'MegaBytes'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'Caption')
+	#el_4.text = '480 MB of memory'
+	el_4.text = '%s MB of memory' % box_conf['memory']
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'Description')
+	el_4.text = 'Memory Size'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'ElementName')
+	#el_4.text = '480 MB of memory'
+	el_4.text = '%s MB of memory' % box_conf['memory']
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'InstanceID')
+	el_4.text = '2'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'ResourceType')
+	el_4.text = '4'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'VirtualQuantity')
+	el_4.text = '%s' % box_conf['memory']
+	el_3.append(el_4)
+	el_2.append(el_3)
+
+	el_3 = lxml.etree.Element(OVF + 'Item')
+
+	el_4 = lxml.etree.Element(RASD + 'Address')
+	el_4.text = '0'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'Caption')
+	el_4.text = 'ideController0'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'Description')
+	el_4.text = 'IDE Controller'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'ElementName')
+	el_4.text = 'ideController0'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'InstanceID')
+	el_4.text = '3'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'ResourceSubType')
+	el_4.text = 'PIIX4'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'ResourceType')
+	el_4.text = '5'
+	el_3.append(el_4)
+	el_2.append(el_3)
+
+	el_3 = lxml.etree.Element(OVF + 'Item')
+
+	el_4 = lxml.etree.Element(RASD + 'Address')
+	el_4.text = '1'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'Caption')
+	el_4.text = 'ideController1'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'Description')
+	el_4.text = 'IDE Controller'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'ElementName')
+	el_4.text = 'ideController1'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'InstanceID')
+	el_4.text = '4'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'ResourceSubType')
+	el_4.text = 'PIIX4'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'ResourceType')
+	el_4.text = '5'
+	el_3.append(el_4)
+	el_2.append(el_3)
+
+	el_3 = lxml.etree.Element(OVF + 'Item')
+
+	el_4 = lxml.etree.Element(RASD + 'AddressOnParent')
+	el_4.text = '0'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'Caption')
+	el_4.text = 'disk1'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'Description')
+	el_4.text = 'Disk Image'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'ElementName')
+	el_4.text = 'disk1'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'HostResource')
+	el_4.text = '/disk/vmdisk1'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'InstanceID')
+	el_4.text = '5'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'Parent')
+	el_4.text = '3'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'ResourceType')
+	el_4.text = '17'
+	el_3.append(el_4)
+	el_2.append(el_3)
+
+	el_3 = lxml.etree.Element(OVF + 'Item')
+
+	el_4 = lxml.etree.Element(RASD + 'AutomaticAllocation')
+	el_4.text = 'true'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'Caption')
+	el_4.text = 'Ethernet adapter on \'NAT\''
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'Connection')
+	el_4.text = 'NAT'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'ElementName')
+	el_4.text = 'Ethernet adapter on \'NAT\''
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'InstanceID')
+	el_4.text = '6'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'ResourceSubType')
+	el_4.text = 'E1000'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(RASD + 'ResourceType')
+	el_4.text = '10'
+	el_3.append(el_4)
+	el_2.append(el_3)
+	el_1.append(el_2)
+
+	el_2 = lxml.etree.Element(VBOX + 'Machine')
+	el_2.attrib[OVF + 'required'] = 'false'
+	el_2.attrib['version'] = '1.12-macosx'
+	#el_2.attrib['uuid'] = '{a22004b1-d5d7-48a4-a0f7-1547e77e66f4}'
+	el_2.attrib['uuid'] = '{%s}' % ( machine_uuid )
+	#el_2.attrib['name'] = 'packer-centos-6.5-x86_64'
+	el_2.attrib['name'] = box_conf['machine_name']
+	#el_2.attrib['OSType'] = 'RedHat_64'
+	el_2.attrib['OSType'] = box_conf['os_desc']
+	el_2.attrib['snapshotFolder'] = 'Snapshots'
+	#el_2.attrib['lastStateChange'] = '2014-03-07T16:57:27Z'
+	el_2.attrib['lastStateChange'] = nowstr
+
+	el_3 = lxml.etree.Element(OVF + 'Info')
+	el_3.text = 'Complete VirtualBox machine configuration in VirtualBox format'
+	el_2.append(el_3)
+
+	el_3 = lxml.etree.Element(OVF + 'ExtraData')
+
+	el_4 = lxml.etree.Element(OVF + 'ExtraDataItem')
+	el_4.attrib['name'] = 'GUI/LastGuestSizeHint'
+	el_4.attrib['value'] = '720,400'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'ExtraDataItem')
+	el_4.attrib['name'] = 'GUI/LastNormalWindowPosition'
+	el_4.attrib['value'] = '400,183,720,421'
+	el_3.append(el_4)
+	el_2.append(el_3)
+
+	el_3 = lxml.etree.Element(OVF + 'Hardware')
+	el_3.attrib['version'] = '2'
+	el_4 = lxml.etree.Element(OVF + 'CPU')
+	el_4.attrib['count'] = '1'
+	el_4.attrib['hotplug'] = 'false'
+
+	el_5 = lxml.etree.Element(OVF + 'HardwareVirtEx')
+	el_5.attrib['enabled'] = 'true'
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'HardwareVirtExNestedPaging')
+	el_5.attrib['enabled'] = 'true'
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'HardwareVirtExVPID')
+	el_5.attrib['enabled'] = 'true'
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'HardwareVirtExUX')
+	el_5.attrib['enabled'] = 'true'
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'PAE')
+	el_5.attrib['enabled'] = 'true'
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'HardwareVirtExLargePages')
+	el_5.attrib['enabled'] = 'true'
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'HardwareVirtForce')
+	el_5.attrib['enabled'] = 'false'
+	el_4.append(el_5)
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'Memory')
+	el_4.attrib['RAMSize'] = box_conf['memory']
+	el_4.attrib['PageFusion'] = 'false'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'HID')
+	el_4.attrib['Pointing'] = 'PS2Mouse'
+	el_4.attrib['Keyboard'] = 'PS2Keyboard'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'HPET')
+	el_4.attrib['enabled'] = 'false'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'Chipset')
+	el_4.attrib['type'] = 'PIIX3'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'Boot')
+
+	el_5 = lxml.etree.Element(OVF + 'Order')
+	el_5.attrib['position'] = '1'
+	el_5.attrib['device'] = 'HardDisk'
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'Order')
+	el_5.attrib['position'] = '2'
+	el_5.attrib['device'] = 'DVD'
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'Order')
+	el_5.attrib['position'] = '3'
+	el_5.attrib['device'] = 'None'
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'Order')
+	el_5.attrib['position'] = '4'
+	el_5.attrib['device'] = 'None'
+	el_4.append(el_5)
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'Display')
+	el_4.attrib['VRAMSize'] = '8'
+	el_4.attrib['monitorCount'] = '1'
+	el_4.attrib['accelerate3D'] = 'false'
+	el_4.attrib['accelerate2DVideo'] = 'false'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'VideoCapture')
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'RemoteDisplay')
+	el_4.attrib['enabled'] = 'false'
+	el_4.attrib['authType'] = 'Null'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'BIOS')
+
+	el_5 = lxml.etree.Element(OVF + 'ACPI')
+	el_5.attrib['enabled'] = 'true'
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'IOAPIC')
+	el_5.attrib['enabled'] = 'true'
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'Logo')
+	el_5.attrib['fadeIn'] = 'true'
+	el_5.attrib['fadeOut'] = 'true'
+	el_5.attrib['displayTime'] = '0'
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'BootMenu')
+	el_5.attrib['mode'] = 'MessageAndMenu'
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'TimeOffset')
+	el_5.attrib['value'] = '0'
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'PXEDebug')
+	el_5.attrib['enabled'] = 'false'
+	el_4.append(el_5)
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'USBController')
+	el_4.attrib['enabled'] = 'false'
+	el_4.attrib['enabledEhci'] = 'false'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'Network')
+
+	el_5 = lxml.etree.Element(OVF + 'Adapter')
+	el_5.attrib['slot'] = '0'
+	el_5.attrib['enabled'] = 'true'
+	#el_5.attrib['MACAddress'] = '080027CE083D'
+	el_5.attrib['MACAddress'] = box_conf['mac_addr']
+	el_5.attrib['cable'] = 'true'
+	el_5.attrib['speed'] = '0'
+	el_5.attrib['type'] = '82540EM'
+
+	el_6 = lxml.etree.Element(OVF + 'DisabledModes')
+	el_5.append(el_6)
+
+	el_6 = lxml.etree.Element(OVF + 'NAT')
+
+	el_7 = lxml.etree.Element(OVF + 'DNS')
+	el_7.attrib['pass-domain'] = 'true'
+	el_7.attrib['use-proxy'] = 'false'
+	el_7.attrib['use-host-resolver'] = 'false'
+	el_6.append(el_7)
+
+	el_7 = lxml.etree.Element(OVF + 'Alias')
+	el_7.attrib['logging'] = 'false'
+	el_7.attrib['proxy-only'] = 'false'
+	el_7.attrib['use-same-ports'] = 'false'
+	el_6.append(el_7)
+	el_5.append(el_6)
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'Adapter')
+	el_5.attrib['slot'] = '1'
+	el_5.attrib['enabled'] = 'false'
+	el_5.attrib['MACAddress'] = '080027D5C857'
+	el_5.attrib['cable'] = 'true'
+	el_5.attrib['speed'] = '0'
+	el_5.attrib['type'] = '82540EM'
+
+	el_6 = lxml.etree.Element(OVF + 'DisabledModes')
+
+	el_7 = lxml.etree.Element(OVF + 'NAT')
+
+	el_8 = lxml.etree.Element(OVF + 'DNS')
+	el_8.attrib['pass-domain'] = 'true'
+	el_8.attrib['use-proxy'] = 'false'
+	el_8.attrib['use-host-resolver'] = 'false'
+	el_7.append(el_8)
+
+	el_8 = lxml.etree.Element(OVF + 'Alias')
+	el_8.attrib['logging'] = 'false'
+	el_8.attrib['proxy-only'] = 'false'
+	el_8.attrib['use-same-ports'] = 'false'
+	el_7.append(el_8)
+	el_6.append(el_7)
+	el_5.append(el_6)
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'Adapter')
+	el_5.attrib['slot'] = '2'
+	el_5.attrib['enabled'] = 'false'
+	el_5.attrib['MACAddress'] = '0800275B7551'
+	el_5.attrib['cable'] = 'true'
+	el_5.attrib['speed'] = '0'
+	el_5.attrib['type'] = '82540EM'
+
+	el_6 = lxml.etree.Element(OVF + 'DisabledModes')
+
+	el_7 = lxml.etree.Element(OVF + 'NAT')
+
+	el_8 = lxml.etree.Element(OVF + 'DNS')
+	el_8.attrib['pass-domain'] = 'true'
+	el_8.attrib['use-proxy'] = 'false'
+	el_8.attrib['use-host-resolver'] = 'false'
+	el_7.append(el_8)
+
+	el_8 = lxml.etree.Element(OVF + 'Alias')
+	el_8.attrib['logging'] = 'false'
+	el_8.attrib['proxy-only'] = 'false'
+	el_8.attrib['use-same-ports'] = 'false'
+	el_7.append(el_8)
+	el_6.append(el_7)
+	el_5.append(el_6)
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'Adapter')
+	el_5.attrib['slot'] = '3'
+	el_5.attrib['enabled'] = 'false'
+	el_5.attrib['MACAddress'] = '0800272E32AD'
+	el_5.attrib['cable'] = 'true'
+	el_5.attrib['speed'] = '0'
+	el_5.attrib['type'] = '82540EM'
+
+	el_6 = lxml.etree.Element(OVF + 'DisabledModes')
+
+	el_7 = lxml.etree.Element(OVF + 'NAT')
+
+	el_8 = lxml.etree.Element(OVF + 'DNS')
+	el_8.attrib['pass-domain'] = 'true'
+	el_8.attrib['use-proxy'] = 'false'
+	el_8.attrib['use-host-resolver'] = 'false'
+	el_7.append(el_8)
+
+	el_8 = lxml.etree.Element(OVF + 'Alias')
+	el_8.attrib['logging'] = 'false'
+	el_8.attrib['proxy-only'] = 'false'
+	el_8.attrib['use-same-ports'] = 'false'
+	el_7.append(el_8)
+	el_6.append(el_7)
+	el_5.append(el_6)
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'Adapter')
+	el_5.attrib['slot'] = '4'
+	el_5.attrib['enabled'] = 'false'
+	el_5.attrib['MACAddress'] = '080027A4CA2F'
+	el_5.attrib['cable'] = 'true'
+	el_5.attrib['speed'] = '0'
+	el_5.attrib['type'] = '82540EM'
+
+	el_6 = lxml.etree.Element(OVF + 'DisabledModes')
+
+	el_7 = lxml.etree.Element(OVF + 'NAT')
+
+	el_8 = lxml.etree.Element(OVF + 'DNS')
+	el_8.attrib['pass-domain'] = 'true'
+	el_8.attrib['use-proxy'] = 'false'
+	el_8.attrib['use-host-resolver'] = 'false'
+	el_7.append(el_8)
+
+	el_8 = lxml.etree.Element(OVF + 'Alias')
+	el_8.attrib['logging'] = 'false'
+	el_8.attrib['proxy-only'] = 'false'
+	el_8.attrib['use-same-ports'] = 'false'
+	el_7.append(el_8)
+	el_6.append(el_7)
+	el_5.append(el_6)
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'Adapter')
+	el_5.attrib['slot'] = '5'
+	el_5.attrib['enabled'] = 'false'
+	el_5.attrib['MACAddress'] = '080027067B25'
+	el_5.attrib['cable'] = 'true'
+	el_5.attrib['speed'] = '0'
+	el_5.attrib['type'] = '82540EM'
+
+	el_6 = lxml.etree.Element(OVF + 'DisabledModes')
+
+	el_7 = lxml.etree.Element(OVF + 'NAT')
+
+	el_8 = lxml.etree.Element(OVF + 'DNS')
+	el_8.attrib['pass-domain'] = 'true'
+	el_8.attrib['use-proxy'] = 'false'
+	el_8.attrib['use-host-resolver'] = 'false'
+	el_7.append(el_8)
+
+	el_8 = lxml.etree.Element(OVF + 'Alias')
+	el_8.attrib['logging'] = 'false'
+	el_8.attrib['proxy-only'] = 'false'
+	el_8.attrib['use-same-ports'] = 'false'
+	el_7.append(el_8)
+	el_6.append(el_7)
+	el_5.append(el_6)
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'Adapter')
+	el_5.attrib['slot'] = '6'
+	el_5.attrib['enabled'] = 'false'
+	el_5.attrib['MACAddress'] = '08002724BAEF'
+	el_5.attrib['cable'] = 'true'
+	el_5.attrib['speed'] = '0'
+	el_5.attrib['type'] = '82540EM'
+
+	el_6 = lxml.etree.Element(OVF + 'DisabledModes')
+
+	el_7 = lxml.etree.Element(OVF + 'NAT')
+
+	el_8 = lxml.etree.Element(OVF + 'DNS')
+	el_8.attrib['pass-domain'] = 'true'
+	el_8.attrib['use-proxy'] = 'false'
+	el_8.attrib['use-host-resolver'] = 'false'
+	el_7.append(el_8)
+
+	el_8 = lxml.etree.Element(OVF + 'Alias')
+	el_8.attrib['logging'] = 'false'
+	el_8.attrib['proxy-only'] = 'false'
+	el_8.attrib['use-same-ports'] = 'false'
+	el_7.append(el_8)
+	el_6.append(el_7)
+	el_5.append(el_6)
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'Adapter')
+	el_5.attrib['slot'] = '7'
+	el_5.attrib['enabled'] = 'false'
+	el_5.attrib['MACAddress'] = '080027693563'
+	el_5.attrib['cable'] = 'true'
+	el_5.attrib['speed'] = '0'
+	el_5.attrib['type'] = '82540EM'
+
+	el_6 = lxml.etree.Element(OVF + 'DisabledModes')
+
+	el_7 = lxml.etree.Element(OVF + 'NAT')
+
+	el_8 = lxml.etree.Element(OVF + 'DNS')
+	el_8.attrib['pass-domain'] = 'true'
+	el_8.attrib['use-proxy'] = 'false'
+	el_8.attrib['use-host-resolver'] = 'false'
+	el_7.append(el_8)
+
+	el_8 = lxml.etree.Element(OVF + 'Alias')
+	el_8.attrib['logging'] = 'false'
+	el_8.attrib['proxy-only'] = 'false'
+	el_8.attrib['use-same-ports'] = 'false'
+	el_7.append(el_8)
+	el_6.append(el_7)
+	el_5.append(el_6)
+	el_4.append(el_5)
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'UART')
+
+	el_5 = lxml.etree.Element(OVF + 'Port')
+	el_5.attrib['slot'] = '0'
+	el_5.attrib['enabled'] = 'false'
+	el_5.attrib['IOBase'] = '0x3f8'
+	el_5.attrib['IRQ'] = '4'
+	el_5.attrib['hostMode'] = 'Disconnected'
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'Port')
+	el_5.attrib['slot'] = '1'
+	el_5.attrib['enabled'] = 'false'
+	el_5.attrib['IOBase'] = '0x2f8'
+	el_5.attrib['IRQ'] = '3'
+	el_5.attrib['hostMode'] = 'Disconnected'
+	el_4.append(el_5)
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'LPT')
+
+	el_5 = lxml.etree.Element(OVF + 'Port')
+	el_5.attrib['slot'] = '0'
+	el_5.attrib['enabled'] = 'false'
+	el_5.attrib['IOBase'] = '0x378'
+	el_5.attrib['IRQ'] = '7'
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'Port')
+	el_5.attrib['slot'] = '1'
+	el_5.attrib['enabled'] = 'false'
+	el_5.attrib['IOBase'] = '0x378'
+	el_5.attrib['IRQ'] = '7'
+	el_4.append(el_5)
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'AudioAdapter')
+	el_4.attrib['controller'] = 'AC97'
+	el_4.attrib['driver'] = 'CoreAudio'
+	el_4.attrib['enabled'] = 'false'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'RTC')
+	el_4.attrib['localOrUTC'] = 'local'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'SharedFolders')
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'Clipboard')
+	el_4.attrib['mode'] = 'Disabled'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'DragAndDrop')
+	el_4.attrib['mode'] = 'Disabled'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'IO')
+
+	el_5 = lxml.etree.Element(OVF + 'IoCache')
+	el_5.attrib['enabled'] = 'true'
+	el_5.attrib['size'] = '5'
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'BandwidthGroups')
+	el_4.append(el_5)
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'HostPci')
+
+	el_5 = lxml.etree.Element(OVF + 'Devices')
+	el_4.append(el_5)
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'EmulatedUSB')
+
+	el_5 = lxml.etree.Element(OVF + 'CardReader')
+	el_5.attrib['enabled'] = 'false'
+	el_4.append(el_5)
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'Guest')
+	el_4.attrib['memoryBalloonSize'] = '0'
+	el_3.append(el_4)
+
+	el_4 = lxml.etree.Element(OVF + 'GuestProperties')
+
+	el_5 = lxml.etree.Element(OVF + 'GuestProperty')
+	el_5.attrib['name'] = '/VirtualBox/GuestAdd/Revision'
+	el_5.attrib['value'] = '92456'
+	el_5.attrib['timestamp'] = nowvbstr
+	el_5.attrib['flags'] = ''
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'GuestProperty')
+	el_5.attrib['name'] = '/VirtualBox/GuestAdd/Version'
+	el_5.attrib['value'] = '4.3.8'
+	el_5.attrib['timestamp'] = nowvbstr
+	el_5.attrib['flags'] = ''
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'GuestProperty')
+	el_5.attrib['name'] = '/VirtualBox/GuestAdd/VersionExt'
+	el_5.attrib['value'] = '4.3.8'
+	el_5.attrib['timestamp'] = nowvbstr
+	el_5.attrib['flags'] = ''
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'GuestProperty')
+	el_5.attrib['name'] = '/VirtualBox/GuestInfo/OS/Product'
+	el_5.attrib['value'] = 'Linux'
+	el_5.attrib['timestamp'] = nowvbstr
+	el_5.attrib['flags'] = ''
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'GuestProperty')
+	el_5.attrib['name'] = '/VirtualBox/GuestInfo/OS/Release'
+	el_5.attrib['value'] = '2.6.32-431.el6.x86_64'
+	el_5.attrib['timestamp'] = nowvbstr
+	el_5.attrib['flags'] = ''
+	el_4.append(el_5)
+
+	el_5 = lxml.etree.Element(OVF + 'GuestProperty')
+	el_5.attrib['name'] = '/VirtualBox/GuestInfo/OS/Version'
+	el_5.attrib['value'] = '#1 SMP Fri Nov 22 03:15:09 UTC 2013'
+	el_5.attrib['timestamp'] = nowvbstr
+	el_5.attrib['flags'] = ''
+	el_4.append(el_5)
+	el_3.append(el_4)
+	el_2.append(el_3)
+
+	el_3 = lxml.etree.Element(OVF + 'StorageControllers')
+
+	el_4 = lxml.etree.Element(OVF + 'StorageController')
+	el_4.attrib['name'] = 'IDE Controller'
+	el_4.attrib['type'] = 'PIIX4'
+	el_4.attrib['PortCount'] = '2'
+	el_4.attrib['useHostIOCache'] = 'true'
+	el_4.attrib['Bootable'] = 'true'
+
+	el_5 = lxml.etree.Element(OVF + 'AttachedDevice')
+	el_5.attrib['type'] = 'HardDisk'
+	el_5.attrib['port'] = '0'
+	el_5.attrib['device'] = '0'
+
+	el_6 = lxml.etree.Element(OVF + 'Image')
+	el_6.attrib['uuid'] = '{%s}' % disk_uuid
+	el_5.append(el_6)
+	el_4.append(el_5)
+	el_3.append(el_4)
+	el_2.append(el_3)
+	el_1.append(el_2)
+        el_0.append(el_1)
+
+        et = ElementTree.ElementTree(el_0)
+        return et
