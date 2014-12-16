@@ -22,6 +22,7 @@ from imgfac.CloudDelegate import CloudDelegate
 from imgfac.PersistentImageManager import PersistentImageManager
 from imgfac.TargetImage import TargetImage
 from imagefactory_plugins.ovfcommon.ovfcommon import RHEVOVFPackage, VsphereOVFPackage
+from imagefactory_plugins.ovfcommon.ovfcommon import VirtualBoxOVFPackage
 from imgfac.ImageFactoryException import ImageFactoryException
 from oz.ozutil import copyfile_sparse
 
@@ -46,8 +47,22 @@ class OVA(object):
         self.log.info('builder_did_create_target_image() called in OVA plugin')
         self.status="BUILDING"
 
+        # NOTE: This is unique to the OVA plugin at the moment
+        # The ID passed in as the "base" image is actually a target image for the cloud
+        # type that will be the ultimate target of the OVA.  This allows us to reuse the
+        # existing target plugin code for disk format transformation and focus on the OVF
+        # specific work in this plugin
+
+        # The target image containing the disk in the correct format
+        # Again, the builder things this is a base image but it is actually a target image
         self.target_image = builder.base_image
+
+        # The base image that this origin target image was created from
         self.base_image = PersistentImageManager.default_manager().image_with_id(self.target_image.base_image_id)
+
+        # A convenience variable pointing at the target image we are creating
+        # Take note - self.target_image is the image we are sourcing from
+        #             self.image is us, another target image
         self.image = builder.target_image
         self.parameters = parameters
 
@@ -63,9 +78,15 @@ class OVA(object):
         if self.target_image.target == 'rhevm':
             klass = RHEVOVFPackage
         elif self.target_image.target == 'vsphere':
-            klass = VsphereOVFPackage
+            ova_format = self.parameters.get('ova_format', 'vsphere')
+            if ova_format == 'vsphere':
+                klass = VsphereOVFPackage
+            elif ova_format == 'virtualbox':
+                klass = VirtualBoxOVFPackage
+            else:
+                raise ImageFactoryException("Unknown vsphere ova_format (%s) requested - must be 'vsphere' or 'virtualbox'" % (ova_format) )
         else:
-            raise ImageFactoryException("OVA plugin only support rhevm and vsphere images")
+            raise ImageFactoryException("OVA plugin only supports rhevm and vsphere target images")
 
         klass_parameters = dict()
 
