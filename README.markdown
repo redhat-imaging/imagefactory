@@ -18,13 +18,13 @@ for more detail on creating a template. Note that a template is **not** tied to
 a specific cloud. 
 
     <template>
-        <name>f12jeos</name>
+        <name>f21</name>
         <os>
             <name>Fedora</name>
-            <version>12</version>
+            <version>21</version>
             <arch>x86_64</arch>
             <install type='iso'>
-                <iso>http://download.fedoraproject.org/pub/fedora/linux/releases/12/Fedora/x86_64/os/</iso>
+                <iso>http://download.fedoraproject.org/pub/fedora/linux/releases/21/Cloud/x86_64/os/</iso>
             </install>
             <rootpw>p@55word!</rootpw>
         </os>
