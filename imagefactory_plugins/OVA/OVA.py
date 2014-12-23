@@ -23,6 +23,7 @@ from imgfac.PersistentImageManager import PersistentImageManager
 from imgfac.TargetImage import TargetImage
 from imagefactory_plugins.ovfcommon.ovfcommon import RHEVOVFPackage, VsphereOVFPackage
 from imagefactory_plugins.ovfcommon.ovfcommon import VirtualBoxOVFPackage
+from imagefactory_plugins.ovfcommon.ovfcommon import LibvirtVagrantOVFPackage
 from imgfac.ImageFactoryException import ImageFactoryException
 from oz.ozutil import copyfile_sparse
 
@@ -76,9 +77,15 @@ class OVA(object):
 
     def generate_ova(self):
         if self.target_image.target == 'rhevm':
-            klass = RHEVOVFPackage
+            ova_format = self.parameters.get('rhevm_ova_format', 'rhevm')
+            if ova_format == 'rhevm':
+                klass = RHEVOVFPackage
+            elif ova_format == 'libvirt-vagrant':
+                klass = LibvirtVagrantOVFPackage
+            else:
+                raise ImageFactoryException("Unknown rhevm ova_format (%s) requested - must be 'rhevm' or 'libvirt-vagrant'" % (ova_format) )
         elif self.target_image.target == 'vsphere':
-            ova_format = self.parameters.get('ova_format', 'vsphere')
+            ova_format = self.parameters.get('vsphere_ova_format', 'vsphere')
             if ova_format == 'vsphere':
                 klass = VsphereOVFPackage
             elif ova_format == 'virtualbox':
@@ -91,7 +98,7 @@ class OVA(object):
         klass_parameters = dict()
 
         if self.parameters:
-            params = ['ovf_cpu_count','ovf_memory_mb',
+            params = ['ovf_cpu_count','ovf_memory_mb','ovf_name',
                       'rhevm_default_display_type','rhevm_description','rhevm_os_descriptor',
                       'vsphere_product_name','vsphere_product_vendor_name','vsphere_product_version',
                       'vsphere_virtual_system_type']
@@ -101,7 +108,7 @@ class OVA(object):
                     klass.__init__.func_code.co_varnames.__contains__(param)):
                     klass_parameters[param] = self.parameters.get(param)
 
-        pkg = klass(disk=self.image.data, base_image=self.base_image.data,
+        pkg = klass(disk=self.image.data, base_image=self.base_image,
                     **klass_parameters)
         ova = pkg.make_ova_package()
         copyfile_sparse(ova, self.image.data)

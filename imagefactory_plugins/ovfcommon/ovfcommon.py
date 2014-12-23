@@ -16,6 +16,7 @@
 
 from xml.etree import ElementTree
 from oz.ozutil import copyfile_sparse
+import oz.TDL
 import os
 import tarfile
 from shutil import rmtree
@@ -26,6 +27,7 @@ import tempfile
 from stat import *
 from imgfac.PersistentImageManager import PersistentImageManager
 from imgfac.FactoryUtils import check_qcow_size
+from imgfac.ImageFactoryException import ImageFactoryException
 # Yes - again with two different XML libraries
 # lxml.etree is required by Oz and is what I used to rebuild the
 # Virtualbox XML format.
@@ -774,7 +776,7 @@ class VsphereOVFPackage(OVFPackage):
                  vsphere_product_vendor_name="Vendor Name",
                  vsphere_product_version="1.0",
                  vsphere_virtual_system_type="vmx-07 vmx-08"):
-        disk = VsphereDisk(disk, base_image)
+        disk = VsphereDisk(disk, base_image.data)
         super(VsphereOVFPackage, self).__init__(disk, path)
         self.disk_path = os.path.join(self.path, "disk.img")
         self.ovf_path  = os.path.join(self.path, "desc.ovf")
@@ -860,6 +862,30 @@ class VsphereDisk(object):
         # self.raw_create_time = os.path.getctime(self.path)
         # self.create_time = time.gmtime(self.raw_create_time)
 
+class LibvirtVagrantOVFPackage(OVFPackage):
+    def __init__(self, disk, path=None, base_image=None):
+        super(LibvirtVagrantOVFPackage, self).__init__(disk,path)
+
+    def sync(self):
+        #self.copy_disk()
+
+        vagrantfile = '''Vagrant.configure("2") do |config|
+  config.vm.base_mac = "%s"
+  config.ssh.password = "vagrant"
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+end
+''' % ("beefbeefbeef")
+        vagrantfile_path = os.path.join(self.path, "Vagrantfile")
+        vf = open(vagrantfile_path, 'w')
+        vf.write(vagrantfile)
+        vf.close()
+
+        metadata_json = '{"provider":"virtualbox"}\n'
+        metadata_json_path = os.path.join(self.path, "metadata.json")
+        mj = open(metadata_json_path, 'w')
+        mj.write(metadata_json)
+        mj.close()
+
 class VirtualBoxOVFPackage(OVFPackage):
     def __init__(self, disk, path=None, base_image=None,
                  ovf_name=None,
@@ -867,16 +893,36 @@ class VirtualBoxOVFPackage(OVFPackage):
                  ovf_memory_mb="512"):
         super(VirtualBoxOVFPackage, self).__init__(disk, path)
         self.ovf_path  = os.path.join(self.path, "box.ovf")        
-        self.ovf_name = ovf_name
+
+        if ovf_name:
+            self.ovf_name = ovf_name.replace(' ','_')
+        else:
+            self.ovf_name = 'vagrant-virtualbox-box'
+        self.disk_image_name = self.ovf_name + ".vmdk"
         self.ovf_cpu_count = ovf_cpu_count
         self.ovf_memory_mb = ovf_memory_mb
 
+        # We need the base image libvirt XML to obtain the MAC address originally used
+        # when running the installer.  Virtualbox Vagrant seems to prefer guests that have
+        # this explicitly defined
+        libvirt_xml = base_image.parameters.get('libvirt_xml', None)
+        if not libvirt_xml:
+            raise ImageFactoryException("Passed a base image without libvirt XML - Need MAC address from this")
+
+        doc = lxml.etree.fromstring(libvirt_xml)
+        mac_addr = doc.xpath('/domain/devices/interface[@type="bridge"]/mac/@address')[0]
+        # VirtualBox prefers this to be a flat string without the traditional colons
+        self.mac_addr = mac_addr.replace(':','')
+
+        # ARCH - used to select OS type
+        self.arch = oz.TDL.TDL(base_image.template).arch
+        self.base_image = base_image
         # The base image can be either raw or qcow2 - determine size and save for later
-        qcow_size = check_qcow_size(base_image)
+        qcow_size = check_qcow_size(base_image.data)
         if qcow_size:
             self.disk_size=qcow_size
         else:
-            self.disk_size = os.stat(base_image).st_size
+            self.disk_size = os.stat(base_image.data).st_size
 
 
     def new_ovf_descriptor(self):
@@ -884,20 +930,23 @@ class VirtualBoxOVFPackage(OVFPackage):
                                       self.disk_size,
                                       self.ovf_name,
                                       self.ovf_cpu_count,
-                                      self.ovf_memory_mb)
+                                      self.ovf_memory_mb,
+                                      self.arch,
+                                      self.disk_image_name,
+                                      self.mac_addr)
 
     def copy_disk(self):
-        copyfile_sparse(self.disk, os.path.join(self.path,"vagrant-virtualbox-box.vmdk"))
+        copyfile_sparse(self.disk, os.path.join(self.path,self.disk_image_name))
 
     def sync(self):
         super(VirtualBoxOVFPackage, self).sync()
 
         vagrantfile = '''Vagrant.configure("2") do |config|
-  config.vm.base_mac = "52540025D211"
+  config.vm.base_mac = "%s"
   config.ssh.password = "vagrant"
   config.vm.synced_folder ".", "/vagrant", disabled: true
 end
-'''
+''' % (self.mac_addr)
         vagrantfile_path = os.path.join(self.path, "Vagrantfile")
         vf = open(vagrantfile_path, 'w')
         vf.write(vagrantfile)
@@ -910,22 +959,30 @@ end
         mj.close()
 
     def make_ova_package(self):
-        return super(VirtualBoxOVFPackage, self).make_ova_package(gzip=True)
+        # Stream optimized vmdk is already compressed at the sector level
+        # no real benefit to further compression here
+        return super(VirtualBoxOVFPackage, self).make_ova_package(gzip=False)
 
 class VirtualBoxOVFDescriptor(object):
     def __init__(self, disk,
                  disk_size,
                  ovf_name,
                  ovf_cpu_count,
-                 ovf_memory_mb):
+                 ovf_memory_mb,
+                 arch,
+                 disk_image_name,
+                 mac_addr):
         self.disk = disk
         self.disk_size = disk_size
 
-        self.ovf_name = "vagrant-virtualbox-box"
+        self.ovf_name = ovf_name
 
         self.ovf_cpu_count = ovf_cpu_count
         self.ovf_memory_mb = ovf_memory_mb
 
+        self.arch = arch
+        self.disk_image_name = disk_image_name
+        self.mac_addr = mac_addr
 
     def generate_ovf_xml(self):
 
@@ -937,15 +994,34 @@ class VirtualBoxOVFDescriptor(object):
 	XSI = '{http://www.w3.org/2001/XMLSchema-instance}'
 	nsmap = {'vssd': 'http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData', 'rasd': 'http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData', 'vbox': 'http://www.virtualbox.org/ovf/machine', None: 'http://schemas.dmtf.org/ovf/envelope/1', 'ovf': 'http://schemas.dmtf.org/ovf/envelope/1', 'xsi': 'http://www.w3.org/2001/XMLSchema-instance'}
 
+        # OS ID and description translation
+        # VirtualBox uses a wide variety of these but they are so vague that it is
+        # difficult to imagine them being genuinely useful to the hypervisor.
+        # For example "Ubuntu" and "Red Hat Enterprise Linux" are IDs despite the fact
+        # that they span a family of OSes that go as far back as the 2.6 kernel.
+        # The only plausibly meaningful information in this field is whether or not
+        # the OS in question is 32 bit or 64 bit.  So, we use RHEL and RHEL_64 bit as
+        # the two possibilities.
+
+        # TODO: If anyone encounters issues with this approach please let us know
+        if self.arch == 'x86_64':
+            os_id = '80'
+            os_desc = 'RedHat_64'
+        elif self.arch == 'i386':
+            os_id = '79'
+            os_desc = 'RedHat'
+        else:
+            raise ImageFactoryException("Virtualbox OVF architecture must be i386 or x86_64")
+
         # Variable items
-	box_conf = { 'diskfile': '%s.vmdk' % (self.ovf_name),
+	box_conf = { 'diskfile': self.disk_image_name,
 		     'capacity': str(self.disk_size),
                      'cpu_count': str(self.ovf_cpu_count),
 		     'machine_name': self.ovf_name,
 		     'memory': str(self.ovf_memory_mb),
-		     'os_id': '80',
-		     'os_desc': 'RedHat_64',             
-		     'mac_addr': '52540025D211' }
+		     'os_id': os_id,
+		     'os_desc': os_desc,
+		     'mac_addr': self.mac_addr }
 
 	# Time - used in multiple locations below - create once for consistent timestamp
 	now = time.time()
