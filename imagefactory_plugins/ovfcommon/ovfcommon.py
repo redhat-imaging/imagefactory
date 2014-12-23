@@ -866,21 +866,39 @@ class LibvirtVagrantOVFPackage(OVFPackage):
     def __init__(self, disk, path=None, base_image=None):
         super(LibvirtVagrantOVFPackage, self).__init__(disk,path)
 
-    def sync(self):
-        #self.copy_disk()
+        # The base image can be either raw or qcow2 - determine size and save for later
+        qcow_size = check_qcow_size(base_image.data)
+        if qcow_size:
+            self.disk_size=qcow_size
+        else:
+            self.disk_size = os.stat(base_image.data).st_size
 
-        vagrantfile = '''Vagrant.configure("2") do |config|
-  config.vm.base_mac = "%s"
-  config.ssh.password = "vagrant"
-  config.vm.synced_folder ".", "/vagrant", disabled: true
+    def make_ova_package(self):
+        return super(LibvirtVagrantOVFPackage, self).make_ova_package(gzip=True)
+
+    def copy_disk(self):
+        copyfile_sparse(self.disk, os.path.join(self.path,"box.img"))
+
+    def sync(self):
+        self.copy_disk()
+
+        vagrantfile = """Vagrant.configure('2') do |config|
+        config.vm.provider :libvirt do |libvirt|
+                libvirt.driver = 'qemu'
+                libvirt.connect_via_ssh = false
+                libvirt.username = 'root'
+                libvirt.storage_pool_name = 'default'
+        end
 end
-''' % ("beefbeefbeef")
+"""
+
         vagrantfile_path = os.path.join(self.path, "Vagrantfile")
         vf = open(vagrantfile_path, 'w')
         vf.write(vagrantfile)
         vf.close()
 
-        metadata_json = '{"provider":"virtualbox"}\n'
+        size_in_gb = int(self.disk_size / (1024 ** 3)) + 1
+        metadata_json = '{"provider": "libvirt", "format": "qcow2", "virtual_size": %d}' % (size_in_gb)
         metadata_json_path = os.path.join(self.path, "metadata.json")
         mj = open(metadata_json_path, 'w')
         mj.write(metadata_json)
