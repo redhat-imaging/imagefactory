@@ -884,7 +884,7 @@ class LibvirtVagrantOVFPackage(OVFPackage):
 
         vagrantfile = """Vagrant.configure('2') do |config|
         config.vm.provider :libvirt do |libvirt|
-                libvirt.driver = 'qemu'
+                libvirt.driver = 'kvm'
                 libvirt.connect_via_ssh = false
                 libvirt.username = 'root'
                 libvirt.storage_pool_name = 'default'
