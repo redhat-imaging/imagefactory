@@ -962,7 +962,7 @@ class VirtualBoxOVFPackage(OVFPackage):
         vagrantfile = '''Vagrant.configure("2") do |config|
   config.vm.base_mac = "%s"
   config.ssh.password = "vagrant"
-  config.vm.synced_folder ".", "/vagrant", disabled: true
+  config.vm.synced_folder ".", "/vagrant", type: "rsync"
 end
 ''' % (self.mac_addr)
         vagrantfile_path = os.path.join(self.path, "Vagrantfile")
