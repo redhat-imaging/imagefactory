@@ -80,7 +80,7 @@ class OVA(object):
             ova_format = self.parameters.get('rhevm_ova_format', 'rhevm')
             if ova_format == 'rhevm':
                 klass = RHEVOVFPackage
-            elif ova_format == 'libvirt-vagrant':
+            elif ova_format == 'vagrant-libvirt':
                 klass = LibvirtVagrantOVFPackage
             else:
                 raise ImageFactoryException("Unknown rhevm ova_format (%s) requested - must be 'rhevm' or 'libvirt-vagrant'" % (ova_format) )
@@ -88,7 +88,7 @@ class OVA(object):
             ova_format = self.parameters.get('vsphere_ova_format', 'vsphere')
             if ova_format == 'vsphere':
                 klass = VsphereOVFPackage
-            elif ova_format == 'virtualbox':
+            elif ova_format == 'vagrant-virtualbox':
                 klass = VirtualBoxOVFPackage
             else:
                 raise ImageFactoryException("Unknown vsphere ova_format (%s) requested - must be 'vsphere' or 'virtualbox'" % (ova_format) )
