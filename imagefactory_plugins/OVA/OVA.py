@@ -101,7 +101,8 @@ class OVA(object):
             params = ['ovf_cpu_count','ovf_memory_mb','ovf_name',
                       'rhevm_default_display_type','rhevm_description','rhevm_os_descriptor',
                       'vsphere_product_name','vsphere_product_vendor_name','vsphere_product_version',
-                      'vsphere_virtual_system_type']
+                      'vsphere_virtual_system_type',
+                      'vagrant_sync_directory']
 
             for param in params:
                 if (self.parameters.get(param) and 

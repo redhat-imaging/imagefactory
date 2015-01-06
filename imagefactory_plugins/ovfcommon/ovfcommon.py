@@ -863,9 +863,10 @@ class VsphereDisk(object):
         # self.create_time = time.gmtime(self.raw_create_time)
 
 class LibvirtVagrantOVFPackage(OVFPackage):
-    def __init__(self, disk, path=None, base_image=None):
+    def __init__(self, disk, path=None, base_image=None, 
+                 vagrant_sync_directory = "/vagrant"):
         super(LibvirtVagrantOVFPackage, self).__init__(disk,path)
-
+        self.vagrant_sync_directory = vagrant_sync_directory
         # The base image can be either raw or qcow2 - determine size and save for later
         qcow_size = check_qcow_size(base_image.data)
         if qcow_size:
@@ -883,6 +884,7 @@ class LibvirtVagrantOVFPackage(OVFPackage):
         self.copy_disk()
 
         vagrantfile = """Vagrant.configure('2') do |config|
+        config.vm.synced_folder ".", "%s", type: "rsync"
         config.vm.provider :libvirt do |libvirt|
                 libvirt.driver = 'kvm'
                 libvirt.connect_via_ssh = false
@@ -890,7 +892,7 @@ class LibvirtVagrantOVFPackage(OVFPackage):
                 libvirt.storage_pool_name = 'default'
         end
 end
-"""
+""" % (self.vagrant_sync_directory)
 
         vagrantfile_path = os.path.join(self.path, "Vagrantfile")
         vf = open(vagrantfile_path, 'w')
@@ -908,7 +910,8 @@ class VirtualBoxOVFPackage(OVFPackage):
     def __init__(self, disk, path=None, base_image=None,
                  ovf_name=None,
                  ovf_cpu_count="1",
-                 ovf_memory_mb="512"):
+                 ovf_memory_mb="512",
+                 vagrant_sync_directory="/vagrant"):
         super(VirtualBoxOVFPackage, self).__init__(disk, path)
         self.ovf_path  = os.path.join(self.path, "box.ovf")        
 
@@ -919,6 +922,7 @@ class VirtualBoxOVFPackage(OVFPackage):
         self.disk_image_name = self.ovf_name + ".vmdk"
         self.ovf_cpu_count = ovf_cpu_count
         self.ovf_memory_mb = ovf_memory_mb
+        self.vagrant_sync_directory = vagrant_sync_directory
 
         # We need the base image libvirt XML to obtain the MAC address originally used
         # when running the installer.  Virtualbox Vagrant seems to prefer guests that have
@@ -962,9 +966,9 @@ class VirtualBoxOVFPackage(OVFPackage):
         vagrantfile = '''Vagrant.configure("2") do |config|
   config.vm.base_mac = "%s"
   config.ssh.password = "vagrant"
-  config.vm.synced_folder ".", "/vagrant", type: "rsync"
+  config.vm.synced_folder ".", "%s", type: "rsync"
 end
-''' % (self.mac_addr)
+''' % (self.mac_addr, self.vagrant_sync_directory)
         vagrantfile_path = os.path.join(self.path, "Vagrantfile")
         vf = open(vagrantfile_path, 'w')
         vf.write(vagrantfile)
