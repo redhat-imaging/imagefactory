@@ -29,6 +29,8 @@ import lxml
 import ConfigParser
 import tempfile
 import base64
+import os
+import os.path
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.CloudDelegate import CloudDelegate
 from imgfac.PersistentImageManager import PersistentImageManager
@@ -116,10 +118,24 @@ class IndirectionCloud(object):
         self.pim = PersistentImageManager.default_manager()
         self.res_mgr = ReservationManager()
 
+
     def builder_should_create_target_image(self, builder, target, image_id, template, parameters):
         # This plugin wants to be the only thing operating on the input image
         # We do all our work here and then return False which stops any additional activity
 
+        self.working_space_image = None
+        self.utility_image_tmp = None
+        try:
+            self._builder_should_create_target_image(builder, target, image_id, template, parameters)
+        finally:
+            self.log.debug("Cleaning up temporary utility image and working space image")
+            for fname in [ self.working_space_image, self.utility_image_tmp ]:
+                if fname and os.path.isfile(fname):
+                    os.unlink(fname)
+        return False
+
+
+    def _builder_should_create_target_image(self, builder, target, image_id, template, parameters):
         # User may specify a utility image - if they do not we assume we can use the input image
         utility_image_id = parameters.get('utility_image', image_id)
 
@@ -142,7 +158,6 @@ class IndirectionCloud(object):
         if (not input_image_device) and (not input_image_file):
             input_image_file="/input_image.raw"
 
-
         # We remove any packages, commands and files from the original TDL - these have already been
         # installed/executed.  We leave the repos in place, as it is possible that commands executed
         # later may depend on them
@@ -151,10 +166,10 @@ class IndirectionCloud(object):
         self.tdlobj.files = { } 
 
         # This creates a new Oz object - replaces the auto-generated disk file location with
-        # the copy of the utility image made above, and prepares an initial libvirt_xml string
+        # a copy of the utility image we will make later, and prepares an initial libvirt_xml string
         self._init_oz()
-        utility_image_tmp = self.app_config['imgdir'] + "/tmp-utility-image-" + str(builder.target_image.identifier)
-        self.guest.diskimage = utility_image_tmp
+        self.utility_image_tmp = self.app_config['imgdir'] + "/tmp-utility-image-" + str(builder.target_image.identifier)
+        self.guest.diskimage = self.utility_image_tmp
         # Below we will create this file as a qcow2 image using the original utility image as
         # a backing store - For the follow-on XML generation to work correctly, we need to force
         # Oz to use qcow2 as the image type
@@ -170,12 +185,12 @@ class IndirectionCloud(object):
         # Hardcode at 30G
         # TODO: Make configurable
         # Make it, format it, copy in the base_image 
-        working_space_image = self.app_config['imgdir'] + "/working-space-image-" + str(builder.target_image.identifier)
-        self.create_ext2_image(working_space_image)
+        self.working_space_image = self.app_config['imgdir'] + "/working-space-image-" + str(builder.target_image.identifier)
+        self.create_ext2_image(self.working_space_image)
 
         # Modify the libvirt_xml used with Oz to contain a reference to a second "working space" disk image
         working_space_device = parameters.get('working_space_device', 'vdb')
-        self.add_disk(libvirt_doc, working_space_image, working_space_device)
+        self.add_disk(libvirt_doc, self.working_space_image, working_space_device)
 
         self.log.debug("Updated domain XML with working space image:\n%s" % (libvirt_xml))
 
@@ -188,12 +203,12 @@ class IndirectionCloud(object):
 
         # Create a qcow2 image using the original utility image file (which may be read-only) as a
         # backing store.
-        self.log.debug("Creating temporary writeable qcow2 working copy of utlity image (%s) as (%s)" % (self.active_image.data, utility_image_tmp))
-        self.guest._internal_generate_diskimage(image_filename=utility_image_tmp, backing_filename=self.active_image.data)
+        self.log.debug("Creating temporary writeable qcow2 working copy of utlity image (%s) as (%s)" % (self.active_image.data, self.utility_image_tmp))
+        self.guest._internal_generate_diskimage(image_filename=self.utility_image_tmp, backing_filename=self.active_image.data)
 
         if input_image_file: 
             # Here we finally involve the actual Base Image content - it is made available for the utlity image to modify
-            self.copy_content_to_image(builder.base_image.data, working_space_image, input_image_file)
+            self.copy_content_to_image(builder.base_image.data, self.working_space_image, input_image_file)
         else:
             # Note that we know that one or the other of these are set because of code earlier
             self.add_disk(libvirt_doc, builder.base_image.data, input_image_device)
@@ -210,10 +225,7 @@ class IndirectionCloud(object):
 
         # After shutdown, extract the results
         results_location = parameters.get('results_location', "/results/images/boot.iso")
-        self.copy_content_from_image(results_location, working_space_image, builder.target_image.data)
-
-        # TODO: Remove working_space image and utility_image_tmp
-        return False
+        self.copy_content_from_image(results_location, self.working_space_image, builder.target_image.data)
 
 
     def add_disk(self, libvirt_doc, disk_image_file, device_name):
