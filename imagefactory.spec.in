@@ -82,6 +82,10 @@ fi
 %{_bindir}/imagefactoryd
 
 %changelog
+* Wed Jan 7 2015 Ian McLeod <imcleod@redhat.com> - 1.1.7-1
+- Upstream release 1.1.7
+- Vagrant box support added to OVA plugin
+
 * Mon Nov 24 2014 Ian McLeod <imcleod@redhat.com> - 1.1.6-2
 - Assorted fixes and features to enable rpm-ostree-toolbox integration
 
