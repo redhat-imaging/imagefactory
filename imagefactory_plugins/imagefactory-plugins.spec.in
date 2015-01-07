@@ -196,7 +196,8 @@ License: ASL 2.0
 Requires: imagefactory-plugins
 Requires: python-psphere
 Requires: imagefactory-plugin-api = 1.0
-Requires: VMDKstream
+# Earlier VMDKstream is not VirtualBox compatible
+Requires: VMDKstream >= 0.3
 
 %description vSphere
 A plugin for vSphere "clouds"
