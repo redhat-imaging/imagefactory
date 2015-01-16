@@ -1406,15 +1406,27 @@ none       /sys      sysfs   defaults         0 0
 
         return region_details
 
-
+    # Region details as of January 2015
+    # These are now the v1.04 pvgrub AKIs
+    # As of v1.04 there is no distinction between hd0 (raw partition.filesystem) and hd00 (full disk image) akis
+    # pvgrub now attempts to find a grub configuration directory in a variety of locations including the two
+    # originally defined in the hd0 and hd00 versions
+    # In practice this means that a single pvgrub AKI can boot both a raw FS image and a disk image.
+    # This is a good thing.
+    # Official Amazon documentation on this retrieved on 15-Jan-2015:
+    #
+    # http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/UserProvidedKernels.html
     ec2_region_details={
-         'ec2-us-east-1':      { 'boto_loc': Location.DEFAULT,     'host':'us-east-1',      'i386': 'aki-805ea7e9', 'x86_64': 'aki-825ea7eb' },
-         'ec2-us-west-1':      { 'boto_loc': 'us-west-1',          'host':'us-west-1',      'i386': 'aki-83396bc6', 'x86_64': 'aki-8d396bc8' },
-         'ec2-us-west-2':      { 'boto_loc': 'us-west-2',          'host':'us-west-2',      'i386': 'aki-c2e26ff2', 'x86_64': 'aki-98e26fa8' },
-         'ec2-ap-southeast-1': { 'boto_loc': 'ap-southeast-1',     'host':'ap-southeast-1', 'i386': 'aki-a4225af6', 'x86_64': 'aki-aa225af8' },
-         'ec2-ap-northeast-1': { 'boto_loc': 'ap-northeast-1',     'host':'ap-northeast-1', 'i386': 'aki-ec5df7ed', 'x86_64': 'aki-ee5df7ef' },
-         'ec2-sa-east-1':      { 'boto_loc': 'sa-east-1',          'host':'sa-east-1',      'i386': 'aki-bc3ce3a1', 'x86_64': 'aki-cc3ce3d1' },
-         'ec2-eu-west-1':      { 'boto_loc': Location.EU,          'host':'eu-west-1',      'i386': 'aki-64695810', 'x86_64': 'aki-62695816' } }
+         'ec2-us-east-1':      { 'boto_loc': Location.DEFAULT,     'host':'us-east-1',      'i386': 'aki-8f9dcae6', 'x86_64': 'aki-919dcaf8' },
+         'ec2-us-gov-west-1':  { 'boto_loc': 'us-gov-west-1',      'host':'us-gov-west-1',  'i386': 'aki-1fe98d3c', 'x86_64': 'aki-1de98d3e' },
+         'ec2-us-west-1':      { 'boto_loc': 'us-west-1',          'host':'us-west-1',      'i386': 'aki-1de98d3e', 'x86_64': 'aki-880531cd' },
+         'ec2-us-west-2':      { 'boto_loc': 'us-west-2',          'host':'us-west-2',      'i386': 'aki-f08f11c0', 'x86_64': 'aki-fc8f11cc' },
+         'ec2-ap-southeast-1': { 'boto_loc': 'ap-southeast-1',     'host':'ap-southeast-1', 'i386': 'aki-ae3973fc', 'x86_64': 'aki-503e7402' },
+         'ec2-ap-southeast-2': { 'boto_loc': 'ap-southeast-2',     'host':'ap-southeast-2', 'i386': 'aki-cd62fff7', 'x86_64': 'aki-c362fff9' },
+         'ec2-ap-northeast-1': { 'boto_loc': 'ap-northeast-1',     'host':'ap-northeast-1', 'i386': 'aki-136bf512', 'x86_64': 'aki-176bf516' },
+         'ec2-sa-east-1':      { 'boto_loc': 'sa-east-1',          'host':'sa-east-1',      'i386': 'aki-5b53f446', 'x86_64': 'aki-5553f448' },
+         'ec2-eu-central-1':   { 'boto_loc': 'eu-central-1',       'host':'eu-central-1',   'i386': 'aki-3e4c7a23', 'x86_64': 'aki-184c7a05' },
+         'ec2-eu-west-1':      { 'boto_loc': Location.EU,          'host':'eu-west-1',      'i386': 'aki-68a3451f', 'x86_64': 'aki-52a34525' } }
 
         # July 13 - new approach - generic JEOS AMIs for Fedora - no userdata and no euca-tools
         #           ad-hoc ssh keys replace userdata - runtime install of euca tools for bundling
