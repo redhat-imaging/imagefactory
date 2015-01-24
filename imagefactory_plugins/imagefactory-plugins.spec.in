@@ -205,6 +205,7 @@ A plugin for vSphere "clouds"
 %package Docker
 Summary: Cloud plugin for Docker
 License: ASL 2.0
+Requires: tar
 
 %description Docker
 A Cloud plugin to support Docker

@@ -28,6 +28,8 @@ import shutil
 import oz.TDL
 import tempfile
 import tarfile
+import threading
+import subprocess
 from xml.etree.ElementTree import fromstring
 from imgfac.Template import Template
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
@@ -52,13 +54,21 @@ class Docker(object):
     # Note that there is a separate "VERSION" file in each subdirectory.  As of this comment
     # that file always contains 1.0
 
+    # TODO: Get rid of these silly string templates and just use the json module and dicts
+    #
+    #       vbatts pointed out that creating these as string templates is kind of silly
+    #       since we can just build them up as nested dicts and use json tools to create
+    #       the required strings.  I originally used strings to ensure absolute fidelity to
+    #       the observed docker output, but there's no real technical reason to do this
+
     docker_json_template_0_11_1 = """{{
   "id": "{idstring}",
   "comment": "{commentstring}",
   "created": "{createdtime}",
   "container_config": {{
-    "Cmd": null,
-    "Env": null,
+    "Cmd": {cmd},
+    "Env": {env},
+    "Label": {label},
     "StdinOnce": false,
     "OpenStdin": false,
     "Tty": false,
@@ -105,13 +115,14 @@ class Docker(object):
         "OnBuild": null,
         "OpenStdin": false,
         "Cpuset": "",
-        "Env": null,
+        "Env": {env},
         "User": "",
         "CpuShares": 0,
         "AttachStdout": false,
         "NetworkDisabled": false,
         "WorkingDir": "",
-        "Cmd": null,
+        "Cmd": {cmd},
+        "Label": {label},
         "StdinOnce": false,
         "AttachStdin": false,
         "Volumes": null,
@@ -163,6 +174,7 @@ class Docker(object):
             raise Exception("Docker plugin currently supports only x86_64 images")
         # At this point our input base_image is available as builder.base_image.data
         # We simply mount it up in libguestfs and tar out the results as builder.target_image.data
+        wrap_metadata = parameter_cast_to_bool(parameters.get('create_docker_metadata', True))
         compress_type = parameters.get('compress', None)
         if compress_type:
             if compress_type in self.compress_commands.keys():
@@ -172,15 +184,59 @@ class Docker(object):
         else:
             compress_command = None
         guestfs_handle = launch_inspect_and_mount(builder.base_image.data, readonly = True)
-        self.log.debug("Creating tar of root directory of input image %s saving as output image %s" % 
-                       (builder.base_image.data, builder.target_image.data) )
-        guestfs_handle.tar_out_opts("/", builder.target_image.data)
-        wrap_metadata = parameter_cast_to_bool(parameters.get('create_docker_metadata', True))
+        storagedir = os.path.dirname(builder.target_image.data)
+
+        # guestfs lets us mount locally via the API, which is cool, but requires that
+        # we call a blocking function to activate the mount, which requires a thread
+        # We also need a temp dir to mount it to - do our best to clean up when things
+        # go wrong
+        tempdir = None
+        fuse_thread = None
+        try:
+            tempdir = tempfile.mkdtemp(dir=storagedir)
+            self.log.debug("Mounting input image locally at (%s)" % (tempdir))
+            guestfs_handle.mount_local(tempdir)
+            def _run_guestmount(g):
+                g.mount_local_run()
+            self.log.debug("Launching mount_local_run thread")
+            fuse_thread = threading.Thread(group=None, target=_run_guestmount, args=(guestfs_handle,))
+            fuse_thread.start()
+            self.log.debug("Creating tar of entire image")
+            tarcmd = [ 'tar',  '-cf', builder.target_image.data, '-C', tempdir, '--acls', '--xattrs', './' ]
+            subprocess.check_call(tarcmd)
+            if wrap_metadata:
+                self.log.debug("Estimating size of tar contents to include in Docker metadata")
+                size = 0
+                for root, dirs, files in os.walk(tempdir):
+                    for name in files:
+                        fp = os.path.join(root,name)
+                        if os.path.isfile(fp) and not os.path.islink(fp):
+                            size += os.path.getsize(fp)
+                self.log.debug("Total real file content size (%d)" % (size))
+        except Exception, e:
+            self.log.exception(e)
+            raise
+        finally:
+            if tempdir:
+                try:
+                    subprocess.check_call( ['umount', '-f', tempdir] )
+                    os.rmdir(tempdir)
+                except Exception, e:
+                    self.log.exception(e)
+                    self.log.error("WARNING: Could not unmount guest at (%s) - may still be mounted" % (tempdir) )
+            if fuse_thread:
+                fuse_thread.join(30.0)
+                if fuse_thread.isAlive():
+                    self.log.error("Guestfs local mount thread is still active - FUSE filesystem still mounted at (%s)" % (tempdir) )
+
         if wrap_metadata:
             # Get any parameters and if they are not set, create our defaults
             repository = parameters.get('repository',tdlobj.name)
             tag = parameters.get('tag','latest')
             docker_image_id = parameters.get('docker_image_id', self._generate_docker_id())
+            cmd = parameters.get('docker_cmd', 'null')
+            env = parameters.get('docker_env', 'null')
+            label = parameters.get('docker_label', 'null')
             rdict = { repository: { tag: docker_image_id } }
                        
             dockerversion = parameters.get('dockerversion', '0.11.1')
@@ -194,15 +250,9 @@ class Docker(object):
             tdict['createdtime'] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
             tdict['arch'] = "amd64"
             tdict['idstring'] = docker_image_id
-	    size = 0
-            self.log.debug("Reading raw tar file to generate unpacked size estimate")
-            tar =  tarfile.open(builder.target_image.data, "r")
-            try:
-                for tarinfo in tar:
-                    if tarinfo.isfile():
-                        size += tarinfo.size
-            finally:
-                tar.close()
+            tdict['cmd'] = cmd
+            tdict['env'] = env
+            tdict['label'] = label
             tdict['size'] = size
 
             image_json = docker_json_template.format(**tdict) 
@@ -269,4 +319,4 @@ class Docker(object):
 
 
     def builder_did_create_target_image(self, builder, target, image_id, template, parameters):
-        raise ImageFactoryException("builder_did_create_target_image called in Docker plugin - this should never happen") 
+        raise ImageFactoryException("builder_did_create_target_image called in Docker plugin - this should never happen")
