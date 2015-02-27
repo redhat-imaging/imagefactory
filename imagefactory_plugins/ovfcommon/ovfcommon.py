@@ -26,7 +26,7 @@ import glob
 import tempfile
 from stat import *
 from imgfac.PersistentImageManager import PersistentImageManager
-from imgfac.FactoryUtils import check_qcow_size
+from imgfac.FactoryUtils import check_qcow_size, disk_image_capacity
 from imgfac.ImageFactoryException import ImageFactoryException
 # Yes - again with two different XML libraries
 # lxml.etree is required by Oz and is what I used to rebuild the
@@ -856,7 +856,7 @@ class VsphereDisk(object):
         self.base_image = base_image
         self.id = os.path.basename(self.path).split('.')[0]
 
-        self.vol_size = os.stat(self.base_image).st_size
+        self.vol_size = disk_image_capacity(self.base_image)
         self.sparse_size = os.stat(self.path).st_blocks*512
 
         # self.raw_create_time = os.path.getctime(self.path)
@@ -868,11 +868,7 @@ class LibvirtVagrantOVFPackage(OVFPackage):
         super(LibvirtVagrantOVFPackage, self).__init__(disk,path)
         self.vagrant_sync_directory = vagrant_sync_directory
         # The base image can be either raw or qcow2 - determine size and save for later
-        qcow_size = check_qcow_size(base_image.data)
-        if qcow_size:
-            self.disk_size=qcow_size
-        else:
-            self.disk_size = os.stat(base_image.data).st_size
+        self.disk_size=disk_image_capacity(base_image.data)
 
     def make_ova_package(self):
         return super(LibvirtVagrantOVFPackage, self).make_ova_package(gzip=True)
@@ -940,12 +936,7 @@ class VirtualBoxOVFPackage(OVFPackage):
         self.arch = oz.TDL.TDL(base_image.template).arch
         self.base_image = base_image
         # The base image can be either raw or qcow2 - determine size and save for later
-        qcow_size = check_qcow_size(base_image.data)
-        if qcow_size:
-            self.disk_size=qcow_size
-        else:
-            self.disk_size = os.stat(base_image.data).st_size
-
+        self.disk_size=disk_image_capacity(base_image.data)
 
     def new_ovf_descriptor(self):
         return VirtualBoxOVFDescriptor(self.disk,
