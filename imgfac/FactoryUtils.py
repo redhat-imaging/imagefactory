@@ -235,6 +235,21 @@ def parameter_cast_to_bool(ival):
             return True
     return None
 
+
+def disk_image_capacity(filename):
+    # Return the actual virtual size of a disk image file as visible to the guest
+    # Meant to be used to safely determine the guest-visible size of
+    # base images regardless of format.  Currently only detects qcow2
+    # and otherwise assumes raw
+    # TODO: Add additional format detection as needed
+
+    qcow_size = check_qcow_size(filename)
+    if qcow_size:
+        return qcow_size
+    else:
+        return os.stat(filename).st_size
+
+
 def check_qcow_size(filename):
     # Return the size of the underlying disk image in qcow file
     # Return None if the file is not a qcow disk image
