@@ -35,6 +35,7 @@ from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.CloudDelegate import CloudDelegate
 from imgfac.PersistentImageManager import PersistentImageManager
 from imgfac.ReservationManager import ReservationManager
+import inspect
 
 # This makes extensive use of parameters with some sensible defaults
 # Try to keep an accurate list up here
@@ -271,7 +272,13 @@ class IndirectionCloud(object):
         repositorieslist = doc.xpath('/template/repositories/repository')
         self.tdlobj._add_repositories(repositorieslist)
 
-        self.tdlobj.commands = self.tdlobj._parse_commands()
+        # Live by private methods, die by private methods
+        # Oz has changed the function signature here, which is entirely reasonable
+        # Introspect so that we work with both old and new versions
+        if 'xpath' in inspect.getargspec(self.tdlobj._parse_commands).args:
+            self.tdlobj.commands = self.tdlobj._parse_commands('/template/commands')
+        else:
+            self.tdlobj.commands = self.tdlobj._parse_commands()
 
 
     def _init_oz(self):
