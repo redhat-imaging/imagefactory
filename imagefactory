@@ -28,6 +28,7 @@ from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.PluginManager import PluginManager
 from imgfac.PersistentImageManager import PersistentImageManager
 from imgfac.Builder import Builder
+from imgfac.BaseImageImporter import BaseImageImporter
 
 try:
     from pygments import highlight
@@ -231,6 +232,12 @@ class Application(Singleton):
 
             for key in image.metadata():
                 returnval[key] = getattr(image, key, None)
+
+        elif(command == 'import_base_image'):
+            import_image_file = self.app_config.get('image_file')
+            logging.info('Importing image %s' % (import_image_file))
+            importer = BaseImageImporter(import_image_file)
+            image = importer.do_import()
 
         elif(command == 'images'):
             fetch_spec = json.loads(self.app_config['fetch_spec'])
