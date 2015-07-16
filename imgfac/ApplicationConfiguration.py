@@ -113,6 +113,10 @@ class ApplicationConfiguration(Singleton):
             self.__add_param_arguments(cmd_provider)
             cmd_provider.add_argument('--snapshot', action='store_true', default=False, help='Use snapshot style building. (default: %(default)s)')
 
+            cmd_import = subparsers.add_parser('import_base_image', help='Import a base image from a local disk image file')
+            cmd_import.add_argument('image_file', help='A disk image file to import as a base image')
+            self.__add_param_arguments(cmd_import)
+
             cmd_list = subparsers.add_parser('images', help='List images of a given type or get details of an image.')
             cmd_list.add_argument('fetch_spec', help='JSON formatted string of key/value pairs')
 
