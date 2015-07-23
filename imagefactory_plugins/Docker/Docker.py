@@ -57,7 +57,7 @@ class Docker(object):
   "comment": "{commentstring}",
   "created": "{createdtime}",
   "container_config": {{
-    "Cmd": null,
+    "Cmd": ["/bin/bash"],
     "Env": null,
     "StdinOnce": false,
     "OpenStdin": false,
