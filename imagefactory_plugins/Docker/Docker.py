@@ -202,7 +202,9 @@ class Docker(object):
             fuse_thread = threading.Thread(group=None, target=_run_guestmount, args=(guestfs_handle,))
             fuse_thread.start()
             self.log.debug("Creating tar of entire image")
-            tarcmd = [ 'tar',  '-cf', builder.target_image.data, '-C', tempdir, '--acls', '--xattrs', './' ]
+            # Use acls and xattrs to ensure SELinux data is not lost
+            # Use --sparse to avoid exploding large empty files from input image
+            tarcmd = [ 'tar',  '-cf', builder.target_image.data, '-C', tempdir, '--sparse', '--acls', '--xattrs', './' ]
             subprocess.check_call(tarcmd)
             if wrap_metadata:
                 self.log.debug("Estimating size of tar contents to include in Docker metadata")
