@@ -863,7 +863,7 @@ class VsphereDisk(object):
         # self.create_time = time.gmtime(self.raw_create_time)
 
 class LibvirtVagrantOVFPackage(OVFPackage):
-    def __init__(self, disk, path=None, base_image=None, 
+    def __init__(self, disk, path=None, base_image=None,
                  vagrant_sync_directory = "/vagrant"):
         super(LibvirtVagrantOVFPackage, self).__init__(disk,path)
         self.vagrant_sync_directory = vagrant_sync_directory
@@ -897,6 +897,117 @@ end
 
         size_in_gb = int(self.disk_size / (1024 ** 3)) + 1
         metadata_json = '{"provider": "libvirt", "format": "qcow2", "virtual_size": %d}' % (size_in_gb)
+        metadata_json_path = os.path.join(self.path, "metadata.json")
+        mj = open(metadata_json_path, 'w')
+        mj.write(metadata_json)
+        mj.close()
+
+class VMWareFusionVagrantOVFPackage(OVFPackage):
+    VMXTEMPLATE='''.encoding = "UTF-8"
+displayname = "%(name)s"
+guestos = "linux"
+virtualhw.version = "8"
+config.version = "8"
+numvcpus = "%(cpu_count)d"
+cpuid.coresPerSocket = "1"
+memsize = "%(memory_mb)d"
+pciBridge0.present = "TRUE"
+pciBridge4.present = "TRUE"
+pciBridge4.virtualDev = "pcieRootPort"
+pciBridge4.functions = "8"
+pciBridge5.present = "TRUE"
+pciBridge5.virtualDev = "pcieRootPort"
+pciBridge5.functions = "8"
+pciBridge6.present = "TRUE"
+pciBridge6.virtualDev = "pcieRootPort"
+pciBridge6.functions = "8"
+pciBridge7.present = "TRUE"
+pciBridge7.virtualDev = "pcieRootPort"
+pciBridge7.functions = "8"
+vmci0.present = "TRUE"
+scsi0:0.present = "TRUE"
+scsi0:0.deviceType = "disk"
+scsi0:0.fileName = "%(name)s-disk1.vmdk"
+scsi0:0.mode = "persistent"
+scsi0:0.writeThrough = "false"
+scsi0.virtualDev = "lsilogic"
+scsi0.present = "TRUE"
+ethernet0.present = "TRUE"
+ethernet0.virtualDev = "e1000"
+ethernet0.connectionType = "bridged"
+ethernet0.startConnected = "TRUE"
+ethernet0.addressType = "generated"
+ethernet0.wakeonpcktrcv = "false"
+toolscripts.afterpoweron = "true"
+toolscripts.afterresume = "true"
+toolscripts.beforepoweroff = "true"
+toolscripts.beforesuspend = "true"
+virtualHW.productCompatibility = "hosted"
+floppy0.present = "FALSE"
+replay.supported = "FALSE"
+replay.filename = ""
+scsi0:0.redo = ""
+pciBridge0.pciSlotNumber = "17"
+pciBridge4.pciSlotNumber = "21"
+pciBridge5.pciSlotNumber = "22"
+pciBridge6.pciSlotNumber = "23"
+pciBridge7.pciSlotNumber = "24"
+scsi0.pciSlotNumber = "16"
+ethernet0.pciSlotNumber = "32"
+vmci0.pciSlotNumber = "33"
+vmci0.id = "1695374800"
+monitor.phys_bits_used = "40"
+vmotion.checkpointFBSize = "67108864"
+cleanShutdown = "TRUE"
+softPowerOff = "FALSE"
+tools.syncTime = "FALSE"
+'''
+
+    def __init__(self, disk, path=None, base_image=None, 
+                 ovf_name=None,
+                 ovf_cpu_count="1",
+                 ovf_memory_mb="1024",
+                 vagrant_sync_directory = "/vagrant"):
+        super(VMWareFusionVagrantOVFPackage, self).__init__(disk,path)
+        self.vagrant_sync_directory = vagrant_sync_directory
+        if not ovf_name:
+            ovf_name="vagrant-fusion-box"
+        self.ovf_name = ovf_name
+        format_dict = { 'name': ovf_name, 'cpu_count': int(ovf_cpu_count), 'memory_mb': int(ovf_memory_mb) }
+        self.vmx_content = self.VMXTEMPLATE % format_dict
+        # The base image can be either raw or qcow2 - determine size and save for later
+        self.disk_size=disk_image_capacity(base_image.data)
+
+    def make_ova_package(self):
+        return super(VMWareFusionVagrantOVFPackage, self).make_ova_package(gzip=True)
+
+    def copy_disk(self):
+        copyfile_sparse(self.disk, os.path.join(self.path,"%s-disk1.vmdk" % (self.ovf_name)))
+
+    def sync(self):
+        self.copy_disk()
+
+        vagrantfile = '''Vagrant.configure("2") do |config|
+  config.vm.synced_folder ".", "%s", type: "rsync"
+end
+''' % (self.vagrant_sync_directory)
+        vagrantfile_path = os.path.join(self.path, "Vagrantfile")
+        vf = open(vagrantfile_path, 'w')
+        vf.write(vagrantfile)
+        vf.close()
+
+        vmxfile_path = os.path.join(self.path, "%s.vmx" % (self.ovf_name))
+        vmxf = open(vmxfile_path, 'w')
+        vmxf.write(self.vmx_content)
+        vmxf.close()
+
+        # This may not be strictly needed but VMWare seems to prefer that this file at least exist, even if it is empty
+        vmxffile_path = vmxfile_path + "f"
+        vmxff = open(vmxffile_path, 'w')
+        vmxff.write('')
+        vmxff.close()
+
+        metadata_json = '{"provider": "vmware-fusion"}'
         metadata_json_path = os.path.join(self.path, "metadata.json")
         mj = open(metadata_json_path, 'w')
         mj.write(metadata_json)
