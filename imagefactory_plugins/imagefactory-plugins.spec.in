@@ -7,6 +7,9 @@
 # SPEC builds or find a way to detect an RDO build and automagically negate this
 %define include_openstack %{?rhel:0}%{!?rhel:1}
 
+# For now, do not build this sub RPM - It has bitrotted and needs to be revisited
+%define include_nova_image_builder 0
+
 %global auto_register_macro_post() # create it if it doesn't already exist as a link \
 # If it is an existing file other than a link, do nothing \
 [ -L %{_sysconfdir}/imagefactory/plugins.d/%1.info ] || \
@@ -120,7 +123,9 @@ Requires: imagefactory-plugins-Rackspace
 %description Rackspace-JEOS-images
 These configuration files point to existing JEOS Image ID's on Rackspace that
 can be used to do "snapshot" style builds.
+%endif
 
+%if 0%{include_nova_image_builder}
 %package Nova
 Summary: OS plugin that allows imagefactory to use Nova instances to build base images.
 License: ASL 2.0
@@ -229,10 +234,14 @@ rm -rf %{buildroot}%{python_sitelib}/imagefactory_plugins/MockCloud
 %if 0%{include_openstack}
 %else
 rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/OpenStack
-rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Nova
 rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Rackspace
 rm -f  %{buildroot}%{_sysconfdir}/imagefactory/jeos_images/rackspace_fedora_jeos.conf
 rm -f  %{buildroot}%{_sysconfdir}/imagefactory/jeos_images/rackspace_rhel_jeos.conf
+%endif
+
+%if 0%{include_nova_image_builder}
+%else
+rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Nova
 %endif
 
 %post OVA
@@ -260,7 +269,9 @@ rm -f  %{buildroot}%{_sysconfdir}/imagefactory/jeos_images/rackspace_rhel_jeos.c
 %auto_register_macro_post Rackspace
 %postun Rackspace
 %auto_register_macro_postun Rackspace
+%endif
 
+%if 0%{include_nova_image_builder}
 %post Nova
 %auto_register_macro_post Nova
 %postun Nova
@@ -333,7 +344,9 @@ rm -f  %{buildroot}%{_sysconfdir}/imagefactory/jeos_images/rackspace_rhel_jeos.c
 %files Rackspace-JEOS-images
 %{_sysconfdir}/imagefactory/jeos_images/rackspace_fedora_jeos.conf
 %{_sysconfdir}/imagefactory/jeos_images/rackspace_rhel_jeos.conf
+%endif
 
+%if 0%{include_nova_image_builder}
 %files Nova
 %dir %{python_sitelib}/imagefactory_plugins/Nova
 %{python_sitelib}/imagefactory_plugins/Nova/*
