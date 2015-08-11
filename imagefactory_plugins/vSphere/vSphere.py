@@ -23,6 +23,7 @@ import traceback
 import json
 import ConfigParser
 import logging
+import subprocess
 from xml.etree.ElementTree import fromstring
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
@@ -125,12 +126,30 @@ class vSphere(object):
         self.modify_oz_filesystem()
 
         self.log.info("Transforming image for use on VMWare")
-        self.vmware_transform_image()
+        vmdk_format = parameters.get('vsphere_vmdk_format', 'streaming')
+        builder.target_image.parameters['vsphere_vmdk_format'] = vmdk_format
+        if vmdk_format == 'streaming':
+            self.vmware_transform_image_stream_vmdk()
+        elif vmdk_format == 'standard':
+            self.vmware_transform_image_standard_vmdk()
+        else:
+            raise Exception("Requested unknown VMDK format (%s)" % (vmdk_format))
 
         self.percent_complete=100
         self.status="COMPLETED"
 
-    def vmware_transform_image(self):
+    def vmware_transform_image_standard_vmdk(self):
+        # On entry the image points to our generic KVM raw image
+        # Convert to stream-optimized VMDK and then update the image property
+        target_image = self.image + ".tmp.vmdk"
+        self.log.debug("Converting raw kvm image (%s) to standard VMDK (%s) using qemu-img" % (self.image, target_image))
+        qemu_img_cmd = [ 'qemu-img', 'convert', '-O', 'vmdk', self.image, target_image ]
+        subprocess.check_call(qemu_img_cmd)
+        self.log.debug("VMDK conversion complete")
+        os.unlink(self.image)
+        os.rename(target_image, self.image)
+
+    def vmware_transform_image_stream_vmdk(self):
         if (check_qcow_size(self.image)) is not None:
             import subprocess
             self.log.debug("Input image is qcow; converting to raw")

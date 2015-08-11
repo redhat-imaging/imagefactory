@@ -24,6 +24,8 @@ from imgfac.TargetImage import TargetImage
 from imagefactory_plugins.ovfcommon.ovfcommon import RHEVOVFPackage, VsphereOVFPackage
 from imagefactory_plugins.ovfcommon.ovfcommon import VirtualBoxOVFPackage
 from imagefactory_plugins.ovfcommon.ovfcommon import LibvirtVagrantOVFPackage
+from imagefactory_plugins.ovfcommon.ovfcommon import VMWareFusionVagrantOVFPackage
+
 from imgfac.ImageFactoryException import ImageFactoryException
 from oz.ozutil import copyfile_sparse
 
@@ -90,8 +92,10 @@ class OVA(object):
                 klass = VsphereOVFPackage
             elif ova_format == 'vagrant-virtualbox':
                 klass = VirtualBoxOVFPackage
+            elif ova_format == 'vagrant-vmware-fusion':
+                klass = VMWareFusionVagrantOVFPackage
             else:
-                raise ImageFactoryException("Unknown vsphere ova_format (%s) requested - must be 'vsphere' or 'virtualbox'" % (ova_format) )
+                raise ImageFactoryException("Unknown vsphere ova_format (%s) requested - must be 'vsphere', 'vagrant-virtualbox' or 'vagrant-vmware-fusion'" % (ova_format) )
         else:
             raise ImageFactoryException("OVA plugin only supports rhevm and vsphere target images")
 
