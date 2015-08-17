@@ -1007,7 +1007,7 @@ end
         vmxff.write('')
         vmxff.close()
 
-        metadata_json = '{"provider": "vmware-fusion"}'
+        metadata_json = '{"provider": "vmware_fusion"}'
         metadata_json_path = os.path.join(self.path, "metadata.json")
         mj = open(metadata_json_path, 'w')
         mj.write(metadata_json)
