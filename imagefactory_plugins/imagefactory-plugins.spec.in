@@ -203,6 +203,7 @@ Requires: python-psphere
 Requires: imagefactory-plugin-api = 1.0
 # Earlier VMDKstream is not VirtualBox compatible
 Requires: VMDKstream >= 0.3
+Requires: PyYAML
 
 %description vSphere
 A plugin for vSphere "clouds"
