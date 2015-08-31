@@ -1014,8 +1014,11 @@ class EC2(object):
                 self.log.debug("Temporarily enabling root user for customization steps...")
                 enable_root(guestaddr, key_file, ami_info['user'], ami_info['cmd_prefix'])
 
-            self.activity("Creating 10 GiB volume in (%s) to hold new image" % (self.instance.placement))
-            volume = conn.create_volume(10, self.instance.placement)
+            GIGABYTE = 2 ** 30
+            # This rounds up to the nearest GiB and correctly deals with exact number of GB files
+            ami_size =int((os.path.getsize(input_image) + GIGABYTE - 1)/GIGABYTE)
+            self.activity("Creating %d GiB volume in (%s) to hold new image" % (ami_size,self.instance.placement))
+            volume = conn.create_volume(ami_size, self.instance.placement)
 
             # Do the upload before testing to see if the volume has completed
             # to get a bit of parallel work
