@@ -1157,8 +1157,25 @@ class EC2(object):
                 self.log.debug("Deleting temporary security group")
                 factory_security_group.delete()
                 if volume:
+                    # It seems that there are now race conditions in the termination step
+                    # I have gotten errors when attempting to delete the volume, complaining that the
+                    # volume is still attached to an active instance, even though we confirm termination
+                    # above.  As with some of the other steps here, we'll just try again, in this case
+                    # for up to a minute.
                     self.log.debug("Deleting EBS volume (%s)" % (volume.id))
-                    volume.delete()
+                    tries=0
+                    while True:
+                        try:
+                            volume.delete()
+                            break
+                        except Exception, e:
+                            if tries<7:
+                                tries += 1
+                                self.log.debug("Volume delete failed - waiting 10 seconds and trying again (%d/6 tries)" % (tries))
+                                sleep(10)
+                            else:
+                                self.log.exception(e)
+                                raise
 
         # TODO: Add back-reference to ICICLE from base image object
         # This replaces our warehouse calls
