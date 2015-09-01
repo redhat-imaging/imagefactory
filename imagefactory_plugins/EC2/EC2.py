@@ -273,11 +273,16 @@ class EC2(object):
         # /dev/sda
         g.add_drive (self.image)
 
-        self.log.debug("create target image")
+        # match flat image size to input image size, rounded to the GB
+        input_size = disk_image_capacity(self.image)
+        GIGABYTE = 2 ** 30
+        # This rounds up to the nearest GiB and correctly deals with exact number of GB files
+        flat_size = int((input_size + GIGABYTE - 1)/GIGABYTE) * GIGABYTE
+
+        self.log.debug("create target image of size %d bytes" % (flat_size))
         # /dev/sdb
         f = open (target_image, "w")
-        # TODO: Can this be larger, smaller - should it be?
-        f.truncate (10000 * 1024 * 1024)
+        f.truncate (flat_size)
         f.close ()
         g.add_drive(target_image)
 
