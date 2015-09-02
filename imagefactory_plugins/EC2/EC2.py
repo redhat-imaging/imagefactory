@@ -881,13 +881,16 @@ class EC2(object):
         virt_type = self.parameters.get('ec2_virt_type', 'paravirtual')
         if virt_type not in [ 'hvm', 'paravirtual' ]:
             raise Exception("Invalid 'ec2_virt_type' (%s) - must be 'hvm' or 'paravirtual'" % (virt_type))
+        flat = parameter_cast_to_bool(self.builder.target_image.parameters.get('ec2_flatten','true'))
+        if flat and virt_type == 'hvm':
+            raise Exception("Input image is a flat filesystem - EC2 hvm images must be full disk images")
         try:
             if ami_type == "s3":
                 self.ec2_push_image_upload(target_image_id, provider,
-                                           credentials, virt_type)
+                                           credentials, virt_type, flat)
             elif ami_type == "ebs":
                 self.ec2_push_image_upload_ebs(target_image_id, provider,
-                                               credentials, virt_type)
+                                               credentials, virt_type, flat)
             else:
                 raise ImageFactoryException("Invalid or unspecified EC2 AMI type (%s) in config file or parameters" % (ami_type))
         except:
@@ -941,7 +944,7 @@ class EC2(object):
         self.ec2_key_file_object.flush()
         self.ec2_key_file=self.ec2_key_file_object.name
 
-    def ec2_push_image_upload_ebs(self, target_image_id, provider, credentials, virt_type):
+    def ec2_push_image_upload_ebs(self, target_image_id, provider, credentials, virt_type, flat):
         # TODO: Merge with ec2_push_image_upload and/or factor out duplication
         # In this case we actually do need an Oz object to manipulate a remote guest
         self.os_helper.init_guest()
@@ -1135,7 +1138,7 @@ class EC2(object):
             # register against snapshot
             self.activity("Registering snapshot as a new AMI")
             self.log.debug("Registering snapshot (%s) as new EBS AMI" % (snapshot.id))
-            if virt_type == 'paravirtual':
+            if flat:
                 root_dev = '/dev/sda1'
             else:
                 # For reasons known only to Amazon, putting sda in here fails
@@ -1225,7 +1228,7 @@ class EC2(object):
         self.builder.provider_image.provider_account_identifier=self.ec2_access_key
         self.percent_complete=100
 
-    def ec2_push_image_upload(self, target_image_id, provider, credentials, virt_type):
+    def ec2_push_image_upload(self, target_image_id, provider, credentials, virt_type, flat):
         def replace(item):
             if item in [self.ec2_access_key, self.ec2_secret_key]:
                 return "REDACTED"
@@ -1315,7 +1318,7 @@ class EC2(object):
         s3_path = bucket + "/" + input_image_name + ".manifest.xml"
 
         register_env = { 'EC2_URL':register_url }
-        if virt_type == 'paravirtual':
+        if flat:
             root_dev = '/dev/sda1'
         else:
             root_dev = '/dev/sda'
