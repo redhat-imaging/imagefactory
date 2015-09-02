@@ -138,8 +138,26 @@ class EC2(object):
 
             self.modify_oz_filesystem()
 
-            self.ec2_copy_filesystem()
-            self.ec2_modify_filesystem()
+            # Use cases and EC2 itself have evolved a bit since we first wrote this.
+            # Many people do the required mods during install
+            # hvm instances and pvgrub now allow uploading of full disk images rather than partitions
+            # so lets allow people to selectively disable any of the modifications below
+
+            # shorthand
+            if parameter_cast_to_bool(parameters.get('skip_ec2_modifications', 'false')):
+                parameters['ec2_flatten'] = 'false'
+                parameters['ec2_modify'] = 'false'
+
+            if parameter_cast_to_bool(parameters.get('ec2_flatten', 'true')):
+                self.ec2_copy_filesystem()
+            else:
+                # This simply ensures that the image is raw after this step, which is assumed later
+                self.ec2_just_copy_filesystem()
+
+            if parameter_cast_to_bool(parameters.get('ec2_modify', 'true')):
+                self.ec2_modify_filesystem()
+            else:
+                self.log.debug("Skipping explicit EC2 modifications of target image")
 
         except:
             self.log_exc()
@@ -168,6 +186,7 @@ class EC2(object):
     def push_image_to_provider(self, builder, provider, credentials, target, target_image, parameters):
         self.log.info('push_image_to_provider() called in EC2')
 
+        self.parameters = parameters
         self.builder = builder
         self.active_image = self.builder.provider_image
 
@@ -260,6 +279,14 @@ class EC2(object):
         remove_net_persist(guestfs_handle)
         create_cloud_info(guestfs_handle, self.target)
         shutdown_and_close(guestfs_handle)
+
+    def ec2_just_copy_filesystem(self):
+        self.activity("Copying contents to a raw file")
+        raw_output=self.image + ".tmp"
+        qemucmd = ['qemu-img', 'convert', '-O', 'raw', self.image, raw_output]
+        subprocess.check_call(qemucmd)
+        os.unlink(self.image)
+        os.rename(raw_output, self.image)
 
     def ec2_copy_filesystem(self):
 
@@ -848,15 +875,21 @@ class EC2(object):
     def push_image_upload(self, target_image_id, provider, credentials):
         self.status="PUSHING"
         self.percent_complete=0
+        # Default to ebs - give parameter precident over global config if present
+        global_ami_type = self.app_config.get('ec2_ami_type','ebs')
+        ami_type = self.parameters.get('ec2_ami_type', global_ami_type)
+        virt_type = self.parameters.get('ec2_virt_type', 'paravirtual')
+        if virt_type not in [ 'hvm', 'paravirtual' ]:
+            raise Exception("Invalid 'ec2_virt_type' (%s) - must be 'hvm' or 'paravirtual'" % (virt_type))
         try:
-            if self.app_config["ec2_ami_type"] == "s3":
+            if ami_type == "s3":
                 self.ec2_push_image_upload(target_image_id, provider,
-                                           credentials)
-            elif self.app_config["ec2_ami_type"] == "ebs":
+                                           credentials, virt_type)
+            elif ami_type == "ebs":
                 self.ec2_push_image_upload_ebs(target_image_id, provider,
-                                               credentials)
+                                               credentials, virt_type)
             else:
-                raise ImageFactoryException("Invalid or unspecified EC2 AMI type in config file")
+                raise ImageFactoryException("Invalid or unspecified EC2 AMI type (%s) in config file or parameters" % (ami_type))
         except:
             self.log_exc()
             self.status="FAILED"
@@ -908,7 +941,7 @@ class EC2(object):
         self.ec2_key_file_object.flush()
         self.ec2_key_file=self.ec2_key_file_object.name
 
-    def ec2_push_image_upload_ebs(self, target_image_id, provider, credentials):
+    def ec2_push_image_upload_ebs(self, target_image_id, provider, credentials, virt_type):
         # TODO: Merge with ec2_push_image_upload and/or factor out duplication
         # In this case we actually do need an Oz object to manipulate a remote guest
         self.os_helper.init_guest()
@@ -1102,11 +1135,18 @@ class EC2(object):
             # register against snapshot
             self.activity("Registering snapshot as a new AMI")
             self.log.debug("Registering snapshot (%s) as new EBS AMI" % (snapshot.id))
+            if virt_type == 'paravirtual':
+                root_dev = '/dev/sda1'
+            else:
+                # For reasons known only to Amazon, putting sda in here fails
+                # TODO: Find out why
+                root_dev = '/dev/xvda'
+                aki = None
             ebs = EBSBlockDeviceType()
             ebs.snapshot_id = snapshot.id
             ebs.delete_on_termination = True
             block_map = BlockDeviceMapping()
-            block_map['/dev/sda1'] = ebs
+            block_map[root_dev] = ebs
             # The ephemeral mappings are automatic with S3 images
             # For EBS images we need to make them explicit
             # These settings are required to make the same fstab work on both S3 and EBS images
@@ -1114,7 +1154,8 @@ class EC2(object):
             e0.ephemeral_name = 'ephemeral0'
             e1 = EBSBlockDeviceType()
             e1.ephemeral_name = 'ephemeral1'
-            if self.tdlobj.arch == "i386":
+            if self.tdlobj.arch == "i386" and virt_type == 'paravirtual':
+                # TODO: This is kind of a legacy oddity from the S3 days - revisit
                 block_map['/dev/sda2'] = e0
                 block_map['/dev/sda3'] = e1
             else:
@@ -1123,7 +1164,8 @@ class EC2(object):
             result = conn.register_image(name='ImageFactory created AMI - %s' % (self.new_image_id),
                             description='ImageFactory created AMI - %s' % (self.new_image_id),
                             architecture=self.tdlobj.arch,  kernel_id=aki,
-                            root_device_name='/dev/sda1', block_device_map=block_map)
+                            root_device_name=root_dev, block_device_map=block_map,
+                            virtualization_type = virt_type)
 
             ami_id = str(result)
             self.log.debug("Extracted AMI ID: %s " % (ami_id))
@@ -1183,7 +1225,7 @@ class EC2(object):
         self.builder.provider_image.provider_account_identifier=self.ec2_access_key
         self.percent_complete=100
 
-    def ec2_push_image_upload(self, target_image_id, provider, credentials):
+    def ec2_push_image_upload(self, target_image_id, provider, credentials, virt_type):
         def replace(item):
             if item in [self.ec2_access_key, self.ec2_secret_key]:
                 return "REDACTED"
@@ -1197,6 +1239,9 @@ class EC2(object):
 
         bundle_destination=self.app_config['imgdir']
 
+        virt_type = self.parameters.get('ec2_virt_type', 'paravirtual')
+        if virt_type not in [ 'hvm', 'paravirtual' ]:
+            raise Exception("Invalid 'ec2_virt_type' (%s) - must be 'hvm' or 'paravirtual'" % (virt_type))
 
         self.activity("Preparing EC2 region details and connection")
         region=provider
@@ -1232,11 +1277,14 @@ class EC2(object):
         ec2_service_cert = "/etc/pki/imagefactory/cert-ec2.pem"
 
         bundle_command = [ "euca-bundle-image", "-i", input_image,
-                           "--kernel", aki, "-d", bundle_destination,
+                           "-d", bundle_destination,
                            "-a", self.ec2_access_key, "-s", self.ec2_secret_key,
                            "-c", self.ec2_cert_file, "-k", self.ec2_key_file,
                            "-u", self.ec2_user_id, "-r", self.tdlobj.arch,
                            "--ec2cert", ec2_service_cert ]
+
+        if virt_type == "paravirtual":
+            bundle_command.extend( [ "--kernel", aki ] )
 
         bundle_command_log = map(replace, bundle_command)
 
@@ -1267,8 +1315,15 @@ class EC2(object):
         s3_path = bucket + "/" + input_image_name + ".manifest.xml"
 
         register_env = { 'EC2_URL':register_url }
+        if virt_type == 'paravirtual':
+            root_dev = '/dev/sda1'
+        else:
+            root_dev = '/dev/sda'
         register_command = [ "euca-register" , "-A", self.ec2_access_key,
-                             "-S", self.ec2_secret_key, "-a", self.tdlobj.arch, s3_path ]
+                             "-S", self.ec2_secret_key, "-a", self.tdlobj.arch, 
+                             "--root-device-name", root_dev,
+                             "--virtualization-type", virt_type,
+                             s3_path ]
         register_command_log = map(replace, register_command)
         self.activity("Registering image")
         self.log.debug("Executing register command: %s with environment %s " % (register_command_log, repr(register_env)))
