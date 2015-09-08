@@ -125,6 +125,9 @@ class RHEL6_ec2_Helper(Base_ec2_Helper):
         self.guest.guest_execute_command(guestaddr, "rpm -e epel-release")
 
 
+class RHEL7_ec2_Helper(Base_ec2_Helper):
+    pass
+
 
 class Fedora_ec2_Helper(Base_ec2_Helper):
 
