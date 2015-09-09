@@ -126,7 +126,35 @@ class RHEL6_ec2_Helper(Base_ec2_Helper):
 
 
 class RHEL7_ec2_Helper(Base_ec2_Helper):
-    pass
+
+    class RHEL7RemoteGuest(oz.RHEL_7.RHEL7Guest):
+        def __init__(self, tdl, config, auto):
+            # The debug output in the Guest parent class needs this property to exist
+            self.host_bridge_ip = "0.0.0.0"
+            oz.RHEL_7.RHEL7Guest.__init__(self, tdl, config, auto)
+
+        def connect_to_libvirt(self):
+            pass
+
+        def guest_execute_command(self, guestaddr, command, timeout=30):
+            return super(RHEL7_ec2_Helper.RHEL7RemoteGuest, self).guest_execute_command(guestaddr, command, timeout)
+
+        def guest_live_upload(self, guestaddr, file_to_upload, destination,
+                              timeout=30):
+            return super(RHEL7_ec2_Helper.RHEL7RemoteGuest, self).guest_live_upload(guestaddr, file_to_upload, destination, timeout)
+
+    def init_guest(self):
+        self.guest = self.RHEL7RemoteGuest(self.plugin.tdlobj, self.plugin.oz_config, None)
+        self._init_guest_common()
+
+    def install_euca_tools(self, guestaddr):
+        # For RHEL7 we need to enable EPEL, install, then disable EPEL
+        # TODO: This depends on external infra which is bad, and trusts external SW, which may be bad
+        # For now we also mount up /mnt
+        self.guest.guest_execute_command(guestaddr, "mount /dev/xvdj /mnt")
+        self.guest.guest_execute_command(guestaddr, "rpm -ivh https://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm")
+        self.guest.guest_execute_command(guestaddr, "yum -y install euca2ools")
+        self.guest.guest_execute_command(guestaddr, "rpm -e epel-release")
 
 
 class Fedora_ec2_Helper(Base_ec2_Helper):
