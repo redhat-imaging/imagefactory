@@ -16,6 +16,7 @@ import logging
 from imgfac.ImageFactoryException import ImageFactoryException
 import oz.RHEL_5
 import oz.RHEL_6
+import oz.RHEL_7
 import oz.Fedora
 
 
