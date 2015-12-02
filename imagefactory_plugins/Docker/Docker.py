@@ -233,7 +233,9 @@ class Docker(object):
 
         if wrap_metadata:
             # Get any parameters and if they are not set, create our defaults
-            repository = parameters.get('repository',tdlobj.name)
+            # Docker image names should not have uppercase characters 
+            # https://fedorahosted.org/cloud/ticket/131
+            repository = parameters.get('repository',tdlobj.name).lower()
             tag = parameters.get('tag','latest')
             docker_image_id = parameters.get('docker_image_id', self._generate_docker_id())
             cmd = parameters.get('docker_cmd', 'null')
