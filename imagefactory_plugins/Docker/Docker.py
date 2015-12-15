@@ -68,7 +68,7 @@ class Docker(object):
   "container_config": {{
     "Cmd": {cmd},
     "Env": {env},
-    "Label": {label},
+    "Labels": {label},
     "StdinOnce": false,
     "OpenStdin": false,
     "Tty": false,
@@ -122,7 +122,7 @@ class Docker(object):
         "NetworkDisabled": false,
         "WorkingDir": "",
         "Cmd": {cmd},
-        "Label": {label},
+        "Labels": {label},
         "StdinOnce": false,
         "AttachStdin": false,
         "Volumes": null,
