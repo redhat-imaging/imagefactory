@@ -54,6 +54,26 @@ def converted_response(resp_dict):
 def api_info():
     return converted_response({'name':'imagefactory', 'version':VERSION, 'api_version':'2.0'})
 
+@rest_api.get('/imagefactory/base_images/<image_id>/raw_image')
+@rest_api.get('/imagefactory/target_images/<image_id>/raw_image')
+@rest_api.get('/imagefactory/provider_images/<image_id>/raw_image')
+@rest_api.get('/imagefactory/base_images/<base_image_id>/target_images/<image_id>/raw_image')
+@rest_api.get('/imagefactory/base_images/<base_image_id>/target_images/<target_image_id>/provider_images/<image_id>/raw_image')
+@rest_api.get('/imagefactory/target_images/<target_image_id>/provider_images/<image_id>/raw_image')
+@log_request
+@oauth_protect
+@check_accept_header
+def get_image_file(image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
+    try:
+        image = PersistentImageManager.default_manager().image_with_id(image_id)
+        if(not image):
+            raise HTTPResponse(status=404, output='No image found with id: %s' % image_id)
+        path, filename = os.path.split(image.data)
+        return static_file(filename, path, download=True)
+    except Exception as e:
+        log.exception(e)
+        raise HTTPResponse(status=500, output=e)
+
 @rest_api.get('/imagefactory/<image_collection>')
 @rest_api.get('/imagefactory/base_images/<base_image_id>/<image_collection>')
 @rest_api.get('/imagefactory/target_images/<target_image_id>/<image_collection>')
@@ -224,26 +244,6 @@ def image_with_id(collection_type, image_id, base_image_id=None, target_image_id
         else:
             log.exception(e)
             raise HTTPResponse(status=500, output=e)
-    except Exception as e:
-        log.exception(e)
-        raise HTTPResponse(status=500, output=e)
-
-@rest_api.get('/imagefactory/base_images/<image_id>/raw_image')
-@rest_api.get('/imagefactory/target_images/<image_id>/raw_image')
-@rest_api.get('/imagefactory/provider_images/<image_id>/raw_image')
-@rest_api.get('/imagefactory/base_images/<base_image_id>/target_images/<image_id>/raw_image')
-@rest_api.get('/imagefactory/base_images/<base_image_id>/target_images/<target_image_id>/provider_images/<image_id>/raw_image')
-@rest_api.get('/imagefactory/target_images/<target_image_id>/provider_images/<image_id>/raw_image')
-@log_request
-@oauth_protect
-@check_accept_header
-def get_image_file(image_id, base_image_id=None, target_image_id=None, provider_image_id=None):
-    try:
-        image = PersistentImageManager.default_manager().image_with_id(image_id)
-        if(not image):
-            raise HTTPResponse(status=404, output='No image found with id: %s' % image_id)
-        path, filename = os.path.split(image.data)
-        return static_file(filename, path, download=True)
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output=e)
