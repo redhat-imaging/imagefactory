@@ -24,6 +24,7 @@ import uuid
 import time
 import glob
 import tempfile
+import subprocess
 from stat import *
 from imgfac.PersistentImageManager import PersistentImageManager
 from imgfac.FactoryUtils import check_qcow_size, disk_image_capacity
@@ -674,12 +675,37 @@ class OVFPackage(object):
 
         ovf_xml.write(self.ovf_path)
 
+
+    def _gzip_ova(self, ovapath):
+        # TODO: Move this to FactoryUtils and use it consistently in other plugins
+        # TODO: soft/conditional requires for pigz?
+        # Multi-core is everywhere these days - most environments will see a
+        # significant speed up if we use pigz if it is available
+        gzip_command=None
+        for candidate in ['gzip', 'pigz']:
+            try:
+                subprocess.call([candidate, '-V'])
+                gzip_command=candidate
+            except:
+                pass
+
+        if not gzip_command:
+            raise Exception("Could not locate functional pigz or gzip command")
+
+        ovatemp = ovapath + ".tmp.gz"
+	compress_command = '%s -c %s > %s' % (gzip_command, ovapath, ovatemp)
+	result = subprocess.call(compress_command, shell = True)
+	if result:
+	    raise ImageFactoryException("Compression of image failed")
+        os.unlink(ovapath)
+        os.rename(ovatemp, ovapath)
+
+
     def make_ova_package(self, gzip=False):
         self.sync()
 
-        mode = 'w' if not gzip else 'w|gz'
         ovapath = os.path.join(self.path, "ova")
-        tar = tarfile.open(ovapath, mode)
+        tar = tarfile.open(ovapath, 'w')
         cwd = os.getcwd()
         os.chdir(self.path)
         files = glob.glob('*')
@@ -705,6 +731,8 @@ class OVFPackage(object):
 
         os.chdir(cwd)
         tar.close()
+        if gzip:
+            self._gzip_ova(ovapath)
 
         return ovapath
 
