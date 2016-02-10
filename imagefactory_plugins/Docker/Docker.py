@@ -170,8 +170,6 @@ class Docker(object):
     def builder_should_create_target_image(self, builder, target, image_id, template, parameters):
         self.log.debug("builder_should_create_target_image called for Docker plugin - doing all our work here then stopping the process")
         tdlobj = oz.TDL.TDL(xmlstring=template.xml, rootpw_required=self.app_config["tdl_require_root_pw"])
-        if tdlobj.arch != "x86_64":
-            raise Exception("Docker plugin currently supports only x86_64 images")
         # At this point our input base_image is available as builder.base_image.data
         # We simply mount it up in libguestfs and tar out the results as builder.target_image.data
         wrap_metadata = parameter_cast_to_bool(parameters.get('create_docker_metadata', True))
