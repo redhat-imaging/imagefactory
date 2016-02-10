@@ -246,11 +246,16 @@ class Docker(object):
                 raise Exception("No docker JSON template available for specified docker version (%s)" % (dockerversion))
             docker_json_template=self.docker_templates_dict[dockerversion]
 
+            arch = tdlobj.arch
+            if arch == "x86_64":
+                arch = "amd64"
+            elif arch == "armv7hl"
+                arch = "armhfp"
             tdict = { }
             tdict['commentstring'] = parameters.get('comment', 'Created by Image Factory')
             tdict['os'] = parameters.get('os', 'linux')
             tdict['createdtime'] = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
-            tdict['arch'] = "amd64"
+            tdict['arch'] = arch
             tdict['idstring'] = docker_image_id
             tdict['cmd'] = cmd
             tdict['env'] = env
