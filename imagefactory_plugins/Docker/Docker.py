@@ -204,7 +204,14 @@ class Docker(object):
             self.log.debug("Creating tar of entire image")
             # Use acls and xattrs to ensure SELinux data is not lost
             # Use --sparse to avoid exploding large empty files from input image
-            tarcmd = [ 'tar',  '-cf', builder.target_image.data, '-C', tempdir, '--sparse', '--acls', '--xattrs', './' ]
+            tarcmd = [ 'tar',  '-cf', builder.target_image.data, '-C', tempdir, '--sparse', '--acls', '--xattrs' ]
+            # User may pass in a comma separated list of excludes to override this
+            # Default to ./etc/fstab as many people have complained this does not belong in Docker images
+            tar_excludes = parameters.get('tar_excludes', './etc/fstab').split(',')
+            for exclude in tar_excludes:
+                tarcmd.append('--exclude=%s' % (exclude.strip()))
+            tarcmd.append('./')
+            self.log.debug("Command: %s" % (str(tarcmd)))
             subprocess.check_call(tarcmd)
             if wrap_metadata:
                 self.log.debug("Estimating size of tar contents to include in Docker metadata")
