@@ -1,3 +1,11 @@
+%if 0%{?fedora} >= 21 || 0%{?redhat} >= 7
+%global use_systemd 1
+%else
+%global use_systemd 0
+# This is, of course, not set in older RPMs and is needed below
+%global _unitdir /usr/lib/systemd/system
+%endif
+
 Summary: System image generation tool
 Name: imagefactory
 Version: @VERSION@
@@ -20,10 +28,19 @@ Requires: python-paste-deploy
 Requires: python-oauth2
 Requires: python-urlgrabber
 Requires: oz
+
+%if %{use_systemd}
+Requires(post): systemd
+Requires(preun): systemd
+Requires(postun): systemd
+%else
 Requires(post): chkconfig
 Requires(preun): chkconfig
 # This is for /sbin/service
 Requires(preun): initscripts
+%endif
+
+
 BuildRequires: python2
 BuildRequires: python-setuptools
 # TODO: Any changes to the _internal_ API must increment this version or, in 
@@ -56,6 +73,27 @@ sed -i '/\/usr\/bin\/env python/d' %{buildroot}/%{python_sitelib}/imgfac/*.py
 %{__install} -m0600 conf/sysconfig/imagefactoryd %{buildroot}/%{_sysconfdir}/sysconfig/imagefactoryd
 %{__install} -m0600 conf/logrotate.d/imagefactoryd %{buildroot}/%{_sysconfdir}/logrotate.d/imagefactoryd
 
+# setup.py installs both of these which I suppose is OK
+# delete the one we don't want here
+%if %{use_systemd}
+rm -f %{buildroot}/%{_initddir}/imagefactoryd
+%else
+rm -f %{buildroot}/%{_unitdir}/imagefactoryd.service
+%endif
+
+%if %{use_systemd}
+
+%post
+%systemd_post imagefactoryd.service
+
+%preun
+%systemd_preun imagefactoryd.service
+
+%postun
+%systemd_postun imagefactoryd.service
+
+%else
+
 %post
 /sbin/chkconfig --add imagefactoryd
 
@@ -65,9 +103,15 @@ if [ $1 = 0 ] ; then
     /sbin/chkconfig --del imagefactoryd
 fi
 
+%endif
+
 %files
 %doc COPYING
+%if %{use_systemd}
+%{_unitdir}/imagefactoryd.service
+%else
 %{_initddir}/imagefactoryd
+%endif
 %config(noreplace) %{_sysconfdir}/imagefactory/imagefactory.conf
 %config(noreplace) %{_sysconfdir}/sysconfig/imagefactoryd
 %config(noreplace) %{_sysconfdir}/logrotate.d/imagefactoryd

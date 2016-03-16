@@ -61,7 +61,8 @@ datafiles=[('/etc/imagefactory', ['imagefactory.conf']),
            ('/etc/pki/imagefactory', ['cert-ec2.pem']),
            ('/etc/sysconfig', ['conf/sysconfig/imagefactoryd']),
            ('/etc/logrotate.d', ['conf/logrotate.d/imagefactoryd']),
-           ('/etc/rc.d/init.d', ['scripts/imagefactoryd'])]
+           ('/etc/rc.d/init.d', ['scripts/imagefactoryd']),
+           ('/usr/lib/systemd/system/', ['conf/imagefactoryd.service'])]
 
 setup(name='imagefactory',
       version=VERSION,

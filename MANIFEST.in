@@ -1,2 +1,3 @@
 include COPYING cert-ec2.pem imagefactory.conf
 include scripts/imagefactoryd conf/logrotate.d/imagefactoryd conf/sysconfig/imagefactoryd
+include conf/imagefactoryd.service
