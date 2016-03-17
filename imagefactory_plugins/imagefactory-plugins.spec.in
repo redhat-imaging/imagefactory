@@ -385,6 +385,9 @@ rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Nova
 %{python_sitelib}/imagefactory_plugins/Docker/*
 
 %changelog
+* Wed Mar 16 2016 Ian McLeod <imcleod@redhat.com> - 1.1.8-2
+- enable non-x86_64 Docker base image builds
+
 * Wed Mar 16 2016 Ian McLeod <imcleod@redhat.com> - 1.1.8-1
 - Upstream release 1.1.8
 - systemd support
