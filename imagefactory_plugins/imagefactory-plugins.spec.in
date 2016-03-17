@@ -385,6 +385,13 @@ rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Nova
 %{python_sitelib}/imagefactory_plugins/Docker/*
 
 %changelog
+* Wed Mar 16 2016 Ian McLeod <imcleod@redhat.com> - 1.1.8-1
+- Upstream release 1.1.8
+- systemd support
+- docker base image updates
+- significant EC2 updates for regions and instance types
+- VMWare fusion vagrant box support
+
 * Wed Jan 7 2015 Ian McLeod <imcleod@redhat.com> - 1.1.7-1
 - Upstream release 1.1.7
 - Vagrant box support added to OVA plugin
