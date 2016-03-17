@@ -5,10 +5,18 @@
 # building on RHEL.
 # TODO: If we end up building as part of RDO either remove this for RDO
 # SPEC builds or find a way to detect an RDO build and automagically negate this
-%define include_openstack %{?rhel:0}%{!?rhel:1}
+# UPDATE: F24 dropped the supporting modules we currently use
+# TODO: Refresh/refactor OpenStack support to use newer module and then update below
+%if 0%{?fedora} >= 24 || 0%{?rhel} >= 3
+%define include_openstack 0
+%else
+%define include_openstack 1
+%endif
 
 # For now, do not build this sub RPM - It has bitrotted and needs to be revisited
 %define include_nova_image_builder 0
+
+
 
 %global auto_register_macro_post() # create it if it doesn't already exist as a link \
 # If it is an existing file other than a link, do nothing \
@@ -385,6 +393,9 @@ rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Nova
 %{python_sitelib}/imagefactory_plugins/Docker/*
 
 %changelog
+* Thu Mar 17 2016 Ian McLeod <imcleod@redhat.com> - 1.1.8-3
+- temporarily disable OpenShift and RAX for F24
+
 * Wed Mar 16 2016 Ian McLeod <imcleod@redhat.com> - 1.1.8-2
 - enable non-x86_64 Docker base image builds
 
