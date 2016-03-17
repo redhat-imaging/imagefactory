@@ -1,4 +1,4 @@
-%if 0%{?fedora} >= 21 || 0%{?redhat} >= 7
+%if 0%{?fedora} >= 21 || 0%{?rhel} >= 7
 %global use_systemd 1
 %else
 %global use_systemd 0
@@ -129,6 +129,9 @@ fi
 %{_bindir}/imagefactoryd
 
 %changelog
+* Thu Mar 17 2016 Ian McLeod <imcleod@redhat.com> - 1.1.8-2
+- fix RHEL7 conditional for systemd unit file content
+
 * Wed Mar 16 2016 Ian McLeod <imcleod@redhat.com> - 1.1.8-1
 - Upstream release 1.1.8
 - systemd support
