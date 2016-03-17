@@ -392,6 +392,12 @@ rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Nova
 - significant EC2 updates for regions and instance types
 - VMWare fusion vagrant box support
 
+* Thu Feb 04 2016 Fedora Release Engineering <releng@fedoraproject.org> - 1.1.7-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_24_Mass_Rebuild
+
+* Wed Jun 17 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.1.7-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_23_Mass_Rebuild
+
 * Wed Jan 7 2015 Ian McLeod <imcleod@redhat.com> - 1.1.7-1
 - Upstream release 1.1.7
 - Vagrant box support added to OVA plugin
