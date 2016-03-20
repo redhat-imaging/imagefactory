@@ -138,8 +138,67 @@ class Docker(object):
 }}
 """
 
+    docker_json_template_1_7_0 = """{{
+    "Size": {size},
+    "architecture": "{arch}",
+    "comment": "{commentstring}",
+    "config": {{
+        "AttachStderr": false,
+        "AttachStdin": false,
+        "AttachStdout": false,
+        "Cmd": {cmd},
+        "Domainname": "",
+        "Entrypoint": null,
+        "Env": {env},
+        "ExposedPorts": null,
+        "Hostname": "",
+        "Image": "",
+        "Labels": {label},
+        "MacAddress": "",
+        "NetworkDisabled": false,
+        "OnBuild": null,
+        "OpenStdin": false,
+        "StdinOnce": false,
+        "Systemd": false,
+        "Tty": false,
+        "User": "",
+        "VolumeDriver": "",
+        "Volumes": null,
+        "WorkingDir": ""
+    }},
+    "container_config": {{
+        "AttachStderr": false,
+        "AttachStdin": false,
+        "AttachStdout": false,
+        "Cmd": null,
+        "Domainname": "",
+        "Entrypoint": null,
+        "Env": null,
+        "ExposedPorts": null,
+        "Hostname": "",
+        "Image": "",
+        "Labels": null,
+        "MacAddress": "",
+        "NetworkDisabled": false,
+        "OnBuild": null,
+        "OpenStdin": false,
+        "StdinOnce": false,
+        "Systemd": false,
+        "Tty": false,
+        "User": "",
+        "VolumeDriver": "",
+        "Volumes": null,
+        "WorkingDir": ""
+    }},
+    "created": "{createdtime}",
+    "docker_version": "1.7.0",
+    "id": "{idstring}",
+    "os": "{os}"
+}}"""
+
     docker_templates_dict = { "0.11.1": docker_json_template_0_11_1,
-                          "1.0.0":  docker_json_template_1_0_0 }
+                          "1.0.0":  docker_json_template_1_0_0,
+                          "1.7.0":  docker_json_template_1_7_0 }
 
     def __init__(self):
         super(Docker, self).__init__()
