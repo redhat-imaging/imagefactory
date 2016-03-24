@@ -393,6 +393,10 @@ rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Nova
 %{python_sitelib}/imagefactory_plugins/Docker/*
 
 %changelog
+* Thu Mar 24 2016 Ian McLeod <imcleod@redhat.com> - 1.1.8-4
+- add new docker base image version options
+- fix koji issue when ICICLE generation is disabled
+
 * Thu Mar 17 2016 Ian McLeod <imcleod@redhat.com> - 1.1.8-3
 - temporarily disable OpenShift and RAX for F24
 
