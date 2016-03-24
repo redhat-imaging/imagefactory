@@ -364,6 +364,8 @@ class TinMan(object):
                     else:
                         builder.base_image.icicle = self.guest.customize_and_generate_icicle(libvirt_xml)
                 else:
+                    # koji errs out if this value is None - set to an empty ICICLE instead
+                    builder.base_image.icicle = "<icicle></icicle>"
                     self.guest.customize(libvirt_xml)
                 self.log.debug("Customization and ICICLE generation complete")
                 self.percent_complete = 50
