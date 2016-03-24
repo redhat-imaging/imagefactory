@@ -30,6 +30,7 @@ import tempfile
 import tarfile
 import threading
 import subprocess
+import hashlib
 from xml.etree.ElementTree import fromstring
 from imgfac.Template import Template
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
@@ -138,8 +139,126 @@ class Docker(object):
 }}
 """
 
+    docker_json_template_1_7_0 = """{{
+    "Size": {size},
+    "architecture": "{arch}",
+    "comment": "{commentstring}",
+    "config": {{
+        "AttachStderr": false,
+        "AttachStdin": false,
+        "AttachStdout": false,
+        "Cmd": {cmd},
+        "Domainname": "",
+        "Entrypoint": null,
+        "Env": {env},
+        "ExposedPorts": null,
+        "Hostname": "",
+        "Image": "",
+        "Labels": {label},
+        "MacAddress": "",
+        "NetworkDisabled": false,
+        "OnBuild": null,
+        "OpenStdin": false,
+        "StdinOnce": false,
+        "Systemd": false,
+        "Tty": false,
+        "User": "",
+        "VolumeDriver": "",
+        "Volumes": null,
+        "WorkingDir": ""
+    }},
+    "container_config": {{
+        "AttachStderr": false,
+        "AttachStdin": false,
+        "AttachStdout": false,
+        "Cmd": null,
+        "Domainname": "",
+        "Entrypoint": null,
+        "Env": null,
+        "ExposedPorts": null,
+        "Hostname": "",
+        "Image": "",
+        "Labels": null,
+        "MacAddress": "",
+        "NetworkDisabled": false,
+        "OnBuild": null,
+        "OpenStdin": false,
+        "StdinOnce": false,
+        "Systemd": false,
+        "Tty": false,
+        "User": "",
+        "VolumeDriver": "",
+        "Volumes": null,
+        "WorkingDir": ""
+    }},
+    "created": "{createdtime}",
+    "docker_version": "1.7.0",
+    "id": "{idstring}",
+    "os": "{os}"
+}}"""
+
+    docker_json_template_1_10_1 = """{{
+    "Size": {size},
+    "architecture": "{arch}",
+    "comment": "{commentstring}",
+    "config": {{
+        "AttachStderr": false,
+        "AttachStdin": false,
+        "AttachStdout": false,
+        "Cmd": {cmd},
+        "Domainname": "",
+        "Entrypoint": null,
+        "Env": {env},
+        "ExposedPorts": null,
+        "Hostname": "",
+        "Image": "",
+        "Labels": {label},
+        "MacAddress": "",
+        "NetworkDisabled": false,
+        "OnBuild": null,
+        "OpenStdin": false,
+        "StdinOnce": false,
+        "Systemd": false,
+        "Tty": false,
+        "User": "",
+        "VolumeDriver": "",
+        "Volumes": null,
+        "WorkingDir": ""
+    }},
+    "container_config": {{
+        "AttachStderr": false,
+        "AttachStdin": false,
+        "AttachStdout": false,
+        "Cmd": null,
+        "Domainname": "",
+        "Entrypoint": null,
+        "Env": null,
+        "ExposedPorts": null,
+        "Hostname": "",
+        "Image": "",
+        "Labels": null,
+        "MacAddress": "",
+        "NetworkDisabled": false,
+        "OnBuild": null,
+        "OpenStdin": false,
+        "StdinOnce": false,
+        "Systemd": false,
+        "Tty": false,
+        "User": "",
+        "VolumeDriver": "",
+        "Volumes": null,
+        "WorkingDir": ""
+    }},
+    "created": "{createdtime}",
+    "docker_version": "1.10.1",
+    "id": "{idstring}",
+    "os": "{os}"
+}}"""
+
     docker_templates_dict = { "0.11.1": docker_json_template_0_11_1,
-                          "1.0.0":  docker_json_template_1_0_0 }
+                          "1.0.0":  docker_json_template_1_0_0,
+                          "1.7.0":  docker_json_template_1_7_0,
+                          "1.10.1":  docker_json_template_1_10_1 }
 
     def __init__(self):
         super(Docker, self).__init__()
@@ -166,6 +285,17 @@ class Docker(object):
         for i in range(8):
             did += "%08x" % (random.randint(0, 2 ** 32))
         return did
+
+    def _file_sha256(self, filename):
+        f = open(filename, "rb")
+        hasher = hashlib.sha256()
+        while True:
+            chunk = f.read(2**20)
+            if not chunk:
+                break
+            hasher.update(chunk)
+        f.close()
+        return hasher.hexdigest()
 
     def builder_should_create_target_image(self, builder, target, image_id, template, parameters):
         self.log.debug("builder_should_create_target_image called for Docker plugin - doing all our work here then stopping the process")
@@ -201,8 +331,7 @@ class Docker(object):
             fuse_thread.start()
             self.log.debug("Creating tar of entire image")
             # Use acls and xattrs to ensure SELinux data is not lost
-            # Use --sparse to avoid exploding large empty files from input image
-            tarcmd = [ 'tar',  '-cf', builder.target_image.data, '-C', tempdir, '--sparse', '--acls', '--xattrs' ]
+            tarcmd = [ 'tar',  '-cf', builder.target_image.data, '-C', tempdir, '--acls', '--xattrs' ]
             # User may pass in a comma separated list of excludes to override this
             # Default to ./etc/fstab as many people have complained this does not belong in Docker images
             tar_excludes = parameters.get('tar_excludes', './etc/fstab').split(',')
@@ -271,6 +400,26 @@ class Docker(object):
 
             image_json = docker_json_template.format(**tdict) 
 
+            # v2 images
+            # TODO: Something significantly less hacky looking.....
+            if dockerversion == "1.10.1":
+                shasum = self._file_sha256(builder.target_image.data)
+                image_v2_config = json.loads(image_json)
+                # The new top level JSON file is a light modification of the layer JSON
+                del image_v2_config['Size']
+                del image_v2_config['id']
+                image_v2_config['history'] = [ { 'comment': image_v2_config['comment'],
+                                               'created': image_v2_config['created'] } ]
+                image_v2_config['rootfs'] = { 'diff_ids': [ "sha256:%s" % (shasum) ],
+                                            'type': 'layers' }
+
+                # Docker wants this config file to be named after its own sha256 sum
+                image_v2_config_id = hashlib.sha256(json.dumps(image_v2_config)).hexdigest()
+
+                image_v2_manifest = [ { "Config": "%s.json" % (image_v2_config_id),
+                                        "Layers": [ "%s/layer.tar" % (docker_image_id) ],
+                                        "RepoTags": [ "%s:%s" % (repository, tag) ] } ]
+
             # Create directory
             storagedir = os.path.dirname(builder.target_image.data)
             tempdir = None
@@ -282,6 +431,17 @@ class Docker(object):
                 repositories = open(repositories_path,"w")
                 json.dump(rdict, repositories)
                 repositories.close()
+
+                if dockerversion == "1.10.1":
+                    config_path = os.path.join(tempdir, '%s.json' % (image_v2_config_id))
+                    config = open(config_path, "w")
+                    json.dump(image_v2_config, config)
+                    config.close()
+
+                    manifest_path = os.path.join(tempdir, 'manifest.json')
+                    manifest = open(manifest_path, "w")
+                    json.dump(image_v2_manifest, manifest)
+                    manifest.close()
 
                 imagedir = os.path.join(tempdir, docker_image_id)
                 os.mkdir(imagedir)
@@ -307,6 +467,9 @@ class Docker(object):
                 # avoid this
                 outtar.add(imagedir, arcname=docker_image_id)
                 outtar.add(repositories_path, arcname='repositories')
+                if dockerversion == "1.10.1":
+                    outtar.add(config_path, arcname='%s.json' % (image_v2_config_id))
+                    outtar.add(manifest_path, arcname='manifest.json')
                 outtar.close()
             finally:
                 if tempdir:
