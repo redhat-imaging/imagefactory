@@ -125,7 +125,7 @@ case "$1" in
 	RETVAL=$?
 	;;
   status)
-        status imagefactory
+        status $prog
 	RETVAL=$?
         ;;
   *)
