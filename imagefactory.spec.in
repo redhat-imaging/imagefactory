@@ -13,7 +13,7 @@ Release: @RELEASE@%{?dist}
 Source0: http://repos.fedorapeople.org/repos/aeolus/imagefactory/%{version}/tarball/%{name}-%{version}.tar.gz
 License: ASL 2.0
 Group: Applications/System
-URL: http://www.aeolusproject.org/imagefactory.html
+URL: https://github.com/redhat-imaging/imagefactory
 BuildArch: noarch
 %if 0%{?rhel} == 6
 ExcludeArch: i386 ppc64
@@ -53,7 +53,7 @@ Provides: imagefactory-plugin-api = 1.0
 %description
 imagefactory allows the creation of system images for multiple virtualization
 and cloud providers from a single template definition. See 
-http://aeolusproject.org/projects/imagefactory for more information.
+https://github.com/redhat-imaging/imagefactory for more information.
 
 %prep
 %setup -q
