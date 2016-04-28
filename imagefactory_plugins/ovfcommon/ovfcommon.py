@@ -35,6 +35,9 @@ from imgfac.ImageFactoryException import ImageFactoryException
 # TODO: Unify these
 import lxml.etree
 import datetime
+# These tend to be quite large - factor them out as separate files to
+# keep this source file a reasonable size
+from HyperVOVFDescriptor import HyperVOVFDescriptor
 
 
 class RHEVOVFDescriptor(object):
@@ -740,12 +743,16 @@ class OVFPackage(object):
     def delete(self):
         rmtree(self.path, ignore_errors=True)
 
+    def write_ovf_xml_to_file(self, path):
+        # Thanks to HyperV we want to override this in at least one case
+        # put the default here and override as needed
+        ovf_xml = self.ovf_descriptor.generate_ovf_xml()
+        ovf_xml.write(path)
+
     def sync(self):
         '''Copy disk image to path, regenerate OVF descriptor'''
         self.copy_disk()
         self.ovf_descriptor = self.new_ovf_descriptor()
-
-        ovf_xml = self.ovf_descriptor.generate_ovf_xml()
 
         try:
             os.makedirs(os.path.dirname(self.ovf_path))
@@ -753,8 +760,7 @@ class OVFPackage(object):
             if "File exists" not in e:
                 raise
 
-        ovf_xml.write(self.ovf_path)
-
+        self.write_ovf_xml_to_file(self.ovf_path)
 
     def _gzip_ova(self, ovapath):
         # TODO: Move this to FactoryUtils and use it consistently in other plugins
@@ -815,6 +821,65 @@ class OVFPackage(object):
             self._gzip_ova(ovapath)
 
         return ovapath
+
+class HyperVOVFPackage(OVFPackage):
+    def __init__(self, disk, base_image, path=None, hyperv_vagrant=True,
+                 vagrant_sync_directory = "/vagrant",
+                 ovf_name="vagrantbox",
+                 ovf_cpu_count="1",
+                 ovf_memory_mb="1024"):
+
+        super(HyperVOVFPackage, self).__init__(disk, path)
+        self.vagrant = hyperv_vagrant # Set to false to omit Vagrant metadata and produce "pure" OVA
+        self.vagrant_sync_directory = vagrant_sync_directory
+        self.disk = disk
+        self.ovf_name = ovf_name
+        self.ovf_cpu_count = ovf_cpu_count
+        self.ovf_memory_mb = ovf_memory_mb
+
+        self.ovf_disk_dir = os.path.join(self.path, "Virtual Hard Disks")
+        self.disk_filename = os.path.join(self.ovf_disk_dir, "disk.vhd")
+        self.ovf_path = os.path.join(self.path, "Virtual Machines", "vm.XML")
+
+    def new_ovf_descriptor(self):
+        return HyperVOVFDescriptor(self.ovf_name,
+                                   self.ovf_cpu_count,
+                                   self.ovf_memory_mb)
+
+    def copy_disk(self):
+        os.makedirs(self.ovf_disk_dir)
+        copyfile_sparse(self.disk, self.disk_filename)
+
+    def write_ovf_xml_to_file(self, path):
+        meta=open(path,"w")
+        meta.write(self.ovf_descriptor.generate_ovf_xml())
+        meta.close()
+
+    def sync(self):
+        super(HyperVOVFPackage, self).sync()
+        if self.vagrant:
+            metadata_json = '{"provider": "hyperv"}'
+            metadata_json_path = os.path.join(self.path, "metadata.json")
+            mj = open(metadata_json_path, 'w')
+            mj.write(metadata_json)
+            mj.close()
+
+            # For consistency, make this the sync directory and use rsync
+            # but disable because I can't seem to make it work and don't want the
+            # default experience to be a failure message at startup. Can be
+            # re-enabled in local Vagrantfile
+            vagrantfile = '''Vagrant.configure("2") do |config|
+  config.vm.synced_folder ".", "%s", type: "rsync", disabled: "true"
+end
+''' % (self.vagrant_sync_directory)
+            vagrantfile_path = os.path.join(self.path, "Vagrantfile")
+            vf = open(vagrantfile_path, 'w')
+            vf.write(vagrantfile)
+            vf.close()
+
+
+    def make_ova_package(self):
+        return super(HyperVOVFPackage, self).make_ova_package(gzip=True)
 
 
 class RHEVOVFPackage(OVFPackage):

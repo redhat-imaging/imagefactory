@@ -25,9 +25,11 @@ from imagefactory_plugins.ovfcommon.ovfcommon import RHEVOVFPackage, VsphereOVFP
 from imagefactory_plugins.ovfcommon.ovfcommon import VirtualBoxOVFPackage
 from imagefactory_plugins.ovfcommon.ovfcommon import LibvirtVagrantOVFPackage
 from imagefactory_plugins.ovfcommon.ovfcommon import VMWareFusionVagrantOVFPackage
+from imagefactory_plugins.ovfcommon.ovfcommon import HyperVOVFPackage
 
 from imgfac.ImageFactoryException import ImageFactoryException
 from oz.ozutil import copyfile_sparse
+from oz.TDL import TDL
 
 class OVA(object):
     zope.interface.implements(CloudDelegate)
@@ -39,7 +41,7 @@ class OVA(object):
         retval = False
 
         if isinstance(builder.base_image, TargetImage):
-            if builder.base_image.target in ('vsphere', 'rhevm'):
+            if builder.base_image.target in ('vsphere', 'rhevm', 'hyperv'):
                 retval = True
 
         self.log.info('builder_should_create_target_image() called on OVA plugin - returning %s' % retval)
@@ -96,8 +98,21 @@ class OVA(object):
                 klass = VMWareFusionVagrantOVFPackage
             else:
                 raise ImageFactoryException("Unknown vsphere ova_format (%s) requested - must be 'vsphere', 'vagrant-virtualbox' or 'vagrant-vmware-fusion'" % (ova_format) )
+        elif self.target_image.target == 'hyperv':
+            ova_format = self.parameters.get('hyperv_ova_format', 'hyperv-vagrant')
+            if ova_format == 'hyperv-vagrant':
+                klass = HyperVOVFPackage
+            elif ova_format == 'hyperv':
+                klass = HyperVOVFPackage
+                self.parameters['hyperv_vagrant'] = False
+            else:
+                raise ImageFactoryException("Unknown hyperv ova_format (%s) requested - must be 'hyperv-vagrant' or 'hyperv'" % (ova_format) )
         else:
             raise ImageFactoryException("OVA plugin only supports rhevm and vsphere target images")
+
+        tdl = TDL(xmlstring=self.image.template, rootpw_required=False)
+        if not 'ovf_name' in self.parameters:
+            self.parameters['ovf_name'] = tdl.name
 
         klass_parameters = dict()
 
@@ -108,6 +123,7 @@ class OVA(object):
                       'vsphere_virtual_system_type', 'vsphere_scsi_controller_type',
                       'vsphere_network_controller_type', 'vsphere_nested_virt', 'vsphere_cdrom',
                       'fusion_scsi_controller_type', 'fusion_network_controller_type', 'fusion_nested_virt',
+                      'hyperv_vagrant',
                       'vagrant_sync_directory']
 
             for param in params:

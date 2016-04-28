@@ -1,0 +1,12 @@
+{
+    "type": "cloud",
+    "targets": [ [ "hyperv"] ],
+    "description": "HyperV cloud plugin for imagefactory",
+    "maintainer": {
+        "name": "Red Hat, Inc.",
+        "email": "imagefactory-devel@lists.fedorahosted.org",
+        "url": "http://imgfac.org"
+    },
+    "version": "1.0",
+    "license": "Copyright 2016 Red Hat, Inc. - http://www.apache.org/licenses/LICENSE-2.0"
+}
