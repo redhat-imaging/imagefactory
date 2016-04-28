@@ -25,6 +25,7 @@ from imagefactory_plugins.ovfcommon.ovfcommon import RHEVOVFPackage, VsphereOVFP
 from imagefactory_plugins.ovfcommon.ovfcommon import VirtualBoxOVFPackage
 from imagefactory_plugins.ovfcommon.ovfcommon import LibvirtVagrantOVFPackage
 from imagefactory_plugins.ovfcommon.ovfcommon import VMWareFusionVagrantOVFPackage
+from imagefactory_plugins.ovfcommon.ovfcommon import HyperVOVFPackage
 
 from imgfac.ImageFactoryException import ImageFactoryException
 from oz.ozutil import copyfile_sparse
@@ -39,7 +40,7 @@ class OVA(object):
         retval = False
 
         if isinstance(builder.base_image, TargetImage):
-            if builder.base_image.target in ('vsphere', 'rhevm'):
+            if builder.base_image.target in ('vsphere', 'rhevm', 'hyperv'):
                 retval = True
 
         self.log.info('builder_should_create_target_image() called on OVA plugin - returning %s' % retval)
@@ -96,6 +97,15 @@ class OVA(object):
                 klass = VMWareFusionVagrantOVFPackage
             else:
                 raise ImageFactoryException("Unknown vsphere ova_format (%s) requested - must be 'vsphere', 'vagrant-virtualbox' or 'vagrant-vmware-fusion'" % (ova_format) )
+        elif self.target_image.target == 'hyperv':
+            ova_format = self.parameters.get('hyperv_ova_format', 'hyperv-vagrant')
+            if ova_format == 'hyperv-vagrant':
+                klass = HyperVOVFPackage
+            elif ova_format == 'hyperv':
+                klass = HyperVOVFPackage
+                self.parameters['hyperv_vagrant'] = False
+            else:
+                raise ImageFactoryException("Unknown hyperv ova_format (%s) requested - must be 'hyperv-vagrant' or 'hyperv'" % (ova_format) )
         else:
             raise ImageFactoryException("OVA plugin only supports rhevm and vsphere target images")
 
@@ -106,7 +116,7 @@ class OVA(object):
                       'rhevm_default_display_type','rhevm_description','rhevm_os_descriptor',
                       'vsphere_product_name','vsphere_product_vendor_name','vsphere_product_version',
                       'vsphere_virtual_system_type',
-                      'vagrant_sync_directory']
+                      'vagrant_sync_directory', 'hyperv_vagrant']
 
             for param in params:
                 if (self.parameters.get(param) and 
