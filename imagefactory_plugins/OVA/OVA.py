@@ -29,6 +29,7 @@ from imagefactory_plugins.ovfcommon.ovfcommon import HyperVOVFPackage
 
 from imgfac.ImageFactoryException import ImageFactoryException
 from oz.ozutil import copyfile_sparse
+from oz.TDL import TDL
 
 class OVA(object):
     zope.interface.implements(CloudDelegate)
@@ -108,6 +109,10 @@ class OVA(object):
                 raise ImageFactoryException("Unknown hyperv ova_format (%s) requested - must be 'hyperv-vagrant' or 'hyperv'" % (ova_format) )
         else:
             raise ImageFactoryException("OVA plugin only supports rhevm and vsphere target images")
+
+        tdl = TDL(xmlstring=self.image.template, rootpw_required=False)
+        if not 'ovf_name' in self.parameters:
+            self.parameters['ovf_name'] = tdl.name
 
         klass_parameters = dict()
 
