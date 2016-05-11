@@ -378,7 +378,9 @@ class VsphereOVFDescriptor(object):
                  vsphere_product_name,
                  vsphere_product_vendor_name,
                  vsphere_product_version,
-                 vsphere_virtual_system_type):
+                 vsphere_virtual_system_type,
+                 vsphere_scsi_controller_type,
+                 vsphere_network_controller_type):
         self.disk = disk
         self.ovf_cpu_count = ovf_cpu_count
         self.ovf_memory_mb = ovf_memory_mb
@@ -386,6 +388,8 @@ class VsphereOVFDescriptor(object):
         self.vsphere_product_vendor_name = vsphere_product_vendor_name
         self.vsphere_product_version = vsphere_product_version
         self.vsphere_virtual_system_type = vsphere_virtual_system_type
+        self.vsphere_scsi_controller_type = vsphere_scsi_controller_type
+        self.vsphere_network_controller_type = vsphere_network_controller_type
 
     def generate_ovf_xml(self):
         etroot = ElementTree.Element('Envelope')
@@ -545,7 +549,8 @@ class VsphereOVFDescriptor(object):
         etinstid.text = '3'
         etitem.append(etinstid)
         etressubtype = ElementTree.Element('rasd:ResourceSubType')
-        etressubtype.text = 'lsilogic'
+        # Known correct types here are "lsilogic" and "VirtualSCSI"
+        etressubtype.text = self.vsphere_scsi_controller_type
         etitem.append(etressubtype)
         etrestype = ElementTree.Element('rasd:ResourceType')
         etrestype.text = '6'
@@ -589,7 +594,7 @@ class VsphereOVFDescriptor(object):
         etconn.text = 'VM Network'
         etitem.append(etconn)
         etdesc = ElementTree.Element('rasd:Description')
-        etdesc.text = 'E1000 ethernet adapter on "VM Network"'
+        etdesc.text = '%s ethernet adapter on "VM Network"' % (self.vsphere_network_controller_type)
         etitem.append(etdesc)
         etelemname = ElementTree.Element('rasd:ElementName')
         etelemname.text = 'Network adapter 1'
@@ -598,7 +603,8 @@ class VsphereOVFDescriptor(object):
         etinstid.text = '5'
         etitem.append(etinstid)
         etressubtype = ElementTree.Element('rasd:ResourceSubType')
-        etressubtype.text = 'E1000'
+        # Known working values are E1000 and VmxNet3
+        etressubtype.text = self.vsphere_network_controller_type
         etitem.append(etressubtype)
         etrestype = ElementTree.Element('rasd:ResourceType')
         etrestype.text = '10'
@@ -803,7 +809,9 @@ class VsphereOVFPackage(OVFPackage):
                  vsphere_product_name="Product Name",
                  vsphere_product_vendor_name="Vendor Name",
                  vsphere_product_version="1.0",
-                 vsphere_virtual_system_type="vmx-07 vmx-08"):
+                 vsphere_virtual_system_type="vmx-07 vmx-08",
+                 vsphere_scsi_controller_type="lsilogic",
+                 vsphere_network_controller_type="E1000"):
         disk = VsphereDisk(disk, base_image.data)
         super(VsphereOVFPackage, self).__init__(disk, path)
         self.disk_path = os.path.join(self.path, "disk.img")
@@ -815,6 +823,8 @@ class VsphereOVFPackage(OVFPackage):
         self.vsphere_product_vendor_name = vsphere_product_vendor_name
         self.vsphere_product_version = vsphere_product_version
         self.vsphere_virtual_system_type = vsphere_virtual_system_type
+        self.vsphere_scsi_controller_type = vsphere_scsi_controller_type
+        self.vsphere_network_controller_type = vsphere_network_controller_type
 
     def new_ovf_descriptor(self):
         return VsphereOVFDescriptor(self.disk,
@@ -823,7 +833,9 @@ class VsphereOVFPackage(OVFPackage):
                                     self.vsphere_product_name,
                                     self.vsphere_product_vendor_name,
                                     self.vsphere_product_version,
-                                    self.vsphere_virtual_system_type)
+                                    self.vsphere_virtual_system_type,
+                                    self.vsphere_scsi_controller_type,
+                                    self.vsphere_network_controller_type)
 
     def copy_disk(self):
         copyfile_sparse(self.disk.path, self.disk_path)
