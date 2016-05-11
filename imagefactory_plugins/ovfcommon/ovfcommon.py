@@ -405,7 +405,7 @@ class VsphereOVFDescriptor(object):
         etref = ElementTree.Element('References')
 
         etfile = ElementTree.Element('File')
-        etfile.set('ovf:href', 'disk.img')
+        etfile.set('ovf:href', 'disk.vmdk')
         etfile.set('ovf:id', 'file1')
         etfile.set('ovf:size', str(self.disk.vol_size))
 
@@ -814,7 +814,7 @@ class VsphereOVFPackage(OVFPackage):
                  vsphere_network_controller_type="E1000"):
         disk = VsphereDisk(disk, base_image.data)
         super(VsphereOVFPackage, self).__init__(disk, path)
-        self.disk_path = os.path.join(self.path, "disk.img")
+        self.disk_path = os.path.join(self.path, "disk.vmdk")
         self.ovf_path  = os.path.join(self.path, "desc.ovf")
 
         self.ovf_cpu_count = ovf_cpu_count
