@@ -27,7 +27,7 @@ import tempfile
 import subprocess
 from stat import *
 from imgfac.PersistentImageManager import PersistentImageManager
-from imgfac.FactoryUtils import check_qcow_size, disk_image_capacity
+from imgfac.FactoryUtils import check_qcow_size, disk_image_capacity, parameter_cast_to_bool
 from imgfac.ImageFactoryException import ImageFactoryException
 # Yes - again with two different XML libraries
 # lxml.etree is required by Oz and is what I used to rebuild the
@@ -379,6 +379,7 @@ class VsphereOVFDescriptor(object):
                  vsphere_product_vendor_name,
                  vsphere_product_version,
                  vsphere_virtual_system_type,
+                 vsphere_nested_virt,
                  vsphere_scsi_controller_type,
                  vsphere_network_controller_type):
         self.disk = disk
@@ -388,6 +389,7 @@ class VsphereOVFDescriptor(object):
         self.vsphere_product_vendor_name = vsphere_product_vendor_name
         self.vsphere_product_version = vsphere_product_version
         self.vsphere_virtual_system_type = vsphere_virtual_system_type
+        self.vsphere_nested_virt = vsphere_nested_virt
         self.vsphere_scsi_controller_type = vsphere_scsi_controller_type
         self.vsphere_network_controller_type = vsphere_network_controller_type
 
@@ -620,7 +622,12 @@ class VsphereOVFDescriptor(object):
         etconfig.set('vmw:value', 'false')
         etitem.append(etconfig)
         etvirthwsec.append(etitem)
-
+        if self.vsphere_nested_virt:
+            etconfig = ElementTree.Element('vmw:Config')
+            etconfig.set('ovf:required', 'false')
+            etconfig.set('vmw:key', 'nestedHVEnabled')
+            etconfig.set('vmw:value', 'true')
+            etvirthwsec.append(etconfig)
 
         etvirtsys.append(etvirthwsec)
 
@@ -810,6 +817,7 @@ class VsphereOVFPackage(OVFPackage):
                  vsphere_product_vendor_name="Vendor Name",
                  vsphere_product_version="1.0",
                  vsphere_virtual_system_type="vmx-07 vmx-08",
+                 vsphere_nested_virt="false",
                  vsphere_scsi_controller_type="lsilogic",
                  vsphere_network_controller_type="E1000"):
         disk = VsphereDisk(disk, base_image.data)
@@ -823,6 +831,7 @@ class VsphereOVFPackage(OVFPackage):
         self.vsphere_product_vendor_name = vsphere_product_vendor_name
         self.vsphere_product_version = vsphere_product_version
         self.vsphere_virtual_system_type = vsphere_virtual_system_type
+        self.vsphere_nested_virt = parameter_cast_to_bool(vsphere_nested_virt)
         self.vsphere_scsi_controller_type = vsphere_scsi_controller_type
         self.vsphere_network_controller_type = vsphere_network_controller_type
 
@@ -834,6 +843,7 @@ class VsphereOVFPackage(OVFPackage):
                                     self.vsphere_product_vendor_name,
                                     self.vsphere_product_version,
                                     self.vsphere_virtual_system_type,
+                                    self.vsphere_nested_virt,
                                     self.vsphere_scsi_controller_type,
                                     self.vsphere_network_controller_type)
 
@@ -970,10 +980,10 @@ scsi0:0.deviceType = "disk"
 scsi0:0.fileName = "%(name)s-disk1.vmdk"
 scsi0:0.mode = "persistent"
 scsi0:0.writeThrough = "false"
-scsi0.virtualDev = "lsilogic"
+scsi0.virtualDev = "%(scsi_controller)s"
 scsi0.present = "TRUE"
 ethernet0.present = "TRUE"
-ethernet0.virtualDev = "e1000"
+ethernet0.virtualDev = "%(network_controller)s"
 ethernet0.connectionType = "bridged"
 ethernet0.startConnected = "TRUE"
 ethernet0.addressType = "generated"
@@ -989,19 +999,26 @@ ethernet0.pciSlotNumber = "32"
 cleanShutdown = "TRUE"
 softPowerOff = "FALSE"
 tools.syncTime = "FALSE"
+vhv.enable = "%(nested_virt)s"
 '''
 
     def __init__(self, disk, path=None, base_image=None, 
                  ovf_name=None,
                  ovf_cpu_count="1",
                  ovf_memory_mb="1024",
+                 fusion_scsi_controller_type="lsilogic",
+                 fusion_network_controller_type="e1000", 
+                 fusion_nested_virt="false",
                  vagrant_sync_directory = "/vagrant"):
         super(VMWareFusionVagrantOVFPackage, self).__init__(disk,path)
         self.vagrant_sync_directory = vagrant_sync_directory
         if not ovf_name:
             ovf_name="vagrant-fusion-box"
         self.ovf_name = ovf_name
-        format_dict = { 'name': ovf_name, 'cpu_count': int(ovf_cpu_count), 'memory_mb': int(ovf_memory_mb) }
+        nested_virt = str(parameter_cast_to_bool(fusion_nested_virt)).upper()
+        format_dict = { 'name': ovf_name, 'cpu_count': int(ovf_cpu_count), 'memory_mb': int(ovf_memory_mb),
+                        'nested_virt': nested_virt, 'network_controller': fusion_network_controller_type,
+                        'scsi_controller': fusion_scsi_controller_type }
         self.vmx_content = self.VMXTEMPLATE % format_dict
         # The base image can be either raw or qcow2 - determine size and save for later
         self.disk_size=disk_image_capacity(base_image.data)

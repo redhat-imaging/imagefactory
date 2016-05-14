@@ -105,7 +105,9 @@ class OVA(object):
             params = ['ovf_cpu_count','ovf_memory_mb','ovf_name',
                       'rhevm_default_display_type','rhevm_description','rhevm_os_descriptor',
                       'vsphere_product_name','vsphere_product_vendor_name','vsphere_product_version',
-                      'vsphere_virtual_system_type', 'vsphere_scsi_controller_type', 'vsphere_network_controller_type',
+                      'vsphere_virtual_system_type', 'vsphere_scsi_controller_type',
+                      'vsphere_network_controller_type', 'vsphere_nested_virt',
+                      'fusion_scsi_controller_type', 'fusion_network_controller_type', 'fusion_nested_virt',
                       'vagrant_sync_directory']
 
             for param in params:
