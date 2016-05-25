@@ -380,6 +380,7 @@ class VsphereOVFDescriptor(object):
                  vsphere_product_version,
                  vsphere_virtual_system_type,
                  vsphere_nested_virt,
+                 vsphere_cdrom,
                  vsphere_scsi_controller_type,
                  vsphere_network_controller_type):
         self.disk = disk
@@ -390,6 +391,7 @@ class VsphereOVFDescriptor(object):
         self.vsphere_product_version = vsphere_product_version
         self.vsphere_virtual_system_type = vsphere_virtual_system_type
         self.vsphere_nested_virt = vsphere_nested_virt
+        self.vsphere_cdrom = vsphere_cdrom
         self.vsphere_scsi_controller_type = vsphere_scsi_controller_type
         self.vsphere_network_controller_type = vsphere_network_controller_type
 
@@ -622,6 +624,71 @@ class VsphereOVFDescriptor(object):
         etconfig.set('vmw:value', 'false')
         etitem.append(etconfig)
         etvirthwsec.append(etitem)
+
+        if self.vsphere_cdrom:
+            # IDE controller for CDROM
+            # <Item>
+            #  <rasd:Address>0</rasd:Address>
+            #  <rasd:Description>IDE Controller</rasd:Description>
+            #  <rasd:ElementName>VirtualIDEController 0</rasd:ElementName>
+            #  <rasd:InstanceID>6</rasd:InstanceID>
+            #  <rasd:ResourceType>5</rasd:ResourceType>
+            # </Item>
+            etitem = ElementTree.Element('Item')
+            etaddr = ElementTree.Element('rasd:Address')
+            etaddr.text = '0'
+            etitem.append(etaddr)
+            etdesc = ElementTree.Element('rasd:Description')
+            etdesc.text = 'IDE Controller'
+            etitem.append(etdesc)
+            etelemname = ElementTree.Element('rasd:ElementName')
+            etelemname.text = 'VirtualIDEController 0'
+            etitem.append(etelemname)
+            etinstid = ElementTree.Element('rasd:InstanceID')
+            etinstid.text = '6'
+            etitem.append(etinstid)
+            etrestype = ElementTree.Element('rasd:ResourceType')
+            etrestype.text = '5'
+            etitem.append(etrestype)
+            etvirthwsec.append(etitem)
+            # end IDE controller
+
+            # CDROM - an unattached but still present CDROM device
+            # <Item ovf:required="false">
+            #  <rasd:AddressOnParent>0</rasd:AddressOnParent>
+            #  <rasd:AutomaticAllocation>false</rasd:AutomaticAllocation>
+            #  <rasd:ElementName>CD-ROM 1</rasd:ElementName>
+            #  <rasd:InstanceID>7</rasd:InstanceID>
+            #  <rasd:Parent>6</rasd:Parent>
+            #  <rasd:ResourceSubType>vmware.cdrom.atapi</rasd:ResourceSubType>
+            #  <rasd:ResourceType>15</rasd:ResourceType>
+            # </Item>
+            etitem = ElementTree.Element('Item')
+            etitem.set('ovf:required', 'false')
+            etaddronparent = ElementTree.Element('rasd:AddressOnParent')
+            etaddronparent.text = '0'
+            etitem.append(etaddronparent)
+            etautoalloc = ElementTree.Element('rasd:AutomaticAllocation')
+            etautoalloc.text = 'false'
+            etitem.append(etautoalloc)
+            etelemname = ElementTree.Element('rasd:ElementName')
+            etelemname.text = 'CD-ROM 1'
+            etitem.append(etelemname)
+            etinstid = ElementTree.Element('rasd:InstanceID')
+            etinstid.text = '7'
+            etitem.append(etinstid)
+            etparent = ElementTree.Element('rasd:Parent')
+            etparent.text = '6'
+            etitem.append(etparent)
+            etsubtype = ElementTree.Element('rasd:ResourceSubType')
+            etsubtype.text = 'vmware.cdrom.atapi'
+            etitem.append(etsubtype)
+            etrestype = ElementTree.Element('rasd:ResourceType')
+            etrestype.text = '15'
+            etitem.append(etrestype)
+            etvirthwsec.append(etitem)
+            # end CDROM
+
         if self.vsphere_nested_virt:
             etconfig = ElementTree.Element('vmw:Config')
             etconfig.set('ovf:required', 'false')
@@ -818,6 +885,7 @@ class VsphereOVFPackage(OVFPackage):
                  vsphere_product_version="1.0",
                  vsphere_virtual_system_type="vmx-07 vmx-08",
                  vsphere_nested_virt="false",
+                 vsphere_cdrom="false",
                  vsphere_scsi_controller_type="lsilogic",
                  vsphere_network_controller_type="E1000"):
         disk = VsphereDisk(disk, base_image.data)
@@ -832,6 +900,7 @@ class VsphereOVFPackage(OVFPackage):
         self.vsphere_product_version = vsphere_product_version
         self.vsphere_virtual_system_type = vsphere_virtual_system_type
         self.vsphere_nested_virt = parameter_cast_to_bool(vsphere_nested_virt)
+        self.vsphere_cdrom = parameter_cast_to_bool(vsphere_cdrom)
         self.vsphere_scsi_controller_type = vsphere_scsi_controller_type
         self.vsphere_network_controller_type = vsphere_network_controller_type
 
@@ -844,6 +913,7 @@ class VsphereOVFPackage(OVFPackage):
                                     self.vsphere_product_version,
                                     self.vsphere_virtual_system_type,
                                     self.vsphere_nested_virt,
+                                    self.vsphere_cdrom,
                                     self.vsphere_scsi_controller_type,
                                     self.vsphere_network_controller_type)
 
