@@ -739,12 +739,14 @@ class OVFPackage(object):
 
 class HyperVOVFPackage(OVFPackage):
     def __init__(self, disk, base_image, path=None, hyperv_vagrant=True,
+                 vagrant_sync_directory = "/vagrant",
                  ovf_name="vagrantbox",
                  ovf_cpu_count="1",
                  ovf_memory_mb="1024"):
 
         super(HyperVOVFPackage, self).__init__(disk, path)
         self.vagrant = hyperv_vagrant # Set to false to omit Vagrant metadata and produce "pure" OVA
+        self.vagrant_sync_directory = vagrant_sync_directory
         self.disk = disk
         self.ovf_name = ovf_name
         self.ovf_cpu_count = ovf_cpu_count
@@ -776,6 +778,20 @@ class HyperVOVFPackage(OVFPackage):
             mj = open(metadata_json_path, 'w')
             mj.write(metadata_json)
             mj.close()
+
+            # For consistency, make this the sync directory and use rsync
+            # but disable because I can't seem to make it work and don't want the
+            # default experience to be a failure message at startup. Can be
+            # re-enabled in local Vagrantfile
+            vagrantfile = '''Vagrant.configure("2") do |config|
+  config.vm.synced_folder ".", "%s", type: "rsync", disabled: "true"
+end
+''' % (self.vagrant_sync_directory)
+            vagrantfile_path = os.path.join(self.path, "Vagrantfile")
+            vf = open(vagrantfile_path, 'w')
+            vf.write(vagrantfile)
+            vf.close()
+
 
     def make_ova_package(self):
         return super(HyperVOVFPackage, self).make_ova_package(gzip=True)
