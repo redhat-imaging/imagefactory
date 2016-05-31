@@ -224,6 +224,14 @@ Requires: tar
 %description Docker
 A Cloud plugin to support Docker
 
+%package HyperV
+Summary: Cloud plugin for HyperV
+License: ASL 2.0
+Requires: qemu-img
+
+%description HyperV
+A Cloud plugin to support HyperV
+
 %prep
 %setup -q
 
@@ -319,6 +327,11 @@ rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Nova
 %postun Docker
 %auto_register_macro_postun Docker
 
+%post HyperV
+%auto_register_macro_post HyperV
+%postun HyperV
+%auto_register_macro_postun HyperV
+
 %files
 %doc COPYING
 %dir %{python_sitelib}/imagefactory_plugins
@@ -391,6 +404,10 @@ rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Nova
 %files Docker
 %dir %{python_sitelib}/imagefactory_plugins/Docker
 %{python_sitelib}/imagefactory_plugins/Docker/*
+
+%files HyperV
+%dir %{python_sitelib}/imagefactory_plugins/HyperV
+%{python_sitelib}/imagefactory_plugins/HyperV/*
 
 %changelog
 * Thu Mar 24 2016 Ian McLeod <imcleod@redhat.com> - 1.1.8-4
