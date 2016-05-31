@@ -129,6 +129,11 @@ fi
 %{_bindir}/imagefactoryd
 
 %changelog
+* Tue May 31 2016 Ian McLeod <imcleod@redhat.com> - 1.1.9-1
+- Upstream release 1.1.9
+  - Add HyperV Vagrant support
+  - enhance vSphere and VMWare Fusion support
+
 * Thu Mar 17 2016 Ian McLeod <imcleod@redhat.com> - 1.1.8-2
 - fix RHEL7 conditional for systemd unit file content
 
