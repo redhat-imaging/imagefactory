@@ -330,8 +330,18 @@ class Docker(object):
             fuse_thread = threading.Thread(group=None, target=_run_guestmount, args=(guestfs_handle,))
             fuse_thread.start()
             self.log.debug("Creating tar of entire image")
-            # Use acls and xattrs to ensure SELinux data is not lost
-            tarcmd = [ 'tar',  '-cf', builder.target_image.data, '-C', tempdir, '--acls', '--xattrs' ]
+            # NOTE - we used to capture xattrs here but have reverted the change for now
+            #        as SELinux xattrs break things in unexpected ways and the tar feature
+            #        to allow selective inclusion is broken
+            # TODO: Follow up with tar maintainers and docker image creators to find out what
+            #       if any xattrs we really need to capture here
+            tarcmd = [ 'tar',  '-cf', builder.target_image.data, '-C', tempdir ]
+            # User may pass in a comma separated list of additional options to the tar command
+            tar_options = parameters.get('tar_options', None)
+            if tar_options:
+                tar_options_list=tar_options.split(',')
+                for option in tar_options_list:
+                    tarcmd.append(option.strip())
             # User may pass in a comma separated list of excludes to override this
             # Default to ./etc/fstab as many people have complained this does not belong in Docker images
             tar_excludes = parameters.get('tar_excludes', './etc/fstab').split(',')
