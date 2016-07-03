@@ -823,14 +823,14 @@ class OVFPackage(object):
         return ovapath
 
 class HyperVOVFPackage(OVFPackage):
-    def __init__(self, disk, base_image, path=None, hyperv_vagrant=True,
+    def __init__(self, disk, base_image, path=None, vagrant_hyperv=True,
                  vagrant_sync_directory = "/vagrant",
                  ovf_name="vagrantbox",
                  ovf_cpu_count="1",
                  ovf_memory_mb="1024"):
 
         super(HyperVOVFPackage, self).__init__(disk, path)
-        self.vagrant = hyperv_vagrant # Set to false to omit Vagrant metadata and produce "pure" OVA
+        self.vagrant = vagrant_hyperv # Set to false to omit Vagrant metadata and produce "pure" OVA
         self.vagrant_sync_directory = vagrant_sync_directory
         self.disk = disk
         self.ovf_name = ovf_name

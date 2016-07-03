@@ -99,14 +99,14 @@ class OVA(object):
             else:
                 raise ImageFactoryException("Unknown vsphere ova_format (%s) requested - must be 'vsphere', 'vagrant-virtualbox' or 'vagrant-vmware-fusion'" % (ova_format) )
         elif self.target_image.target == 'hyperv':
-            ova_format = self.parameters.get('hyperv_ova_format', 'hyperv-vagrant')
-            if ova_format == 'hyperv-vagrant':
+            ova_format = self.parameters.get('hyperv_ova_format', 'vagrant-hyperv')
+            if ova_format == 'vagrant-hyperv':
                 klass = HyperVOVFPackage
             elif ova_format == 'hyperv':
                 klass = HyperVOVFPackage
-                self.parameters['hyperv_vagrant'] = False
+                self.parameters['vagrant-hyperv'] = False
             else:
-                raise ImageFactoryException("Unknown hyperv ova_format (%s) requested - must be 'hyperv-vagrant' or 'hyperv'" % (ova_format) )
+                raise ImageFactoryException("Unknown hyperv ova_format (%s) requested - must be 'vagrant-hyperv' or 'hyperv'" % (ova_format) )
         else:
             raise ImageFactoryException("OVA plugin only supports rhevm and vsphere target images")
 
@@ -123,7 +123,7 @@ class OVA(object):
                       'vsphere_virtual_system_type', 'vsphere_scsi_controller_type',
                       'vsphere_network_controller_type', 'vsphere_nested_virt', 'vsphere_cdrom',
                       'fusion_scsi_controller_type', 'fusion_network_controller_type', 'fusion_nested_virt',
-                      'hyperv_vagrant',
+                      'vagrant-hyperv',
                       'vagrant_sync_directory']
 
             for param in params:
