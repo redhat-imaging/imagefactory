@@ -28,7 +28,15 @@ from xml.etree.ElementTree import fromstring
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info
-from VSphereHelper import VSphereHelper
+try:
+    from VSphereHelper import VSphereHelper
+except:
+    # psphere may be end of life
+    # we only need it for pushing (aka target images) - this plugin is widely used
+    # for creating VMDK target images so let's not fail just because psphere is not
+    # present and/or has issues
+    # TODO: Either move to a supported vSphere API binding or drop push support entirely
+    logging.warning("VSphereHelper failed to load - pushing to vSphere will not work")
 from VMDKstream import convert_to_stream
 from imgfac.CloudDelegate import CloudDelegate
 from imgfac.FactoryUtils import check_qcow_size
