@@ -410,6 +410,9 @@ rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Nova
 %{python_sitelib}/imagefactory_plugins/HyperV/*
 
 %changelog
+* Thu Jul 28 2016 Ian McLeod <imcleod@redhat.com> - 1.1.9-3
+- do not fail if psphere fails to import
+
 * Wed Jun 15 2016 Ian McLeod <imcleod@redhat.com> - 1.1.9-2
 - remove xattr saving in Docker tar file creation
 
