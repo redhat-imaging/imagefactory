@@ -232,6 +232,15 @@ Requires: qemu-img
 %description HyperV
 A Cloud plugin to support HyperV
 
+%package GCE
+Summary: Cloud plugin for GCE
+License: ASL 2.0
+Requires: qemu-img
+Requires: tar
+
+%description GCE
+A Cloud plugin to support the Google Compute Engine
+
 %prep
 %setup -q
 
