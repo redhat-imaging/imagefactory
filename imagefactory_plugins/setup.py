@@ -27,7 +27,7 @@ import time
 
 plugins = ['EC2', 'TinMan', 'MockCloud', 'MockOS', 'OpenStack',
            'RHEVM', 'vSphere', 'Rackspace', 'IndirectionCloud',
-           'OVA', 'Docker', 'Nova', 'HyperV']
+           'OVA', 'Docker', 'Nova', 'HyperV', 'GCE']
 
 VERSION = '1.1.9'
 RELEASE = '2'
