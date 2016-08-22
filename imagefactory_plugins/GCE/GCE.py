@@ -97,7 +97,7 @@ class GCE(object):
         # return the operation if it succeeded.
         while result['status'] != 'DONE':
             self.log.debug('operation {0}, wait until DONE'.format(result['status']))
-            time.sleep(1)
+            time.sleep(5)
             result = service.globalOperations().get(project=project, operation=result['name']).execute()
         error = result.get('error')
         if error:
