@@ -1,0 +1,44 @@
+ImageFactory plugin for Hashicorp Atlas.
+
+This plugin allows you to upload a Vagrant box to Atlas. It requires the "requests"
+module. Most OSs will have a package for it, but can also install it via pip as follows:
+
+  # pip install requests
+
+This module only takes care of the upload, not of the actual building of a Vagrant box.
+A quick recap on how to build a Vagrant box may be useful. In the example below a
+VirtualBox variant is built:
+
+  # imagefactory base_image <template-file>
+
+Use the "vsphere" plugin to create a VMDK file, which VirtualBox can read:
+
+  # imagefactory target_image vsphere --id <base-image-uuid>
+
+Finally wrap it into a .box format, via the "ova" plugin:
+
+  # imagefactory target_image ova --parameter vsphere_ova_format vagrant-virtualbox \
+            --id <vsphere-image-uuid
+
+Then, to upload it to Atlas:
+
+  # imagefactory provider_image atlas @ignored <credentials-file> \
+            --id <box-image-uuid>
+
+The <credentials-file> needs to be a JSON file, as follows:
+
+  {
+      "username": "<username>",
+      "token": "<token>"
+  }
+
+The <username> is the Atlas username, while <token> is an API token that you can create
+via the Atlas web interface.
+
+Available options:
+
+  --parameter atlas_box_name <name>
+    Use <name> as the box name. Create the box if it does not exist.
+
+  --parameter atlas_box_version <version>
+    Use <version> as the box version. Create it if it does not exist.
