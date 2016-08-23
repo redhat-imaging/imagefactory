@@ -22,6 +22,7 @@ sudo ln -s "$IMAGEFACTORY_SRC/imagefactory_plugins/OVA/OVA.info" $IMAGEFACTORY_P
 sudo ln -s "$IMAGEFACTORY_SRC/imagefactory_plugins/IndirectionCloud/IndirectionCloud.info" $IMAGEFACTORY_PLUGINS/IndirectionCloud.info
 sudo ln -s "$IMAGEFACTORY_SRC/imagefactory_plugins/Docker/Docker.info" $IMAGEFACTORY_PLUGINS/Docker.info
 sudo ln -s "$IMAGEFACTORY_SRC/imagefactory_plugins/Nova/Nova.info" $IMAGEFACTORY_PLUGINS/Nova.info
+sudo ln -s "$IMAGEFACTORY_SRC/imagefactory_plugins/HyperV/HyperV.info" $IMAGEFACTORY_PLUGINS/HyperV.info
 
 # Add Imagefactory src dirs to imgfacdev.pth
 sudo sh -c "echo \"$IMAGEFACTORY_SRC\" > $PYTHON_PATH/site-packages/imgfacdev.pth"
