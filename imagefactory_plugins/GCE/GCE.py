@@ -18,8 +18,20 @@ import os
 import traceback
 import logging
 import subprocess
+import json
+import time
+
+from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.CloudDelegate import CloudDelegate
+
+try:
+    from oauth2client.service_account import ServiceAccountCredentials
+    from googleapiclient import discovery, http
+    _gcloud_sdk_available = True
+except ImportError:
+    _gcloud_sdk_available = False
+
 
 class GCE(object):
     """GCE target plugin"""
@@ -80,8 +92,82 @@ class GCE(object):
         self.percent_complete = 100
         self.status = 'COMPLETED'
 
+    def _wait_for_global_operation(self, result, service, project):
+        # Wait for a global operation to complete. Then raise an error if it failed, or
+        # return the operation if it succeeded.
+        while result['status'] != 'DONE':
+            self.log.debug('operation {0}, wait until DONE'.format(result['status']))
+            time.sleep(5)
+            result = service.globalOperations().get(project=project, operation=result['name']).execute()
+        error = result.get('error')
+        if error:
+            self.status = 'FAILED'
+            raise ImageFactoryException('failed to build image: {0!r}'.format(error))
+        return result
+
     def push_image_to_provider(self, builder, provider, credentials, target, target_image, parameters):
-        raise Exception('push_image_to_provider() not yet implemented for GCE')
+        self.log.info('push_image_to_provider() called in GCE plugin')
+
+        # Fail gracefully if the Google API client library is not installed.
+        # Building images will still work without it.
+        if not _gcloud_sdk_available:
+            raise ImageFactoryException('Google Cloud SDK is not availabe - cannot push to provider')
+
+        self.log.debug('GCE plugin - target: {0!r}'.format(target))
+        self.log.debug('GCE plugin - target_image: {0!r}'.format(target_image))
+        self.log.debug('GCE plugin - parameters: {0!r}'.format(parameters))
+
+        bucket = provider
+        keyfile = json.loads(credentials)
+        project = keyfile['project_id']
+        source = builder.target_image
+        object_name = parameters.get('gce_object_name', source.identifier + '.tar.gz')
+        image_name = parameters.get('gce_image_name', source.identifier)
+        family = parameters.get('gce_image_family')
+
+        self.status = 'PUSHING'
+        self.percent_complete = 0
+
+        # The credentials must be a Service Account JSON file, which can be
+        # created and downloaded using the Google Cloud Platform console. See
+        # https://cloud.google.com/storage/docs/authentication#generating-a-private-key
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(keyfile)
+
+        # Create the Object in the object store. This will overwrite any
+        # object with the same name already present.
+        storage = discovery.build('storage', 'v1', credentials=creds)
+        with open(source.data, 'rb') as fin:
+            body = http.MediaIoBaseUpload(fin, 'application/octet-stream')
+            self.log.info('uploading {0} => {1}/{2}'.format(source.data, bucket, object_name))
+            blob = storage.objects().insert(bucket=bucket, name=object_name, media_body=body).execute()
+
+        # Use the uploaded object to create an image. Images are global resources in GCE
+        # so we don't have to worry about regions. Unlike storage blobs though, image
+        # don't automatically overwrite if they already exist. The result of this is a
+        # 'compute#operation', and we need to wait until it's complete before we can move on.
+        compute = discovery.build('compute', 'v1', credentials=creds)
+        self.log.info('deleting image {0} if it exists'.format(image_name))
+        try:
+            result = compute.images().delete(project=project, image=image_name).execute()
+        except http.HttpError as e:
+            if e.resp['status'] != '404':
+                raise
+        else:
+            self._wait_for_global_operation(result, compute, project)
+
+        # Now we can upload. The result is also a 'compute#operation'. Wait for it to
+        # complete so that we know if it succeeded.
+        image = {'name': image_name, 'rawDisk': {'source': blob['selfLink']}}
+        if family:
+            image['family'] = family
+        self.log.info('creating image {0} from uploaded blob'.format(image_name))
+        result = compute.images().insert(project=project, body=image).execute()
+        self._wait_for_global_operation(result, compute, project)
+
+        # Return status.
+        builder.provider_image.identifier_on_provider = result['targetId']
+        self.status = 'COMPLETE'
+        self.percent_complete = 100
 
     def abort(self):
         pass

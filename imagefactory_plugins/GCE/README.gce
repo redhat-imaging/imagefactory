@@ -1,0 +1,58 @@
+ImageFactory plugin for Google Compute Engine.
+
+To use the upload functionality, you need to install the Google API Client
+libraries. Easiest is to do this via pip:
+
+  # pip install google-api-python-client
+
+If you don't install this then you will still be able to create base and target
+images, but you won't be able to upload them to GCE.
+
+To create an image and upload it to GCE, follow the following 3 steps:
+
+1. Create a base image:
+
+  # imagefactory base_image <template-file>
+
+  This will create a plain disk image in the storage directory.
+
+  The <template-file> argument is the name of the TDL template file.
+
+2. Create a target image:
+
+  # imagefactory target_image gce --id <uuid>
+
+  This will create a .tar.gz image in the storage directory. The archive is a
+  sparse tar file, containing a sparse raw disk file. The format is explained
+  here: https://cloud.google.com/compute/docs/tutorials/building-images.
+
+  The <uuid> is the ID of the base image from step #1.
+
+3. Upload to GCE:
+
+  # imagefactory provider_image gce @<bucketname> <serviceaccount-file> --id <uuid>
+
+  This will upload the .tar.gz from step #2 to Google Storage, and create an
+  image referring to the uploaded blob in GCE. The image can be used to create
+  new instances.
+
+  The <bucketname> is the Google Storage bucket you want to upload to. Note
+  that the bucket name is specified with an '@' sign before it.
+
+  The <serviceaccount-file> is the name of a service account JSON file that you
+  created via the Google Cloud Platform console. See:
+  https://cloud.google.com/storage/docs/authentication#generating-a-private-key
+
+  The <uuid> is the ID of the target image from step #2.
+
+  Available options:
+
+  --parameter gce_object_name <name>
+     Use <name> as the object name for the Google Storage blob. Default is to
+     use the target image UUID + '.tar.gz'.
+
+  --parameter gce_image_name <name>
+     Use <name> as the image name in GCE. Default is to use the target image UUID.
+
+  --parameter gce_image_family <name>
+     Use <name> as the image family. Default is not to use an image family.
