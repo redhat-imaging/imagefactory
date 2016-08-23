@@ -37,7 +37,7 @@ except ImportError:
        from glance import client as glance_client
        GLANCE_VERSION = 1
     except ImportError:
-       raise ImageFactoryException("Glance client not found.")
+       GLANCE_VERSION = None
 
 class OpenStack(object):
     zope.interface.implements(CloudDelegate)
@@ -51,7 +51,7 @@ class OpenStack(object):
         self.version = GLANCE_VERSION
         if self.version == 2:
             self.credentials_attrs = [ 'auth_url', 'password', 'tenant', 'username']
-        else:
+        elif self.version == 1:
              self.credentials_attrs = [ 'auth_url', 'password', 'strategy', 'tenant', 'username']
 
     def activity(self, activity):
@@ -62,6 +62,10 @@ class OpenStack(object):
         self.active_image.status_detail['activity'] = activity
 
     def push_image_to_provider(self, builder, provider, credentials, target, target_image, parameters):
+        # Fail gracefully if the Glance/Keystone clients are not installed.
+        if self.version is None:
+            raise ImageFactoryException('Keystone/Glance clients not available - cannot push to provider')
+
         # Our target_image is already a raw KVM image.  All we need to do is upload to glance
         self.builder = builder
         self.active_image = self.builder.provider_image
@@ -98,7 +102,7 @@ class OpenStack(object):
             provider_data['disk_format'] = disk_format
 
             image_id = self.glance_upload_v2(input_image, self.credentials_token, **provider_data)
-        else:
+        elif self.version == 1:
             # Also support backward compatible for folsom
             image_id = self.glance_upload(input_image, creds = self.credentials_dict, token = self.credentials_token,
                                      host=provider_data['glance-host'], port=provider_data['glance-port'],
