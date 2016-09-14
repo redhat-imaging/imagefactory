@@ -87,6 +87,7 @@ class Atlas(object):
             new_version = {'version': {'version': box_version}}
             r = client.post('/box/{0}/{1}/versions'.format(username, box_name), json=new_version)
         r.raise_for_status()
+        version = r.json()
 
         # Create the provider if it doesn't eixst.
 
@@ -106,31 +107,18 @@ class Atlas(object):
         r.raise_for_status()
         upload = r.json()
 
-        total_size = os.stat(box.data).st_size
-        chunksize = 1024*1024  # 1 MiB chunks
-
-        def generate_chunks():
-            with open(box.data, 'rb') as fin:
-                uploaded = last_percent = 0
-                while True:
-                    block = fin.read(chunksize)
-                    if not block:
-                        break
-                    yield block
-                    uploaded += len(block)
-                    percent_complete = int(100 * uploaded / total_size)
-                    if percent_complete % 5 == 0 and percent_complete > last_percent:
-                        self.log.debug(('upload progress: {0}%'.format(percent_complete)))
-                        self.percent_complete = last_percent = percent_complete
-
         self.status = 'UPLOADING'
         self.percent_complete = 0
-
-        client.put(upload['upload_path'], data=generate_chunks())
+        
+        with open(box.data, 'rb') as fin:
+            r = client.put(upload['upload_path'], data=fin)
+            r.raise_for_status()
 
         # Release the version.
 
-        client.put('/box/{0}/{1}/version/{2}/release'.format(username, box_name, box_version))
+        if version['status'] != 'active':
+            r = client.put('/box/{0}/{1}/version/{2}/release'.format(username, box_name, box_version))
+            r.raise_for_status()
 
         image_id = '{0}/box/{1}/{2}/version/{3}/provider/{4}' \
                             .format(client.default_url, username, box_name, box_version, box_provider)
