@@ -100,7 +100,6 @@ class EC2(object):
             self.template = template
             self.target = target
             self.tdlobj = oz.TDL.TDL(xmlstring=self.template.xml, rootpw_required=self.app_config["tdl_require_root_pw"])
-            self._get_os_helper()
             # Add in target specific content
             self.add_target_content()
 
