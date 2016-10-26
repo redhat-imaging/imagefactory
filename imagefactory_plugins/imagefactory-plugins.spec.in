@@ -341,6 +341,11 @@ rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Nova
 %postun HyperV
 %auto_register_macro_postun HyperV
 
+%post GCE
+%auto_register_macro_post GCE
+%postun GCE
+%auto_register_macro_postun GCE
+
 %files
 %doc COPYING
 %dir %{python_sitelib}/imagefactory_plugins
@@ -418,7 +423,14 @@ rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Nova
 %dir %{python_sitelib}/imagefactory_plugins/HyperV
 %{python_sitelib}/imagefactory_plugins/HyperV/*
 
+%files GCE
+%dir %{python_sitelib}/imagefactory_plugins/GCE
+%{python_sitelib}/imagefactory_plugins/GCE/*
+
 %changelog
+* Tue Oct 25 2016 Geert Jansen <gjansen@redhat.com> - 1.1.9-3
+- Fix packaging for GCE plugin.
+
 * Wed Jun 15 2016 Ian McLeod <imcleod@redhat.com> - 1.1.9-2
 - remove xattr saving in Docker tar file creation
 
