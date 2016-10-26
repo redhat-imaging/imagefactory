@@ -280,12 +280,13 @@ class EC2(object):
         shutdown_and_close(guestfs_handle)
 
     def ec2_just_copy_filesystem(self):
-        self.activity("Copying contents to a raw file")
-        raw_output=self.image + ".tmp"
-        qemucmd = ['qemu-img', 'convert', '-O', 'raw', self.image, raw_output]
+        img_format = self.app_config.get('ec2_image_format', 'raw')
+        img_output = self.image + ".tmp"
+        self.activity("Copying contents to %s format" % img_format)
+        qemucmd = ['qemu-img', 'convert', '-O', img_format, self.image, img_output]
         subprocess.check_call(qemucmd)
         os.unlink(self.image)
-        os.rename(raw_output, self.image)
+        os.rename(img_output, self.image)
 
     def ec2_copy_filesystem(self):
 
@@ -883,6 +884,9 @@ class EC2(object):
         flat = parameter_cast_to_bool(self.builder.target_image.parameters.get('ec2_flatten','true'))
         if flat and virt_type == 'hvm':
             raise Exception("Input image is a flat filesystem - EC2 hvm images must be full disk images")
+        img_format = disk_image_format(self.builder.target_image.data)
+        if img_format != 'raw':
+            raise Exception("Input image is a not in raw format - cannot push to provider")
         try:
             if ami_type == "s3":
                 self.ec2_push_image_upload(target_image_id, provider,

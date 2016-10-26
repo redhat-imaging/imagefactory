@@ -236,6 +236,19 @@ def parameter_cast_to_bool(ival):
     return None
 
 
+def disk_image_format(inputfn):
+    # Return the format of a disk image. If the format is not understood, return None.
+    try:
+       cmd = [ 'qemu-img', 'info', inputfn ]
+       stdout, _, _ = subprocess_check_output(cmd)
+       for line in stdout.splitlines():
+           key, value = line.split(': ')
+           if key == 'file format':
+               return value
+    except ImageFactoryException:
+        pass
+
+
 def disk_image_capacity(filename):
     # Return the actual virtual size of a disk image file as visible to the guest
     # Meant to be used to safely determine the guest-visible size of
