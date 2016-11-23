@@ -119,7 +119,7 @@ class VSphereHelper:
         vm_devices = []
 
         # Create a disk controller
-        controller = self.create_controller("VirtualLsiLogicController")
+        controller = self.create_controller("ParaVirtualSCSIController")
         vm_devices.append(controller)
 
         ds_to_use = None
