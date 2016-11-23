@@ -1247,7 +1247,7 @@ class VirtualBoxOVFPackage(OVFPackage):
 
         vagrantfile = '''Vagrant.configure("2") do |config|
   config.vm.base_mac = "%s"
-  config.vm.synced_folder ".", "%s", type: "rsync"
+  config.vm.synced_folder ".", "/vagrant", disabled: true
 end
 ''' % (self.mac_addr, self.vagrant_sync_directory)
         vagrantfile_path = os.path.join(self.path, "Vagrantfile")
