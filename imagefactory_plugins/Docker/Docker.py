@@ -132,7 +132,7 @@ class Docker(object):
         "Domainname": "",
         "Image": "",
         "ExposedPorts": null
-    }}, 
+    }},
     "Config": null,
     "Id": "{idstring}",
     "Size": {size}
@@ -377,7 +377,7 @@ class Docker(object):
 
         if wrap_metadata:
             # Get any parameters and if they are not set, create our defaults
-            # Docker image names should not have uppercase characters 
+            # Docker image names should not have uppercase characters
             # https://fedorahosted.org/cloud/ticket/131
             repository = parameters.get('repository',tdlobj.name).lower()
             tag = parameters.get('tag','latest')
@@ -385,8 +385,16 @@ class Docker(object):
             cmd = parameters.get('docker_cmd', 'null')
             env = parameters.get('docker_env', 'null')
             label = parameters.get('docker_label', 'null')
+
+            # Dynamically set the architecture label if requested by config
+            set_arch_label = parameters.get('docker_set_arch_label')
+            if set_arch_label:
+                if label == 'null':
+                    label = dict()
+                label["architecture"] = tldobj.arch
+
             rdict = { repository: { tag: docker_image_id } }
-                       
+
             dockerversion = parameters.get('dockerversion', '0.11.1')
             if not dockerversion in self.docker_templates_dict:
                 raise Exception("No docker JSON template available for specified docker version (%s)" % (dockerversion))
@@ -408,7 +416,7 @@ class Docker(object):
             tdict['label'] = label
             tdict['size'] = size
 
-            image_json = docker_json_template.format(**tdict) 
+            image_json = docker_json_template.format(**tdict)
 
             # v2 images
             # TODO: Something significantly less hacky looking.....
