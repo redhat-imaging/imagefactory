@@ -3,8 +3,5 @@ Requires=libvirtd.service
 After=libvirtd.service
 
 [Service]
-Type=forking
-ExecStart=/usr/bin/imagefactoryd 
-ExecStop=killall imagefactoryd
-PIDFile=/var/run/imagefactoryd.pid
-LOCKFile=/var/lock/subsys/imagefactoryd
+Type=simple
+ExecStart=/usr/bin/imagefactoryd --foreground
