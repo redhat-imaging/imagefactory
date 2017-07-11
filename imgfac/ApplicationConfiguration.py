@@ -78,7 +78,7 @@ class ApplicationConfiguration(Singleton):
             argparser.add_argument('--foreground', action='store_true', default=False, help='Stay in the foreground and avoid launching a daemon. (default: %(default)s)')
             group_rest = argparser.add_argument_group(title='REST service options')
             group_rest.add_argument('--port', type=int, default=8075, help='Port to attach the RESTful http interface to. (default: %(default)s)')
-            group_rest.add_argument('--address', default='0.0.0.0', help='Interface address to listen to. (default: %(default)s)')
+            group_rest.add_argument('--address', default='127.0.0.1', help='Interface address to listen to. (default: %(default)s)')
             group_rest.add_argument('--no_ssl', action='store_true', default=False, help='Turn off SSL. (default: %(default)s)')
             group_rest.add_argument('--ssl_pem', default='*', help='PEM certificate file to use for HTTPS access to the REST interface. (default: A transient certificate is generated at runtime.)')
             group_rest.add_argument('--no_oauth', action='store_true', default=False, help='Use 2 legged OAuth to protect the REST interface. (default: %(default)s)')
