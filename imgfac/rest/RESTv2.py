@@ -126,6 +126,11 @@ def create_image(image_collection, base_image_id=None, target_image_id=None):
             request_data = form_data.get(image_type)
         if(not request_data):
             raise HTTPResponse(status=400, output='%s not found in request.' % image_type)
+        for rdatakey in request_data.keys():
+            if rdatakey not in ['base_image_id', 'target_image_id', 'template',
+                                'parameters', 'provider', 'credentials',
+                                'target']:
+                raise HTTPResponse(status=400, output='Unexpected key %s found in request, maybe put in parameters?' % rdatakey)
 
         req_base_img_id = request_data.get('base_image_id')
         req_target_img_id = request_data.get('target_image_id')
