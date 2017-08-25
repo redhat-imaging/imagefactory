@@ -132,7 +132,7 @@ class Docker(object):
         "Domainname": "",
         "Image": "",
         "ExposedPorts": null
-    }}, 
+    }},
     "Config": null,
     "Id": "{idstring}",
     "Size": {size}
@@ -297,6 +297,24 @@ class Docker(object):
         f.close()
         return hasher.hexdigest()
 
+    def _image_filenames(self, imagedir):
+
+        cwd = os.getcwd()
+        filenames = []
+
+        os.chdir(imagedir)
+
+        for root, dirs, files in os.walk('.'):
+            if not files:
+                continue
+            for filename in files:
+                filenames.append(root + '/' + filename)
+
+        os.chdir(cwd)
+
+        filenames.sort()
+        return filenames
+
     def builder_should_create_target_image(self, builder, target, image_id, template, parameters):
         self.log.debug("builder_should_create_target_image called for Docker plugin - doing all our work here then stopping the process")
         tdlobj = oz.TDL.TDL(xmlstring=template.xml, rootpw_required=self.app_config["tdl_require_root_pw"])
@@ -322,6 +340,9 @@ class Docker(object):
         fuse_thread = None
         try:
             tempdir = tempfile.mkdtemp(dir=storagedir)
+            exclude_files = tempfile.NamedTemporaryFile()
+            include_files = tempfile.NamedTemporaryFile()
+
             self.log.debug("Mounting input image locally at (%s)" % (tempdir))
             guestfs_handle.mount_local(tempdir)
             def _run_guestmount(g):
@@ -329,6 +350,7 @@ class Docker(object):
             self.log.debug("Launching mount_local_run thread")
             fuse_thread = threading.Thread(group=None, target=_run_guestmount, args=(guestfs_handle,))
             fuse_thread.start()
+
             self.log.debug("Creating tar of entire image")
             # NOTE - we used to capture xattrs here but have reverted the change for now
             #        as SELinux xattrs break things in unexpected ways and the tar feature
@@ -342,14 +364,27 @@ class Docker(object):
                 tar_options_list=tar_options.split(',')
                 for option in tar_options_list:
                     tarcmd.append(option.strip())
+
             # User may pass in a comma separated list of excludes to override this
             # Default to ./etc/fstab as many people have complained this does not belong in Docker images
             tar_excludes = parameters.get('tar_excludes', './etc/fstab').split(',')
             for exclude in tar_excludes:
-                tarcmd.append('--exclude=%s' % (exclude.strip()))
-            tarcmd.append('./')
+                exclude_files.write(str(exclude) + '\n')
+            exclude_files.flush()
+            tarcmd.append('-X')
+            tarcmd.append(exclude_files.name)
+
+            # List files to add in a predictible order
+            #  should generate an identical archive every time for identical content
+            for include in self._image_filenames(tempdir):
+                include_files.write(str(exclude) + '\n')
+            include_files.flush()
+            tarcmd.append('-T')
+            tarcmd.append(include_files.name)
+
             self.log.debug("Command: %s" % (str(tarcmd)))
             subprocess.check_call(tarcmd)
+
             if wrap_metadata:
                 self.log.debug("Estimating size of tar contents to include in Docker metadata")
                 size = 0
@@ -363,6 +398,8 @@ class Docker(object):
             self.log.exception(e)
             raise
         finally:
+            exclude_files.close()
+            include_files.close()
             if tempdir:
                 try:
                     subprocess.check_call( ['umount', '-f', tempdir] )
@@ -377,7 +414,7 @@ class Docker(object):
 
         if wrap_metadata:
             # Get any parameters and if they are not set, create our defaults
-            # Docker image names should not have uppercase characters 
+            # Docker image names should not have uppercase characters
             # https://fedorahosted.org/cloud/ticket/131
             repository = parameters.get('repository',tdlobj.name).lower()
             tag = parameters.get('tag','latest')
@@ -386,7 +423,7 @@ class Docker(object):
             env = parameters.get('docker_env', 'null')
             label = parameters.get('docker_label', 'null')
             rdict = { repository: { tag: docker_image_id } }
-                       
+
             dockerversion = parameters.get('dockerversion', '0.11.1')
             if not dockerversion in self.docker_templates_dict:
                 raise Exception("No docker JSON template available for specified docker version (%s)" % (dockerversion))
@@ -408,7 +445,7 @@ class Docker(object):
             tdict['label'] = label
             tdict['size'] = size
 
-            image_json = docker_json_template.format(**tdict) 
+            image_json = docker_json_template.format(**tdict)
 
             # v2 images
             # TODO: Something significantly less hacky looking.....
