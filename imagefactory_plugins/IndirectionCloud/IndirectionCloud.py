@@ -271,7 +271,12 @@ class IndirectionCloud(object):
         repositorieslist = doc.xpath('/template/repositories/repository')
         self.tdlobj._add_repositories(repositorieslist)
 
-        self.tdlobj.commands = self.tdlobj._parse_commands()
+        try:
+            # oz ver < 0.13
+            self.tdlobj.commands = self.tdlobj._parse_commands()
+        except TypeError:
+            # oz ver >= 0.13
+            self.tdlobj.commands = self.tdlobj._parse_commands('/template/commands')
 
 
     def _init_oz(self):
