@@ -17,7 +17,7 @@ from distutils.command.sdist import sdist as _sdist
 import subprocess
 import time
 
-VERSION = '1.1.9'
+VERSION = '1.1.10'
 RELEASE = '1'
 
 class sdist(_sdist):
