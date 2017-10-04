@@ -9,7 +9,7 @@
 Summary: System image generation tool
 Name: imagefactory
 Version: 1.1.10
-Release: 2
+Release: 3%{?dist}
 Source0: http://repos.fedorapeople.org/repos/aeolus/imagefactory/%{version}/tarball/%{name}-%{version}.tar.gz
 License: ASL 2.0
 Group: Applications/System
@@ -129,9 +129,8 @@ fi
 %{_bindir}/imagefactoryd
 
 %changelog
-* Wed Oct 04 2017 Brendan Reilly <breilly@redhat.com> 1.1.10-2
-- Bumping release (breilly@redhat.com)
-- Commiting Version.py for tito release process (breilly@redhat.com)
+* Wed Oct 04 2017 Brendan Reilly <breilly@redhat.com> 1.1.10-3
+- Bumping version for release (breilly@redhat.com)
 
 * Tue May 31 2016 Ian McLeod <imcleod@redhat.com> - 1.1.9-1
 - Upstream release 1.1.9
