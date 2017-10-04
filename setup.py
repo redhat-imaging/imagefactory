@@ -18,7 +18,7 @@ import subprocess
 import time
 
 VERSION = '1.1.10'
-RELEASE = '2'
+RELEASE = '3'
 
 class sdist(_sdist):
     """ custom sdist command, to prep imagefactory.spec file """
