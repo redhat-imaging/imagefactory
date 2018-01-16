@@ -468,7 +468,7 @@ class VsphereOVFDescriptor(object):
         etossec = ElementTree.Element('OperatingSystemSection')
         etossec.set('ovf:id', '80')
         etossec.set('ovf:version', '6')
-        etossec.set('vmw:osType', '%s') % self.vsphere_os_type
+        etossec.set('vmw:osType', '%s' % self.vsphere_os_type)
 
         etinfo = ElementTree.Element('Info')
         etinfo.text = 'The kind of installed guest operating system'
