@@ -383,6 +383,7 @@ class VsphereOVFDescriptor(object):
                  vsphere_product_version,
                  vsphere_virtual_system_type,
                  vsphere_nested_virt,
+                 vsphere_os_type,
                  vsphere_cdrom,
                  vsphere_scsi_controller_type,
                  vsphere_network_controller_type):
