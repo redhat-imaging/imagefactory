@@ -29,7 +29,7 @@ plugins = ['EC2', 'TinMan', 'MockCloud', 'MockOS', 'OpenStack',
            'RHEVM', 'vSphere', 'Rackspace', 'IndirectionCloud',
            'OVA', 'Docker', 'Nova', 'HyperV', 'GCE']
 
-VERSION = '1.1.10'
+VERSION = '1.1.11'
 RELEASE = '2'
 
 class sdist(_sdist):

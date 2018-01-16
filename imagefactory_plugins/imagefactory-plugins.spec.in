@@ -428,6 +428,9 @@ rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Nova
 %{python_sitelib}/imagefactory_plugins/GCE/*
 
 %changelog
+* Tue Jan 16 2018 Brendan Reilly <breilly@redhat.com> - 1.1.11-2
+- Add vsphere_os_type for OVF build
+
 * Tue Oct 25 2016 Geert Jansen <gjansen@redhat.com> - 1.1.9-3
 - Fix packaging for GCE plugin.
 
