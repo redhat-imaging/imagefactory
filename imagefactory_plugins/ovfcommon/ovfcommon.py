@@ -383,6 +383,7 @@ class VsphereOVFDescriptor(object):
                  vsphere_product_version,
                  vsphere_virtual_system_type,
                  vsphere_nested_virt,
+                 vsphere_os_type,
                  vsphere_cdrom,
                  vsphere_scsi_controller_type,
                  vsphere_network_controller_type):
@@ -394,6 +395,7 @@ class VsphereOVFDescriptor(object):
         self.vsphere_product_version = vsphere_product_version
         self.vsphere_virtual_system_type = vsphere_virtual_system_type
         self.vsphere_nested_virt = vsphere_nested_virt
+        self.vsphere_os_type = vsphere_os_type
         self.vsphere_cdrom = vsphere_cdrom
         self.vsphere_scsi_controller_type = vsphere_scsi_controller_type
         self.vsphere_network_controller_type = vsphere_network_controller_type
@@ -466,7 +468,7 @@ class VsphereOVFDescriptor(object):
         etossec = ElementTree.Element('OperatingSystemSection')
         etossec.set('ovf:id', '80')
         etossec.set('ovf:version', '6')
-        etossec.set('vmw:osType', 'rhel6_64Guest')
+        etossec.set('vmw:osType', '%s') % self.vsphere_os_type
 
         etinfo = ElementTree.Element('Info')
         etinfo.text = 'The kind of installed guest operating system'
@@ -950,6 +952,7 @@ class VsphereOVFPackage(OVFPackage):
                  vsphere_product_version="1.0",
                  vsphere_virtual_system_type="vmx-07 vmx-08",
                  vsphere_nested_virt="false",
+                 vsphere_os_type="rhel6_64Guest",
                  vsphere_cdrom="false",
                  vsphere_scsi_controller_type="lsilogic",
                  vsphere_network_controller_type="E1000"):
@@ -965,6 +968,7 @@ class VsphereOVFPackage(OVFPackage):
         self.vsphere_product_version = vsphere_product_version
         self.vsphere_virtual_system_type = vsphere_virtual_system_type
         self.vsphere_nested_virt = parameter_cast_to_bool(vsphere_nested_virt)
+        self.vsphere_os_type = vsphere_os_type
         self.vsphere_cdrom = parameter_cast_to_bool(vsphere_cdrom)
         self.vsphere_scsi_controller_type = vsphere_scsi_controller_type
         self.vsphere_network_controller_type = vsphere_network_controller_type
@@ -978,6 +982,7 @@ class VsphereOVFPackage(OVFPackage):
                                     self.vsphere_product_version,
                                     self.vsphere_virtual_system_type,
                                     self.vsphere_nested_virt,
+                                    self.vsphere_os_type,
                                     self.vsphere_cdrom,
                                     self.vsphere_scsi_controller_type,
                                     self.vsphere_network_controller_type)
