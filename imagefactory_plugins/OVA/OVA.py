@@ -121,7 +121,7 @@ class OVA(object):
                       'rhevm_default_display_type','rhevm_description','rhevm_os_descriptor',
                       'vsphere_product_name','vsphere_product_vendor_name','vsphere_product_version',
                       'vsphere_virtual_system_type', 'vsphere_scsi_controller_type',
-                      'vsphere_network_controller_type', 'vsphere_nested_virt', 'vsphere_cdrom',
+                      'vsphere_network_controller_type', 'vsphere_nested_virt', 'vsphere_cdrom', 'vsphere_os_type',
                       'fusion_scsi_controller_type', 'fusion_network_controller_type', 'fusion_nested_virt',
                       'hyperv_vagrant',
                       'vagrant_sync_directory']
