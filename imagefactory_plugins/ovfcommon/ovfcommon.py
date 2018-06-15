@@ -796,7 +796,9 @@ class OVFPackage(object):
         tar = tarfile.open(ovapath, 'w')
         cwd = os.getcwd()
         os.chdir(self.path)
-        files = glob.glob('*')
+        files = [os.path.join(r, f)[2::]
+                 for r, d, fs in os.walk(".")
+                 for f in fs]
         files.remove(os.path.basename(ovapath))
 
         # per specification, the OVF descriptor must be first in
