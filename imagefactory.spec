@@ -8,8 +8,8 @@
 
 Summary: System image generation tool
 Name: imagefactory
-Version: 1.1.10
-Release: 3%{?dist}
+Version: 1.1.11
+Release: 1%{?dist}
 Source0: http://repos.fedorapeople.org/repos/aeolus/imagefactory/%{version}/tarball/%{name}-%{version}.tar.gz
 License: ASL 2.0
 Group: Applications/System
@@ -129,8 +129,22 @@ fi
 %{_bindir}/imagefactoryd
 
 %changelog
-* Wed Oct 04 2017 Brendan Reilly <breilly@redhat.com> 1.1.10-3
-- Bumping version for release (breilly@redhat.com)
+* Tue Jun 26 2018 Brendan Reilly <breilly@redhat.com> 1.1.11-1
+- Updated specfile for release (breilly@redhat.com)
+- adding reference param section for new build (davis.phillips@gmail.com)
+- Bumping version for imagefactory-plugins release (breilly@redhat.com)
+- typo in commit (davis.phillips@gmail.com)
+- mend (davis.phillips@gmail.com)
+- add vsphere_os_type and make the default rhel6_64Guest
+  (davis.phillips@gmail.com)
+- use full path on killall to make f27 systemd happy (tflink@fedoraproject.org)
+- ovfcommon: supporting OVAs with subdirectories (yturgema@redhat.com)
+- dynamically set architecture label for docker image
+  (maxamillion@fedoraproject.org)
+
+* Tue Jun 26 2018 Brendan Reilly <breilly@redhat.com> - 1.1.11-1
+- Upstream release 1.1.11
+  - ovfcommon: supporting OVAs with subdirectories
 
 * Tue May 31 2016 Ian McLeod <imcleod@redhat.com> - 1.1.9-1
 - Upstream release 1.1.9
