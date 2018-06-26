@@ -428,6 +428,9 @@ rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Nova
 %{python_sitelib}/imagefactory_plugins/GCE/*
 
 %changelog
+* Tue May 01 2018 Brendan Reilly <breilly@redhat.com> - 1.1.12-1
+- adding reference param section for new build for vsphere
+
 * Tue Jan 16 2018 Brendan Reilly <breilly@redhat.com> - 1.1.11-2
 - Add vsphere_os_type for OVF build
 
