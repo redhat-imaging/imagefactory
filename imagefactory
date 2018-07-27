@@ -16,6 +16,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from __future__ import print_function
+
 import json
 import logging
 import os
@@ -256,9 +258,9 @@ class Application(Singleton):
                     returnval = images[0]
                 except IndexError:
                     if self.app_config['debug']:
-                        print "No images matching fetch specification (%s) found." % (self.app_config['fetch_spec'])
+                        print("No images matching fetch specification (%s) found." % (self.app_config['fetch_spec'],))
                 except Exception as e:
-                    print e
+                    print(e)
                     sys.exit(1)
 
         elif command == 'delete':
@@ -289,7 +291,7 @@ class Application(Singleton):
 
         if self.app_config['output'] == 'json':
             if PYGMENT and not self.app_config['raw']:
-                print highlight(formatted_returnval, JSONLexer(), TerminalFormatter())
+                print(highlight(formatted_returnval, JSONLexer(), TerminalFormatter()))
             else:
                 if self.app_config['debug'] and not self.app_config['raw']:
                     print('Python module "pygments" found. Install this module if you want syntax colorization.')
@@ -301,23 +303,23 @@ class Application(Singleton):
 
         if image and self.app_config['output'] == 'log':
             if image.status == "FAILED":
-                print
-                print "Image build FAILED with error: %s" % (image.status_detail['error'])
+                print()
+                print("Image build FAILED with error: %s" % (image.status_detail['error'],))
                 sys.exit(1)
-            print
-            print "============ Final Image Details ============"
-            print "UUID: %s" % (image.identifier)
-            print "Type: %s" % (command)
-            print "Image filename: " + image.data
+            print()
+            print("============ Final Image Details ============")
+            print("UUID: %s" % (image.identifier,))
+            print("Type: %s" % (command,))
+            print("Image filename: " + image.data)
             if command == "provider_image" and image.status == "COMPLETE":
-                print "Image ID on provider: %s" % (image.identifier_on_provider)
+                print("Image ID on provider: %s" % (image.identifier_on_provider,))
             if image.status == "COMPLETE":
-                print "Image build completed SUCCESSFULLY!"
+                print("Image build completed SUCCESSFULLY!")
                 sys.exit(0)
             else:
-                print "WARNING - Reached end of build with an unexpected status - this should not happen"
-                print "Status: %s" % (image.status)
-                print "Status Details: %s" % (image.status_detail)
+                print("WARNING - Reached end of build with an unexpected status - this should not happen")
+                print("Status: %s" % (image.status,))
+                print("Status Details: %s" % (image.status_detail,))
                 sys.exit(1)
 
 if __name__ == "__main__":
