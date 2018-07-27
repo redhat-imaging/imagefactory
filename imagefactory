@@ -64,9 +64,6 @@ guestfs.GuestFS = GuestFS
 
 class Application(Singleton):
 
-    def __init__(self):
-        pass
-
     def _singleton_init(self):
         super(Application, self)._singleton_init()
         logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(levelname)s %(name)s thread(%(threadName)s) Message: %(message)s')
