@@ -129,6 +129,10 @@ fi
 %{_bindir}/imagefactoryd
 
 %changelog
+* Tue Jun 26 2018 Brendan Reilly <breilly@redhat.com> - 1.1.11-1
+- Upstream release 1.1.11
+  - ovfcommon: supporting OVAs with subdirectories
+
 * Tue May 31 2016 Ian McLeod <imcleod@redhat.com> - 1.1.9-1
 - Upstream release 1.1.9
   - Add HyperV Vagrant support
