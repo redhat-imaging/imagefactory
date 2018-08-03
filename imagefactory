@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 #   Copyright 2012 Red Hat, Inc.
+#   Copyright 2018 Canonical, Inc.
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -15,20 +16,23 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import sys
-import logging
-import signal
-import os
+from __future__ import print_function
+
 import json
+import logging
+import os
 import pprint
+import signal
+import sys
 from time import asctime, localtime
-from imgfac.Singleton import Singleton
+
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
-from imgfac.BuildDispatcher import BuildDispatcher
-from imgfac.PluginManager import PluginManager
-from imgfac.PersistentImageManager import PersistentImageManager
-from imgfac.Builder import Builder
 from imgfac.BaseImageImporter import BaseImageImporter
+from imgfac.BuildDispatcher import BuildDispatcher
+from imgfac.Builder import Builder
+from imgfac.PersistentImageManager import PersistentImageManager
+from imgfac.PluginManager import PluginManager
+from imgfac.Singleton import Singleton
 
 try:
     from pygments import highlight
@@ -62,9 +66,6 @@ guestfs.GuestFS = GuestFS
 
 class Application(Singleton):
 
-    def __init__(self):
-        pass
-
     def _singleton_init(self):
         super(Application, self)._singleton_init()
         logging.basicConfig(level=logging.WARNING, format='%(asctime)s %(levelname)s %(name)s thread(%(threadName)s) Message: %(message)s')
@@ -90,7 +91,7 @@ class Application(Singleton):
             logger.removeHandler(currhandler)
             self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         # Considerably increases the logging output...
-        if (self.app_config['debug']):
+        if self.app_config['debug']:
             logging.getLogger('').setLevel(logging.DEBUG)
             ### Use FaultHandler if present...
             # Mark the start of this run in our stderr/stdout debug redirect
@@ -108,11 +109,11 @@ class Application(Singleton):
             except:
                 logging.debug("Unable to find python module, faulthandler... multi-thread tracebacks will not be available. See http://pypi.python.org/pypi/faulthandler/ for more information.")
                 pass
-        elif (self.app_config['verbose']):
+        elif self.app_config['verbose']:
             logging.getLogger('').setLevel(logging.INFO)
 
     def signal_handler(self, signum, stack):
-        if (signum == signal.SIGTERM):
+        if signum == signal.SIGTERM:
             logging.warn('caught signal SIGTERM, stopping...')
 
             # Run the abort() method in all running builders
@@ -166,7 +167,7 @@ class Application(Singleton):
         image = None
 
         parameters_file = self.app_config.get('parameters')
-        if(parameters_file):
+        if parameters_file:
             try:
                 parameters = json.loads(parameters_file.read().rstrip())
             except:
@@ -192,25 +193,25 @@ class Application(Singleton):
         logging.debug("Parameters are:")
         logging.debug("\n%s" % (pprint.pformat(parameters)))
 
-        if(command in ('base_image', 'target_image', 'provider_image')):
+        if command in ('base_image', 'target_image', 'provider_image'):
             template = None
             tdl_file = self.app_config.get('template')
-            if(tdl_file):
+            if tdl_file:
                 template = tdl_file.read()
 
-            if(command == 'base_image'):
+            if command == 'base_image':
                 builder = BuildDispatcher().builder_for_base_image(template=template,
                                                                    parameters=parameters)
                 image = builder.base_image
                 thread = builder.base_thread
-            elif(command == 'target_image'):
+            elif command == 'target_image':
                 builder = BuildDispatcher().builder_for_target_image(target=self.app_config['target'],
                                                                      image_id=self.app_config.get('id'),
                                                                      template=template,
                                                                      parameters=parameters)
                 image = builder.target_image
                 thread = builder.target_thread
-            elif(command == 'provider_image'):
+            elif command == 'provider_image':
                 # This is a convenience argument for the CLI - Without it users are forced to pass in an entire JSON file
                 # just to select the snapshot style of build - This argument is always present in provider_image invocations
                 # and defaults to false.  Do not override a pre-existing snapshot value if it is present in parameters
@@ -233,7 +234,7 @@ class Application(Singleton):
             for key in image.metadata():
                 returnval[key] = getattr(image, key, None)
 
-        elif(command == 'import_base_image'):
+        elif command == 'import_base_image':
             import_image_file = self.app_config.get('image_file')
             logging.info('Importing image %s' % (import_image_file))
             importer = BaseImageImporter(import_image_file)
@@ -241,7 +242,7 @@ class Application(Singleton):
             for key in image.metadata():
                 returnval[key] = getattr(image, key, None)
 
-        elif(command == 'images'):
+        elif command == 'images':
             fetch_spec = json.loads(self.app_config['fetch_spec'])
             fetched_images = PersistentImageManager.default_manager().images_from_query(fetch_spec)
             images = list()
@@ -250,25 +251,25 @@ class Application(Singleton):
                 for key in image.metadata():
                     item[key] = getattr(image, key, None)
                 images.append(item)
-            if(len(images) > 1):
+            if len(images) > 1:
                 returnval['images'] = images
             else:
                 try:
                     returnval = images[0]
                 except IndexError:
-                    if(self.app_config['debug']):
-                        print "No images matching fetch specification (%s) found." % (self.app_config['fetch_spec'])
+                    if self.app_config['debug']:
+                        print("No images matching fetch specification (%s) found." % (self.app_config['fetch_spec'],))
                 except Exception as e:
-                    print e
+                    print(e)
                     sys.exit(1)
 
-        elif(command == 'delete'):
+        elif command == 'delete':
             try:
                 image_id = self.app_config['id']
                 provider = self._get_provider(self.app_config['provider'])
                 image = PersistentImageManager.default_manager().image_with_id(image_id)
-                if(not image):
-                    print ('No image found with id: %s' % image_id)
+                if not image:
+                    print('No image found with id: %s' % image_id)
                     return
                 builder = Builder()
                 builder.delete_image(provider=provider,
@@ -282,17 +283,17 @@ class Application(Singleton):
             except Exception as e:
                 self.log.exception(e)
                 print('Failed to delete image %s, see the log for exception details.' % image_id)
-        elif(command == 'plugins'):
+        elif command == 'plugins':
                 plugin_id = self.app_config.get('id')
                 returnval = PluginManager().plugins[plugin_id].copy() if plugin_id else PluginManager().plugins.copy()
 
         formatted_returnval = json.dumps(returnval, indent=2)
 
-        if(self.app_config['output'] == 'json'):
-            if(PYGMENT and not self.app_config['raw']):
-                print highlight(formatted_returnval, JSONLexer(), TerminalFormatter())
+        if self.app_config['output'] == 'json':
+            if PYGMENT and not self.app_config['raw']:
+                print(highlight(formatted_returnval, JSONLexer(), TerminalFormatter()))
             else:
-                if(self.app_config['debug'] and not self.app_config['raw']):
+                if self.app_config['debug'] and not self.app_config['raw']:
                     print('Python module "pygments" found. Install this module if you want syntax colorization.')
                 print(formatted_returnval)
 
@@ -300,25 +301,25 @@ class Application(Singleton):
             # Wait for the primary worker thread to complete if it exists
             thread.join()
 
-        if (image and (self.app_config['output'] == 'log')):
+        if image and self.app_config['output'] == 'log':
             if image.status == "FAILED":
-                print
-                print "Image build FAILED with error: %s" % (image.status_detail['error'])
+                print()
+                print("Image build FAILED with error: %s" % (image.status_detail['error'],))
                 sys.exit(1)
-            print
-            print "============ Final Image Details ============"
-            print "UUID: %s" % (image.identifier)
-            print "Type: %s" % (command)
-            print "Image filename: " + image.data
+            print()
+            print("============ Final Image Details ============")
+            print("UUID: %s" % (image.identifier,))
+            print("Type: %s" % (command,))
+            print("Image filename: " + image.data)
             if command == "provider_image" and image.status == "COMPLETE":
-                print "Image ID on provider: %s" % (image.identifier_on_provider)
+                print("Image ID on provider: %s" % (image.identifier_on_provider,))
             if image.status == "COMPLETE":
-                print "Image build completed SUCCESSFULLY!"
+                print("Image build completed SUCCESSFULLY!")
                 sys.exit(0)
             else:
-                print "WARNING - Reached end of build with an unexpected status - this should not happen"
-                print "Status: %s" % (image.status)
-                print "Status Details: %s" % (image.status_detail)
+                print("WARNING - Reached end of build with an unexpected status - this should not happen")
+                print("Status: %s" % (image.status,))
+                print("Status Details: %s" % (image.status_detail,))
                 sys.exit(1)
 
 if __name__ == "__main__":
