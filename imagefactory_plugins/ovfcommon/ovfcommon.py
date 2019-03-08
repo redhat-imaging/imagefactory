@@ -68,6 +68,7 @@ class RHEVOVFDescriptor(object):
 
     def generate_ovf_xml(self):
         etroot = ElementTree.Element('ovf:Envelope')
+        etroot.set("xmlns", "http://schemas.dmtf.org/ovf/envelope/1")
         etroot.set('xmlns:ovf', "http://schemas.dmtf.org/ovf/envelope/1/")
         etroot.set('xmlns:rasd', "http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData")
         etroot.set('xmlns:vssd', "http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData")
