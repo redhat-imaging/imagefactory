@@ -207,10 +207,10 @@ A plugin for RHEVM "clouds"
 Summary: vSphere Cloud plugin
 License: ASL 2.0
 Requires: imagefactory-plugins
-Requires: python-psphere
+#This has been made conditional in the plugin - will need to be replaced
+#Requires: python-psphere
 Requires: imagefactory-plugin-api = 1.0
-# Earlier VMDKstream is not VirtualBox compatible
-Requires: VMDKstream >= 0.3
+Requires: qemu-img
 Requires: PyYAML
 
 %description vSphere
