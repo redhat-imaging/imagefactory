@@ -26,7 +26,7 @@ Requires: python-httplib2
 Requires: python-argparse
 Requires: python-paste-deploy
 Requires: python-oauth2
-Requires: python-urlgrabber
+Requires: python3-libs
 Requires: oz
 
 %if %{use_systemd}

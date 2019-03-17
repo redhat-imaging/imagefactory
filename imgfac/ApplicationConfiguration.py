@@ -21,9 +21,9 @@ import argparse
 import json
 import logging
 import props
+import urllib.request
 from Singleton import Singleton
 from imgfac.Version import VERSION as VERSION
-from urlgrabber import urlopen
 
 
 class ApplicationConfiguration(Singleton):
@@ -221,7 +221,7 @@ class ApplicationConfiguration(Singleton):
 
         for url in finalist:
             try:
-                filehandle = urlopen(str(url))
+                filehandle = urllib.requst.urlopen(str(url))
                 line = filehandle.readline().strip()
             except:
                 log.warning("Failed to open JEOS URL (%s)" % url)
