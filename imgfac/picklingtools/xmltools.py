@@ -104,5 +104,5 @@
   Options are formed by 'or'ing together. 
 """
 
-from xmlloader import *
-from xmldumper import *
+from .xmlloader import *
+from .xmldumper import *

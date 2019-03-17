@@ -14,4 +14,4 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from HyperV import HyperV as delegate_class
+from .HyperV import HyperV as delegate_class

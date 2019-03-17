@@ -52,7 +52,7 @@ class HyperVOVFDescriptor(object):
 	utc = datetime.datetime.utcnow()
 	creation_time_delta = utc - windows_epoch
         # the total_seconds() method is not in python 2.6 which we still try to support
-	creation_time_seconds = long(creation_time_delta.seconds) + long(creation_time_delta.days) * 60*60*24
+	creation_time_seconds = int(creation_time_delta.seconds) + int(creation_time_delta.days) * 60*60*24
 	creation_windows_ticks = creation_time_seconds * 10**7
 	packed_ticks=struct.pack('>Q', creation_windows_ticks)
 	encoded_ticks=base64.b64encode(packed_ticks)

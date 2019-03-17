@@ -24,7 +24,7 @@ import guestfs
 import string
 import libxml2
 import traceback
-import ConfigParser
+import configparser
 import boto.ec2
 import sys
 import json
@@ -61,7 +61,7 @@ class EC2(object):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         config_obj = ApplicationConfiguration()
         self.app_config = config_obj.configuration
-        self.oz_config = ConfigParser.SafeConfigParser()
+        self.oz_config = configparser.SafeConfigParser()
         self.oz_config.read("/etc/oz/oz.cfg")
         self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
         self.guest = None
@@ -118,7 +118,7 @@ class EC2(object):
 
             # populate a config object to pass to OZ; this allows us to specify our
             # own output dir but inherit other Oz behavior
-            self.oz_config = ConfigParser.SafeConfigParser()
+            self.oz_config = configparser.SafeConfigParser()
             self.oz_config.read("/etc/oz/oz.cfg")
             self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
 
@@ -529,7 +529,7 @@ class EC2(object):
                 self.log.debug("Waiting for EC2 instance to start: %d/300" % (i))
             try:
                 instance.update()
-            except EC2ResponseError, e:
+            except EC2ResponseError as e:
                 # We occasionally get errors when querying an instance that has just started - ignore them and hope for the best
                 self.log.warning("EC2ResponseError encountered when querying EC2 instance (%s) - trying to continue" % (instance.id), exc_info = True)
             except:
@@ -541,11 +541,11 @@ class EC2(object):
                     self.log.warning("WARNING: Instance (%s) failed to start and will not terminate - it may still be running" % (instance.id), exc_info = True)
                     raise ImageFactoryException("Instance (%s) failed to fully start or terminate - it may still be running" % (instance.id))
                 raise ImageFactoryException("Exception encountered when waiting for instance (%s) to start" % (instance.id))
-            if instance.state == u'running':
+            if instance.state == 'running':
                 break
             sleep(1)
 
-        if instance.state != u'running':
+        if instance.state != 'running':
             self.status="FAILED"
             try:
                 self.terminate_instance(instance)
@@ -794,7 +794,7 @@ class EC2(object):
                            '--ec2cert', '/tmp/cert-ec2.pem',
                            '-a', self.ec2_access_key, '-s', self.ec2_secret_key,
                            '-U', upload_url]
-                command_log = map(replace, command)
+                command_log = list(map(replace, command))
                 self.activity("Uploading bundle to S3")
                 self.log.debug("Executing upload bundle command: %s" % (command_log))
                 stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr, ' '.join(command))
@@ -806,7 +806,7 @@ class EC2(object):
                            '-A', self.ec2_access_key, '-S', self.ec2_secret_key, '-a', self.tdlobj.arch,
                            #'-n', image_name, '-d', image_desc,
                            manifest_s3_loc]
-                command_log = map(replace, command)
+                command_log = list(map(replace, command))
                 self.activity("Registering bundle as a new AMI")
                 self.log.debug("Executing register command: %s" % (command_log))
                 stdout, stderr, retcode = self.guest.guest_execute_command(guestaddr,
@@ -867,7 +867,7 @@ class EC2(object):
                         sleep(interval)
                     else:
                         raise Exception("Timeout waiting for instance to terminate.")
-            except Exception, e:
+            except Exception as e:
                 self.log.debug("Unable to delete temporary security group (%s) due to exception: %s" % (factory_security_group_name, e))
 
         self.log.debug("Fedora_ec2_Builder successfully pushed image with uuid %s as %s" % (self.new_image_id, new_ami_id))
@@ -1216,7 +1216,7 @@ class EC2(object):
                         try:
                             volume.delete()
                             break
-                        except Exception, e:
+                        except Exception as e:
                             if tries<7:
                                 tries += 1
                                 self.log.debug("Volume delete failed - waiting 10 seconds and trying again (%d/6 tries)" % (tries))
@@ -1292,7 +1292,7 @@ class EC2(object):
         if virt_type == "paravirtual":
             bundle_command.extend( [ "--kernel", aki ] )
 
-        bundle_command_log = map(replace, bundle_command)
+        bundle_command_log = list(map(replace, bundle_command))
 
         self.activity("Bundling image locally")
         self.log.debug("Executing bundle command: %s " % (bundle_command_log))
@@ -1310,7 +1310,7 @@ class EC2(object):
                            "-a", self.ec2_access_key, "-s", self.ec2_secret_key,
                            "-U" , upload_url ]
 
-        upload_command_log = map(replace, upload_command)
+        upload_command_log = list(map(replace, upload_command))
 
         self.activity("Uploading image to EC2")
         self.log.debug("Executing upload command: %s " % (upload_command_log))
@@ -1330,7 +1330,7 @@ class EC2(object):
                              "--root-device-name", root_dev,
                              "--virtualization-type", virt_type,
                              s3_path ]
-        register_command_log = map(replace, register_command)
+        register_command_log = list(map(replace, register_command))
         self.activity("Registering image")
         self.log.debug("Executing register command: %s with environment %s " % (register_command_log, repr(register_env)))
         register_output = subprocess_check_output(register_command, env=register_env)
@@ -1361,7 +1361,7 @@ class EC2(object):
             instance_id = self.instance.id
             try:
                 self.terminate_instance(self.instance)
-            except Exception, e:
+            except Exception as e:
                 self.log.warning("Warning, encountered - Instance %s may not be terminated ******** " % (instance_id))
                 self.log.exception(e)
 

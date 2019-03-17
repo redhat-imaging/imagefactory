@@ -20,9 +20,9 @@ import os.path
 import argparse
 import json
 import logging
-import props
+from . import props
 import urllib.request
-from Singleton import Singleton
+from .Singleton import Singleton
 from imgfac.Version import VERSION as VERSION
 
 
@@ -149,9 +149,9 @@ class ApplicationConfiguration(Singleton):
             try:
                 def dencode(a_dict, encoding='ascii'):
                     new_dict = {}
-                    for k,v in a_dict.items():
+                    for k,v in list(a_dict.items()):
                         ek = k.encode(encoding)
-                        if(isinstance(v, unicode)):
+                        if(isinstance(v, str)):
                             new_dict[ek] = v.encode(encoding)
                         elif(isinstance(v, dict)):
                             new_dict[ek] = dencode(v)
@@ -165,7 +165,7 @@ class ApplicationConfiguration(Singleton):
                 defaults = dencode(uconfig)
                 argparser.set_defaults(**defaults)
                 configuration = argparser.parse_args()
-            except Exception, e:
+            except Exception as e:
                 self.log.exception(e)
         return configuration.__dict__
 

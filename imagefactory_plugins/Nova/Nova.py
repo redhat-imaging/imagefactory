@@ -28,7 +28,7 @@ from novaimagebuilder.StackEnvironment import StackEnvironment
 from time import sleep
 from base64 import b64decode
 #TODO: remove dependency on Oz
-from ConfigParser import SafeConfigParser
+from configparser import SafeConfigParser
 from oz.TDL import TDL
 import oz.GuestFactory
 
@@ -462,7 +462,7 @@ class Nova(object):
     def _get_ipaddr_for_instance(self, srvr_instance, user, key):
         for index in range(0, 300, 5):
             try:
-                for network in srvr_instance.instance.networks.values():
+                for network in list(srvr_instance.instance.networks.values()):
                     for address in network:
                         try:
                             stdout, stderr, retcode = ssh_execute_command(str(address), key, '/bin/id', user=user)

@@ -14,4 +14,4 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from OVA import OVA as delegate_class
+from .OVA import OVA as delegate_class

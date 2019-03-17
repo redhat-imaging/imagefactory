@@ -3,7 +3,7 @@ import utils
 
 # actual tests code
 import os
-import Queue
+import queue
 import threading
 
 base_built = {}
@@ -32,7 +32,7 @@ def _build_base_from_queue(queue):
     queue.task_done()
 
 def test_base_build():
-  queue = Queue.Queue()
+  queue = queue.Queue()
   for tdlfile in utils.TEMPLATE_FILES:
     queue.put(tdlfile)
   for i in range(utils.MAX_THREADS):
@@ -60,7 +60,7 @@ def _build_target_from_queue(queue):
     queue.task_done()
 
 def test_target_build():
-  queue = Queue.Queue()
+  queue = queue.Queue()
   for tdlfile in utils.TEMPLATE_FILES:
     for target_provider in utils.TARGETS:
       queue.put((tdlfile, target_provider))
@@ -92,7 +92,7 @@ def _build_provider_from_queue(queue):
     queue.task_done()
 
 def test_provider_build():
-  queue = Queue.Queue()
+  queue = queue.Queue()
   for tdlfile in utils.TEMPLATE_FILES:
     for provider in utils.PROVIDERS:
       queue.put((tdlfile, provider))
@@ -113,9 +113,9 @@ def _assert_target_content_installed(target_provider, imageid):
 
 def test_target_content():
   if utils.IMGFAC_URL.find("localhost") >= 0 and os.path.isfile(utils.IMGFAC_TCXML) and os.path.isfile(utils.IMGFAC_CONF):
-    for target_imageid, target_imagestatus in target_built.itervalues():
+    for target_imageid, target_imagestatus in target_built.values():
       if target_imagestatus == 'COMPLETE':
         imagejson = utils.get_target(target_imageid)
         yield _assert_target_content_installed, imagejson['target'], target_imageid
   else:
-    print "Skipping target images inspection: imgfac is not running locally? target_content.xml missing? imagefactory.conf misplaced?"
+    print("Skipping target images inspection: imgfac is not running locally? target_content.xml missing? imagefactory.conf misplaced?")

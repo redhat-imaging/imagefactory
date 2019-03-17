@@ -128,7 +128,7 @@ class OVA(object):
 
             for param in params:
                 if (self.parameters.get(param) and 
-                    klass.__init__.func_code.co_varnames.__contains__(param)):
+                    klass.__init__.__code__.co_varnames.__contains__(param)):
                     klass_parameters[param] = self.parameters.get(param)
 
         pkg = klass(disk=self.image.data, base_image=self.base_image,

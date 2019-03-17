@@ -20,7 +20,7 @@ sys.path.insert(1, '%s/imgfac/rest' % sys.path[0])
 
 import logging
 import os.path
-from bottle import *
+from .bottle import *
 from imgfac.rest.RESTtools import *
 from imgfac.rest.OAuthTools import oauth_protect
 from imgfac.BuildDispatcher import BuildDispatcher
@@ -315,7 +315,7 @@ def get_plugins(plugin_id=None):
                 plugins[plugin].update({'_type':'plugin',
                                         'id':plugin,
                                         'href':'%s/%s' % (request.url, plugin)})
-        return converted_response({'plugins':plugins.values()})
+        return converted_response({'plugins':list(plugins.values())})
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output='%s %s' % (e, traceback.format_exc()))

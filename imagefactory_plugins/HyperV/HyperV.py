@@ -21,7 +21,7 @@ import guestfs
 import libxml2
 import traceback
 import json
-import ConfigParser
+import configparser
 import logging
 import subprocess
 from xml.etree.ElementTree import fromstring

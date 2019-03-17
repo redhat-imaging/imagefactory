@@ -4,10 +4,10 @@ import sys
 import time
 import json
 import logging
-from FactoryUtils import launch_inspect_and_mount, qemu_convert_cmd, subprocess_check_output
-from ApplicationConfiguration import ApplicationConfiguration
-from PersistentImageManager import PersistentImageManager
-from BaseImage import BaseImage
+from .FactoryUtils import launch_inspect_and_mount, qemu_convert_cmd, subprocess_check_output
+from .ApplicationConfiguration import ApplicationConfiguration
+from .PersistentImageManager import PersistentImageManager
+from .BaseImage import BaseImage
 from oz.ozutil import copyfile_sparse
 
 

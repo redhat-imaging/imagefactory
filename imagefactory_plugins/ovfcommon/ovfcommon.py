@@ -37,7 +37,7 @@ import lxml.etree
 import datetime
 # These tend to be quite large - factor them out as separate files to
 # keep this source file a reasonable size
-from HyperVOVFDescriptor import HyperVOVFDescriptor
+from .HyperVOVFDescriptor import HyperVOVFDescriptor
 
 
 class RHEVOVFDescriptor(object):
@@ -758,7 +758,7 @@ class OVFPackage(object):
 
         try:
             os.makedirs(os.path.dirname(self.ovf_path))
-        except OSError, e:
+        except OSError as e:
             if "File exists" not in e:
                 raise
 

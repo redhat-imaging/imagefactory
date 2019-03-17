@@ -23,9 +23,9 @@ log = logging.getLogger(__name__)
 def form_data_for_content_type(content_type):
     def dencode(a_dict, encoding='ascii'):
         new_dict = {}
-        for k,v in a_dict.items():
+        for k,v in list(a_dict.items()):
             ek = k.encode(encoding)
-            if(isinstance(v, unicode)):
+            if(isinstance(v, str)):
                 new_dict[ek] = v.encode(encoding)
             elif(isinstance(v, dict)):
                 new_dict[ek] = dencode(v)

@@ -49,7 +49,7 @@ class sdist(_sdist):
         # Expand macros in imagefactory-plugins.spec.in
         spec_in = open('imagefactory-plugins.spec.in', 'r')
         spec = open('imagefactory-plugins.spec', 'w')
-        for line in spec_in.xreadlines():
+        for line in spec_in:
             if "@VERSION@" in line:
                 line = line.replace("@VERSION@", VERSION)
             elif "@RELEASE@" in line:

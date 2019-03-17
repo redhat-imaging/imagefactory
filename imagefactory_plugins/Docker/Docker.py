@@ -305,7 +305,7 @@ class Docker(object):
         wrap_metadata = parameter_cast_to_bool(parameters.get('create_docker_metadata', True))
         compress_type = parameters.get('compress', None)
         if compress_type:
-            if compress_type in self.compress_commands.keys():
+            if compress_type in list(self.compress_commands.keys()):
                 compress_command = self.compress_commands[compress_type]
             else:
                 raise Exception("Passed unknown compression type (%s) for Docker plugin" % (compress_type))
@@ -359,7 +359,7 @@ class Docker(object):
                         if os.path.isfile(fp) and not os.path.islink(fp):
                             size += os.path.getsize(fp)
                 self.log.debug("Total real file content size (%d)" % (size))
-        except Exception, e:
+        except Exception as e:
             self.log.exception(e)
             raise
         finally:
@@ -367,7 +367,7 @@ class Docker(object):
                 try:
                     subprocess.check_call( ['umount', '-f', tempdir] )
                     os.rmdir(tempdir)
-                except Exception, e:
+                except Exception as e:
                     self.log.exception(e)
                     self.log.error("WARNING: Could not unmount guest at (%s) - may still be mounted" % (tempdir) )
             if fuse_thread:

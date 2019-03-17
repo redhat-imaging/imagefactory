@@ -14,8 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from PersistentImage import PersistentImage
-from props import prop
+from .PersistentImage import PersistentImage
+from .props import prop
 
 
 METADATA = ('target_image_id', 'provider', 'identifier_on_provider', 'provider_account_identifier', 'parameters')

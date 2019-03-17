@@ -26,7 +26,7 @@ import guestfs
 # For now we import both
 import libxml2
 import lxml
-import ConfigParser
+import configparser
 import tempfile
 import base64
 import os
@@ -282,7 +282,7 @@ class IndirectionCloud(object):
     def _init_oz(self):
         # populate a config object to pass to OZ; this allows us to specify our
         # own output dir but inherit other Oz behavior
-        self.oz_config = ConfigParser.SafeConfigParser()
+        self.oz_config = configparser.SafeConfigParser()
         if self.oz_config.read("/etc/oz/oz.cfg") != []:
             self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
             if "oz_data_dir" in self.app_config:
@@ -299,9 +299,9 @@ class IndirectionCloud(object):
             self.guest = oz.GuestFactory.guest_factory(self.tdlobj, self.oz_config, None)
             # Oz just selects a random port here - This could potentially collide if we are unlucky
             self.guest.listen_port = self.res_mgr.get_next_listen_port()
-        except libvirtError, e:
+        except libvirtError as e:
             raise ImageFactoryException("Cannot connect to libvirt.  Make sure libvirt is running. [Original message: %s]" %  e.message)
-        except OzException, e:
+        except OzException as e:
             if "Unsupported" in e.message:
                 raise ImageFactoryException("TinMan plugin does not support distro (%s) update (%s) in TDL" % (self.tdlobj.distro, self.tdlobj.update) )
             else:

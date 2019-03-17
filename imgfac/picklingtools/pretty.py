@@ -114,7 +114,7 @@ def prettyPrintDictHelper_ (d, stream, indent, pretty_print=True, indent_additiv
 
     # Iterate through, printing each element
     ii=0
-    keys = d.keys()
+    keys = list(d.keys())
     keys.sort()
     for key in keys :  # Sorted order on keys
         if pretty_print : indentOut_(stream, indent+indent_additive)
@@ -164,7 +164,7 @@ def prettyPrintODictHelper_ (d, stream, indent, pretty_print=True, indent_additi
 
     # Iterate through, printing each element
     ii=0
-    keys = d.keys()
+    keys = list(d.keys())
     for key in keys :  # Insertion order on keys
         if pretty_print : indentOut_(stream, indent+indent_additive)
         if OTabRepr == 0 :
@@ -199,7 +199,7 @@ def prettyPrintListHelper_ (l, stream, indent, pretty_print=True, indent_additiv
     if pretty_print: stream.write('\n')
 
     # Iterate through, printing each element
-    for ii in xrange(0,entries) :
+    for ii in range(0,entries) :
         if pretty_print : indentOut_(stream, indent+indent_additive)
         specialStream_(l[ii], stream, indent, pretty_print, indent_additive)
         if entries>1 and ii!=entries-1 :
@@ -283,7 +283,7 @@ def specialStream_ (value, stream, indent, pretty_print, indent_additive) :
         stream.write('array([')
         l = value.tolist()
         typecode = value.typecode()
-        for x in xrange(0,len(l)) :
+        for x in range(0,len(l)) :
             r = NumericString_(typecode, l[x])
             stream.write(r)
             if x<len(l)-1 : stream.write(",")

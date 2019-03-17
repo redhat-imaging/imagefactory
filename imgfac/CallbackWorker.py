@@ -121,7 +121,7 @@ class CallbackWorker():
                     resp, content = self.httplib.request(self.callback_url, 
                                                          "PUT", body=json.dumps(next_callback), 
                                                          headers=self.headers )
-                except Exception, e:
+                except Exception as e:
                     # We treat essentially every potential error here as non-fatal and simply move on to the next update
                     # TODO: Configurable retries?
                     self.log.debug("Caught exception (%s) when attempting to PUT callback - Ignoring" % (str(e)))

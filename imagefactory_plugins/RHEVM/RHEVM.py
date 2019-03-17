@@ -21,7 +21,7 @@ import guestfs
 import libxml2
 import traceback
 import json
-import ConfigParser
+import configparser
 import subprocess
 import logging
 from time import *
@@ -33,7 +33,7 @@ from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, re
 from imgfac.FactoryUtils import check_qcow_size, qemu_convert_cmd
 from xml.etree.ElementTree import fromstring
 try:
-    from RHEVMHelper import RHEVMHelper
+    from .RHEVMHelper import RHEVMHelper
 except:
     # Allow the non-upload functions to work in environments where the oVirt SDK package
     # is not available

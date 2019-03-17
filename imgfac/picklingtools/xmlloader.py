@@ -67,14 +67,14 @@ except :
     # XML_NO_WARN = 1
     # import xmlloader
     if not ("XML_NO_WARN" in globals()) :
-        print "*Warning: This version of Python doesn't support ast.literal_eval, so XML_LOAD_EVAL_CONTENT can be an unsafe option in malicious input/XML"
+        print("*Warning: This version of Python doesn't support ast.literal_eval, so XML_LOAD_EVAL_CONTENT can be an unsafe option in malicious input/XML")
     some_eval = eval   # Warning: May be unsafe if malicious user code
 
 # Parser of single characters
-from parsereader import *
+from .parsereader import *
 
 # The way to handle POD data
-from arraydisposition import *
+from .arraydisposition import *
 
 
 ###################### OPTIONS for XML -> dictionaries
@@ -225,7 +225,7 @@ class XMLLoaderA(object) :
           self.array = Numeric.array
       else :
           # Otherwise, use the wrapper which looks like Numeric
-          from simplearray import SimpleArray as array
+          from .simplearray import SimpleArray as array
           self.array_type = array
           self.array = array
                     
@@ -367,7 +367,7 @@ class XMLLoaderA(object) :
       if (self.options_ & XML_LOAD_DROP_TOP_LEVEL):
            if ((type(result)==OrderedDict or type(result)==dict) and len(result)==1) :
                # We RETURN the dropped top
-               for key,value in result.iteritems() :
+               for key,value in result.items() :
                    return value
            else :
                if self.suppressWarning_ : 
@@ -435,7 +435,7 @@ class XMLLoaderA(object) :
                   # by JUST expecting a real or complex, and we can check if there
                   # is "more stuff" on input after a full complex or real evaluation
                   t = type(temp)
-                  if t in [float, long, complex] :
+                  if t in [float, int, complex] :
                       # temp is a real-valued datapoint: real values are
                       # problematic because of precision issues.
                       splits = child.split()
@@ -457,7 +457,7 @@ class XMLLoaderA(object) :
       elif (type(child)==dict or type(child)==OrderedDict) :
           # Recursively descend
           new_child = child.__class__()   # create new prototype with same type
-          for key, value in child.iteritems() :
+          for key, value in child.items() :
               new_value = self._postProcessListsOflist(value)
               new_child[key] = new_value
       
@@ -467,7 +467,7 @@ class XMLLoaderA(object) :
           if (len(new_child)==1) :
               found_lone_container = False
               
-              for key, value in new_child.iteritems() : # get one and only item
+              for key, value in new_child.items() : # get one and only item
                   if (key[-1]=='_' and key[-2]=='_') :
                       if (key.find("list")==0 and type(value) in [list, self.array_type] ) :
                           found_lone_container = True
@@ -610,7 +610,7 @@ class XMLLoaderA(object) :
     # Unfold attributes into table
     if (self.options_ & XML_LOAD_UNFOLD_ATTRS) : 
         # Iterate through all attributes, and add each one to the table
-        for orig_key, value in attrs.iteritems() :
+        for orig_key, value in attrs.items() :
 	
             # Choose what prepend char is
             key = str(orig_key);
@@ -644,7 +644,7 @@ class XMLLoaderA(object) :
     elif (type(content)==list and len(content)==0) :
       string_content = ""
     else :
-      print >> sys.stderr, content 
+      print(content, file=sys.stderr) 
       raise Exception("Expecting solely string content for array of POD");
       
     # Assertion: We have a string of stuff, hopefully , separated numbers
@@ -652,7 +652,7 @@ class XMLLoaderA(object) :
     if list_of_strings[0] == "" :
         intermediate_list = []
     else :
-        intermediate_list = map(eval, list_of_strings)
+        intermediate_list = list(map(eval, list_of_strings))
     output = self.array(intermediate_list, typecode)
     return output
 
@@ -726,7 +726,7 @@ class XMLLoaderA(object) :
           if appending :
               result.append(content)
       elif len(stag)!=1 or not (stag[0] in "silxfdSILXFDb") :
-          print sys.stderr, "Unknown tag '"+stag+"' .. ignoring "
+          print(sys.stderr, "Unknown tag '"+stag+"' .. ignoring ")
           result = content
       else :
           result = self._createPODArray(content, tag, appending)
@@ -915,7 +915,7 @@ class XMLLoaderA(object) :
                       # Every digit must be hex digit
                       hexdigits = "0123456789abcdef"
                       hexme = 0
-                      for ii in xrange(3, len(name)-1) :
+                      for ii in range(3, len(name)-1) :
                           dig = str.lower(name[ii])
                           if not(dig in hexdigits) :
                               self._syntaxError("Expected hex digits only in escape sequence")
@@ -1188,7 +1188,7 @@ class XMLLoaderA(object) :
   # stream exactly as it is either way.
   def _peekStream (self, given) :
       # Holding area for stream as we peek it
-      hold = [0 for x in xrange(len(given))]
+      hold = [0 for x in range(len(given))]
 
       # Continue peeking and holding each char you see
       peeked_stream_ok = True
@@ -1395,19 +1395,19 @@ def ReadFromXMLFile (filename,
     ifstream = file(filename, 'r')
     return ReadFromXMLStream(ifstream, options, array_disposition, prepend_char)
 
-import cStringIO
+import io
 def ConvertFromXML (given_xml_string) :
     """Convert the given XML string (a text string) to a Python dictionary
     and return that.  This uses the most common options that tend to
     make the conversions fully invertible."""
-    stream_thing = cStringIO.StringIO(given_xml_string)
+    stream_thing = io.StringIO(given_xml_string)
     return ReadFromXMLStream(stream_thing)
 
 
 
 if __name__ == "__main__" :  # from UNIX shell
   x = XMLLoader("<top>1</top>", XML_LOAD_DROP_TOP_LEVEL)  
-  print x.expectXML()
+  print(x.expectXML())
   #xx = { 'top' : { 'lots':1, 'o':2 } }
   #print xx
   #print x._dropTop(xx)
