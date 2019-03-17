@@ -32,7 +32,12 @@ from imgfac.CloudDelegate import CloudDelegate
 from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info
 from imgfac.FactoryUtils import check_qcow_size, qemu_convert_cmd
 from xml.etree.ElementTree import fromstring
-from RHEVMHelper import RHEVMHelper
+try:
+    from RHEVMHelper import RHEVMHelper
+except:
+    # Allow the non-upload functions to work in environments where the oVirt SDK package
+    # is not available
+    logging.warning("RHEVMHelper failed to load - pushing to RHEVM servers will not work")
 
 
 def subprocess_check_output(*popenargs, **kwargs):

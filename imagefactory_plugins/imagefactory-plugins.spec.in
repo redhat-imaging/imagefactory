@@ -197,7 +197,9 @@ Summary: RHEVM Cloud plugin
 License: ASL 2.0
 Requires: imagefactory-plugins
 Requires: imagefactory-plugins-ovfcommon
-Requires: ovirt-engine-sdk >= 3.1.0
+#Make optional for now to allow core coversion features to work
+#Requires: ovirt-engine-sdk >= 3.1.0
+Requires: qemu-img
 Requires: imagefactory-plugin-api = 1.0
 
 %description RHEVM
