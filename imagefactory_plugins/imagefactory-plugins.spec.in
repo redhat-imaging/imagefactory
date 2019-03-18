@@ -44,8 +44,8 @@ BuildArch: noarch
 %if 0%{?rhel} == 6
 ExcludeArch: i386 ppc64
 %endif
-BuildRequires: python2
-BuildRequires: python-setuptools
+BuildRequires: python3
+BuildRequires: python3-setuptools
 Requires: imagefactory
 
 %description
@@ -106,7 +106,7 @@ An OS plugin to support Fedora OSes
 %package OpenStack
 Summary: Cloud plugin for OpenStack running on KVM
 License: ASL 2.0
-Requires: python-glance
+Requires: python3-glanceclient
 Requires: imagefactory-plugins
 Requires: imagefactory-plugin-api = 1.0
 
@@ -137,7 +137,7 @@ can be used to do "snapshot" style builds.
 %package Nova
 Summary: OS plugin that allows imagefactory to use Nova instances to build base images.
 License: ASL 2.0
-Requires: python-novaclient
+Requires: python3-novaclient
 Requires: oz >= 0.12.0
 Requires: imagefactory-plugins
 Requires: imagefactory-plugin-api = 1.0
@@ -150,7 +150,7 @@ An alternative to the TinMan plugin for creating base images using an OpenStack 
 Summary: Cloud plugin for EC2
 License: ASL 2.0
 Requires: euca2ools
-Requires: python-boto >= 2.0
+Requires: python3-boto >= 2.0
 Requires: imagefactory-plugins
 Requires: imagefactory-plugin-api = 1.0
 
@@ -213,7 +213,7 @@ Requires: imagefactory-plugins
 #Requires: python-psphere
 Requires: imagefactory-plugin-api = 1.0
 Requires: qemu-img
-Requires: PyYAML
+Requires: python3-pyyaml
 
 %description vSphere
 A plugin for vSphere "clouds"
@@ -247,29 +247,29 @@ A Cloud plugin to support the Google Compute Engine
 %setup -q
 
 %build
-python setup.py build
+%py3_build
 
 %install
-python setup.py install -O1 --root=%{buildroot} --skip-build
+%py3_install
 
 # TODO: Cleaner negative conditional
 %if 0%{?build_mock}
 %else
-rm -rf %{buildroot}%{python_sitelib}/imagefactory_plugins/MockOS
-rm -rf %{buildroot}%{python_sitelib}/imagefactory_plugins/MockCloud
+rm -rf %{buildroot}%{python3_sitelib}/imagefactory_plugins/MockOS
+rm -rf %{buildroot}%{python3_sitelib}/imagefactory_plugins/MockCloud
 %endif
 
 %if 0%{include_openstack}
 %else
-rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/OpenStack
-rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Rackspace
+rm -rf  %{buildroot}%{python3_sitelib}/imagefactory_plugins/OpenStack
+rm -rf  %{buildroot}%{python3_sitelib}/imagefactory_plugins/Rackspace
 rm -f  %{buildroot}%{_sysconfdir}/imagefactory/jeos_images/rackspace_fedora_jeos.conf
 rm -f  %{buildroot}%{_sysconfdir}/imagefactory/jeos_images/rackspace_rhel_jeos.conf
 %endif
 
 %if 0%{include_nova_image_builder}
 %else
-rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Nova
+rm -rf  %{buildroot}%{python3_sitelib}/imagefactory_plugins/Nova
 %endif
 
 %post OVA
@@ -350,34 +350,35 @@ rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Nova
 
 %files
 %doc COPYING
-%dir %{python_sitelib}/imagefactory_plugins
-%{python_sitelib}/imagefactory_plugins/__init__.py*
-%{python_sitelib}/imagefactory_plugins*.egg-info
+%dir %{python3_sitelib}/imagefactory_plugins
+%{python3_sitelib}/imagefactory_plugins/__init__.py*
+%{python3_sitelib}/imagefactory_plugins/__pycache__/*.py*
+%{python3_sitelib}/imagefactory_plugins*.egg-info
 
 %files ovfcommon
-%dir %{python_sitelib}/imagefactory_plugins/ovfcommon
-%{python_sitelib}/imagefactory_plugins/ovfcommon/*
+%dir %{python3_sitelib}/imagefactory_plugins/ovfcommon
+%{python3_sitelib}/imagefactory_plugins/ovfcommon/*
 
 %files OVA
-%dir %{python_sitelib}/imagefactory_plugins/OVA
-%{python_sitelib}/imagefactory_plugins/OVA/*
+%dir %{python3_sitelib}/imagefactory_plugins/OVA
+%{python3_sitelib}/imagefactory_plugins/OVA/*
 
 %files IndirectionCloud
-%dir %{python_sitelib}/imagefactory_plugins/IndirectionCloud
-%{python_sitelib}/imagefactory_plugins/IndirectionCloud/*
+%dir %{python3_sitelib}/imagefactory_plugins/IndirectionCloud
+%{python3_sitelib}/imagefactory_plugins/IndirectionCloud/*
 
 %files TinMan
-%dir %{python_sitelib}/imagefactory_plugins/TinMan
-%{python_sitelib}/imagefactory_plugins/TinMan/*
+%dir %{python3_sitelib}/imagefactory_plugins/TinMan
+%{python3_sitelib}/imagefactory_plugins/TinMan/*
 
 %if 0%{include_openstack}
 %files OpenStack
-%dir %{python_sitelib}/imagefactory_plugins/OpenStack
-%{python_sitelib}/imagefactory_plugins/OpenStack/*
+%dir %{python3_sitelib}/imagefactory_plugins/OpenStack
+%{python3_sitelib}/imagefactory_plugins/OpenStack/*
 
 %files Rackspace
-%dir %{python_sitelib}/imagefactory_plugins/Rackspace
-%{python_sitelib}/imagefactory_plugins/Rackspace/*
+%dir %{python3_sitelib}/imagefactory_plugins/Rackspace
+%{python3_sitelib}/imagefactory_plugins/Rackspace/*
 
 %files Rackspace-JEOS-images
 %{_sysconfdir}/imagefactory/jeos_images/rackspace_fedora_jeos.conf
@@ -386,13 +387,13 @@ rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Nova
 
 %if 0%{include_nova_image_builder}
 %files Nova
-%dir %{python_sitelib}/imagefactory_plugins/Nova
-%{python_sitelib}/imagefactory_plugins/Nova/*
+%dir %{python3_sitelib}/imagefactory_plugins/Nova
+%{python3_sitelib}/imagefactory_plugins/Nova/*
 %endif
 
 %files EC2
-%dir %{python_sitelib}/imagefactory_plugins/EC2
-%{python_sitelib}/imagefactory_plugins/EC2/*
+%dir %{python3_sitelib}/imagefactory_plugins/EC2
+%{python3_sitelib}/imagefactory_plugins/EC2/*
 %{_bindir}/create-ec2-factory-credentials
 
 %files EC2-JEOS-images
@@ -401,33 +402,33 @@ rm -rf  %{buildroot}%{python_sitelib}/imagefactory_plugins/Nova
 
 %if 0%{?build_mock}
 %files MockOS
-%dir %{python_sitelib}/imagefactory_plugins/MockOS
-%{python_sitelib}/imagefactory_plugins/MockOS/*
+%dir %{python3_sitelib}/imagefactory_plugins/MockOS
+%{python3_sitelib}/imagefactory_plugins/MockOS/*
 
 %files MockCloud
-%dir %{python_sitelib}/imagefactory_plugins/MockCloud
-%{python_sitelib}/imagefactory_plugins/MockCloud/*
+%dir %{python3_sitelib}/imagefactory_plugins/MockCloud
+%{python3_sitelib}/imagefactory_plugins/MockCloud/*
 %endif
 
 %files RHEVM
-%dir %{python_sitelib}/imagefactory_plugins/RHEVM
-%{python_sitelib}/imagefactory_plugins/RHEVM/*
+%dir %{python3_sitelib}/imagefactory_plugins/RHEVM
+%{python3_sitelib}/imagefactory_plugins/RHEVM/*
 
 %files vSphere
-%dir %{python_sitelib}/imagefactory_plugins/vSphere
-%{python_sitelib}/imagefactory_plugins/vSphere/*
+%dir %{python3_sitelib}/imagefactory_plugins/vSphere
+%{python3_sitelib}/imagefactory_plugins/vSphere/*
 
 %files Docker
-%dir %{python_sitelib}/imagefactory_plugins/Docker
-%{python_sitelib}/imagefactory_plugins/Docker/*
+%dir %{python3_sitelib}/imagefactory_plugins/Docker
+%{python3_sitelib}/imagefactory_plugins/Docker/*
 
 %files HyperV
-%dir %{python_sitelib}/imagefactory_plugins/HyperV
-%{python_sitelib}/imagefactory_plugins/HyperV/*
+%dir %{python3_sitelib}/imagefactory_plugins/HyperV
+%{python3_sitelib}/imagefactory_plugins/HyperV/*
 
 %files GCE
-%dir %{python_sitelib}/imagefactory_plugins/GCE
-%{python_sitelib}/imagefactory_plugins/GCE/*
+%dir %{python3_sitelib}/imagefactory_plugins/GCE
+%{python3_sitelib}/imagefactory_plugins/GCE/*
 
 %changelog
 * Thu Aug 02 2018 Brendan Reilly <breilly@redhat.com> 1.1.12-2

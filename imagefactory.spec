@@ -18,15 +18,14 @@ BuildArch: noarch
 %if 0%{?rhel} == 6
 ExcludeArch: i386 ppc64
 %endif
-Requires: python-pycurl
-Requires: python-libguestfs
-Requires: python-zope-interface
-Requires: libxml2-python
-Requires: python-httplib2
-Requires: python-argparse
-Requires: python-paste-deploy
-Requires: python-oauth2
-Requires: python-urlgrabber
+Requires: python3-pycurl
+Requires: python3-libguestfs
+Requires: python3-zope-interface
+Requires: python3-libxml2
+Requires: python3-httplib2
+Requires: python3-paste-deploy
+Requires: python3-oauth2
+Requires: python3-libs
 Requires: oz
 
 %if %{use_systemd}
@@ -42,8 +41,8 @@ Requires(preun): initscripts
 %endif
 
 
-BuildRequires: python2
-BuildRequires: python-setuptools
+BuildRequires: python3
+BuildRequires: python3-setuptools
 # TODO: Any changes to the _internal_ API must increment this version or, in 
 #       the case of backwards compatible changes, add a new version (RPM 
 #       allows multiple version "=" lines for the same package or 
@@ -59,28 +58,32 @@ https://github.com/redhat-imaging/imagefactory for more information.
 %setup -q
 
 %build
-python setup.py build
+%py3_build
+#python3 setup.py build
+
 
 %install
-python setup.py install -O1 --root=%{buildroot} --skip-build
+%py3_install
+#python3 setup.py install -O1 --root=%{buildroot} --skip-build
+
 
 %{__install} -d %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
 %{__install} -d %{buildroot}/%{_localstatedir}/lib/imagefactory/images
 %{__install} -d %{buildroot}/%{_sysconfdir}/imagefactory/plugins.d
 %{__install} -d %{buildroot}/%{_sysconfdir}/logrotate.d
 
-sed -i '/\/usr\/bin\/env python/d' %{buildroot}/%{python_sitelib}/imgfac/*.py
+#sed -i '/\/usr\/bin\/env python/d' %{buildroot}/%{python_sitelib}/imgfac/*.py
 
-%{__install} -m0600 conf/sysconfig/imagefactoryd %{buildroot}/%{_sysconfdir}/sysconfig/imagefactoryd
-%{__install} -m0600 conf/logrotate.d/imagefactoryd %{buildroot}/%{_sysconfdir}/logrotate.d/imagefactoryd
+#%{__install} -m0600 conf/sysconfig/imagefactoryd %{buildroot}/%{_sysconfdir}/sysconfig/imagefactoryd
+#%{__install} -m0600 conf/logrotate.d/imagefactoryd %{buildroot}/%{_sysconfdir}/logrotate.d/imagefactoryd
 
 # setup.py installs both of these which I suppose is OK
 # delete the one we don't want here
-%if %{use_systemd}
+#%if %{use_systemd}
 rm -f %{buildroot}/%{_initddir}/imagefactoryd
-%else
+#%else
 rm -f %{buildroot}/%{_unitdir}/imagefactoryd.service
-%endif
+#%endif
 
 %if %{use_systemd}
 
@@ -108,40 +111,28 @@ fi
 
 %files
 %doc COPYING
-%if %{use_systemd}
-%{_unitdir}/imagefactoryd.service
-%else
-%{_initddir}/imagefactoryd
-%endif
+#%if %{use_systemd}
+#%{_unitdir}/imagefactoryd.service
+#%else
+#%{_initddir}/imagefactoryd
+#%endif
 %config(noreplace) %{_sysconfdir}/imagefactory/imagefactory.conf
-%config(noreplace) %{_sysconfdir}/sysconfig/imagefactoryd
-%config(noreplace) %{_sysconfdir}/logrotate.d/imagefactoryd
+#%config(noreplace) %{_sysconfdir}/sysconfig/imagefactoryd
+#%config(noreplace) %{_sysconfdir}/logrotate.d/imagefactoryd
 %dir %attr(0755, root, root) %{_sysconfdir}/pki/imagefactory/
 %dir %attr(0755, root, root) %{_sysconfdir}/imagefactory/jeos_images/
 %dir %attr(0755, root, root) %{_sysconfdir}/imagefactory/plugins.d/
 %dir %attr(0755, root, root) %{_localstatedir}/lib/imagefactory/images
 %config %{_sysconfdir}/pki/imagefactory/cert-ec2.pem
-%{python_sitelib}/imgfac/*.py*
-%{python_sitelib}/imgfac/rest
-%{python_sitelib}/imgfac/picklingtools
-%{python_sitelib}/imagefactory-*.egg-info
+%{python3_sitelib}/imgfac/*.py*
+%{python3_sitelib}/imgfac/__pycache__/*.py*
+#%{python_sitelib}/imgfac/rest
+#%{python_sitelib}/imgfac/picklingtools
+%{python3_sitelib}/imagefactory-*.egg-info
 %{_bindir}/imagefactory
-%{_bindir}/imagefactoryd
+#%{_bindir}/imagefactoryd
 
 %changelog
-* Tue Jun 26 2018 Brendan Reilly <breilly@redhat.com> 1.1.11-1
-- Updated specfile for release (breilly@redhat.com)
-- adding reference param section for new build (davis.phillips@gmail.com)
-- Bumping version for imagefactory-plugins release (breilly@redhat.com)
-- typo in commit (davis.phillips@gmail.com)
-- mend (davis.phillips@gmail.com)
-- add vsphere_os_type and make the default rhel6_64Guest
-  (davis.phillips@gmail.com)
-- use full path on killall to make f27 systemd happy (tflink@fedoraproject.org)
-- ovfcommon: supporting OVAs with subdirectories (yturgema@redhat.com)
-- dynamically set architecture label for docker image
-  (maxamillion@fedoraproject.org)
-
 * Tue Jun 26 2018 Brendan Reilly <breilly@redhat.com> - 1.1.11-1
 - Upstream release 1.1.11
   - ovfcommon: supporting OVAs with subdirectories

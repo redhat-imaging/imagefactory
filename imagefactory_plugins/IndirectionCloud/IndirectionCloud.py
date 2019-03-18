@@ -229,15 +229,15 @@ class IndirectionCloud(object):
 
 
     def add_disk(self, libvirt_doc, disk_image_file, device_name):
-	devices = libvirt_doc.xpathEval("/domain/devices")[0]
-	new_dev = devices.newChild(None, "disk", None)
-	new_dev.setProp("type", "file")
-	new_dev.setProp("device", "disk")
-	source = new_dev.newChild(None, "source", None)
-	source.setProp("file", disk_image_file)
-	target = new_dev.newChild(None, "target", None)
-	target.setProp("dev", device_name)
-	target.setProp("bus", self.guest.disk_bus)
+        devices = libvirt_doc.xpathEval("/domain/devices")[0]
+        new_dev = devices.newChild(None, "disk", None)
+        new_dev.setProp("type", "file")
+        new_dev.setProp("device", "disk")
+        source = new_dev.newChild(None, "source", None)
+        source.setProp("file", disk_image_file)
+        target = new_dev.newChild(None, "target", None)
+        target.setProp("dev", device_name)
+        target.setProp("bus", self.guest.disk_bus)
 
 
     def oz_refresh_customizations(self, partial_tdl):

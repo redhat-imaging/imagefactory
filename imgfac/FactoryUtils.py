@@ -53,19 +53,19 @@ def inspect_ostree(g, diskfile):
     """Make a best effort attempt to find and mount up the root rpm-ostree"""
     trees = [ ]
     for fs in g.list_filesystems():
-	try:
-	    g.mount_options("", fs[0], "/")
-	except:
-	    continue
-	if not g.is_dir("/ostree/deploy"):
-	    continue
-	for subdir in g.ls("/ostree/deploy"):
-	    if not g.is_dir("/ostree/deploy/" + subdir + "/deploy"):
-		continue
-	    for candidate in g.ls("/ostree/deploy/" + subdir + "/deploy"):
-		if re.match(".*\.[0-9]$", candidate):
-		    trees.append({ 'device': fs[0], 'os': subdir, 'root': candidate })
-	g.umount_all()
+        try:
+            g.mount_options("", fs[0], "/")
+        except:
+            continue
+        if not g.is_dir("/ostree/deploy"):
+            continue
+        for subdir in g.ls("/ostree/deploy"):
+            if not g.is_dir("/ostree/deploy/" + subdir + "/deploy"):
+                continue
+            for candidate in g.ls("/ostree/deploy/" + subdir + "/deploy"):
+                if re.match(".*\.[0-9]$", candidate):
+                    trees.append({ 'device': fs[0], 'os': subdir, 'root': candidate })
+        g.umount_all()
 
     if len(trees) == 0:
         raise Exception("Unable to find libguestfs inspectable image or rpm-ostree image on (%s)" % (diskfile))

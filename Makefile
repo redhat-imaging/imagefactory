@@ -1,5 +1,5 @@
 sdist:
-	python setup.py sdist
+	python3 setup.py sdist
 
 signed-rpm: sdist
 	rpmbuild -ba imagefactory.spec --sign --define "_sourcedir `pwd`/dist"
@@ -14,7 +14,7 @@ pylint:
 	pylint --rcfile=pylint.conf imagefactory imgfac
 
 unittests:
-	python -m unittest discover -v
+	python3 -m unittest discover -v
 
 clean:
 	rm -rf MANIFEST build dist imagefactory.spec

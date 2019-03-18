@@ -362,8 +362,8 @@ class Rackspace(object):
         if task.status == "failure":
             raise ImageFactoryException("Rackspace image import failed with reason: %", (task.message))
 
-	if task.status == "success":
-	    new_img = imgs.find(name=obj_name)
+        if task.status == "success":
+            new_img = imgs.find(name=obj_name)
             self.builder.provider_image.identifier_on_provider = new_img.id
             self.log.debug("Import finished - ID: %s - name: %s - status: %s - size: %s - tags: %s" % (new_img.id, new_img.name, new_img.status, new_img.size, new_img.tags))
         else:
