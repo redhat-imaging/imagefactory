@@ -26,7 +26,12 @@
 #  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from circularbuffer import * # used for context
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import str
+from builtins import range
+from builtins import object
+from .circularbuffer import * # used for context
 
 class Context_(object) :
     """
@@ -76,7 +81,7 @@ class Context_(object) :
             self.lineNumber_ -= 1
             # Find last \n ... if we can
             index_of_last_newline = -1
-            for ii in xrange(0, len(self.data_)) :
+            for ii in range(0, len(self.data_)) :
                 if (self.data_.peek(len(self.data_)-ii-1)=='\n') :
                     index_of_last_newline = ii
                     break   
@@ -89,7 +94,7 @@ class Context_(object) :
 
     # Add from this buffer, the amount of data
     def addData (self, buffer, len) :
-        for ii in xrange(0,len) :
+        for ii in range(0,len) :
             self.addChar(buffer[ii])
             
 
@@ -103,7 +108,7 @@ class Context_(object) :
         # probably happened in the middle of the line.
         lines = []
         current_line = ""
-        for ii in xrange(0, len(self.data_)) :
+        for ii in range(0, len(self.data_)) :
             c = self.data_.peek(ii)
             current_line = current_line + c
             if (c=='\n') :
@@ -130,7 +135,7 @@ class Context_(object) :
                      str(start_line+1)+"-"+str(start_line+context_lines)+") "\
                      "shown below****\n"
 
-            for ii in xrange(0, context_lines) :
+            for ii in range(0, context_lines) :
                 report = report + "  " + lines[start_line+ii]
       
             # Show, on last line, where!
@@ -144,7 +149,7 @@ class Context_(object) :
     def syntaxError (self, s) :
         """Have everything do a syntax error the same way"""
         report = self.generateReport() + s
-        raise Exception, report
+        raise Exception(report)
 
 # A meta-object that is not a string so we can compare against it
 EOF = "" # None 
@@ -266,7 +271,7 @@ class StringReader (ReaderA) :
                 return
 
         if (self.current_<=0) :
-            print "*********************current is", self.current_, self.buffer_
+            print("*********************current is", self.current_, self.buffer_)
             self.syntaxError("Internal Error: Attempted to pushback beginning of file")
         # Normal char pushback
         else :
@@ -337,7 +342,7 @@ class StreamReader (ReaderA) :
     def _getNWSChar (self) :
         (_, peek_ahead) = self._peekIntoNextNWSChar()
       
-        for ii in xrange(0, peek_ahead) :
+        for ii in range(0, peek_ahead) :
             cc_ii = self.cached_.peek(ii);
             if (cc_ii != EOF) :  # Strange EOF char NOT in context!
                 self.context_.addChar(cc_ii)
@@ -373,7 +378,7 @@ class StreamReader (ReaderA) :
 
     def _consumeWS (self) :
         (c,peek_ahead) = self._peekIntoNextNWSChar()
-        for ii in xrange(0,peek_ahead) :
+        for ii in range(0,peek_ahead) :
             cc_ii = self.cached_.peek(ii)
             if (cc_ii != EOF) :  # Strange EOF char NOT in context!
                 self.context_.addChar(cc_ii)

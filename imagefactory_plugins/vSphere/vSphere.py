@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #
 #   Copyright 2011 Red Hat, Inc.
 #
@@ -13,6 +14,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import object
 import zope
 import oz.GuestFactory
 import oz.TDL
@@ -21,7 +26,7 @@ import guestfs
 import libxml2
 import traceback
 import json
-import ConfigParser
+import configparser
 import logging
 import subprocess
 from xml.etree.ElementTree import fromstring
@@ -29,7 +34,7 @@ from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info
 try:
-    from VSphereHelper import VSphereHelper
+    from .VSphereHelper import VSphereHelper
 except:
     # psphere may be end of life
     # we only need it for pushing (aka target images) - this plugin is widely used

@@ -28,9 +28,16 @@
 
 """Simple array wrapper: Looks like the Numeric array (with same constructors
    and the like), but implemented as a Python array"""
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
+from builtins import str
+from builtins import range
+from builtins import object
+from past.utils import old_div
 import array
-import pretty
+from . import pretty
 import struct
 
 # Array is very pickly about what fits inside, so we have to
@@ -119,14 +126,14 @@ class SimpleArray(object) :
 
     def __len__ (self) :
         a = self.impl
-        if self.complex : return len(a)/2
+        if self.complex : return old_div(len(a),2)
         return len(a)
 
     def __str__(self) :
         a = self.impl
         length = len(self)
         out = "array(["
-        for ii in xrange(0, length) :
+        for ii in range(0, length) :
             out += str(self[ii])
             if ii!=length-1 : out += ","
         out += "], "+repr(self.numeric_typecode)+")"
@@ -137,7 +144,7 @@ class SimpleArray(object) :
         length = len(self)
         numeric_typecode = self.numeric_typecode
         out = "array(["
-        for ii in xrange(0, length) :
+        for ii in range(0, length) :
             out += pretty.NumericString_(numeric_typecode, self[ii]) 
             if ii!=length-1 : out += ","
         out += "], "+repr(numeric_typecode)+")"
@@ -146,7 +153,7 @@ class SimpleArray(object) :
     def __eq__ (self, rhs) :
         if type(rhs) != type(self) : return False
         if len(self)==len(rhs) and self.numeric_typecode==rhs.numeric_typecode :
-            for x in xrange(0,len(self)) :
+            for x in range(0,len(self)) :
                 if self[x] != rhs[x] :
                     return False
             return True
@@ -160,7 +167,7 @@ class SimpleArray(object) :
         """Convert the array to a Python list"""
         if self.complex :
             result = []
-            for x in xrange(0,len(self)) :
+            for x in range(0,len(self)) :
                 result.append(self[x])
             return result
         else :
@@ -172,18 +179,18 @@ class SimpleArray(object) :
 
 if __name__ == "__main__" :
     a = SimpleArray([1,2,3], 'i')
-    print a[0]
-    print len(a)
+    print(a[0])
+    print(len(a))
     a.append(4)
-    print a[3]
-    print a
-    print repr(a)
+    print(a[3])
+    print(a)
+    print(repr(a))
     b = SimpleArray([1+2j,3+4j], 'D')
-    print b[0]
-    print len(b)
+    print(b[0])
+    print(len(b))
     b.append(1)
     b.append(6+7j)
-    print b[2]
-    print b[3]
-    print b
-    print repr(b)
+    print(b[2])
+    print(b[3])
+    print(b)
+    print(repr(b))

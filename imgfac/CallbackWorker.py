@@ -1,5 +1,7 @@
 
 # Callable class that is used to launch a thread
+from builtins import str
+from builtins import object
 import threading
 import time
 import logging
@@ -8,7 +10,7 @@ import json
 import re
 import base64
 
-class CallbackWorker():
+class CallbackWorker(object):
 
     def __init__(self, callback_url):
         # callback_url - the URL to which we will send the full object JSON for each STATUS update
@@ -121,7 +123,7 @@ class CallbackWorker():
                     resp, content = self.httplib.request(self.callback_url, 
                                                          "PUT", body=json.dumps(next_callback), 
                                                          headers=self.headers )
-                except Exception, e:
+                except Exception as e:
                     # We treat essentially every potential error here as non-fatal and simply move on to the next update
                     # TODO: Configurable retries?
                     self.log.debug("Caught exception (%s) when attempting to PUT callback - Ignoring" % (str(e)))

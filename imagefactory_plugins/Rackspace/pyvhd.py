@@ -28,6 +28,11 @@
 # large zereoed sections of disk.  As a result, the output is slightly larger
 # than the input RAW file. 
 
+from __future__ import division
+from __future__ import print_function
+from builtins import chr
+from builtins import range
+from past.utils import old_div
 import struct
 import sys
 import uuid
@@ -36,7 +41,7 @@ import math
 def divro(num, den):
     # Divide always rounding up and returning an integer
     # Is there some nicer way to do this?
-    return int(math.ceil((1.0*num)/(1.0*den)))
+    return int(math.ceil(old_div((1.0*num),(1.0*den))))
 
 def vhd_checksum(string):
     # This is the checksum defined in the MS spec
@@ -55,27 +60,27 @@ def vhd_chs(size):
 
     if sectors >= 65535 * 16 * 63:
         spt = 255
-        cth = sectors / spt
+        cth = old_div(sectors, spt)
         heads = 16
     else:
         spt = 17
-        cth = sectors / spt
-        heads = (cth + 1023) / 1024
+        cth = old_div(sectors, spt)
+        heads = old_div((cth + 1023), 1024)
 
         if heads < 4:
             heads = 4
 
         if (cth >= (heads * 1024)) or (heads > 16):
             spt = 31
-            cth = sectors / spt
+            cth = old_div(sectors, spt)
             heads = 16
 
         if cth >= (heads * 1024):
             spt = 63
-            cth = sectors / spt
+            cth = old_div(sectors, spt)
             heads = 16
 
-    cylinders = cth / heads
+    cylinders = old_div(cth, heads)
 
     return (cylinders, heads, spt)
 
@@ -151,7 +156,7 @@ BAT_HDR_FMT = ">8sQIII"
 
 VHD_BLOCKSIZE = 2 * 1024 * 1024 # Default blocksize 2 MB
 SECTORSIZE = 512
-VHD_BLOCKSIZE_SECTORS = VHD_BLOCKSIZE/SECTORSIZE
+VHD_BLOCKSIZE_SECTORS = old_div(VHD_BLOCKSIZE,SECTORSIZE)
 VHD_HEADER_SIZE = struct.calcsize(HEADER_FMT)
 VHD_DYN_HEADER_SIZE = struct.calcsize(DYNAMIC_FMT)
 SECTOR_BITMAP_SIZE = VHD_BLOCKSIZE / SECTORSIZE / 8
@@ -198,7 +203,7 @@ def do_vhd_convert(infile, outfile):
     # full of set bits of the correct size
 
     batmap=""
-    for i in range(0,bat_entries/8):
+    for i in range(0,old_div(bat_entries,8)):
 	batmap += chr(0xFF)
 
     extra_bits = bat_entries % 8
@@ -293,7 +298,7 @@ def do_vhd_convert(infile, outfile):
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:
-        print "usage: %s <raw_input_file> <vhd_output_file>" % sys.argv[0]
+        print("usage: %s <raw_input_file> <vhd_output_file>" % sys.argv[0])
         sys.exit(1)
     infile = open(sys.argv[1], "r")
     outfile = open(sys.argv[2], "w")

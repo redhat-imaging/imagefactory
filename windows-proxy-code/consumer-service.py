@@ -13,6 +13,8 @@
 #   limitations under the License.
 
 
+from builtins import str
+from builtins import range
 import win32serviceutil
 import win32service
 import win32event

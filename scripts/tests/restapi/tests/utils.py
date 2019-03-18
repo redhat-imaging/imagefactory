@@ -1,8 +1,9 @@
 # configuration management
+from past.builtins import execfile
 import os
 execfile(os.path.join(os.path.dirname(__file__),'config')) 
 
-if 'IMGFAC_URL' in os.environ.keys():
+if 'IMGFAC_URL' in list(os.environ.keys()):
   IMGFAC_URL = os.environ['IMGFAC_URL']
 
 # actual utils code

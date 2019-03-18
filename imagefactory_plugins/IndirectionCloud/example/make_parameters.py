@@ -4,6 +4,7 @@
 # This is important since ks files typically have characters that may need
 # to be escaped - even newlines need this
 
+from __future__ import print_function
 import sys
 import json
 
@@ -11,4 +12,4 @@ kickstart = open(sys.argv[1]).read()
 
 parameters =  { "install_script": kickstart, "generate_icicle": False }
 
-print json.dumps(parameters)
+print(json.dumps(parameters))

@@ -13,6 +13,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from builtins import object
 import logging
 import oauth2 as oauth
 from imgfac.rest.bottle import * 

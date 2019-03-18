@@ -59,9 +59,16 @@
         <chapter data="2000">text chap 2</chapter>
     </book>
 """
+from __future__ import absolute_import
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import hex
+from builtins import str
+from builtins import range
+from builtins import object
 import sys
-import pretty
+from . import pretty
 from curses.ascii import isprint
 
 # Not until 2.7, keep as plain dict then
@@ -73,7 +80,7 @@ except :
 # All the arrays we may get when iterating through: if someone gives
 # us the data structure (Numeric array or Python array), we still try
 # to dump it.
-from arraydisposition import *
+from .arraydisposition import *
 array_types = []
 try :
     import Numeric
@@ -85,10 +92,10 @@ try :
     array_types.append(array.array)
 except :
     pass
-import simplearray
+from . import simplearray
 array_types.append(simplearray.SimpleArray)
 
-import pretty
+from . import pretty
 
 # Options for dictionaries -> XML
 #  If XML attributes are being folded up, then you may
@@ -195,7 +202,7 @@ class XMLDumper(object) :
       if array_disposition == ARRAYDISPOSITION_AS_NUMERIC :
           import Numeric # let this throw the exception
       if array_disposition == ARRAYDISPOSITION_AS_NUMERIC_WRAPPER :
-          import simplearray # let this throw the exception
+          from . import simplearray # let this throw the exception
       if array_disposition == ARRAYDISPOSITION_AS_PYTHON_ARRAY :
           import array   # let this throw the exception
       
@@ -316,7 +323,7 @@ class XMLDumper(object) :
       elif not(t[0].isalpha() or t[0]=='_') :
           self._handleProblem("tag must start with alphabetic or _, not "+t[0])
     
-      for ii in xrange(1, len(tag)) :
+      for ii in range(1, len(tag)) :
           if not (t[ii].isalnum() or t[ii]=='_' or t[ii]==':') :
               self._handleProblem("tag must contain alphanumeric or _, not "+t[ii])
       
@@ -332,11 +339,11 @@ class XMLDumper(object) :
           t = pretty.NumericString_(was_array_typecode, content)
       elif type_content in [float, complex] :
           t = pretty.NumericString_(typecode[type_content], content)
-      elif type_content == long :
+      elif type_content == int :
           t = repr(content)
       else : 
           t = str(content)
-      for ii in xrange(0,len(t)) :
+      for ii in range(0,len(t)) :
           c = t[ii]
           if not isprint(c) :
               result += "&#"+hex(ord(c))[1:]+";"
@@ -364,7 +371,7 @@ class XMLDumper(object) :
       len_attrs = len(attrs)
       if len_attrs >= 1 : self.os_.write(" ")
       where = 0
-      for key, val in sorted(attrs.iteritems()) :
+      for key, val in sorted(attrs.items()) :
           # String as is
           attr_name = str(key)
           if (len(attr_name)>0 and attr_name[0]==self.prependChar_ and
@@ -462,7 +469,7 @@ class XMLDumper(object) :
         return
 
     # Non-empty list
-    for ii in xrange(0, len(l)) :
+    for ii in range(0, len(l)) :
         key_to_use = self.NULLKey_   # normally NULL RARELY: empty list
         value_ptr = l[ii]
       
@@ -572,7 +579,7 @@ class XMLDumper(object) :
               self._XMLDumpEndTag(inner_tag, indent, primitive_type)
           else :
               # Non-empty list
-              for ii in xrange(0, len(l)) :
+              for ii in range(0, len(l)) :
                   self._XMLDumpStartTag(inner_tag, attrs, indent, primitive_type)
                   temp = pretty.NumericString_(bytetag, l[ii])       #repr(l[ii])  # so prints with full precision of Val for reals, etc.
                   self.os_.write(temp)
@@ -588,7 +595,7 @@ class XMLDumper(object) :
       else :
           if (inside_list_number==0 and add_type) : attrs["type__"]="list"
           self._XMLDumpStartTag(tag, attrs, indent, primitive_type)
-          for ii in xrange(0, len(l)) :
+          for ii in range(0, len(l)) :
               temp = pretty.NumericString_(bytetag, l[ii])       #repr(l[ii])  # so prints with full precision of Val for reals, etc. 
               self.os_.write(temp)
               if (ii<len(l)-1) : self.os_.write(",")
@@ -612,7 +619,7 @@ class XMLDumper(object) :
       self._XMLDumpStartTag(dict_name, attrs, indent)
     
       # Normally, just iterate over all keys for nested content
-      keys = t.keys()
+      keys = list(t.keys())
       if sortkeys : keys.sort()
       for key in keys :
           value = t[key]
@@ -692,7 +699,7 @@ class XMLDumper(object) :
   def _handleProblem (self, text):
       if (self.mode_==XMLDumper.SILENT_ON_ERROR) : return
       if (self.mode_==XMLDumper.THROW_ON_ERROR) :
-          raise Exception, text
+          raise Exception(text)
       sys.stderr.write(text+"\n")
 
 
@@ -737,15 +744,15 @@ def WriteToXMLFile (v, filename, top_level_key = None,
     try :
         ofs = open(filename, 'w')
         WriteToXMLStream(v, ofs, top_level_key, options, arr_disp, prepend_char)
-    except Exception, e :
-        raise Exception, e
+    except Exception as e :
+        raise Exception(e)
 
-import cStringIO
+import io
 def ConvertToXML (given_dict) :
     """Convert the given Python dictionary to XML and return the XML
     (a text string).  This uses the most common options that tend to
     make the conversions fully invertible."""
-    stream_thing = cStringIO.StringIO()
+    stream_thing = io.StringIO()
     WriteToXMLStream(given_dict, stream_thing, 'top')
     return stream_thing.getvalue()
 

@@ -18,6 +18,7 @@ BuildArch: noarch
 %if 0%{?rhel} == 6
 ExcludeArch: i386 ppc64
 %endif
+Requires: python-future
 Requires: python-pycurl
 Requires: python-libguestfs
 Requires: python-zope-interface
@@ -44,6 +45,7 @@ Requires(preun): initscripts
 
 BuildRequires: python2
 BuildRequires: python-setuptools
+BuildRequires: python-future
 # TODO: Any changes to the _internal_ API must increment this version or, in 
 #       the case of backwards compatible changes, add a new version (RPM 
 #       allows multiple version "=" lines for the same package or 

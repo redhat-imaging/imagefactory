@@ -1,4 +1,6 @@
-#!/usr/bin/python
+from builtins import str
+from builtins import range
+from builtins import object
 import pdb
 import logging
 import stat

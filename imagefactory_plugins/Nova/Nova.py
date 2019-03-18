@@ -14,6 +14,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from __future__ import division
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+from builtins import object
+from past.utils import old_div
 import logging
 import zope
 import os.path
@@ -28,7 +35,7 @@ from novaimagebuilder.StackEnvironment import StackEnvironment
 from time import sleep
 from base64 import b64decode
 #TODO: remove dependency on Oz
-from ConfigParser import SafeConfigParser
+from configparser import SafeConfigParser
 from oz.TDL import TDL
 import oz.GuestFactory
 
@@ -420,7 +427,7 @@ class Nova(object):
     def _confirm_ssh_access(self, guest, addr, timeout=300):
         confirmation = False
 
-        for index in range(timeout/10):
+        for index in range(old_div(timeout,10)):
             if index % 10 == 0:
                 self.log.debug('Checking ssh access to %s - %d' % (addr, index))
             try:
@@ -433,7 +440,7 @@ class Nova(object):
             sleep(1)
 
         if not confirmation:
-            self.log.debug('Unable to confirm ssh access to %s after %s minutes...' % (addr, timeout/60))
+            self.log.debug('Unable to confirm ssh access to %s after %s minutes...' % (addr, old_div(timeout,60)))
 
         return confirmation
 
@@ -462,7 +469,7 @@ class Nova(object):
     def _get_ipaddr_for_instance(self, srvr_instance, user, key):
         for index in range(0, 300, 5):
             try:
-                for network in srvr_instance.instance.networks.values():
+                for network in list(srvr_instance.instance.networks.values()):
                     for address in network:
                         try:
                             stdout, stderr, retcode = ssh_execute_command(str(address), key, '/bin/id', user=user)

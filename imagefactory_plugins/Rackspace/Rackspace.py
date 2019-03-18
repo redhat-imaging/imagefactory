@@ -13,6 +13,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+from builtins import object
 import logging
 import zope
 import oz.Fedora
@@ -20,7 +26,7 @@ import oz.TDL
 import subprocess
 import libxml2
 import traceback
-import ConfigParser
+import configparser
 import os
 from time import *
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
@@ -32,7 +38,7 @@ from novaclient.exceptions import NotFound
 import oz.Fedora
 import pyrax
 import pyrax.exceptions
-import pyvhd
+from . import pyvhd
 
 def subprocess_check_output(*popenargs, **kwargs):
     if 'stdout' in kwargs:
@@ -64,7 +70,7 @@ class Rackspace(object):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         config_obj = ApplicationConfiguration()
         self.app_config = config_obj.configuration
-        self.oz_config = ConfigParser.SafeConfigParser()
+        self.oz_config = configparser.SafeConfigParser()
         self.oz_config.read("/etc/oz/oz.cfg")
         self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
         self.active_image = None
@@ -89,7 +95,7 @@ class Rackspace(object):
             try:
                 self.guest.guest_execute_command(guestaddr, "/bin/true", timeout=10)
                 break
-            except Exception, e:
+            except Exception as e:
                 self.log.exception('Caught exception waiting for ssh access: %s' % e)
                 #import pdb
                 #pdb.set_trace()
@@ -147,7 +153,7 @@ class Rackspace(object):
         self.activity("Deleting Rackspace instance.")
         try:
             instance.delete()
-        except Exception, e:
+        except Exception as e:
             self.log.info("Failed to delete Rackspace instance. %s" % e)
 
     def snapshot_image_on_provider(self, builder, provider, credentials, target, template, parameters):
@@ -269,7 +275,7 @@ class Rackspace(object):
             self.builder.provider_image.icicle = self.output_descriptor
             self.builder.provider_image.identifier_on_provider = new_image_id
             self.builder.provider_image.provider_account_identifier = self.rackspace_account_number
-        except Exception, e:
+        except Exception as e:
             self.log.warning("Exception while executing commands on guest: %s" % e)
         finally:
             self.terminate_instance(self.instance)
@@ -292,7 +298,7 @@ class Rackspace(object):
             if image:
                 rackspace_client.images.delete(rackspace_image_id)
                 self.log.debug('Successfully deleted Rackspace image (%s)' % rackspace_image_id)
-        except Exception, e:
+        except Exception as e:
             raise ImageFactoryException('Failed to delete Rackspace image (%s) with error (%s)' % (rackspace_image_id,
                                                                                              str(e)))
 
@@ -431,7 +437,7 @@ class Rackspace(object):
             try:
                 self.log.debug('Attempting to abort instance: %s' % self.instance)
                 self.terminate_instance(self.instance)
-            except Exception, e:
+            except Exception as e:
                 self.log.exception(e)
                 self.log.warning("** WARNING ** Instance MAY NOT be terminated ******** ")
 

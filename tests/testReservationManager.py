@@ -12,6 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from __future__ import division
+from builtins import range
+from past.utils import old_div
 import unittest
 import logging
 import os
@@ -39,7 +42,7 @@ class testReservationManager(unittest.TestCase):
         os.mkdir(self.test_path)
         fstat = os.statvfs(self.test_path)
         self.max_free = fstat.f_bavail * fstat.f_frsize
-        self.min_free = self.max_free / 2
+        self.min_free = old_div(self.max_free, 2)
         self.res_mgr = ReservationManager()
 
     def tearDown(self):
@@ -81,7 +84,7 @@ class testReservationManager(unittest.TestCase):
         TODO: Docstring for testReserveSpaceForFile
         """
         self.res_mgr.default_minimum = self.min_free
-        size = self.min_free / 10
+        size = old_div(self.min_free, 10)
         result = self.res_mgr.reserve_space_for_file(size, self.test_file)
         self.assertTrue(result)
         self.assertTrue(self.test_file in self.res_mgr.reservations)
@@ -99,7 +102,7 @@ class testReservationManager(unittest.TestCase):
         """
         TODO: Docstring for testCancelReservationForFile
         """
-        size = self.min_free / 10
+        size = old_div(self.min_free, 10)
         self.res_mgr.default_minimum = self.min_free
         if(self.res_mgr.reserve_space_for_file(size, self.test_file)):
             self.assertTrue(self.test_file in self.res_mgr.reservations)
@@ -118,7 +121,7 @@ class testReservationManager(unittest.TestCase):
         """
         TODO: Docstring for testAvailableSpace
         """
-        size = self.min_free / 10
+        size = old_div(self.min_free, 10)
         self.res_mgr.add_path(self.test_path, self.min_free)
         available = self.res_mgr.available_space_for_path(self.test_path)
         if(self.res_mgr.reserve_space_for_file(size, self.test_file)):

@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+from __future__ import print_function
 import sys
 import json
 
@@ -9,4 +10,4 @@ utility_image = sys.argv[2]
 
 parameters =  { "utility_image": utility_image, "utility_customizations": utility_tdl }
 
-print json.dumps(parameters)
+print(json.dumps(parameters))

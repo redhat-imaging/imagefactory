@@ -14,7 +14,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from props import prop
+from __future__ import absolute_import
+from builtins import object
+from .props import prop
 
 class Notification(object):
     """ TODO: Docstring for Notification  """

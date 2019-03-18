@@ -13,13 +13,20 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from __future__ import division
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+from builtins import object
+from past.utils import old_div
 import re
 import sys
 import time
 import os
 import pycurl
 import logging
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 from psphere.client import Client
 from psphere.errors import TemplateNotFoundError
 from psphere.soap import VimFault
@@ -27,11 +34,11 @@ from time import sleep, time
 
 logging.getLogger('suds').setLevel(logging.INFO)
 
-class VSphereHelper:
+class VSphereHelper(object):
     def __init__(self, url, username, password):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         if(url.startswith('http://') or url.startswith('https://')):
-            server = urllib2.Request(url).get_host()
+            server = urllib.request.Request(url).get_host()
         else:
             server = url
         self.client = Client(server=server, username=username, password=password)
@@ -111,7 +118,7 @@ class VSphereHelper:
         elif memory.endswith("MB"):
             memory_mb = int(memory[:-2])
         elif memory.endswith("KB"):
-            memory_mb = int(memory[:-2]) / 1024
+            memory_mb = old_div(int(memory[:-2]), 1024)
         else:
             raise Exception("Memory size %s is invalid. Try \"12G\" or similar" % memory)
 

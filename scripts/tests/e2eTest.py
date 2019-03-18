@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+from builtins import str
+from builtins import range
 import argparse
 import tempfile
 import subprocess
@@ -68,7 +71,7 @@ def subprocess_check_output(*popenargs, **kwargs):
 ###
 
 def create_base_image(template_args):
-    print "Building base image"
+    print("Building base image")
     build_queue.acquire()
     try:
         TDL = "<template><name>buildbase_image</name><os><name>%s</name><version>%s\
@@ -95,7 +98,7 @@ def create_base_image(template_args):
             if args.remote:
                 r = requests.get(args.url+'/base_images/'+base_image_id, auth=oauth, verify=False)
                 base_image_output_str = r.text
-                print "Checking status of %s" % (base_image_id,)
+                print("Checking status of %s" % (base_image_id,))
             else:
                 (base_image_output_str, ignore, ignore) = subprocess_check_output('%s --output json --raw images \'{"identifier":"%s"}\'' % (args.cmd, base_image_id), shell=True)
             base_image_output_dict = json.loads(base_image_output_str)['base_image']
@@ -117,7 +120,7 @@ def build_push_delete(target, index):
             base_image = base_images[index]
             if args.remote:
                 payload = {'target_image': {'target': target}}
-                print "Creating a target image"
+                print("Creating a target image")
                 r = requests.post(args.url+'/base_images/'+base_image['id']+'/target_images', data=json.dumps(payload), headers=requests_headers, auth=oauth, verify=False)
                 target_image_output_str = r.text
             else:
@@ -175,7 +178,7 @@ def build_push_delete(target, index):
                                     provider_images.append(provider_image_output_dict)
                                 if args.remote:
                                     
-                                    print "Checking status of %s" % (base_image_id,)
+                                    print("Checking status of %s" % (base_image_id,))
                                     r = requests.delete(args.url+'/provider_images/'+provider_image_id, auth=oauth, verify=False)
                                 else:
                                     subprocess_check_output('%s --output json --raw delete %s --target %s --provider %s --credentials %s' % (args.cmd, provider_image_id, provider['target'], provider_file.name, credentials_file.name), shell=True)
@@ -207,12 +210,12 @@ for target_image in target_images:
 
 for base_image in base_images:
     if args.remote:
-        print "About to delete base image: %s" % (base_image['id'],)
+        print("About to delete base image: %s" % (base_image['id'],))
         r = requests.delete(args.url+'/base_images/'+base_image['id'], auth=oauth, verify=False)
     else:
         subprocess_check_output('%s --output json --raw delete %s' % (args.cmd, base_image['id']), shell=True)
 
-print json.dumps({"failures":failures, "base_images":base_images, "target_images":target_images}, indent=2)
+print(json.dumps({"failures":failures, "base_images":base_images, "target_images":target_images}, indent=2))
 if len(failures) > 0:
     sys.exit(1)
 sys.exit(0)

@@ -14,5 +14,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from Docker import Docker as delegate_class
+from __future__ import absolute_import
+from .Docker import Docker as delegate_class
 

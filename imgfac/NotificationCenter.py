@@ -14,12 +14,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from __future__ import absolute_import
 import logging
-from Singleton import Singleton
-from props import prop
+from .Singleton import Singleton
+from .props import prop
 from collections import defaultdict
 from threading import RLock
-from Notification import Notification
+from .Notification import Notification
 
 class NotificationCenter(Singleton):
     """ TODO: Docstring for NotificationCenter  """

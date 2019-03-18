@@ -5,6 +5,7 @@
 # We want to allow people to import all of these
 # Add logging option
 
+from builtins import str
 import guestfs
 import os
 import re
@@ -40,7 +41,7 @@ def inspect_and_mount(guestfs_handle, relative_mount="", diskfile='*unspecified*
     for filesystem in filesystems:
         fshash[filesystem[0]] = filesystem[1]
  
-    mountpoints = fshash.keys()
+    mountpoints = list(fshash.keys())
     # per suggestion in libguestfs doc - sort the mount points on length
     # simple way to ensure that mount points are present before a mount is attempted
     mountpoints.sort(key=len)

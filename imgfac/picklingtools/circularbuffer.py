@@ -4,7 +4,13 @@
 can inserted/deleted in constant time: it can request infinite
 Circular buffer (meaning that puts will never over-write read
 data)."""
+from __future__ import print_function
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+from builtins import object
 class CircularBuffer(object) :
 
     def __init__ (self, initial_length=4, infinite=False) :
@@ -15,7 +21,7 @@ class CircularBuffer(object) :
         # bool empty_;           // nextPut_==nextGet is either empty or full
         # bool infinite_;        // Puts into empty cause a doubling
   
-        self.buff_ = [None for x in xrange(initial_length)]
+        self.buff_ = [None for x in range(initial_length)]
         self.nextPut_ = 0
         self.nextGet_ = 0
         self.empty_   = True
@@ -118,7 +124,7 @@ class CircularBuffer(object) :
         next_get = self.nextGet_
         buffer   = self.buff_
         length   = self.capacity()
-        for x in xrange(len(self)) :
+        for x in range(len(self)) :
             a.append(str(buffer[next_get]))
             a.append(" ")
             next_get = (next_get+1) % length
@@ -134,11 +140,11 @@ class CircularBuffer(object) :
             else :
                 # Create a new Circ. Buffer of twice the size
                 length = self.buff_.capacity()
-                temp = [None for x in xrange(length*2)]
+                temp = [None for x in range(length*2)]
 
                 buffer = self.buffer_
                 next_get = self.nextGet_
-                for x in xrange(length) :
+                for x in range(length) :
                     
                     temp[x] =  buffer[next_get]
                     next_get = (next_get+1) % length
@@ -161,12 +167,12 @@ if __name__ == "__main__" :
     if len(sys.argv)>1 :
         temp = sys.stdout
     else :
-        import StringIO
-        temp = StringIO.StringIO()
+        import io
+        temp = io.StringIO()
     
     def CBstat(c, temp) :
-        print >> temp, "empty:", c.empty(), " full:", c.full(), " len(c):", len(c), " capacity:", c.capacity()
-        print >> temp, c
+        print("empty:", c.empty(), " full:", c.full(), " len(c):", len(c), " capacity:", c.capacity(), file=temp)
+        print(c, file=temp)
 
     # Below is the output as you'd cut and patse it: for difflib purposes,
     # we want this to be a list of things
@@ -217,7 +223,7 @@ empty: True  full: False  len(c): 0  capacity: 2
     CBstat(a, temp)
     a.put(100)
     CBstat(a,temp)
-    print >> temp, a.get()
+    print(a.get(), file=temp)
     CBstat(a,temp)
 
     a.put(1)
@@ -227,8 +233,8 @@ empty: True  full: False  len(c): 0  capacity: 2
 
     try :
         a.put(666)
-    except Exception, e :
-        print >> temp, e
+    except Exception as e :
+        print(e, file=temp)
     CBstat(a,temp)
 
     a.get()
@@ -241,10 +247,10 @@ empty: True  full: False  len(c): 0  capacity: 2
     CBstat(b, temp)
     try :
         b.put(666)
-    except Exception, e :
-        print >> temp, e
+    except Exception as e :
+        print(e, file=temp)
     CBstat(b, temp)
-    print >> temp, b.get()
+    print(b.get(), file=temp)
     CBstat(b, temp)
 
     
@@ -256,12 +262,12 @@ empty: True  full: False  len(c): 0  capacity: 2
     CBstat(b, temp)
     try :
         b.put(666)
-    except Exception, e :
-        print >> temp, e
+    except Exception as e :
+        print(e, file=temp)
     CBstat(b, temp)
-    print >> temp, b.get()
+    print(b.get(), file=temp)
     CBstat(b, temp)
-    print >> temp, b.get()
+    print(b.get(), file=temp)
     CBstat(b, temp)
 
 
@@ -274,12 +280,12 @@ empty: True  full: False  len(c): 0  capacity: 2
     actual_output = temp.getvalue().split('\n')
     temp.close()
     if (expected_output == actual_output) :
-        print 'All tests PASSED'
+        print('All tests PASSED')
         sys.exit(0) # good!
     else :
         import difflib 
         for line in difflib.context_diff(expected_output, actual_output, fromfile="expected_output", tofile="actual_output", lineterm="") :
             # sys.stdout.write(line)
-            print line
+            print(line)
         sys.exit(1)  # bad
         

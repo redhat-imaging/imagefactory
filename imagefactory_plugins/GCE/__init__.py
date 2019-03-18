@@ -14,4 +14,5 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from GCE import GCE as delegate_class
+from __future__ import absolute_import
+from .GCE import GCE as delegate_class

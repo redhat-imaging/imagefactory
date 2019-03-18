@@ -103,6 +103,7 @@
 
   Options are formed by 'or'ing together. 
 """
+from __future__ import absolute_import
 
-from xmlloader import *
-from xmldumper import *
+from .xmlloader import *
+from .xmldumper import *

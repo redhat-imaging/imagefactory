@@ -14,6 +14,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from __future__ import division
+from __future__ import absolute_import
+from builtins import str
+from builtins import object
+from past.utils import old_div
 from xml.etree import ElementTree
 from oz.ozutil import copyfile_sparse
 import oz.TDL
@@ -37,7 +42,7 @@ import lxml.etree
 import datetime
 # These tend to be quite large - factor them out as separate files to
 # keep this source file a reasonable size
-from HyperVOVFDescriptor import HyperVOVFDescriptor
+from .HyperVOVFDescriptor import HyperVOVFDescriptor
 
 
 class RHEVOVFDescriptor(object):
@@ -99,7 +104,7 @@ class RHEVOVFDescriptor(object):
 
         etdisk = ElementTree.Element('Disk')
         etdisk.set('ovf:diskId', str(self.vol_uuid))
-        vol_size_str = str((self.disk.vol_size + (1024*1024*1024) - 1) / (1024*1024*1024))
+        vol_size_str = str(old_div((self.disk.vol_size + (1024*1024*1024) - 1), (1024*1024*1024)))
         etdisk.set('ovf:size', vol_size_str)
         etdisk.set('ovf:vm_snapshot_id', str(uuid.uuid4()))
         etdisk.set('ovf:actual_size', vol_size_str)
@@ -758,7 +763,7 @@ class OVFPackage(object):
 
         try:
             os.makedirs(os.path.dirname(self.ovf_path))
-        except OSError, e:
+        except OSError as e:
             if "File exists" not in e:
                 raise
 
@@ -1023,7 +1028,7 @@ class RHEVMetaFile(object):
         metafile += "MTIME=" + str(int(self.disk.raw_create_time)) + "\n"
         metafile += "POOL_UUID=" + self.pool_id + "\n"
         # assuming 1KB alignment
-        metafile += "SIZE=" + str(self.disk.vol_size/512) + "\n"
+        metafile += "SIZE=" + str(old_div(self.disk.vol_size,512)) + "\n"
         metafile += "TYPE=SPARSE\n"
         metafile += "DESCRIPTION=Uploaded by Image Factory\n"
         metafile += "EOF\n"
@@ -1087,7 +1092,7 @@ end
         vf.write(vagrantfile)
         vf.close()
 
-        size_in_gb = int(self.disk_size / (1024 ** 3)) + 1
+        size_in_gb = int(old_div(self.disk_size, (1024 ** 3))) + 1
         metadata_json = '{"provider": "libvirt", "format": "qcow2", "virtual_size": %d}' % (size_in_gb)
         metadata_json_path = os.path.join(self.path, "metadata.json")
         mj = open(metadata_json_path, 'w')

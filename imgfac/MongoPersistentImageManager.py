@@ -14,15 +14,17 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from __future__ import absolute_import
+from builtins import str
 import logging
 import os
 import os.path
 import json
 import pymongo
 from copy import copy
-from props import prop
-from ImageFactoryException import ImageFactoryException
-from PersistentImageManager import PersistentImageManager
+from .props import prop
+from .ImageFactoryException import ImageFactoryException
+from .PersistentImageManager import PersistentImageManager
 
 STORAGE_PATH = '/var/lib/imagefactory/storage'
 METADATA_EXT = '.meta'
@@ -78,7 +80,7 @@ class MongoPersistentImageManager(PersistentImageManager):
         # We don't actually want a 'type' property in the resulting PersistentImage object
         del metadata['type']
 
-        for key in image.metadata().union(metadata.keys()):
+        for key in image.metadata().union(list(metadata.keys())):
             setattr(image, key, metadata.get(key))
 
         #I don't think we want this as it will overwrite the "data" element

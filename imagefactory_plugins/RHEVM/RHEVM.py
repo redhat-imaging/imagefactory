@@ -13,6 +13,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import object
 import os
 import zope
 import oz.GuestFactory
@@ -21,7 +26,7 @@ import guestfs
 import libxml2
 import traceback
 import json
-import ConfigParser
+import configparser
 import subprocess
 import logging
 from time import *
@@ -32,7 +37,7 @@ from imgfac.CloudDelegate import CloudDelegate
 from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info
 from imgfac.FactoryUtils import check_qcow_size, qemu_convert_cmd
 from xml.etree.ElementTree import fromstring
-from RHEVMHelper import RHEVMHelper
+from .RHEVMHelper import RHEVMHelper
 
 
 def subprocess_check_output(*popenargs, **kwargs):

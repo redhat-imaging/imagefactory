@@ -14,15 +14,17 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from __future__ import absolute_import
+from builtins import str
 import logging
 import re
 import os
 import os.path
 import stat
 import json
-from props import prop
-from ImageFactoryException import ImageFactoryException
-from PersistentImageManager import PersistentImageManager
+from .props import prop
+from .ImageFactoryException import ImageFactoryException
+from .PersistentImageManager import PersistentImageManager
 from threading import BoundedSemaphore
 
 STORAGE_PATH = '/var/lib/imagefactory/storage'
@@ -60,7 +62,7 @@ class FilePersistentImageManager(PersistentImageManager):
         # We don't actually want a 'type' property in the resulting PersistentImage object
         del metadata['type']
 
-        for key in image.metadata().union(metadata.keys()):
+        for key in image.metadata().union(list(metadata.keys())):
             setattr(image, key, metadata.get(key))
 
         #set ourselves as the manager

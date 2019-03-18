@@ -12,6 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from builtins import object
 import logging
 import os
 import os.path
@@ -41,7 +42,7 @@ class ReservationManager(object):
     def available_space(self):
         """Dictionary of mount points and bytes available."""
         space = dict()
-        for path in self._mounts.keys():
+        for path in list(self._mounts.keys()):
             space.update({path:self.available_space_for_path(path)})
         return space
 
@@ -49,14 +50,14 @@ class ReservationManager(object):
     def reservations(self):
         """Dictionary of filepaths and number of bytes reserved for each."""
         reservations = dict()
-        for key in self._mounts.keys():
+        for key in list(self._mounts.keys()):
             reservations.update(self._mounts[key]['reservations'])
         return reservations
 
     @property
     def queues(self):
         """The property queues"""
-        return self._queues.keys()
+        return list(self._queues.keys())
     ### END Properties
 
     def __new__(cls, *p, **k):
@@ -123,12 +124,12 @@ class ReservationManager(object):
             mount = self._mounts.get(mount_path)
             try:
                 del mount['reservations'][filepath]
-            except (TypeError, KeyError), e:
+            except (TypeError, KeyError) as e:
                 if(quiet):
                     self.log.warn('No reservation for %s to cancel!' % filepath)
                 else:
                     raise e
-        except KeyError, e:
+        except KeyError as e:
             if(quiet):
                 self.log.warn('No reservations exist on %s!' % mount_path)
             else:
@@ -167,7 +168,7 @@ class ReservationManager(object):
         mount_path = self._mount_for_path(path)
         try:
             del self._mounts[mount_path]
-        except KeyError, e:
+        except KeyError as e:
             if(quiet):
                 self.log.warn('%s not in reservation list.' % mount_path)
             else:
@@ -183,10 +184,10 @@ class ReservationManager(object):
         """
         mount_path = self._mount_for_path(path)
         if(mount_path in self._mounts):
-            reservations = self._mounts[mount_path]['reservations'].values()
+            reservations = list(self._mounts[mount_path]['reservations'].values())
             reservation_total = sum(reservations)
             consumed_total = 0
-            for filepath in self._mounts[mount_path]['reservations'].keys():
+            for filepath in list(self._mounts[mount_path]['reservations'].keys()):
                 try:
                     consumed_total += os.path.getsize(filepath)
                 except os.error:

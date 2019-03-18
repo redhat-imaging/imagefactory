@@ -13,6 +13,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import object
 import logging
 import zope
 import oz.GuestFactory
@@ -21,7 +26,7 @@ import oz.ozutil
 import subprocess
 import libxml2
 import traceback
-import ConfigParser
+import configparser
 import base64
 from os.path import isfile
 from time import *
@@ -243,7 +248,7 @@ class TinMan(object):
         try:
             # Oz doesn't keep the active domain object as an instance variable so we have to look it up
             guest_dom = self.guest.libvirt_conn.lookupByName(self.tdlobj.name)
-        except Exception, e:
+        except Exception as e:
             self.log.exception(e)
             self.log.debug("No Oz VM found with name (%s) - nothing to do" % (self.tdlobj.name))
             self.log.debug("This likely means the local VM has already been destroyed or never started")
@@ -252,7 +257,7 @@ class TinMan(object):
         try:
             self.log.debug("Attempting to destroy local guest/domain (%s)" % (self.tdlobj.name))
             guest_dom.destroy()
-        except Exception, e:
+        except Exception as e:
             self.log.exception(e)
             self.log.warning("Exception encountered while destroying domain - it may still exist")
 
@@ -271,12 +276,12 @@ class TinMan(object):
 
         # populate a config object to pass to OZ; this allows us to specify our
         # own output dir but inherit other Oz behavior
-        self.oz_config = ConfigParser.SafeConfigParser()
+        self.oz_config = configparser.SafeConfigParser()
         if self.oz_config.read("/etc/oz/oz.cfg") != []:
             if self.parameters.get("oz_overrides", None) != None:
                 oz_overrides = json.loads(self.parameters.get("oz_overrides",None).replace("'", "\""))
                 for i in oz_overrides:
-                    for key,val in oz_overrides[i].items():
+                    for key,val in list(oz_overrides[i].items()):
                         self.oz_config.set(i, key, str(val))
 
             self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
@@ -284,11 +289,11 @@ class TinMan(object):
                 self.oz_config.set('paths', 'data_dir', self.app_config["oz_data_dir"])
             if "oz_screenshot_dir" in self.app_config:
                 self.oz_config.set('paths', 'screenshot_dir', self.app_config["oz_screenshot_dir"])
-            print "=============== Final Oz Config ================"
+            print("=============== Final Oz Config ================")
             for section in self.oz_config.sections():
-                print "[ {0} ]".format(section)
+                print("[ {0} ]".format(section))
                 for option in self.oz_config.options(section):
-                    print "  {0} = {1}".format(option, self.oz_config.get(section,option))
+                    print("  {0} = {1}".format(option, self.oz_config.get(section,option)))
         else:
             raise ImageFactoryException("No Oz config file found. Can't continue.")
 
@@ -405,9 +410,9 @@ class TinMan(object):
             self.guest = oz.GuestFactory.guest_factory(self.tdlobj, self.oz_config, install_script_name)
             # Oz just selects a random port here - This could potentially collide if we are unlucky
             self.guest.listen_port = self.res_mgr.get_next_listen_port()
-        except libvirtError, e:
+        except libvirtError as e:
             raise ImageFactoryException("Cannot connect to libvirt.  Make sure libvirt is running. [Original message: %s]" %  e.message)
-        except OzException, e:
+        except OzException as e:
             if "Unsupported" in e.message:
                 raise ImageFactoryException("TinMan plugin does not support distro (%s) update (%s) in TDL" % (self.tdlobj.distro, self.tdlobj.update) )
             else:

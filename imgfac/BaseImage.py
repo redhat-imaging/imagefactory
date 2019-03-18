@@ -14,7 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from PersistentImage import PersistentImage
+from __future__ import absolute_import
+from .PersistentImage import PersistentImage
 #from props import prop
 
 
