@@ -257,9 +257,9 @@ class Application(Singleton):
                     returnval = images[0]
                 except IndexError:
                     if(self.app_config['debug']):
-                        print "No images matching fetch specification (%s) found." % (self.app_config['fetch_spec'])
+                        print(("No images matching fetch specification (%s) found." % (self.app_config['fetch_spec'])))
                 except Exception as e:
-                    print e
+                    print(e)
                     sys.exit(1)
 
         elif(command == 'delete'):
@@ -268,7 +268,7 @@ class Application(Singleton):
                 provider = self._get_provider(self.app_config['provider'])
                 image = PersistentImageManager.default_manager().image_with_id(image_id)
                 if(not image):
-                    print ('No image found with id: %s' % image_id)
+                    print(('No image found with id: %s' % image_id))
                     return
                 builder = Builder()
                 builder.delete_image(provider=provider,
@@ -276,12 +276,12 @@ class Application(Singleton):
                                      target=self.app_config.get('target'),
                                      image_object=image,
                                      parameters=parameters)
-                print('Deleting image with id %s' % image_id)
+                print(('Deleting image with id %s' % image_id))
                 builder.delete_thread.join()
                 return
             except Exception as e:
                 self.log.exception(e)
-                print('Failed to delete image %s, see the log for exception details.' % image_id)
+                print(('Failed to delete image %s, see the log for exception details.' % image_id))
         elif(command == 'plugins'):
                 plugin_id = self.app_config.get('id')
                 returnval = PluginManager().plugins[plugin_id].copy() if plugin_id else PluginManager().plugins.copy()
@@ -290,7 +290,7 @@ class Application(Singleton):
 
         if(self.app_config['output'] == 'json'):
             if(PYGMENT and not self.app_config['raw']):
-                print highlight(formatted_returnval, JSONLexer(), TerminalFormatter())
+                print((highlight(formatted_returnval, JSONLexer(), TerminalFormatter())))
             else:
                 if(self.app_config['debug'] and not self.app_config['raw']):
                     print('Python module "pygments" found. Install this module if you want syntax colorization.')
@@ -302,23 +302,23 @@ class Application(Singleton):
 
         if (image and (self.app_config['output'] == 'log')):
             if image.status == "FAILED":
-                print
-                print "Image build FAILED with error: %s" % (image.status_detail['error'])
+                print()
+                print(("Image build FAILED with error: %s" % (image.status_detail['error'])))
                 sys.exit(1)
-            print
-            print "============ Final Image Details ============"
-            print "UUID: %s" % (image.identifier)
-            print "Type: %s" % (command)
-            print "Image filename: " + image.data
+            print()
+            print("============ Final Image Details ============")
+            print(("UUID: %s" % (image.identifier)))
+            print(("Type: %s" % (command)))
+            print(("Image filename: " + image.data))
             if command == "provider_image" and image.status == "COMPLETE":
-                print "Image ID on provider: %s" % (image.identifier_on_provider)
+                print(("Image ID on provider: %s" % (image.identifier_on_provider)))
             if image.status == "COMPLETE":
-                print "Image build completed SUCCESSFULLY!"
+                print("Image build completed SUCCESSFULLY!")
                 sys.exit(0)
             else:
-                print "WARNING - Reached end of build with an unexpected status - this should not happen"
-                print "Status: %s" % (image.status)
-                print "Status Details: %s" % (image.status_detail)
+                print("WARNING - Reached end of build with an unexpected status - this should not happen")
+                print(("Status: %s" % (image.status)))
+                print(("Status Details: %s" % (image.status_detail)))
                 sys.exit(1)
 
 if __name__ == "__main__":
