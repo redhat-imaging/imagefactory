@@ -59,9 +59,9 @@ class sdist(_sdist):
 
 datafiles=[('/etc/imagefactory', ['imagefactory.conf']),
            ('/etc/pki/imagefactory', ['cert-ec2.pem']),
-#           ('/etc/sysconfig', ['conf/sysconfig/imagefactoryd']),
-#           ('/etc/logrotate.d', ['conf/logrotate.d/imagefactoryd']),
-#           ('/etc/rc.d/init.d', ['scripts/imagefactoryd']),
+           ('/etc/sysconfig', ['conf/sysconfig/imagefactoryd']),
+           ('/etc/logrotate.d', ['conf/logrotate.d/imagefactoryd']),
+           ('/etc/rc.d/init.d', ['scripts/imagefactoryd']),
            ('/usr/lib/systemd/system/', ['conf/imagefactoryd.service'])]
 
 setup(name='imagefactory',
@@ -71,8 +71,8 @@ setup(name='imagefactory',
       author_email='imcleod@redhat.com',
       license='Apache License, Version 2.0',
       url='http://www.aeolusproject.org/imagefactory.html',
-      packages=['imgfac'],
-      scripts=['imagefactory'],
+      packages=['imgfac', 'imgfac.rest'],
+      scripts=['imagefactory', 'imagefactoryd'],
       data_files = datafiles,
       cmdclass = {'sdist': sdist}
       )
