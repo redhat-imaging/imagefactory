@@ -105,7 +105,7 @@ class Application(Singleton):
             sys.exit(0)
 
     def daemonize(self): #based on Python recipe 278731
-        UMASK = 077
+        UMASK = 0o77
         WORKING_DIRECTORY = '/'
         if self.app_config['debug']:
             IO_REDIRECT = "/var/log/imagefactory.log-stderr_debug"
@@ -114,8 +114,8 @@ class Application(Singleton):
 
         try:
             pid = os.fork()
-        except OSError, e:
-            raise Exception, "%s [%d]" % (e.strerror, e.errno)
+        except OSError as e:
+            raise Exception("%s [%d]" % (e.strerror, e.errno))
 
         if (pid == 0):
             os.setsid()
@@ -125,8 +125,8 @@ class Application(Singleton):
             signal.signal(signal.SIGALRM, signal.SIG_IGN)
             try:
                 pid = os.fork()
-            except OSError, e:
-                raise Exception, "%s [%d]" % (e.strerror, e.errno)
+            except OSError as e:
+                raise Exception("%s [%d]" % (e.strerror, e.errno))
 
             if (pid == 0):
                 os.chdir(WORKING_DIRECTORY)
@@ -161,7 +161,7 @@ class Application(Singleton):
                 with open(self.pid_file_path, "w") as pidfile:
                     pidfile.write("%s\n" % (str(os.getpid()), ))
                     pidfile.close()
-            except Exception, e:
+            except Exception as e:
                 logging.warning(str(e))
             logging.info("Launched as daemon...")
         elif(self.app_config['foreground']):
