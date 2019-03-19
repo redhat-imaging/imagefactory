@@ -298,7 +298,7 @@ def unpack_qcow_header(filename):
     qcow_struct=">IIQIIQIIQQIIQ" # > means big-endian
     qcow_magic = 0x514649FB # 'Q' 'F' 'I' 0xFB
 
-    f = open(filename,"r")
+    f = open(filename,"r+b")
     pack = f.read(struct.calcsize(qcow_struct))
     f.close()
 

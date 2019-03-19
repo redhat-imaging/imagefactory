@@ -20,6 +20,7 @@ import os
 import os.path
 import stat
 import json
+import importlib
 from .props import prop
 from .ImageFactoryException import ImageFactoryException
 from .PersistentImageManager import PersistentImageManager
@@ -53,7 +54,7 @@ class FilePersistentImageManager(PersistentImageManager):
         # Given the retrieved metadata from mongo, return a PersistentImage type object
         # with us as the persistent_manager.
 
-        image_module = __import__(metadata['type'], globals(), locals(), [metadata['type']], -1)
+        image_module = importlib.import_module( ".." + metadata['type'], __name__)
         image_class = getattr(image_module, metadata['type'])
         image = image_class(metadata['identifier'])
 
