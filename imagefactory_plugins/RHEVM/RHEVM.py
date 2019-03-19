@@ -14,7 +14,6 @@
 #   limitations under the License.
 
 import os
-import zope
 import oz.GuestFactory
 import oz.TDL
 import guestfs
@@ -24,6 +23,7 @@ import json
 import configparser
 import subprocess
 import logging
+from zope.interface import implementer
 from time import *
 from tempfile import *
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
@@ -53,8 +53,8 @@ def subprocess_check_output(*popenargs, **kwargs):
     return (stdout, stderr, retcode)
 
 
+@implementer(CloudDelegate)
 class RHEVM(object):
-    zope.interface.implements(CloudDelegate)
 
     def __init__(self):
         super(RHEVM, self).__init__()

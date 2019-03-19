@@ -16,12 +16,12 @@
 
 import logging
 import uuid
-import zope
 import inspect
+from zope.interface import implementer
 from imgfac.CloudDelegate import CloudDelegate
 
+@implementer(CloudDelegate)
 class MockCloud(object):
-    zope.interface.implements(CloudDelegate)
 
 
     def __init__(self):

@@ -13,14 +13,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import zope
 import os
 import traceback
 import logging
 import subprocess
 import json
 import time
-
+from zope.interface import implementer
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.CloudDelegate import CloudDelegate
@@ -33,9 +32,9 @@ except ImportError:
     _gcloud_sdk_available = False
 
 
+@implementer(CloudDelegate)
 class GCE(object):
     """GCE target plugin"""
-    zope.interface.implements(CloudDelegate)
 
     def __init__(self):
         super(GCE, self).__init__()

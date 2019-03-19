@@ -16,7 +16,6 @@
 #   limitations under the License.
 
 import logging
-import zope
 import oz.TDL
 import oz.GuestFactory
 import oz.ozutil
@@ -31,6 +30,7 @@ import tempfile
 import base64
 import os
 import os.path
+from zope.interface import implementer
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.CloudDelegate import CloudDelegate
 from imgfac.PersistentImageManager import PersistentImageManager
@@ -108,8 +108,8 @@ def data_from_type(name, contenttype, content):
     return out
 
 
+@implementer(CloudDelegate)
 class IndirectionCloud(object):
-    zope.interface.implements(CloudDelegate)
 
     def __init__(self):
         super(IndirectionCloud, self).__init__()

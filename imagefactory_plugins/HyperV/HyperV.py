@@ -13,7 +13,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import zope
 import oz.GuestFactory
 import oz.TDL
 import os
@@ -24,15 +23,16 @@ import json
 import configparser
 import logging
 import subprocess
+from zope.interface import implementer
 from xml.etree.ElementTree import fromstring
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info
 from imgfac.CloudDelegate import CloudDelegate
 
+@implementer(CloudDelegate)
 class HyperV(object):
     """HyperV target plugin"""
-    zope.interface.implements(CloudDelegate)
 
     def __init__(self):
         super(HyperV, self).__init__()

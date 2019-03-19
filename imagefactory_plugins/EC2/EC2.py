@@ -14,7 +14,6 @@
 #   limitations under the License.
 
 import logging
-import zope
 import oz.Fedora
 import oz.TDL
 import subprocess
@@ -28,6 +27,7 @@ import configparser
 import boto.ec2
 import sys
 import json
+from zope.interface import implementer
 from time import *
 from tempfile import *
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
@@ -45,8 +45,8 @@ from xml.etree import ElementTree
 logging.getLogger('boto').setLevel(logging.INFO)
 
 
+@implementer(CloudDelegate)
 class EC2(object):
-    zope.interface.implements(CloudDelegate)
 
     def activity(self, activity):
         # Simple helper function

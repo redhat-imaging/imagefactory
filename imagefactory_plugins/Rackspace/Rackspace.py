@@ -14,7 +14,6 @@
 #   limitations under the License.
 
 import logging
-import zope
 import oz.Fedora
 import oz.TDL
 import subprocess
@@ -22,6 +21,7 @@ import libxml2
 import traceback
 import configparser
 import os
+from zope.interface import implementer
 from time import *
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
@@ -47,8 +47,8 @@ def subprocess_check_output(*popenargs, **kwargs):
     return stdout, stderr, retcode
 
 
+@implementer(CloudDelegate)
 class Rackspace(object):
-    zope.interface.implements(CloudDelegate)
 
     def activity(self, activity):
         # Simple helper function

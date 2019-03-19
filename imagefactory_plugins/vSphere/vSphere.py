@@ -13,7 +13,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import zope
 import oz.GuestFactory
 import oz.TDL
 import os
@@ -24,6 +23,7 @@ import json
 import configparser
 import logging
 import subprocess
+from zope.interface import implementer
 from xml.etree.ElementTree import fromstring
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
@@ -50,9 +50,9 @@ mkinitrd $NEWINITRD $KERNELVERSION
 grubby --add-kernel=$KERNEL --copy-default --make-default --initrd=$NEWINITRD --title="Red Hat Enterprise Linux Server ($KERNELVERSION) Image Factory vSphere module update"
 rm /root/vsphere-module.sh'''
 
+@implementer(CloudDelegate)
 class vSphere(object):
     """docstring for Fedora_vsphere_Builder"""
-    zope.interface.implements(CloudDelegate)
 
     def __init__(self):
         super(vSphere, self).__init__()

@@ -16,8 +16,8 @@
 
 import logging
 import uuid
-import zope
 import inspect
+from zope.interface import implementer
 from imgfac.CloudDelegate import CloudDelegate
 from imgfac.PersistentImageManager import PersistentImageManager
 from imgfac.TargetImage import TargetImage
@@ -31,8 +31,8 @@ from imgfac.ImageFactoryException import ImageFactoryException
 from oz.ozutil import copyfile_sparse
 from oz.TDL import TDL
 
+@implementer(CloudDelegate)
 class OVA(object):
-    zope.interface.implements(CloudDelegate)
 
     def __init__(self):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))

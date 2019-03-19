@@ -15,10 +15,10 @@
 #   limitations under the License.
 
 import logging
-import zope
 import os.path
 import shutil
 import libxml2
+from zope.interface import implementer
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.FactoryUtils import enable_root, disable_root, ssh_execute_command
 from imgfac.OSDelegate import OSDelegate
@@ -35,11 +35,11 @@ import oz.GuestFactory
 PROPERTY_NAME_GLANCE_ID = 'x-image-properties-glance_id'
 
 
+@implementer(OSDelegate)
 class Nova(object):
     """
     Nova implements the ImageFactory OSDelegate interface for the Nova plugin.
     """
-    zope.interface.implements(OSDelegate)
 
     def __init__(self):
         super(Nova, self).__init__()
