@@ -14,7 +14,6 @@
 #   limitations under the License.
 
 import logging
-import zope
 import oz.GuestFactory
 import oz.TDL
 import oz.ozutil
@@ -23,6 +22,7 @@ import libxml2
 import traceback
 import configparser
 import base64
+from zope.interface import implementer
 from os.path import isfile
 from time import *
 from tempfile import NamedTemporaryFile
@@ -50,10 +50,8 @@ def subprocess_check_output(*popenargs, **kwargs):
     return (stdout, stderr, retcode)
 
 
-
+@implementer(OSDelegate)
 class TinMan(object):
-    zope.interface.implements(OSDelegate)
-
     def activity(self, activity):
         # Simple helper function
         # Activity should be a one line human-readable string indicating the task in progress
@@ -396,7 +394,7 @@ class TinMan(object):
         install_script_name = None
         install_script = self.parameters.get("install_script", None)
         if install_script:
-            self.install_script_object = NamedTemporaryFile()
+            self.install_script_object = NamedTemporaryFile(mode='w')
             self.install_script_object.write(install_script)
             self.install_script_object.flush()
             install_script_name = self.install_script_object.name

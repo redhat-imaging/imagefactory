@@ -160,9 +160,10 @@ class ApplicationConfiguration(Singleton):
                     return new_dict
 
                 config_file = open(configuration.config)
-                uconfig = json.load(config_file)
+                uconfig = json.load(config_file, encoding="utf-8")
                 config_file.close()
-                defaults = dencode(uconfig)
+                defaults = uconfig
+                print(defaults)
                 argparser.set_defaults(**defaults)
                 configuration = argparser.parse_args()
             except Exception as e:
@@ -198,6 +199,7 @@ class ApplicationConfiguration(Singleton):
 
     def __parse_jeos_images(self):
         log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        print(self.configuration)
         config_urls = self.configuration['jeos_config']
         # Expand directories from the config and url-ify files
         # Read inlist - replace directories with their contents
