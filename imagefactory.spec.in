@@ -23,7 +23,7 @@ Requires: python3-libguestfs
 Requires: python3-zope-interface
 Requires: python3-libxml2
 Requires: python3-httplib2
-Requires: python3-paste-deploy
+Requires: python3-cherrypy
 Requires: python3-oauth2
 Requires: python3-libs
 Requires: oz
