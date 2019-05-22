@@ -43,6 +43,8 @@ Requires(preun): initscripts
 
 BuildRequires: python3
 BuildRequires: python3-setuptools
+BuildRequires: python3-rpm-macros
+BuildRequires: python-rpm-macros
 # TODO: Any changes to the _internal_ API must increment this version or, in 
 #       the case of backwards compatible changes, add a new version (RPM 
 #       allows multiple version "=" lines for the same package or 
@@ -59,12 +61,10 @@ https://github.com/redhat-imaging/imagefactory for more information.
 
 %build
 %py3_build
-#python3 setup.py build
 
 
 %install
 %py3_install
-#python3 setup.py install -O1 --root=%{buildroot} --skip-build
 
 
 %{__install} -d %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images

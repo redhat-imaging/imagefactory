@@ -46,6 +46,8 @@ ExcludeArch: i386 ppc64
 %endif
 BuildRequires: python3
 BuildRequires: python3-setuptools
+BuildRequires: python3-rpm-macros
+BuildRequires: python-rpm-macros
 Requires: imagefactory
 
 %description
