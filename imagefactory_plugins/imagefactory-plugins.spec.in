@@ -22,7 +22,7 @@
 # If it is an existing file other than a link, do nothing \
 [ -L %{_sysconfdir}/imagefactory/plugins.d/%1.info ] || \
 [ -e %{_sysconfdir}/imagefactory/plugins.d/%1.info ] || \
-ln -s %{python_sitelib}/imagefactory_plugins/%1/%1.info %{_sysconfdir}/imagefactory/plugins.d/%1.info \
+ln -s %{python3_sitelib}/imagefactory_plugins/%1/%1.info %{_sysconfdir}/imagefactory/plugins.d/%1.info \
 exit 0 
 
 %global auto_register_macro_postun() if [ "\$1" = "0" ]; then \
