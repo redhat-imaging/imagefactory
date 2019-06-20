@@ -759,7 +759,7 @@ class OVFPackage(object):
         try:
             os.makedirs(os.path.dirname(self.ovf_path))
         except OSError as e:
-            if "File exists" not in e:
+            if "File exists" not in str(e):
                 raise
 
         self.write_ovf_xml_to_file(self.ovf_path)
