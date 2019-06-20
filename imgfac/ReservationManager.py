@@ -49,7 +49,7 @@ class ReservationManager(object):
     def reservations(self):
         """Dictionary of filepaths and number of bytes reserved for each."""
         reservations = dict()
-        for key in list(self._mounts.keys()):
+        for key in self._mounts:
             reservations.update(self._mounts[key]['reservations'])
         return reservations
 
@@ -186,7 +186,7 @@ class ReservationManager(object):
             reservations = list(self._mounts[mount_path]['reservations'].values())
             reservation_total = sum(reservations)
             consumed_total = 0
-            for filepath in list(self._mounts[mount_path]['reservations'].keys()):
+            for filepath in self._mounts[mount_path]['reservations']:
                 try:
                     consumed_total += os.path.getsize(filepath)
                 except os.error:

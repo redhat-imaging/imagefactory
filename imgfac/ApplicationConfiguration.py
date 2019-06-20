@@ -149,7 +149,7 @@ class ApplicationConfiguration(Singleton):
             try:
                 def dencode(a_dict, encoding='ascii'):
                     new_dict = {}
-                    for k,v in list(a_dict.items()):
+                    for k,v in a_dict.items():
                         ek = k.encode(encoding)
                         if(isinstance(v, str)):
                             new_dict[ek] = v.encode(encoding)

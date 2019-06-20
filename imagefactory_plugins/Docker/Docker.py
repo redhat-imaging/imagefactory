@@ -305,7 +305,7 @@ class Docker(object):
         wrap_metadata = parameter_cast_to_bool(parameters.get('create_docker_metadata', True))
         compress_type = parameters.get('compress', None)
         if compress_type:
-            if compress_type in list(self.compress_commands.keys()):
+            if compress_type in self.compress_commands:
                 compress_command = self.compress_commands[compress_type]
             else:
                 raise Exception("Passed unknown compression type (%s) for Docker plugin" % (compress_type))

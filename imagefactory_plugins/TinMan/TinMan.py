@@ -274,7 +274,7 @@ class TinMan(object):
             if self.parameters.get("oz_overrides", None) != None:
                 oz_overrides = json.loads(self.parameters.get("oz_overrides",None).replace("'", "\""))
                 for i in oz_overrides:
-                    for key,val in list(oz_overrides[i].items()):
+                    for key, val in oz_overrides[i].items():
                         self.oz_config.set(i, key, str(val))
 
             self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
