@@ -14,4 +14,4 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from RHEVM import RHEVM as delegate_class
+from .RHEVM import RHEVM as delegate_class

@@ -18,8 +18,8 @@ import logging
 import sys
 import os
 import json
-from Singleton import Singleton
-from ImageFactoryException import ImageFactoryException
+from .Singleton import Singleton
+from .ImageFactoryException import ImageFactoryException
 
 PLUGIN_TYPES = ('OS', 'CLOUD')
 INFO_FILE_EXTENSION = '.info'

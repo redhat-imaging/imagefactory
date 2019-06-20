@@ -14,16 +14,16 @@
 #   limitations under the License.
 
 import os
-import zope
 import oz.GuestFactory
 import oz.TDL
 import guestfs
 import libxml2
 import traceback
 import json
-import ConfigParser
+import configparser
 import subprocess
 import logging
+from zope.interface import implementer
 from time import *
 from tempfile import *
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
@@ -32,7 +32,12 @@ from imgfac.CloudDelegate import CloudDelegate
 from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info
 from imgfac.FactoryUtils import check_qcow_size, qemu_convert_cmd
 from xml.etree.ElementTree import fromstring
-from RHEVMHelper import RHEVMHelper
+try:
+    from .RHEVMHelper import RHEVMHelper
+except:
+    # Allow the non-upload functions to work in environments where the oVirt SDK package
+    # is not available
+    logging.warning("RHEVMHelper failed to load - pushing to RHEVM servers will not work")
 
 
 def subprocess_check_output(*popenargs, **kwargs):
@@ -48,8 +53,8 @@ def subprocess_check_output(*popenargs, **kwargs):
     return (stdout, stderr, retcode)
 
 
+@implementer(CloudDelegate)
 class RHEVM(object):
-    zope.interface.implements(CloudDelegate)
 
     def __init__(self):
         super(RHEVM, self).__init__()

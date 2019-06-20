@@ -186,12 +186,12 @@ def do_vhd_convert(infile, outfile):
 
     bat_values = [ ]
     for i in range(0,bat_entries):
-	bat_values.append(current_block_sector)
-	current_block_sector += total_block_sectors
+        bat_values.append(current_block_sector)
+        current_block_sector += total_block_sectors
 
     bat=""
     for sector in bat_values:
-	bat += struct.pack(">I", ( sector ) )
+        bat += struct.pack(">I", ( sector ) )
 
     # The Xen code adds yet another sector map, this one of the BAT itself.
     # This converter code pre-allocates everything, so we just need a string
@@ -199,11 +199,11 @@ def do_vhd_convert(infile, outfile):
 
     batmap=""
     for i in range(0,bat_entries/8):
-	batmap += chr(0xFF)
+        batmap += chr(0xFF)
 
     extra_bits = bat_entries % 8
     if extra_bits != 0:
-	batmap += chr((0xFF << (8-extra_bits)) & 0xFF)
+        batmap += chr((0xFF << (8-extra_bits)) & 0xFF)
 
     cookie3 = "tdbatmap"
     # 3 sectors for the other headers plus one sector for this
@@ -283,22 +283,22 @@ def do_vhd_convert(infile, outfile):
     outfile.write(batmap)
 
     for block_start in bat_values:
-	outfile.seek(block_start * SECTORSIZE)
-	outfile.write(FULL_SECTOR_BITMAP)
-	outfile.seek( (SECTOR_BITMAP_SECTORS + block_start) * SECTORSIZE)
-	outfile.write(infile.read(VHD_BLOCKSIZE))
+        outfile.seek(block_start * SECTORSIZE)
+        outfile.write(FULL_SECTOR_BITMAP)
+        outfile.seek( (SECTOR_BITMAP_SECTORS + block_start) * SECTORSIZE)
+        outfile.write(infile.read(VHD_BLOCKSIZE))
 
     outfile.seek( (block_start + SECTOR_BITMAP_SECTORS + VHD_BLOCKSIZE_SECTORS) * SECTORSIZE)
     outfile.write(final_header)
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:
-        print "usage: %s <raw_input_file> <vhd_output_file>" % sys.argv[0]
+        print("usage: %s <raw_input_file> <vhd_output_file>" % sys.argv[0])
         sys.exit(1)
     infile = open(sys.argv[1], "r")
     outfile = open(sys.argv[2], "w")
     do_vhd_convert(infile, outfile)
     infile.close()
     outfile.close()
-	
+        
 

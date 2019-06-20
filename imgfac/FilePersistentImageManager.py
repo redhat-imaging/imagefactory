@@ -20,9 +20,10 @@ import os
 import os.path
 import stat
 import json
-from props import prop
-from ImageFactoryException import ImageFactoryException
-from PersistentImageManager import PersistentImageManager
+import importlib
+from .props import prop
+from .ImageFactoryException import ImageFactoryException
+from .PersistentImageManager import PersistentImageManager
 from threading import BoundedSemaphore
 
 STORAGE_PATH = '/var/lib/imagefactory/storage'
@@ -53,14 +54,14 @@ class FilePersistentImageManager(PersistentImageManager):
         # Given the retrieved metadata from mongo, return a PersistentImage type object
         # with us as the persistent_manager.
 
-        image_module = __import__(metadata['type'], globals(), locals(), [metadata['type']], -1)
+        image_module = importlib.import_module( ".." + metadata['type'], __name__)
         image_class = getattr(image_module, metadata['type'])
         image = image_class(metadata['identifier'])
 
         # We don't actually want a 'type' property in the resulting PersistentImage object
         del metadata['type']
 
-        for key in image.metadata().union(metadata.keys()):
+        for key in image.metadata().union(list(metadata.keys())):
             setattr(image, key, metadata.get(key))
 
         #set ourselves as the manager

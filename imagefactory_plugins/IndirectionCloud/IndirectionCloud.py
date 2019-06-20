@@ -16,7 +16,6 @@
 #   limitations under the License.
 
 import logging
-import zope
 import oz.TDL
 import oz.GuestFactory
 import oz.ozutil
@@ -26,11 +25,12 @@ import guestfs
 # For now we import both
 import libxml2
 import lxml
-import ConfigParser
+import configparser
 import tempfile
 import base64
 import os
 import os.path
+from zope.interface import implementer
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.CloudDelegate import CloudDelegate
 from imgfac.PersistentImageManager import PersistentImageManager
@@ -108,8 +108,8 @@ def data_from_type(name, contenttype, content):
     return out
 
 
+@implementer(CloudDelegate)
 class IndirectionCloud(object):
-    zope.interface.implements(CloudDelegate)
 
     def __init__(self):
         super(IndirectionCloud, self).__init__()
@@ -229,15 +229,15 @@ class IndirectionCloud(object):
 
 
     def add_disk(self, libvirt_doc, disk_image_file, device_name):
-	devices = libvirt_doc.xpathEval("/domain/devices")[0]
-	new_dev = devices.newChild(None, "disk", None)
-	new_dev.setProp("type", "file")
-	new_dev.setProp("device", "disk")
-	source = new_dev.newChild(None, "source", None)
-	source.setProp("file", disk_image_file)
-	target = new_dev.newChild(None, "target", None)
-	target.setProp("dev", device_name)
-	target.setProp("bus", self.guest.disk_bus)
+        devices = libvirt_doc.xpathEval("/domain/devices")[0]
+        new_dev = devices.newChild(None, "disk", None)
+        new_dev.setProp("type", "file")
+        new_dev.setProp("device", "disk")
+        source = new_dev.newChild(None, "source", None)
+        source.setProp("file", disk_image_file)
+        target = new_dev.newChild(None, "target", None)
+        target.setProp("dev", device_name)
+        target.setProp("bus", self.guest.disk_bus)
 
 
     def oz_refresh_customizations(self, partial_tdl):
@@ -282,7 +282,7 @@ class IndirectionCloud(object):
     def _init_oz(self):
         # populate a config object to pass to OZ; this allows us to specify our
         # own output dir but inherit other Oz behavior
-        self.oz_config = ConfigParser.SafeConfigParser()
+        self.oz_config = configparser.SafeConfigParser()
         if self.oz_config.read("/etc/oz/oz.cfg") != []:
             self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
             if "oz_data_dir" in self.app_config:
@@ -299,9 +299,9 @@ class IndirectionCloud(object):
             self.guest = oz.GuestFactory.guest_factory(self.tdlobj, self.oz_config, None)
             # Oz just selects a random port here - This could potentially collide if we are unlucky
             self.guest.listen_port = self.res_mgr.get_next_listen_port()
-        except libvirtError, e:
+        except libvirtError as e:
             raise ImageFactoryException("Cannot connect to libvirt.  Make sure libvirt is running. [Original message: %s]" %  e.message)
-        except OzException, e:
+        except OzException as e:
             if "Unsupported" in e.message:
                 raise ImageFactoryException("TinMan plugin does not support distro (%s) update (%s) in TDL" % (self.tdlobj.distro, self.tdlobj.update) )
             else:

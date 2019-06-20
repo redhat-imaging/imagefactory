@@ -18,15 +18,14 @@ BuildArch: noarch
 %if 0%{?rhel} == 6
 ExcludeArch: i386 ppc64
 %endif
-Requires: python-pycurl
-Requires: python-libguestfs
-Requires: python-zope-interface
-Requires: libxml2-python
-Requires: python-httplib2
-Requires: python-argparse
-Requires: python-paste-deploy
-Requires: python-oauth2
-Requires: python-urlgrabber
+Requires: python3-pycurl
+Requires: python3-libguestfs
+Requires: python3-zope-interface
+Requires: python3-libxml2
+Requires: python3-httplib2
+Requires: python3-cherrypy
+Requires: python3-oauth2
+Requires: python3-libs
 Requires: oz
 
 %if %{use_systemd}
@@ -42,8 +41,10 @@ Requires(preun): initscripts
 %endif
 
 
-BuildRequires: python2
-BuildRequires: python-setuptools
+BuildRequires: python3
+BuildRequires: python3-setuptools
+BuildRequires: python3-rpm-macros
+BuildRequires: python-rpm-macros
 # TODO: Any changes to the _internal_ API must increment this version or, in 
 #       the case of backwards compatible changes, add a new version (RPM 
 #       allows multiple version "=" lines for the same package or 
@@ -59,17 +60,19 @@ https://github.com/redhat-imaging/imagefactory for more information.
 %setup -q
 
 %build
-python setup.py build
+%py3_build
+
 
 %install
-python setup.py install -O1 --root=%{buildroot} --skip-build
+%py3_install
+
 
 %{__install} -d %{buildroot}/%{_sysconfdir}/imagefactory/jeos_images
 %{__install} -d %{buildroot}/%{_localstatedir}/lib/imagefactory/images
 %{__install} -d %{buildroot}/%{_sysconfdir}/imagefactory/plugins.d
 %{__install} -d %{buildroot}/%{_sysconfdir}/logrotate.d
 
-sed -i '/\/usr\/bin\/env python/d' %{buildroot}/%{python_sitelib}/imgfac/*.py
+#sed -i '/\/usr\/bin\/env python/d' %{buildroot}/%{python_sitelib}/imgfac/*.py
 
 %{__install} -m0600 conf/sysconfig/imagefactoryd %{buildroot}/%{_sysconfdir}/sysconfig/imagefactoryd
 %{__install} -m0600 conf/logrotate.d/imagefactoryd %{buildroot}/%{_sysconfdir}/logrotate.d/imagefactoryd
@@ -121,10 +124,11 @@ fi
 %dir %attr(0755, root, root) %{_sysconfdir}/imagefactory/plugins.d/
 %dir %attr(0755, root, root) %{_localstatedir}/lib/imagefactory/images
 %config %{_sysconfdir}/pki/imagefactory/cert-ec2.pem
-%{python_sitelib}/imgfac/*.py*
-%{python_sitelib}/imgfac/rest
-%{python_sitelib}/imgfac/picklingtools
-%{python_sitelib}/imagefactory-*.egg-info
+%{python3_sitelib}/imgfac/*.py*
+%{python3_sitelib}/imgfac/__pycache__/*.py*
+%{python3_sitelib}/imgfac/rest
+#%{python3_sitelib}/imgfac/picklingtools
+%{python3_sitelib}/imagefactory-*.egg-info
 %{_bindir}/imagefactory
 %{_bindir}/imagefactoryd
 

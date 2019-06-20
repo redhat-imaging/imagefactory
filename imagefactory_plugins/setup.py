@@ -29,8 +29,8 @@ plugins = ['EC2', 'TinMan', 'MockCloud', 'MockOS', 'OpenStack',
            'RHEVM', 'vSphere', 'Rackspace', 'IndirectionCloud',
            'OVA', 'Docker', 'Nova', 'HyperV', 'GCE']
 
-VERSION = '1.1.12'
-RELEASE = '2'
+VERSION = '1.1.13'
+RELEASE = '0'
 
 class sdist(_sdist):
     """ custom sdist command, to prep imagefactory-plugins.spec file """
@@ -44,12 +44,12 @@ class sdist(_sdist):
                                     shell=True,
                                     stdout=subprocess.PIPE).communicate()[0].strip()
         date = time.strftime("%Y%m%d%H%M%S", time.gmtime())
-        git_release = "%sgit%s" % (date, git_head)
+        git_release = "%sgit%s" % (date, git_head.decode("utf-8"))
 
         # Expand macros in imagefactory-plugins.spec.in
         spec_in = open('imagefactory-plugins.spec.in', 'r')
         spec = open('imagefactory-plugins.spec', 'w')
-        for line in spec_in.xreadlines():
+        for line in spec_in:
             if "@VERSION@" in line:
                 line = line.replace("@VERSION@", VERSION)
             elif "@RELEASE@" in line:

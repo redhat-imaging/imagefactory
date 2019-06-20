@@ -16,8 +16,8 @@
 
 import logging
 import uuid
-import zope
 import inspect
+from zope.interface import implementer
 from imgfac.CloudDelegate import CloudDelegate
 from imgfac.PersistentImageManager import PersistentImageManager
 from imgfac.TargetImage import TargetImage
@@ -31,8 +31,8 @@ from imgfac.ImageFactoryException import ImageFactoryException
 from oz.ozutil import copyfile_sparse
 from oz.TDL import TDL
 
+@implementer(CloudDelegate)
 class OVA(object):
-    zope.interface.implements(CloudDelegate)
 
     def __init__(self):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
@@ -128,7 +128,7 @@ class OVA(object):
 
             for param in params:
                 if (self.parameters.get(param) and 
-                    klass.__init__.func_code.co_varnames.__contains__(param)):
+                    klass.__init__.__code__.co_varnames.__contains__(param)):
                     klass_parameters[param] = self.parameters.get(param)
 
         pkg = klass(disk=self.image.data, base_image=self.base_image,

@@ -14,14 +14,14 @@
 #   limitations under the License.
 
 import logging
-import zope
 import oz.Fedora
 import oz.TDL
 import subprocess
 import libxml2
 import traceback
-import ConfigParser
+import configparser
 import os
+from zope.interface import implementer
 from time import *
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
@@ -32,7 +32,7 @@ from novaclient.exceptions import NotFound
 import oz.Fedora
 import pyrax
 import pyrax.exceptions
-import pyvhd
+from . import pyvhd
 
 def subprocess_check_output(*popenargs, **kwargs):
     if 'stdout' in kwargs:
@@ -47,8 +47,8 @@ def subprocess_check_output(*popenargs, **kwargs):
     return stdout, stderr, retcode
 
 
+@implementer(CloudDelegate)
 class Rackspace(object):
-    zope.interface.implements(CloudDelegate)
 
     def activity(self, activity):
         # Simple helper function
@@ -64,7 +64,7 @@ class Rackspace(object):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         config_obj = ApplicationConfiguration()
         self.app_config = config_obj.configuration
-        self.oz_config = ConfigParser.SafeConfigParser()
+        self.oz_config = configparser.SafeConfigParser()
         self.oz_config.read("/etc/oz/oz.cfg")
         self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
         self.active_image = None
@@ -89,7 +89,7 @@ class Rackspace(object):
             try:
                 self.guest.guest_execute_command(guestaddr, "/bin/true", timeout=10)
                 break
-            except Exception, e:
+            except Exception as e:
                 self.log.exception('Caught exception waiting for ssh access: %s' % e)
                 #import pdb
                 #pdb.set_trace()
@@ -128,10 +128,10 @@ class Rackspace(object):
                             "Instance (%s) failed to fully start or terminate - it may still be running" % instance.id)
                     raise ImageFactoryException(
                         "Exception encountered when waiting for instance (%s) to start" % instance.id)
-                if instance.status == u'ACTIVE':
+                if instance.status == 'ACTIVE':
                     break
             sleep(1)
-        if instance.status != u'ACTIVE':
+        if instance.status != 'ACTIVE':
             self.status = "FAILED"
             try:
                 self.terminate_instance(instance)
@@ -147,7 +147,7 @@ class Rackspace(object):
         self.activity("Deleting Rackspace instance.")
         try:
             instance.delete()
-        except Exception, e:
+        except Exception as e:
             self.log.info("Failed to delete Rackspace instance. %s" % e)
 
     def snapshot_image_on_provider(self, builder, provider, credentials, target, template, parameters):
@@ -269,7 +269,7 @@ class Rackspace(object):
             self.builder.provider_image.icicle = self.output_descriptor
             self.builder.provider_image.identifier_on_provider = new_image_id
             self.builder.provider_image.provider_account_identifier = self.rackspace_account_number
-        except Exception, e:
+        except Exception as e:
             self.log.warning("Exception while executing commands on guest: %s" % e)
         finally:
             self.terminate_instance(self.instance)
@@ -292,7 +292,7 @@ class Rackspace(object):
             if image:
                 rackspace_client.images.delete(rackspace_image_id)
                 self.log.debug('Successfully deleted Rackspace image (%s)' % rackspace_image_id)
-        except Exception, e:
+        except Exception as e:
             raise ImageFactoryException('Failed to delete Rackspace image (%s) with error (%s)' % (rackspace_image_id,
                                                                                              str(e)))
 
@@ -362,8 +362,8 @@ class Rackspace(object):
         if task.status == "failure":
             raise ImageFactoryException("Rackspace image import failed with reason: %", (task.message))
 
-	if task.status == "success":
-	    new_img = imgs.find(name=obj_name)
+        if task.status == "success":
+            new_img = imgs.find(name=obj_name)
             self.builder.provider_image.identifier_on_provider = new_img.id
             self.log.debug("Import finished - ID: %s - name: %s - status: %s - size: %s - tags: %s" % (new_img.id, new_img.name, new_img.status, new_img.size, new_img.tags))
         else:
@@ -431,7 +431,7 @@ class Rackspace(object):
             try:
                 self.log.debug('Attempting to abort instance: %s' % self.instance)
                 self.terminate_instance(self.instance)
-            except Exception, e:
+            except Exception as e:
                 self.log.exception(e)
                 self.log.warning("** WARNING ** Instance MAY NOT be terminated ******** ")
 

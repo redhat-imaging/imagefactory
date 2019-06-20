@@ -14,7 +14,7 @@
 
 import logging
 from imgfac.Singleton import Singleton
-from Builder import Builder
+from .Builder import Builder
 from imgfac.NotificationCenter import NotificationCenter
 from threading import BoundedSemaphore
 

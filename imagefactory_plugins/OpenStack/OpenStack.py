@@ -15,10 +15,10 @@
 #   limitations under the License.
 
 import logging
-import zope
 import libxml2
 import json
 import os
+from zope.interface import implementer
 from xml.etree.ElementTree import fromstring
 from imgfac.Template import Template
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
@@ -39,8 +39,8 @@ except ImportError:
     except ImportError:
        GLANCE_VERSION = None
 
+@implementer(CloudDelegate)
 class OpenStack(object):
-    zope.interface.implements(CloudDelegate)
 
     def __init__(self):
         # Note that we are now missing ( template, target, config_block = None):

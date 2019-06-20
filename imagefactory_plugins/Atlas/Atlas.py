@@ -13,11 +13,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import zope
 import os
 import logging
 import json
 
+from zope.interface import implementer
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.CloudDelegate import CloudDelegate
@@ -38,10 +38,9 @@ class AtlasClient(Session):
             url = self.default_url + url
         return super(AtlasClient, self).request(method, url, **kwargs)
 
-
+@implementer(CloudDelegate)
 class Atlas(object):
     """Atlas provider plugin"""
-    zope.interface.implements(CloudDelegate)
 
     def __init__(self):
         super(Atlas, self).__init__()

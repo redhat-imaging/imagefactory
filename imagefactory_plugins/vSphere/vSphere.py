@@ -13,7 +13,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import zope
 import oz.GuestFactory
 import oz.TDL
 import os
@@ -21,15 +20,16 @@ import guestfs
 import libxml2
 import traceback
 import json
-import ConfigParser
+import configparser
 import logging
 import subprocess
+from zope.interface import implementer
 from xml.etree.ElementTree import fromstring
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info
 try:
-    from VSphereHelper import VSphereHelper
+    from .VSphereHelper import VSphereHelper
 except:
     # psphere may be end of life
     # we only need it for pushing (aka target images) - this plugin is widely used
@@ -37,7 +37,7 @@ except:
     # present and/or has issues
     # TODO: Either move to a supported vSphere API binding or drop push support entirely
     logging.warning("VSphereHelper failed to load - pushing to vSphere will not work")
-from VMDKstream import convert_to_stream
+
 from imgfac.CloudDelegate import CloudDelegate
 from imgfac.FactoryUtils import check_qcow_size
 
@@ -50,9 +50,9 @@ mkinitrd $NEWINITRD $KERNELVERSION
 grubby --add-kernel=$KERNEL --copy-default --make-default --initrd=$NEWINITRD --title="Red Hat Enterprise Linux Server ($KERNELVERSION) Image Factory vSphere module update"
 rm /root/vsphere-module.sh'''
 
+@implementer(CloudDelegate)
 class vSphere(object):
     """docstring for Fedora_vsphere_Builder"""
-    zope.interface.implements(CloudDelegate)
 
     def __init__(self):
         super(vSphere, self).__init__()
@@ -158,22 +158,16 @@ class vSphere(object):
         os.rename(target_image, self.image)
 
     def vmware_transform_image_stream_vmdk(self):
-        if (check_qcow_size(self.image)) is not None:
-            import subprocess
-            self.log.debug("Input image is qcow; converting to raw")
-            raw_output_fname = "{0}.raw".format(self.image)
-            qemucmd = ['qemu-img', 'convert', '-f', 'qcow2', '-O', 'raw', self.image, raw_output_fname]
-            subprocess.check_call(qemucmd)
-            os.unlink(self.image)
-            os.rename(raw_output_fname, self.image)
         # On entry the image points to our generic KVM raw image
         # Convert to stream-optimized VMDK and then update the image property
         target_image = self.image + ".tmp.vmdk"
-        self.log.debug("Converting raw kvm image (%s) to vmware stream-optimized image (%s)" % (self.image, target_image))
-        convert_to_stream(self.image, target_image)
-        self.log.debug("VMWare stream conversion complete")
+        self.log.debug("Converting raw kvm image (%s) to streaming VMDK (%s) using qemu-img" % (self.image, target_image))
+        qemu_img_cmd = [ 'qemu-img', 'convert', '-O', 'vmdk',  "-o",
+             "adapter_type=lsilogic,subformat=streamOptimized,compat6", self.image, target_image ]
+        subprocess.check_call(qemu_img_cmd)
+        self.log.debug("VMDK conversion complete")
         os.unlink(self.image)
-        os.rename(self.image + ".tmp.vmdk", self.image)
+        os.rename(target_image, self.image)
 
     def modify_oz_filesystem(self):
         self.log.debug("Doing further Factory specific modification of Oz image")

@@ -40,7 +40,7 @@ def inspect_and_mount(guestfs_handle, relative_mount="", diskfile='*unspecified*
     for filesystem in filesystems:
         fshash[filesystem[0]] = filesystem[1]
  
-    mountpoints = fshash.keys()
+    mountpoints = list(fshash.keys())
     # per suggestion in libguestfs doc - sort the mount points on length
     # simple way to ensure that mount points are present before a mount is attempted
     mountpoints.sort(key=len)
@@ -53,19 +53,19 @@ def inspect_ostree(g, diskfile):
     """Make a best effort attempt to find and mount up the root rpm-ostree"""
     trees = [ ]
     for fs in g.list_filesystems():
-	try:
-	    g.mount_options("", fs[0], "/")
-	except:
-	    continue
-	if not g.is_dir("/ostree/deploy"):
-	    continue
-	for subdir in g.ls("/ostree/deploy"):
-	    if not g.is_dir("/ostree/deploy/" + subdir + "/deploy"):
-		continue
-	    for candidate in g.ls("/ostree/deploy/" + subdir + "/deploy"):
-		if re.match(".*\.[0-9]$", candidate):
-		    trees.append({ 'device': fs[0], 'os': subdir, 'root': candidate })
-	g.umount_all()
+        try:
+            g.mount_options("", fs[0], "/")
+        except:
+            continue
+        if not g.is_dir("/ostree/deploy"):
+            continue
+        for subdir in g.ls("/ostree/deploy"):
+            if not g.is_dir("/ostree/deploy/" + subdir + "/deploy"):
+                continue
+            for candidate in g.ls("/ostree/deploy/" + subdir + "/deploy"):
+                if re.match(".*\.[0-9]$", candidate):
+                    trees.append({ 'device': fs[0], 'os': subdir, 'root': candidate })
+        g.umount_all()
 
     if len(trees) == 0:
         raise Exception("Unable to find libguestfs inspectable image or rpm-ostree image on (%s)" % (diskfile))
@@ -298,7 +298,7 @@ def unpack_qcow_header(filename):
     qcow_struct=">IIQIIQIIQQIIQ" # > means big-endian
     qcow_magic = 0x514649FB # 'Q' 'F' 'I' 0xFB
 
-    f = open(filename,"r")
+    f = open(filename,"r+b")
     pack = f.read(struct.calcsize(qcow_struct))
     f.close()
 

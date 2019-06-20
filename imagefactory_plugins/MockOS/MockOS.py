@@ -15,13 +15,13 @@
 #   limitations under the License.
 
 import logging
-import zope
+from zope.interface import implementer
 from imgfac.OSDelegate import OSDelegate
 from imgfac.BaseImage import BaseImage
 from imgfac.TargetImage import TargetImage
 
+@implementer(OSDelegate)
 class MockOS(object):
-    zope.interface.implements(OSDelegate)
 
     def __init__(self):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))

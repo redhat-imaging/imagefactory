@@ -17,8 +17,8 @@ from distutils.command.sdist import sdist as _sdist
 import subprocess
 import time
 
-VERSION = '1.1.11'
-RELEASE = '1'
+VERSION = '1.1.13'
+RELEASE = '0'
 
 class sdist(_sdist):
     """ custom sdist command, to prep imagefactory.spec file """
@@ -32,12 +32,12 @@ class sdist(_sdist):
                                     shell=True,
                                     stdout=subprocess.PIPE).communicate()[0].strip()
         date = time.strftime("%Y%m%d%H%M%S", time.gmtime())
-        git_release = "%sgit%s" % (date, git_head)
+        git_release = "%sgit%s" % (date, git_head.decode("utf-8"))
 
         # Expand macros in imagefactory.spec.in
         spec_in = open('imagefactory.spec.in', 'r')
         spec = open('imagefactory.spec', 'w')
-        for line in spec_in.xreadlines():
+        for line in spec_in:
             if "@VERSION@" in line:
                 line = line.replace("@VERSION@", VERSION)
             elif "@RELEASE@" in line:
@@ -71,7 +71,7 @@ setup(name='imagefactory',
       author_email='imcleod@redhat.com',
       license='Apache License, Version 2.0',
       url='http://www.aeolusproject.org/imagefactory.html',
-      packages=['imgfac', 'imgfac.rest', 'imgfac.picklingtools'],
+      packages=['imgfac', 'imgfac.rest'],
       scripts=['imagefactory', 'imagefactoryd'],
       data_files = datafiles,
       cmdclass = {'sdist': sdist}

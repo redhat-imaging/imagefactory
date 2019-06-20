@@ -41,5 +41,5 @@ def glance_upload(image_filename, creds = {'auth_url': None, 'password': None, '
 
 image_id = glance_upload("/root/base-image-f19e3f9b-5905-4b66-acb2-2e25395fdff7.qcow2")
 
-print image_id
+print(image_id)
 

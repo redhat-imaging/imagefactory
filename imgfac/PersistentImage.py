@@ -14,11 +14,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from props import prop
+from .props import prop
 import uuid
 import logging
-from Notification import Notification
-from NotificationCenter import NotificationCenter
+from .Notification import Notification
+from .NotificationCenter import NotificationCenter
 
 
 METADATA = ('identifier', 'data', 'template', 'icicle', 'status_detail', 'status', 'percent_complete', 'parameters',

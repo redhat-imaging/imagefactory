@@ -11,4 +11,4 @@ kickstart = open(sys.argv[1]).read()
 
 parameters =  { "install_script": kickstart, "generate_icicle": False }
 
-print json.dumps(parameters)
+print(json.dumps(parameters))

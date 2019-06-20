@@ -71,7 +71,7 @@ class testPluginManager(unittest.TestCase):
         os.fsync(self.os_info_file)
         self.os_plugin_name = os.path.basename(self.os_info_file.name).partition('.')[0]
         # create a module for this plugin
-        os.mkdir(os.path.join(tempfile.gettempdir(), self.os_plugin_name), 0744)
+        os.mkdir(os.path.join(tempfile.gettempdir(), self.os_plugin_name), 0o744)
         osclass = open(os.path.join(tempfile.gettempdir(), self.os_plugin_name, self.os_plugin_name + '.py'), 'w')
         osclass.write('class %s(object):\n    pass' % self.os_plugin_name)
         osclass.close()
@@ -85,7 +85,7 @@ class testPluginManager(unittest.TestCase):
         os.fsync(self.cloud_info_file)
         self.cloud_plugin_name = os.path.basename(self.cloud_info_file.name).partition('.')[0]
         # create a module for this plugin
-        os.mkdir(os.path.join(tempfile.gettempdir(), self.cloud_plugin_name), 0744)
+        os.mkdir(os.path.join(tempfile.gettempdir(), self.cloud_plugin_name), 0o744)
         cloudclass = open(os.path.join(tempfile.gettempdir(), self.cloud_plugin_name, self.cloud_plugin_name + '.py'), 'w')
         cloudclass.write('class %s(object):\n    pass' % self.cloud_plugin_name)
         cloudclass.close()

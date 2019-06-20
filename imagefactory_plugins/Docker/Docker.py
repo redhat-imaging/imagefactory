@@ -15,7 +15,6 @@
 #   limitations under the License.
 
 import logging
-import zope
 import libxml2
 import json
 import os
@@ -31,6 +30,7 @@ import tarfile
 import threading
 import subprocess
 import hashlib
+from zope.interface import implementer
 from xml.etree.ElementTree import fromstring
 from imgfac.Template import Template
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
@@ -39,8 +39,8 @@ from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.CloudDelegate import CloudDelegate
 from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info, parameter_cast_to_bool
 
+@implementer(CloudDelegate)
 class Docker(object):
-    zope.interface.implements(CloudDelegate)
 
     compress_commands = { "xz":    "xz -T 0 --stdout %s > %s",
                           "gzip":  "gzip -c %s > %s",
@@ -305,7 +305,7 @@ class Docker(object):
         wrap_metadata = parameter_cast_to_bool(parameters.get('create_docker_metadata', True))
         compress_type = parameters.get('compress', None)
         if compress_type:
-            if compress_type in self.compress_commands.keys():
+            if compress_type in self.compress_commands:
                 compress_command = self.compress_commands[compress_type]
             else:
                 raise Exception("Passed unknown compression type (%s) for Docker plugin" % (compress_type))
@@ -359,7 +359,7 @@ class Docker(object):
                         if os.path.isfile(fp) and not os.path.islink(fp):
                             size += os.path.getsize(fp)
                 self.log.debug("Total real file content size (%d)" % (size))
-        except Exception, e:
+        except Exception as e:
             self.log.exception(e)
             raise
         finally:
@@ -367,7 +367,7 @@ class Docker(object):
                 try:
                     subprocess.check_call( ['umount', '-f', tempdir] )
                     os.rmdir(tempdir)
-                except Exception, e:
+                except Exception as e:
                     self.log.exception(e)
                     self.log.error("WARNING: Could not unmount guest at (%s) - may still be mounted" % (tempdir) )
             if fuse_thread:

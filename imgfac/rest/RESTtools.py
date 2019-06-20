@@ -16,7 +16,7 @@
 import logging
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.rest.bottle import *
-from imgfac.picklingtools.xmlloader import *
+#from imgfac.picklingtools.xmlloader import *
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ def form_data_for_content_type(content_type):
         new_dict = {}
         for k,v in a_dict.items():
             ek = k.encode(encoding)
-            if(isinstance(v, unicode)):
+            if(isinstance(v, str)):
                 new_dict[ek] = v.encode(encoding)
             elif(isinstance(v, dict)):
                 new_dict[ek] = dencode(v)
@@ -37,8 +37,9 @@ def form_data_for_content_type(content_type):
         if(content_type.startswith('application/json')):
             return dencode(request.json)
         elif(content_type.startswith('application/xml') or content_type.startswith('text/xml')):
-            xml_options = XML_LOAD_UNFOLD_ATTRS | XML_LOAD_NO_PREPEND_CHAR | XML_LOAD_EVAL_CONTENT
-            return dencode(ReadFromXMLStream(request.body, xml_options))
+            raise Exception("XML output no longer supported in Image Factor REST API")
+            #xml_options = XML_LOAD_UNFOLD_ATTRS | XML_LOAD_NO_PREPEND_CHAR | XML_LOAD_EVAL_CONTENT
+            #return dencode(ReadFromXMLStream(request.body, xml_options))
         else:
             return dencode(request.forms)
     except Exception as e:

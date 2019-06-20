@@ -15,11 +15,11 @@
 #   limitations under the License.
 
 import logging
-from Singleton import Singleton
-from props import prop
+from .Singleton import Singleton
+from .props import prop
 from collections import defaultdict
 from threading import RLock
-from Notification import Notification
+from .Notification import Notification
 
 class NotificationCenter(Singleton):
     """ TODO: Docstring for NotificationCenter  """

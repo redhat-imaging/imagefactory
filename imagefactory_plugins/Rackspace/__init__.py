@@ -14,4 +14,4 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from Rackspace import Rackspace as delegate_class
+from .Rackspace import Rackspace as delegate_class

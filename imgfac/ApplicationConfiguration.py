@@ -20,10 +20,10 @@ import os.path
 import argparse
 import json
 import logging
-import props
-from Singleton import Singleton
+from . import props
+import urllib.request
+from .Singleton import Singleton
 from imgfac.Version import VERSION as VERSION
-from urlgrabber import urlopen
 
 
 class ApplicationConfiguration(Singleton):
@@ -151,7 +151,7 @@ class ApplicationConfiguration(Singleton):
                     new_dict = {}
                     for k,v in a_dict.items():
                         ek = k.encode(encoding)
-                        if(isinstance(v, unicode)):
+                        if(isinstance(v, str)):
                             new_dict[ek] = v.encode(encoding)
                         elif(isinstance(v, dict)):
                             new_dict[ek] = dencode(v)
@@ -160,12 +160,13 @@ class ApplicationConfiguration(Singleton):
                     return new_dict
 
                 config_file = open(configuration.config)
-                uconfig = json.load(config_file)
+                uconfig = json.load(config_file, encoding="utf-8")
                 config_file.close()
-                defaults = dencode(uconfig)
+                defaults = uconfig
+                print(defaults)
                 argparser.set_defaults(**defaults)
                 configuration = argparser.parse_args()
-            except Exception, e:
+            except Exception as e:
                 self.log.exception(e)
         return configuration.__dict__
 
@@ -198,6 +199,7 @@ class ApplicationConfiguration(Singleton):
 
     def __parse_jeos_images(self):
         log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
+        print(self.configuration)
         config_urls = self.configuration['jeos_config']
         # Expand directories from the config and url-ify files
         # Read inlist - replace directories with their contents
@@ -221,7 +223,7 @@ class ApplicationConfiguration(Singleton):
 
         for url in finalist:
             try:
-                filehandle = urlopen(str(url))
+                filehandle = urllib.requst.urlopen(str(url))
                 line = filehandle.readline().strip()
             except:
                 log.warning("Failed to open JEOS URL (%s)" % url)

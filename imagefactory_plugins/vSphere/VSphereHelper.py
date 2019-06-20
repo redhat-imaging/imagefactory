@@ -19,7 +19,7 @@ import time
 import os
 import pycurl
 import logging
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 from psphere.client import Client
 from psphere.errors import TemplateNotFoundError
 from psphere.soap import VimFault
@@ -31,7 +31,7 @@ class VSphereHelper:
     def __init__(self, url, username, password):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         if(url.startswith('http://') or url.startswith('https://')):
-            server = urllib2.Request(url).get_host()
+            server = urllib.request.Request(url).get_host()
         else:
             server = url
         self.client = Client(server=server, username=username, password=password)

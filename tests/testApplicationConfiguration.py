@@ -34,7 +34,7 @@ class TestApplicationConfiguration(unittest.TestCase):
                 config_file = open(config_file_path)
                 self.defaults.update(json.load(config_file))
                 config_file.close()
-            except IOError, e:
+            except IOError as e:
                 pass
 
 

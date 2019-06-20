@@ -18,7 +18,7 @@ import logging
 import httplib2
 import re
 import os.path
-import props
+from . import props
 import libxml2
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 

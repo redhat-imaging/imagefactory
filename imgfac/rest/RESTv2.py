@@ -20,14 +20,14 @@ sys.path.insert(1, '%s/imgfac/rest' % sys.path[0])
 
 import logging
 import os.path
-from bottle import *
+from .bottle import *
 from imgfac.rest.RESTtools import *
 from imgfac.rest.OAuthTools import oauth_protect
 from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.PluginManager import PluginManager
 from imgfac.PersistentImageManager import PersistentImageManager
 from imgfac.Version import VERSION as VERSION
-from imgfac.picklingtools.xmldumper import *
+#from imgfac.picklingtools.xmldumper import *
 from imgfac.Builder import Builder
 
 log = logging.getLogger(__name__)
@@ -39,12 +39,13 @@ IMAGE_TYPES = {'BaseImage': 'base_image', 'TargetImage': 'target_image', 'Provid
 
 def converted_response(resp_dict):
     if('xml' in request.get_header('Accept', '')):
-        response.set_header('Content-Type', request.get_header('Accept', None))
-        xml_options = XML_DUMP_STRINGS_AS_STRINGS | XML_DUMP_PRETTY | XML_DUMP_POD_LIST_AS_XML_LIST
-        string_stream = cStringIO.StringIO()
-        WriteToXMLStream(resp_dict, string_stream, options=xml_options)
-        converted_response = string_stream.getvalue()
-        return converted_response
+        raise Exception("XML output no longer supported in Image Factor REST API")
+        #response.set_header('Content-Type', request.get_header('Accept', None))
+        #xml_options = XML_DUMP_STRINGS_AS_STRINGS | XML_DUMP_PRETTY | XML_DUMP_POD_LIST_AS_XML_LIST
+        #string_stream = cStringIO.StringIO()
+        #WriteToXMLStream(resp_dict, string_stream, options=xml_options)
+        #converted_response = string_stream.getvalue()
+        #return converted_response
     else:
         return resp_dict
 
@@ -315,7 +316,7 @@ def get_plugins(plugin_id=None):
                 plugins[plugin].update({'_type':'plugin',
                                         'id':plugin,
                                         'href':'%s/%s' % (request.url, plugin)})
-        return converted_response({'plugins':plugins.values()})
+        return converted_response({'plugins':list(plugins.values())})
     except Exception as e:
         log.exception(e)
         raise HTTPResponse(status=500, output='%s %s' % (e, traceback.format_exc()))

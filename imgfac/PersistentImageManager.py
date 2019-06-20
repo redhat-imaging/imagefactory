@@ -14,8 +14,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from ApplicationConfiguration import ApplicationConfiguration
-
+from .ApplicationConfiguration import ApplicationConfiguration
+import importlib
 
 class PersistentImageManager(object):
     """ Abstract base class for the Persistence managers  """
@@ -31,7 +31,7 @@ class PersistentImageManager(object):
             kwargs = appconfig['image_manager_args'] 
             # The current defaults are 'file' for class name and 
             # { "storage_location": "/var/lib/imagefactory/storage" } for the args
-            pim_module = __import__(class_name, globals(), locals(), [ class_name ], -1)
+            pim_module = importlib.import_module( ".." + class_name, __name__)
             pim_class = getattr(pim_module, class_name)
             cls._default_manager = pim_class(**kwargs)
         return cls._default_manager
