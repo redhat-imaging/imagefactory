@@ -433,6 +433,9 @@ rm -rf  %{buildroot}%{python3_sitelib}/imagefactory_plugins/Nova
 %{python3_sitelib}/imagefactory_plugins/GCE/*
 
 %changelog
+* Thu Jun 20 2019 Brendan Reilly <breilly@redhat.com> 1.1.14-1
+- make codebase python 3 compatible
+
 * Thu Aug 02 2018 Brendan Reilly <breilly@redhat.com> 1.1.12-2
 - supports OVAs with subdirectories
 

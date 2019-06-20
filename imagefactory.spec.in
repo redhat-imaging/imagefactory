@@ -133,6 +133,10 @@ fi
 %{_bindir}/imagefactoryd
 
 %changelog
+* Thu Jun 20 2019 Brendan Reilly <breilly@redhat.com> - 1.1.14-1
+- Upstream release 1.1.14
+  - make codebase python 3 compatible
+
 * Tue Jun 26 2018 Brendan Reilly <breilly@redhat.com> - 1.1.11-1
 - Upstream release 1.1.11
   - ovfcommon: supporting OVAs with subdirectories
