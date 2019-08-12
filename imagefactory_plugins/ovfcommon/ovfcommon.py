@@ -68,7 +68,8 @@ class RHEVOVFDescriptor(object):
 
     def generate_ovf_xml(self):
         etroot = ElementTree.Element('ovf:Envelope')
-        etroot.set('xmlns:ovf', "http://schemas.dmtf.org/ovf/envelope/1/")
+        etroot.set("xmlns", "http://schemas.dmtf.org/ovf/envelope/1")
+        etroot.set('xmlns:ovf', "http://schemas.dmtf.org/ovf/envelope/1")
         etroot.set('xmlns:rasd', "http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData")
         etroot.set('xmlns:vssd', "http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData")
         etroot.set('xmlns:xsi', "http://www.w3.org/2001/XMLSchema-instance")
@@ -221,6 +222,10 @@ class RHEVOVFDescriptor(object):
         ete.text = "3"
         etitem.append(ete)
 
+        ete = ElementTree.Element('rasd:VirtualQuantity')
+        ete.text = self.ovf_cpu_count
+        etitem.append(ete)
+
         ete = ElementTree.Element('rasd:num_of_sockets')
         ete.text = "1"
         etitem.append(ete)
@@ -333,7 +338,7 @@ class RHEVOVFDescriptor(object):
         ete.text = "rhevm"
         etitem.append(ete)
 
-        ete = ElementTree.Element('rasd:Name')
+        ete = ElementTree.Element('rasd:ElementName')
         ete.text = "eth0"
         etitem.append(ete)
 
