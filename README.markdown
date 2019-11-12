@@ -1,9 +1,9 @@
-#Image Factory#
+# Image Factory #
 
 Image Factory enables appliance creation and deployment to multiple virtualization
 and Cloud providers.
 
-##Features##
+## Features ##
 *   Build guest images for a growing list of operating system and cloud combinations.
     * Current guest OS support: Fedora 7-19, RHEL 5.x and 6.x
     * Current cloud support: Red Hat Enterprise Virtualization, VMware vSphere, Amazon EC2, Rackspace, OpenStack, and more...
@@ -11,7 +11,7 @@ and Cloud providers.
 *   RESTful API makes integrating Image Factory into existing workflows simple.
 
 
-##Using Image Factory##
+## Using Image Factory ##
 Building an image begins with a template describing what to build. See an example
 of such a template below. See the [schema documentation for TDL](http://imgfac.org/documentation/tdl/TDL.html)
 for more detail on creating a template. Note that a template is **not** tied to
@@ -45,7 +45,7 @@ push the image into the cloud.
 That's it!  You can now launch an instance of this image using the cloud
 provider's management console.
 
-##Installing Image Factory##
+## Installing Image Factory ##
 Installing Image Factory is quick and easy.  See the
 [imagefactory rpm installation](http://imgfac.org/documentation/install.html#rpm)
 instructions for more detail.
