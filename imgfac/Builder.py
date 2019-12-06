@@ -16,6 +16,8 @@
 
 import uuid
 import logging
+import signal
+import sys
 from threading import Thread
 from .props import prop
 from .NotificationCenter import NotificationCenter
@@ -47,6 +49,7 @@ class Builder(object):
         self.app_config = ApplicationConfiguration().configuration
         self.notification_center = NotificationCenter()
         self.pim = PersistentImageManager.default_manager()
+        signal.signal(signal.SIGINT, self.signal_handler)
         self._os_plugin = None
         self._cloud_plugin = None
         self._base_image = None
@@ -472,3 +475,19 @@ class Builder(object):
         finally:
             # We only shut the workers down after a known-final state change
             self._shutdown_callback_workers(image_object, self._deletion_cbws)
+
+    # defined here as Koji imports builder classes directly
+    def signal_handler(self, signum, stack):
+        if signum == signal.SIGINT:
+            # Run the abort() method in any running target builder
+            self.log.warn('caught signal SIGINT, stopping...')
+
+            if self.os_plugin:
+                try:
+                    self.log.debug("Executing abort method for builder")
+                    self.os_plugin.abort()
+                except Exception as e:
+                    self.log.warn("Got exception when attempting to abort build during shutdown")
+                    self.log.exception(e)
+
+            sys.exit(0)
