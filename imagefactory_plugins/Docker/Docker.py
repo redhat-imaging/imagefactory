@@ -391,7 +391,7 @@ class Docker(object):
             if set_arch_label:
                 if label == 'null':
                     label = dict()
-                label["architecture"] = tldobj.arch
+                label["architecture"] = tdlobj.arch
 
             rdict = { repository: { tag: docker_image_id } }
 
