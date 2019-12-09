@@ -15,11 +15,9 @@
 #   limitations under the License.
 
 import logging
-import libxml2
 import json
 import os
 import os.path
-import struct
 import subprocess
 import datetime
 import random
@@ -28,16 +26,12 @@ import oz.TDL
 import tempfile
 import tarfile
 import threading
-import subprocess
 import hashlib
 from zope.interface import implementer
-from xml.etree.ElementTree import fromstring
-from imgfac.Template import Template
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
-from imgfac.BuildDispatcher import BuildDispatcher
 from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.CloudDelegate import CloudDelegate
-from imgfac.FactoryUtils import launch_inspect_and_mount, shutdown_and_close, remove_net_persist, create_cloud_info, parameter_cast_to_bool
+from imgfac.FactoryUtils import launch_inspect_and_mount, parameter_cast_to_bool
 
 @implementer(CloudDelegate)
 class Docker(object):
