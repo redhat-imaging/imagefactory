@@ -515,3 +515,6 @@ class Docker(object):
 
     def builder_did_create_target_image(self, builder, target, image_id, template, parameters):
         raise ImageFactoryException("builder_did_create_target_image called in Docker plugin - this should never happen")
+
+    def abort(self):
+        pass
