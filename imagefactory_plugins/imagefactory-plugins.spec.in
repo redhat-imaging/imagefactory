@@ -433,6 +433,10 @@ rm -rf  %{buildroot}%{python3_sitelib}/imagefactory_plugins/Nova
 %{python3_sitelib}/imagefactory_plugins/GCE/*
 
 %changelog
+* Fri Jan 10 2020 Brendan Reilly <breilly@redhat.com> 1.1.15-1
+- add abort method to docker plugin
+- fix typos in docker plugin
+
 * Thu Jun 20 2019 Brendan Reilly <breilly@redhat.com> 1.1.14-1
 - make codebase python 3 compatible
 
