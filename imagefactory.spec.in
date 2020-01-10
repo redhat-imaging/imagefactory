@@ -133,6 +133,10 @@ fi
 %{_bindir}/imagefactoryd
 
 %changelog
+* Fri Jan 10 2020 Brendan Reilly <breilly@redhat.com> - 1.1.15-1
+- Upstream release 1.1.15
+  - improve handling of canceled builds
+
 * Thu Jun 20 2019 Brendan Reilly <breilly@redhat.com> - 1.1.14-1
 - Upstream release 1.1.14
   - make codebase python 3 compatible
