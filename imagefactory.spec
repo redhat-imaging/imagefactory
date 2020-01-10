@@ -8,7 +8,7 @@
 
 Summary: System image generation tool
 Name: imagefactory
-Version: 1.1.14
+Version: 1.1.15
 Release: 1%{?dist}
 Source0: http://repos.fedorapeople.org/repos/aeolus/imagefactory/%{version}/tarball/%{name}-%{version}.tar.gz
 License: ASL 2.0
@@ -133,31 +133,9 @@ fi
 %{_bindir}/imagefactoryd
 
 %changelog
-* Thu Jun 20 2019 Brendan Reilly <breilly@redhat.com> 1.1.14-1
-- Bumping version for release (breilly@redhat.com)
-- Apply suggestions from code review (breilly@redhat.com)
-- ovfcommon now checks error string properly for py3 (breilly@redhat.com)
-- Updated specfile to generate info symlinks correctly for py3
-  (breilly@redhat.com)
-- further SPEC tweaks to make koji scratch build attempts work
-  (imcleod@redhat.com)
-- fix up setup.py and bump the minor version (imcleod@redhat.com)
-- replace paste with cherrypy (imcleod@redhat.com)
-- 2to3 on imagefactoryd (imcleod@redhat.com)
-- add REST code back in but remove picklingtools (imcleod@redhat.com)
-- python3 changes needed to produce vSphere OVA (imcleod@redhat.com)
-- finish the switch to zope decorators (imcleod@redhat.com)
-- python3 changes made to allow minimal TinMan/oz base image creation
-  (imcleod@redhat.com)
-- more python 3 changes (imcleod@redhat.com)
-- Minimal changes needed for RPM builds to complete with python3 - not tested
-  at all (imcleod@redhat.com)
-- leap of faith running 2to3 (imcleod@redhat.com)
-- make ovirt-engine-sdk optional (imcleod@redhat.com)
-- remove psphere and VMDKstream deps (imcleod@redhat.com)
-- remove urlgrabber in favor of urllib (imcleod@redhat.com)
-- drop in a more recent bottle.py (imcleod@redhat.com)
-- Bumping version for release (breilly@redhat.com)
+* Fri Jan 10 2020 Brendan Reilly <breilly@redhat.com> - 1.1.15-1
+- Upstream release 1.1.15
+  - improve handling of canceled builds
 
 * Thu Jun 20 2019 Brendan Reilly <breilly@redhat.com> - 1.1.14-1
 - Upstream release 1.1.14
