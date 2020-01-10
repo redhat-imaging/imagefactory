@@ -9,7 +9,7 @@
 Summary: System image generation tool
 Name: imagefactory
 Version: 1.1.15
-Release: 1%{?dist}
+Release: 2%{?dist}
 Source0: http://repos.fedorapeople.org/repos/aeolus/imagefactory/%{version}/tarball/%{name}-%{version}.tar.gz
 License: ASL 2.0
 Group: Applications/System
@@ -133,6 +133,32 @@ fi
 %{_bindir}/imagefactoryd
 
 %changelog
+* Fri Jan 10 2020 Brendan Reilly <breilly@redhat.com> 1.1.15-2
+- Revert "Added default ovf namespace to root element Envelope"
+  (breilly@redhat.com)
+- updating specfile for release (breilly@redhat.com)
+- bumping version for release (breilly@redhat.com)
+- update for new release (breilly@redhat.com)
+- Added abort method for docker plugin (breilly@redhat.com)
+- Added signal handling for qemu cleanup (breilly@redhat.com)
+- remove unused imports (tkopecek@redhat.com)
+- fix typo (tkopecek@redhat.com)
+- Added default ovf namespace to root element Envelope fixed cpu and memory
+  sections (breilly@redhat.com)
+
+* Fri Jan 10 2020 Brendan Reilly <breilly@redhat.com>
+- Revert "Added default ovf namespace to root element Envelope"
+  (breilly@redhat.com)
+- updating specfile for release (breilly@redhat.com)
+- bumping version for release (breilly@redhat.com)
+- update for new release (breilly@redhat.com)
+- Added abort method for docker plugin (breilly@redhat.com)
+- Added signal handling for qemu cleanup (breilly@redhat.com)
+- remove unused imports (tkopecek@redhat.com)
+- fix typo (tkopecek@redhat.com)
+- Added default ovf namespace to root element Envelope fixed cpu and memory
+  sections (breilly@redhat.com)
+
 * Fri Jan 10 2020 Brendan Reilly <breilly@redhat.com> - 1.1.15-1
 - Upstream release 1.1.15
   - improve handling of canceled builds
