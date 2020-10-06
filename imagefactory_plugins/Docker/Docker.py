@@ -426,7 +426,7 @@ class Docker(object):
                                             'type': 'layers' }
 
                 # Docker wants this config file to be named after its own sha256 sum
-                image_v2_config_id = hashlib.sha256(json.dumps(image_v2_config)).hexdigest()
+                image_v2_config_id = hashlib.sha256(json.dumps(image_v2_config).encode('utf-8')).hexdigest()
 
                 image_v2_manifest = [ { "Config": "%s.json" % (image_v2_config_id),
                                         "Layers": [ "%s/layer.tar" % (docker_image_id) ],
