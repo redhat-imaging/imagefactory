@@ -366,7 +366,7 @@ class Docker(object):
                     self.log.error("WARNING: Could not unmount guest at (%s) - may still be mounted" % (tempdir) )
             if fuse_thread:
                 fuse_thread.join(30.0)
-                if fuse_thread.isAlive():
+                if fuse_thread.is_alive():
                     self.log.error("Guestfs local mount thread is still active - FUSE filesystem still mounted at (%s)" % (tempdir) )
 
         if wrap_metadata:
