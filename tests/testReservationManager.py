@@ -140,7 +140,7 @@ class testReservationManager(unittest.TestCase):
         for job in job_threads:
             job.start()
         for job in job_threads:
-            if job.isAlive():
+            if job.is_alive():
                 job.join()
         #self.log.info(job_output)
         self.assertEqual((3 * job_number * len(ReservationManager().queues)), len(job_output))

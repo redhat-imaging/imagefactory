@@ -94,7 +94,7 @@ class Application(Singleton):
             for builder_id in builder_dict:
                 # If the build or push worker thread has already exited we do nothing
                 # builder classes should always cleanup before exiting the thread-starting methods
-                if builder_dict[builder_id].builder_thread and builder_dict[builder_id].builder_thread.isAlive():
+                if builder_dict[builder_id].builder_thread and builder_dict[builder_id].builder_thread.is_alive():
                     try:
                         logging.debug("Executing abort method for builder id (%s)" % (builder_id))
                         builder_dict[builder_id].abort()
