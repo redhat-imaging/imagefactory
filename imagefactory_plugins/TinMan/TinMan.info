@@ -3,7 +3,8 @@
     "targets": [ ["Fedora", null, null], ["RHEL-6", null, null], ["RHEL-5", null, null],
                  ["Ubuntu", null, null], ["CentOS-6", null, null], ["CentOS-5", null, null],
                  ["ScientificLinux-6", null, null], ["ScientificLinux-5", null, null], ["OpenSUSE", null, null],
-                 [ "RHEL-7", null, null ], [ "CentOS-7", null, null ], [ "ScientificLinux-7", null, null ] ],
+                 [ "RHEL-7", null, null ], [ "CentOS-7", null, null ], [ "ScientificLinux-7", null, null ],
+                 [ "RHEL-8", null, null ], [ "CentOS-8", null, null ] ],
     "description": "Plugin to support most Oz customize capable guest types",
     "maintainer": {
         "name": "Red Hat, Inc.",
