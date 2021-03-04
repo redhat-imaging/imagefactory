@@ -1,6 +1,6 @@
 {
     "type": "os",
-    "targets": [ ["Fedora", null, null], ["RHEL-6", null, null], ["RHEL-5", null, null],
+    "targets": [ ["Fedora", null, null], ["ProLinux", null, null], ["RHEL-6", null, null], ["RHEL-5", null, null],
                  ["Ubuntu", null, null], ["CentOS-6", null, null], ["CentOS-5", null, null],
                  ["ScientificLinux-6", null, null], ["ScientificLinux-5", null, null], ["OpenSUSE", null, null],
                  [ "RHEL-7", null, null ], [ "CentOS-7", null, null ], [ "ScientificLinux-7", null, null ] ],
