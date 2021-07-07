@@ -160,7 +160,7 @@ class ApplicationConfiguration(Singleton):
                     return new_dict
 
                 config_file = open(configuration.config)
-                uconfig = json.load(config_file, encoding="utf-8")
+                uconfig = json.load(config_file)
                 config_file.close()
                 defaults = uconfig
                 print(defaults)
