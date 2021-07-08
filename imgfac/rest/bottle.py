@@ -2783,8 +2783,13 @@ class WSGIRefServer(ServerAdapter):
 
 
 class CherryPyServer(ServerAdapter):
-    def run(self, handler): # pragma: no cover
-        from cherrypy import wsgiserver
+    def run(self, handler):  # pragma: no cover
+        # see: https://github.com/cherrypy/cherrypy/issues/1585
+        try:
+            from cheroot.wsgi import Server as CherryWSGIServer
+        except ImportError:
+            from cherrypy.wsgiserver import CherryPyWSGIServer as CherryWSGIServer
+
         self.options['bind_addr'] = (self.host, self.port)
         self.options['wsgi_app'] = handler
 
@@ -2795,7 +2800,7 @@ class CherryPyServer(ServerAdapter):
         if keyfile:
             del self.options['keyfile']
 
-        server = wsgiserver.CherryPyWSGIServer(**self.options)
+        server = CherryWSGIServer(**self.options)
         if certfile:
             server.ssl_certificate = certfile
         if keyfile:
