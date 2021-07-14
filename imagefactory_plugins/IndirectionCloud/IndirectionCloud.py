@@ -302,7 +302,7 @@ class IndirectionCloud(object):
         except libvirtError as e:
             raise ImageFactoryException("Cannot connect to libvirt.  Make sure libvirt is running. [Original message: %s]" %  e.message)
         except OzException as e:
-            if "Unsupported" in e.message:
+            if "Unsupported" in str(e):
                 raise ImageFactoryException("TinMan plugin does not support distro (%s) update (%s) in TDL" % (self.tdlobj.distro, self.tdlobj.update) )
             else:
                 raise e
