@@ -36,7 +36,7 @@ from imgfac.FactoryUtils import launch_inspect_and_mount, parameter_cast_to_bool
 @implementer(CloudDelegate)
 class Docker(object):
 
-    compress_commands = { "xz":    "xz -T 0 --stdout %s > %s",
+    compress_commands = { "xz":    "xz -9 -T 0 --stdout %s > %s",
                           "gzip":  "gzip -c %s > %s",
                           "bzip2": "bzip2 -c %s > %s" }
 
