@@ -329,7 +329,7 @@ class Docker(object):
             #        to allow selective inclusion is broken
             # TODO: Follow up with tar maintainers and docker image creators to find out what
             #       if any xattrs we really need to capture here
-            tarcmd = [ 'tar',  '-cf', builder.target_image.data, '-C', tempdir ]
+            tarcmd = [ 'tar',  '-cf', builder.target_image.data, '--xattrs', '--xattrs-include=security.capability', '-C', tempdir ]
             # User may pass in a comma separated list of additional options to the tar command
             tar_options = parameters.get('tar_options', None)
             if tar_options:
