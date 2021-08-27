@@ -398,7 +398,7 @@ class Docker(object):
             if arch == "x86_64":
                 arch = "amd64"
             elif arch == "armv7hl":
-                arch = "armhfp"
+                arch = "arm"
             tdict = { }
             tdict['commentstring'] = parameters.get('comment', 'Created by Image Factory')
             tdict['os'] = parameters.get('os', 'linux')
