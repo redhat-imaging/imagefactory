@@ -239,6 +239,7 @@ class OpenStack(object):
          'min_ram': kwargs.setdefault('min_ram', 0),
          'name': kwargs.setdefault('name', 'Factory Test Image'),
          'data': image_data,
+         'properties': kwargs.setdefault('properties', '{}')
         }
 
         c = glance_client.Client('1', glance_url, token=auth_token)
