@@ -1255,6 +1255,9 @@ class VirtualBoxOVFPackage(OVFPackage):
         vagrantfile = '''Vagrant.configure("2") do |config|
   config.vm.base_mac = "%s"
   config.vm.synced_folder ".", "%s", type: "rsync"
+  config.vm.provider :virtualbox do |vb|
+    vb.customize ["storageattach", :id, "--storagectl", "IDE", "--port", "0", "--device", "1", "--type", "dvddrive", "--medium", "emptydrive"]
+  end
 end
 ''' % (self.mac_addr, self.vagrant_sync_directory)
         vagrantfile_path = os.path.join(self.path, "Vagrantfile")
