@@ -24,6 +24,7 @@ import guestfs
 #       see if we can't move the libvirt stuff as well
 # For now we import both
 import libxml2
+import libvirt
 import lxml
 import configparser
 import tempfile
@@ -33,6 +34,7 @@ import os.path
 from zope.interface import implementer
 from imgfac.ApplicationConfiguration import ApplicationConfiguration
 from imgfac.CloudDelegate import CloudDelegate
+from imgfac.ImageFactoryException import ImageFactoryException
 from imgfac.PersistentImageManager import PersistentImageManager
 from imgfac.ReservationManager import ReservationManager
 
@@ -299,9 +301,9 @@ class IndirectionCloud(object):
             self.guest = oz.GuestFactory.guest_factory(self.tdlobj, self.oz_config, None)
             # Oz just selects a random port here - This could potentially collide if we are unlucky
             self.guest.listen_port = self.res_mgr.get_next_listen_port()
-        except libvirtError as e:
+        except libvirt.libvirtError as e:
             raise ImageFactoryException("Cannot connect to libvirt.  Make sure libvirt is running. [Original message: %s]" %  e.message)
-        except OzException as e:
+        except oz.OzException.OzException as e:
             if "Unsupported" in e.message:
                 raise ImageFactoryException("TinMan plugin does not support distro (%s) update (%s) in TDL" % (self.tdlobj.distro, self.tdlobj.update) )
             else:
