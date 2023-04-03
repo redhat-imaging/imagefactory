@@ -1,7 +1,7 @@
 # N.B. Tested on Fedora 17 only.  Path's may change depending on your distro.
 
 # Be sure to check these values are correct for your system.
-PYTHON_PATH="/usr/lib/python2.7" 
+PYTHON_PATH="/usr/lib/python3.9"
 IMAGEFACTORY_PLUGINS=/etc/imagefactory/plugins.d/
 
 WORKING_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
