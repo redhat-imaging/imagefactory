@@ -312,12 +312,32 @@ class Docker(object):
         # we call a blocking function to activate the mount, which requires a thread
         # We also need a temp dir to mount it to - do our best to clean up when things
         # go wrong
+        #
+        # A better approach here would be to use:
+        #   g.tar_out_opts("/", dest_filename, excludes=[excludes])
+        # Though that would break compatibility with the tar_options parameter.
+        #
         tempdir = None
         fuse_thread = None
         try:
             tempdir = tempfile.mkdtemp(dir=storagedir)
             self.log.debug("Mounting input image locally at (%s)" % (tempdir))
-            guestfs_handle.mount_local(tempdir)
+
+            # The "use_ino" option causes FUSE to pass through the original inode
+            # numbers. Without it tar cannot properly detect hardlinks, possibly greatly
+            # increasing the size of the image.  This does create an edge case. If there
+            # are:
+            #
+            #  - Two separate groups of > 1 files hardlinked together
+            #  - On different partitions
+            #  - With the same inode number
+            #
+            # Then the groups will be incorrectly merged in the output image. This
+            # is unlikely to be encountered with typical container images, where almost
+            # all files are on a single partition. The correct fix is to use
+            # g.tar_out_opts() as described above.
+
+            guestfs_handle.mount_local(tempdir, options="use_ino")
             def _run_guestmount(g):
                 g.mount_local_run()
             self.log.debug("Launching mount_local_run thread")
