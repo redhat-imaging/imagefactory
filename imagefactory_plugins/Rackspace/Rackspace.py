@@ -64,7 +64,7 @@ class Rackspace(object):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         config_obj = ApplicationConfiguration()
         self.app_config = config_obj.configuration
-        self.oz_config = configparser.SafeConfigParser()
+        self.oz_config = configparser.ConfigParser()
         self.oz_config.read("/etc/oz/oz.cfg")
         self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
         self.active_image = None
