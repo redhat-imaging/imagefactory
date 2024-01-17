@@ -282,7 +282,7 @@ class IndirectionCloud(object):
     def _init_oz(self):
         # populate a config object to pass to OZ; this allows us to specify our
         # own output dir but inherit other Oz behavior
-        self.oz_config = configparser.SafeConfigParser()
+        self.oz_config = configparser.ConfigParser()
         if self.oz_config.read("/etc/oz/oz.cfg") != []:
             self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
             if "oz_data_dir" in self.app_config:
