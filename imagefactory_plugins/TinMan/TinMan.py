@@ -336,7 +336,8 @@ class TinMan(object):
                 try:
                     disksize=getattr(self.guest, "disksize")
                 except AttributeError:
-                    disksize = 10
+                    # 10 GiB
+                    disksize = 10*1024*1024*1024
                 self.guest.generate_diskimage(size = disksize)
                 # TODO: If we already have a base install reuse it
                 #  subject to some rules about updates to underlying repo
