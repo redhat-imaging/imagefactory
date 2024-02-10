@@ -28,7 +28,11 @@ from novaimagebuilder.StackEnvironment import StackEnvironment
 from time import sleep
 from base64 import b64decode
 #TODO: remove dependency on Oz
-from configparser import SafeConfigParser
+try:
+    from configparser import SafeConfigParser as ConfigParser
+except AttributeError:
+    # SafeConfigParser was deprecated in Python 3.2
+    from configparser import ConfigParser
 from oz.TDL import TDL
 import oz.GuestFactory
 
@@ -438,7 +442,7 @@ class Nova(object):
         return confirmation
 
     def _oz_config(self, private_key_file):
-        config = SafeConfigParser()
+        config = ConfigParser()
         if config.read("/etc/oz/oz.cfg"):
             config.set('paths', 'output_dir', self.app_config['imgdir'])
             config.set('paths', 'sshprivkey', private_key_file)
