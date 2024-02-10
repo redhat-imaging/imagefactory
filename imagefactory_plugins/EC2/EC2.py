@@ -61,7 +61,11 @@ class EC2(object):
         self.log = logging.getLogger('%s.%s' % (__name__, self.__class__.__name__))
         config_obj = ApplicationConfiguration()
         self.app_config = config_obj.configuration
-        self.oz_config = configparser.SafeConfigParser()
+        try:
+            self.oz_config = configparser.SafeConfigParser()
+        except AttributeError:
+            # SafeConfigParser was deprecated in Python 3.2
+            self.oz_config = configparser.ConfigParser()
         self.oz_config.read("/etc/oz/oz.cfg")
         self.oz_config.set('paths', 'output_dir', self.app_config["imgdir"])
         self.guest = None

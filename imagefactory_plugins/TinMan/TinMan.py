@@ -269,7 +269,11 @@ class TinMan(object):
 
         # populate a config object to pass to OZ; this allows us to specify our
         # own output dir but inherit other Oz behavior
-        self.oz_config = configparser.SafeConfigParser()
+        try:
+            self.oz_config = configparser.SafeConfigParser()
+        except AttributeError:
+            # SafeConfigParser was deprecated in Python 3.2
+            self.oz_config = configparser.ConfigParser()
         if self.oz_config.read("/etc/oz/oz.cfg") != []:
             if self.parameters.get("oz_overrides", None) != None:
                 oz_overrides = json.loads(self.parameters.get("oz_overrides",None).replace("'", "\""))
